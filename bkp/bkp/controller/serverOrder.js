@@ -23,13 +23,13 @@ module.exports = {
         // add feature on 20240105
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
+        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ` : ` ORDER BY mo.po_date `;
         let desc = req.query.desc ? `DESC ` : ``;
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
         let find = req.query.find || req.query.find !== '' ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%') AND mo.company_id = ${req.dataToken.company_id} ` : ''
-        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}, mo.order_id ${desc}, mo.po_buyer ${desc}` : ` ORDER BY mo.po_date ${desc} , mo.order_id ${desc}, mo.po_buyer ${desc}`;
 
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
@@ -44,7 +44,7 @@ module.exports = {
 	mco.company_name,
 	mo.delv_week,
 	mo.delv_week_desc,
-	mo.final_dest,
+	mpfd.final_dest,
 	mo.delv_year,
 	mo.po_buyer,
 	concat(mh.harbour_name, ", " , st.txt ) port_shipment,
@@ -141,12 +141,7 @@ module.exports = {
     LEFT JOIN mst_product mps ON ms.sku = mps.product_code
     LEFT JOIN m_product_link mpls ON ms.sku = mpls.product_code 
     WHERE
-        mo.company_id = ${req.dataToken.company_id} ` + status + find + range + order_by_week;
-
-        // console.log(timestamp, "getOrderAllIn",
-        //     {
-        //         page, limit, order_by_week, desc, status, stuffingstart, stuffingend, range, find
-        //     }, "query: ", query)
+        mo.company_id = ${req.dataToken.company_id} ` + status + find + range + order_by_week + desc;
 
         /*
         let query = ` SELECT distinct 
@@ -234,8 +229,8 @@ module.exports = {
         // add feature on 20240105
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
+        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ` : ` ORDER BY mo.po_date `;
         let desc = req.query.desc ? `DESC ` : ``;
-        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}, mo.order_id ${desc}, mo.po_buyer ${desc}` : ` ORDER BY mo.po_date ${desc} , mo.order_id ${desc}, mo.po_buyer ${desc}`;
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
@@ -263,7 +258,7 @@ module.exports = {
 	concat(su.firstname, ' ', su.lastname ) submitted_by,
 	mos.status_order order_status,
 	mod2.remarks order_remarks,
-	tr.cont_id container_id,  
+	tr.cont_id container_id, 
 	COALESCE(DATE_FORMAT(tr.delv_date, '%b %d, %Y'), 0) stuffing_date,
 	COALESCE(DATE_FORMAT(tr.etd, '%b %d, %Y'), 0) etd,
 	COALESCE(DATE_FORMAT(tr.eta, '%b %d, %Y'), 0) eta
@@ -297,11 +292,8 @@ LEFT JOIN trs_realization tr ON
 LEFT JOIN trs_realization_detail trd ON
 	tr.so_id = trd.so_id
 WHERE
-	ms.company_id = ${req.dataToken.company_id} AND mo.status IN (3,4)  ` + status + find + range + order_by_week;
-        // console.log(timestamp, "getRealizationAllIn",
-        //     {
-        //         page, limit, order_by_week, desc, status, stuffingstart, stuffingend, range, find
-        //     }, "query: ", query)
+	ms.company_id = ${req.dataToken.company_id} AND mo.status IN (3,4)  ` + status + find + range + order_by_week + desc;
+
         /*
         let query = ` SELECT distinct 
                     mo.order_id, mco.company_name, mo.delv_week, mo.delv_week_desc, mpfd.final_dest, mo.delv_year,
@@ -387,13 +379,13 @@ WHERE
         // add feature on 20240105
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
+        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ` : ` ORDER BY mo.po_date `;
         let desc = req.query.desc ? `DESC ` : ``;
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
         let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%') AND mo.company_id = ${req.dataToken.company_id} ` : ''
-        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}, mo.order_id ${desc}, mo.po_buyer ${desc}` : ` ORDER BY mo.po_date ${desc} , mo.order_id ${desc}, mo.po_buyer ${desc}`;
 
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
@@ -409,7 +401,7 @@ WHERE
         mo.delv_week,
         mo.delv_week_desc,
         mo.stuffing_date,
-        mo.final_dest,
+        mpfd.final_dest,
         mo.delv_year,
         mo.po_buyer,
         concat(mh.harbour_name, ", " , st.txt ) port_shipment,
@@ -452,12 +444,9 @@ WHERE
         mc.country_name_id = st.text_id
         AND st.lang_id = 1
     WHERE
-        mo.company_id = ${req.dataToken.company_id} ` + status + find + range + order_by_week;
+        mo.company_id = ${req.dataToken.company_id} ` + status + find + range + order_by_week + desc;
 
-        // console.log(timestamp, "getOrderHeader",
-        //     {
-        //         page, limit, order_by_week, desc, status, stuffingstart, stuffingend, range, find
-        //     }, "query: ", query)
+        console.log(timestamp, "query getOrderHeader", query)
 
         try {
 
@@ -609,13 +598,13 @@ WHERE
 
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
+        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ` : ` ORDER BY mo.po_date `;
         let desc = req.query.desc ? `DESC ` : ``;
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
         let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%') AND mo.company_id = ${req.dataToken.company_id}` : ''
-        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}, mo.order_id ${desc}, mo.po_buyer ${desc}` : ` ORDER BY mo.po_date ${desc} , mo.order_id ${desc}, mo.po_buyer ${desc}`;
 
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
@@ -633,7 +622,7 @@ WHERE
                                 DISTINCT
                                 det.order_id,
                                 det.company_id,
-                                mo.final_dest, 
+                                mpfd.final_dest, 
                                 mco.company_name,
                                 det.created_by,
                                 su.firstname,
@@ -713,12 +702,8 @@ WHERE
                             LEFT JOIN m_product_link mpls ON
                                 ms.sku = mpls.product_code
                             WHERE
-                                det.company_id = ${req.dataToken.company_id}` + status + find + range + order_by_week;
+                                det.company_id = ${req.dataToken.company_id}` + status + find + range + order_by_week + desc
 
-                // console.log(timestamp, "getOrderDetail2",
-                //     {
-                //         page, limit, order_by_week, desc, status, stuffingstart, stuffingend, range, find
-                //     }, "query: ", query)
 
                 dbConf.query(query, (err, results) => {
 
@@ -1395,9 +1380,9 @@ WHERE
             let remarks = (await dbQuery(`SELECT remarks FROM m_order_dtl WHERE order_id = ${req.body.order_id}`))[0].remarks
 
             let query = `
-                UPDATE m_order
-                SET status = 77
-                WHERE order_id = ?;
+            UPDATE m_order
+            SET status = 77
+            WHERE order_id = ?;
             
             UPDATE m_order_dtl
             SET remarks =  ? 
@@ -3785,13 +3770,13 @@ WHERE
 
 
                     let stuffing_date_rev = order_data.stuffing_date ? order_data.stuffing_date : formattedDate;
-                    let final_dest = order_data.final_dest ? order_data.final_dest : '-';
+                    let final_dest_check = order_data.final_dest ? order_data.final_dest : '-';
                     let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) container FROM m_config_new mcn WHERE mcn.conditions = 8 AND mcn.company_id = ${company_id}`);
                     let number = await dbQuery(`SELECT company_number  FROM mst_company mc WHERE company_id = ${company_id}`);
                     // let selectWeek = order_data.stuffing_date ? await (dbQuery(`CALL day2week(${order_data.stuffing_date}, @wikwik);`)) : delv_week;
 
                     console.log(timestamp, "order_data.final_dest", order_data.final_dest)
-                    console.log(timestamp, "final_dest", final_dest)
+                    console.log(timestamp, "final_dest_check", final_dest_check)
 
                     let checkCondition = specialCondition[0] ? specialCondition[0].container : '';
                     let checkNumber = number[0] ? number[0].company_number : '';
@@ -3809,14 +3794,14 @@ WHERE
                                     (?, ?, ?, ?, 
                                     ?, ?, ?,
                                     now(), ?, ?, ?,
-                                    ?, 0, ?, ?, ?);  
+                                    ?, 0, ?, ?, '${final_dest_check}');  
                                     `;
 
                     let parameter = [
                         order_id, company_id, delv_week, delv_week_desc,
                         delv_year, po_buyer, stuffing_date_rev,
                         port_shipment, ship_to, po_url,
-                        user_id, tolling_id, po_buyer_pcl, final_dest
+                        user_id, tolling_id, po_buyer_pcl,
                     ];
 
                     //memasukkan header
@@ -3901,7 +3886,7 @@ WHERE
                     }
 
                     //idupin kalau udah production. spam aja ini.
-                    orderRecievedMailSender(user_id, req.dataToken.employee_id, order_id)
+                    // orderRecievedMailSender(user_id, req.dataToken.employee_id, order_id)
 
 
                     // atau ini
