@@ -249,55 +249,61 @@ module.exports = {
 
 
         let query = ` 
- SELECT
-	ms.po_buyer,
-	ms.order_id, 
-	stp.company_name ship_to,
-	concat(mh.harbour_name, ', ', tp.txt) port_of_discharge,
-	mo.delv_week_desc stuffing_week,
-	mp.product_sku product_sku,
-	COALESCE(mp.product_name_no, mp.product_name) product_description,
-	COALESCE(trd.qty, 0) realization_quantity,
-	concat(1 , ' X ', mc2.container_name ) completion_note,
-	DATE_FORMAT(mo.po_date, '%b %d, %Y') po_date,
-	concat(su.firstname, ' ', su.lastname ) submitted_by,
-	mos.status_order order_status,
-	mod2.remarks order_remarks,
-	tr.cont_id container_id,  
-	COALESCE(DATE_FORMAT(tr.delv_date, '%b %d, %Y'), 0) stuffing_date,
-	COALESCE(DATE_FORMAT(tr.etd, '%b %d, %Y'), 0) etd,
-	COALESCE(DATE_FORMAT(tr.eta, '%b %d, %Y'), 0) eta
-FROM
-	m_summary ms
-LEFT JOIN m_order mo ON
-	mo.order_id = ms.order_id
-LEFT JOIN mst_company stp ON
-	mo.ship_to = stp.company_id
-LEFT JOIN mst_harbour mh ON
-	mo.port_shipment = mh.harbour_id
-LEFT JOIN mst_country mc ON
-	mh.country_id = mc.country_id
-LEFT JOIN sys_text tp ON
-	tp.text_id = mc.country_name_id
-	AND tp.lang_id = 1
-LEFT JOIN mst_product mp ON
-	mp.product_code = ms.sku
-LEFT JOIN m_order_dtl mod2 ON
-	mod2.order_id = mo.order_id
-LEFT JOIN mst_container mc2 ON
-	mc2.container_id = mod2.cont_size
-LEFT JOIN sys_user su ON
-	su.user_id = mo.created_by
-LEFT JOIN m_order_status mos ON
-	mos.id = mo.status
-LEFT JOIN trs_sales_order tso ON
-	tso.e_order = mo.order_id
-LEFT JOIN trs_realization tr ON
-	tso.so_id = tr.so_id
-LEFT JOIN trs_realization_detail trd ON
-	tr.so_id = trd.so_id
-WHERE
-	ms.company_id = ${req.dataToken.company_id} AND mo.status IN (3,4)  ` + status + find + range + order_by_week;
+            SELECT
+            ms.po_buyer,
+            ms.order_id, 
+            stp.company_name ship_to,
+            concat(mh.harbour_name, ', ', tp.txt) port_of_discharge,
+            mo.delv_week_desc stuffing_week,
+            mp.product_sku product_sku,
+            COALESCE(mp.product_name_no, mp.product_name) product_description,
+            COALESCE(trd.qty, 0) realization_quantity,
+            concat(1 , ' X ', mc2.container_name ) completion_note,
+            DATE_FORMAT(mo.po_date, '%b %d, %Y') po_date,
+            concat(su.firstname, ' ', su.lastname ) submitted_by,
+            mos.status_order order_status,
+            mod2.remarks order_remarks,
+            tr.cont_id container_id,  
+            COALESCE(DATE_FORMAT(tr.delv_date, '%b %d, %Y'), 0) stuffing_date,
+            COALESCE(DATE_FORMAT(tr.etd, '%b %d, %Y'), 0) etd,
+            COALESCE(DATE_FORMAT(tr.eta, '%b %d, %Y'), 0) eta
+        FROM
+            m_summary ms
+        LEFT JOIN m_order mo ON
+            mo.order_id = ms.order_id
+        LEFT JOIN mst_company stp ON
+            mo.ship_to = stp.company_id
+        LEFT JOIN mst_harbour mh ON
+            mo.port_shipment = mh.harbour_id
+        LEFT JOIN mst_country mc ON
+            mh.country_id = mc.country_id
+        LEFT JOIN sys_text tp ON
+            tp.text_id = mc.country_name_id
+            AND tp.lang_id = 1
+        LEFT JOIN mst_product mp ON
+            mp.product_code = ms.sku
+        LEFT JOIN m_order_dtl mod2 ON
+            mod2.order_id = mo.order_id
+        LEFT JOIN mst_container mc2 ON
+            mc2.container_id = mod2.cont_size
+        LEFT JOIN sys_user su ON
+            su.user_id = mo.created_by
+        LEFT JOIN m_order_status mos ON
+            mos.id = mo.status
+        LEFT JOIN trs_sales_order tso ON
+            tso.e_order = mo.order_id
+        LEFT JOIN trs_realization tr ON
+            tso.so_id = tr.so_id 
+        LEFT JOIN trs_realization_detail trd ON
+            tr.so_id = trd.so_id AND tr.invoice_id = trd.invoice_id AND tr.cont_id = trd.cont_id 
+            WHERE
+	    ms.company_id = ${req.dataToken.company_id} AND mo.status IN (3,4)  ` + status + find + range + order_by_week
+
+            +
+        `GROUP BY tr.invoice_id, tr.cont_id, tr.so_id
+         `
+
+            ;
         // console.log(timestamp, "getRealizationAllIn",
         //     {
         //         page, limit, order_by_week, desc, status, stuffingstart, stuffingend, range, find
