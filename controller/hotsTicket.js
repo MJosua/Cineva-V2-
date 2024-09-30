@@ -290,7 +290,7 @@ module.exports = {
 
 
 
-           
+
             dbHots.query(countQuery, (err, results) => {
 
                 if (err) {
@@ -339,6 +339,8 @@ module.exports = {
 
         let service_id = req.params.service_id
         let ticket_id = req.params.ticket_id
+
+        console.log(req.dataToken)
 
         if (service_id) {
             switch (service_id) {

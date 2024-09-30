@@ -69,13 +69,11 @@ module.exports = {
                     });
                     return;
                 }
-                console.log(results2)
                 res.status(200).send({
                     success: true,
                     message: "GET MENU SUCCESS",
                     data: results2 // include menu data in the response
                 });
-                console.log(timestamp, "GET MENU SUCCESS");
             });
         });
     },
@@ -140,7 +138,6 @@ module.exports = {
                     });
                     return;
                 }
-                console.log(results2)
                 res.status(200).send({
                     success: true,
                     message: "GET MENU SUCCESS",
@@ -173,7 +170,6 @@ module.exports = {
                 console.log(timestamp, "HOTS Get  service category Error: ", err1);
                 return;
             } else {
-                console.log(results1)
                 res.status(200).send({
                     success: true,
                     message: "GET  service category   SUCCESS",
@@ -206,7 +202,6 @@ module.exports = {
                 console.log(timestamp, "HOTS Get Completion Status Error: ", err1);
                 return;
             } else {
-                console.log(results1)
                 res.status(200).send({
                     success: true,
                     message: "GET Completion Status  SUCCESS",
