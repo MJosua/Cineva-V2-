@@ -38,108 +38,79 @@ module.exports = {
 
 
         let query = ` 
-    SELECT
-	DISTINCT 
-    mo.order_id,
-	mco.company_name,
-	mo.delv_week,
-	mo.delv_week_desc,
-	mo.final_dest,
-	mo.delv_year,
-	mo.po_buyer,
-	concat(mh.harbour_name, ", " , st.txt ) port_shipment,
-	mo.ship_to,
-	stp.company_name ,
-	mo.po_buyer,
-	stp.company_name ship_to,
-	mo.po_url,
-	concat(su.firstname, ' ', su.lastname ) created_by,
-	mso.status_order status_name,
-	mso.notes status_detail,
-	mso.id is_status,
-	mct.container_name, 
-    CASE
-        WHEN md.cont_qty = 0 THEN 1
-        ELSE md.cont_qty
-    END cont_qty,
-	DATE_FORMAT(mo.po_date, '%b %d, %Y') created_date,
-	mo.tolling_id,
-	CASE
-        WHEN md.cont_qty = 0 THEN 1
-        ELSE md.cont_qty
-    END cont_qty,
-	CASE
-		WHEN md.cont_size  = 8 THEN ms.detail_id
-		ELSE md.detail_id
-	END detail_id, 
-	CASE
-		WHEN md.cont_size = 8 THEN ms.sku
-		ELSE md.sku1
-	END sku1,
-	CASE
-		WHEN md.cont_size = 8 THEN COALESCE(mps.product_name_no, mps.product_name)
-		ELSE COALESCE(mp1.product_name_no, mp1.product_name)
-	END product_name_1,
-	CASE
-		WHEN md.cont_size = 8 THEN mpls.img 
-		ELSE mpl1.img
-	END url_1,
-	CASE
-		WHEN md.cont_size = 8 THEN ms.qty 
-		ELSE md.qty1
-	END qty1,
-	md.price1,
-	CASE
-		WHEN md.cont_size = 8 THEN mps.product_sku 
-		ELSE mp1.product_sku 
-	END prod_sku_1,
-	md.sku2,
-	COALESCE(mp2.product_name_no, mp2.product_name) product_name_2,
-	mpl2.img url_2,
-	md.qty2,
-	md.price2,
-	mp2.product_sku prod_sku_2,
-	md.sku2,
-	COALESCE(mp3.product_name_no, mp3.product_name) product_name_3,
-	mpl3.img url_3,
-	md.qty3,
-	md.price3,
-	mp3.product_sku prod_sku_3,
-	md.remarks,
-	md.bulk 
-    FROM
-        m_order mo
-    JOIN mst_company mco ON
-        mo.company_id = mco.company_id
-    LEFT JOIN map_port_for_dist mpfd ON
-        mo.port_shipment = mpfd.harbour_id
-        AND mo.company_id = mpfd.distributor_id
-    LEFT JOIN mst_company stp ON
-        stp.company_id = mo.ship_to
-    LEFT JOIN sys_user su ON
-        su.user_id = mo.created_by
-    LEFT JOIN m_order_status mso ON
-        mo.status = mso.id
-    LEFT JOIN m_order_dtl md ON
-        md.order_id = mo.order_id
-    LEFT JOIN mst_container mct ON
-        md.cont_size = mct.container_id
-    LEFT JOIN mst_harbour mh ON
-        mo.port_shipment = mh.harbour_id
-    LEFT JOIN mst_country mc ON
-        mh.country_id = mc.country_name_id
-    LEFT JOIN sys_text st ON
-        mc.country_name_id = st.text_id
-        AND st.lang_id = 1  
-    LEFT JOIN mst_product mp1 ON md.sku1 = mp1.product_code
-	LEFT JOIN mst_product mp2 ON md.sku2 = mp2.product_code
-    LEFT JOIN mst_product mp3 ON md.sku3 = mp3.product_code
-    LEFT JOIN m_product_link mpl1 ON md.sku1 = mpl1.product_code 
-    LEFT JOIN m_product_link mpl2 ON md.sku2 = mpl2.product_code 
-    LEFT JOIN m_product_link mpl3 ON md.sku3 = mpl3.product_code 
-    LEFT JOIN m_summary ms ON mo.order_id  = ms.order_id  
-    LEFT JOIN mst_product mps ON ms.sku = mps.product_code
-    LEFT JOIN m_product_link mpls ON ms.sku = mpls.product_code 
+        SELECT
+        DISTINCT 
+        mo.order_id,
+        mco.company_name,
+        mo.delv_week,
+        mo.delv_week_desc,
+        mo.final_dest,
+        mo.delv_year,
+        mo.po_buyer,
+        concat(mh.harbour_name, ", " , st.txt ) port_shipment,
+        mo.ship_to,
+        stp.company_name ,
+        mo.po_buyer,
+        stp.company_name ship_to,
+        mo.po_url,
+        concat(su.firstname, ' ', su.lastname ) created_by,
+        mso.status_order status_name,
+        mso.notes status_detail,
+        mso.id is_status,
+        mct.container_name, 
+        md.cont_size,
+        CASE
+            WHEN md.cont_qty = 0 THEN 1
+            ELSE md.cont_qty
+        END cont_qty,
+        DATE_FORMAT(mo.po_date, '%b %d, %Y') created_date,
+        mo.tolling_id,
+        CASE
+            WHEN md.cont_qty = 0 THEN 1
+            ELSE md.cont_qty
+        END cont_qty,
+        ms.detail_id,
+        ms.sku,
+        COALESCE(mps.product_name_no, mps.product_name) product_name,
+        mpls.img url,
+        ms.qty,
+        md.price1,
+        mps.product_sku prod_sku,
+        md.remarks,
+        md.bulk 
+        FROM
+            m_order mo
+        JOIN mst_company mco ON
+            mo.company_id = mco.company_id
+        LEFT JOIN map_port_for_dist mpfd ON
+            mo.port_shipment = mpfd.harbour_id
+            AND mo.company_id = mpfd.distributor_id
+        LEFT JOIN mst_company stp ON
+            stp.company_id = mo.ship_to
+        LEFT JOIN sys_user su ON
+            su.user_id = mo.created_by
+        LEFT JOIN m_order_status mso ON
+            mo.status = mso.id
+        LEFT JOIN m_order_dtl md ON
+            md.order_id = mo.order_id
+        LEFT JOIN mst_container mct ON
+            md.cont_size = mct.container_id
+        LEFT JOIN mst_harbour mh ON
+            mo.port_shipment = mh.harbour_id
+        LEFT JOIN mst_country mc ON
+            mh.country_id = mc.country_name_id
+        LEFT JOIN sys_text st ON
+            mc.country_name_id = st.text_id
+            AND st.lang_id = 1  
+        LEFT JOIN mst_product mp1 ON md.sku1 = mp1.product_code
+        LEFT JOIN mst_product mp2 ON md.sku2 = mp2.product_code
+        LEFT JOIN mst_product mp3 ON md.sku3 = mp3.product_code
+        LEFT JOIN m_product_link mpl1 ON md.sku1 = mpl1.product_code 
+        LEFT JOIN m_product_link mpl2 ON md.sku2 = mpl2.product_code 
+        LEFT JOIN m_product_link mpl3 ON md.sku3 = mpl3.product_code 
+        LEFT JOIN m_summary ms ON mo.order_id  = ms.order_id  
+        LEFT JOIN mst_product mps ON ms.sku = mps.product_code
+        LEFT JOIN m_product_link mpls ON ms.sku = mpls.product_code 
     WHERE
         mo.company_id = ${req.dataToken.company_id} ` + status + find + range + order_by_week;
 
@@ -240,7 +211,7 @@ module.exports = {
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
-        let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%') AND mo.company_id = ${req.dataToken.company_id}` : ''
+        let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%')` : ''
 
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
@@ -249,55 +220,93 @@ module.exports = {
 
 
         let query = ` 
- SELECT
-	ms.po_buyer,
-	ms.order_id, 
-	stp.company_name ship_to,
-	concat(mh.harbour_name, ', ', tp.txt) port_of_discharge,
-	mo.delv_week_desc stuffing_week,
-	mp.product_sku product_sku,
-	COALESCE(mp.product_name_no, mp.product_name) product_description,
-	COALESCE(trd.qty, 0) realization_quantity,
-	concat(1 , ' X ', mc2.container_name ) completion_note,
-	DATE_FORMAT(mo.po_date, '%b %d, %Y') po_date,
-	concat(su.firstname, ' ', su.lastname ) submitted_by,
-	mos.status_order order_status,
-	mod2.remarks order_remarks,
-	tr.cont_id container_id,  
-	COALESCE(DATE_FORMAT(tr.delv_date, '%b %d, %Y'), 0) stuffing_date,
-	COALESCE(DATE_FORMAT(tr.etd, '%b %d, %Y'), 0) etd,
-	COALESCE(DATE_FORMAT(tr.eta, '%b %d, %Y'), 0) eta
-FROM
-	m_summary ms
-LEFT JOIN m_order mo ON
-	mo.order_id = ms.order_id
-LEFT JOIN mst_company stp ON
-	mo.ship_to = stp.company_id
-LEFT JOIN mst_harbour mh ON
-	mo.port_shipment = mh.harbour_id
-LEFT JOIN mst_country mc ON
-	mh.country_id = mc.country_id
-LEFT JOIN sys_text tp ON
-	tp.text_id = mc.country_name_id
-	AND tp.lang_id = 1
-LEFT JOIN mst_product mp ON
-	mp.product_code = ms.sku
-LEFT JOIN m_order_dtl mod2 ON
-	mod2.order_id = mo.order_id
-LEFT JOIN mst_container mc2 ON
-	mc2.container_id = mod2.cont_size
-LEFT JOIN sys_user su ON
-	su.user_id = mo.created_by
-LEFT JOIN m_order_status mos ON
-	mos.id = mo.status
-LEFT JOIN trs_sales_order tso ON
-	tso.e_order = mo.order_id
-LEFT JOIN trs_realization tr ON
-	tso.so_id = tr.so_id
-LEFT JOIN trs_realization_detail trd ON
-	tr.so_id = trd.so_id
-WHERE
-	ms.company_id = ${req.dataToken.company_id} AND mo.status IN (3,4)  ` + status + find + range + order_by_week;
+    SELECT po_buyer, order_id, so_id, ship_to, port_of_discharge, stuffing_week, 
+           product_sku, product_description, realization_quantity, completion_note, 
+           po_date, submitted_by, order_status, order_remarks, container_id, 
+           stuffing_date, etd, eta 
+    FROM (
+        SELECT 
+            ms.po_buyer,
+            ms.order_id,
+            tr.so_id, 
+            stp.company_name ship_to,
+            concat(mh.harbour_name, ', ', tp.txt) port_of_discharge,
+            mo.delv_week_desc stuffing_week,
+            mp.product_sku product_sku,
+            COALESCE(mp.product_name_no, mp.product_name) product_description,
+            COALESCE(trd.qty, 0) realization_quantity,
+            concat(1 , ' X ', mc2.container_name ) completion_note,
+            DATE_FORMAT(mo.po_date, '%b %d, %Y') po_date,
+            concat(su.firstname, ' ', su.lastname ) submitted_by,
+            mos.status_order order_status,
+            mod2.remarks order_remarks,
+            tr.cont_id container_id,  
+            COALESCE(DATE_FORMAT(tr.delv_date, '%b %d, %Y'), 0) stuffing_date,
+            COALESCE(DATE_FORMAT(tr.etd, '%b %d, %Y'), 0) etd,
+            COALESCE(DATE_FORMAT(tr.eta, '%b %d, %Y'), 0) eta,
+            mo.delv_week,
+            stp.company_id
+        FROM
+            m_summary ms
+        LEFT JOIN m_order mo ON
+            mo.order_id = ms.order_id
+        LEFT JOIN (SELECT order_id, remarks, cont_size FROM m_order_dtl GROUP BY order_id) mod2 ON
+            mod2.order_id = mo.order_id
+        LEFT JOIN mst_company stp ON
+            mo.ship_to = stp.company_id
+        LEFT JOIN mst_harbour mh ON
+            mo.port_shipment = mh.harbour_id
+        LEFT JOIN mst_country mc ON
+            mh.country_id = mc.country_id
+        LEFT JOIN sys_text tp ON
+            tp.text_id = mc.country_name_id
+            AND tp.lang_id = 1
+        LEFT JOIN mst_product mp ON
+            mp.product_code = ms.sku AND mp.active = 1
+        LEFT JOIN mst_container mc2 ON
+            mc2.container_id = mod2.cont_size
+        LEFT JOIN sys_user su ON
+            su.user_id = mo.created_by
+        LEFT JOIN m_order_status mos ON
+            mos.id = mo.status
+        LEFT JOIN trs_sales_order tso ON
+            tso.e_order = mo.order_id
+        LEFT JOIN trs_realization tr ON
+            tso.so_id = tr.so_id 
+        LEFT JOIN trs_realization_detail trd ON
+            tr.so_id = trd.so_id AND tr.invoice_id = trd.invoice_id AND tr.cont_id = trd.cont_id  AND ms.sku = trd.sku 
+        WHERE
+            ms.company_id = ${req.dataToken.company_id} AND mo.status IN (3,4) 
+        GROUP BY 
+            tr.invoice_id, 
+            tr.cont_id, 
+            tr.so_id, 
+            ms.sku, 
+            ms.po_buyer, 
+            ms.order_id, 
+            stp.company_name, 
+            mh.harbour_name, 
+            tp.txt, 
+            mo.delv_week_desc, 
+            mp.product_sku, 
+            mp.product_name_no, 
+            mp.product_name, 
+            mod2.remarks,  -- Add the necessary columns here
+            mc2.container_name, 
+            mo.po_date, 
+            su.firstname, 
+            su.lastname, 
+            mos.status_order, 
+            stp.company_id, 
+            tr.delv_date, 
+            tr.etd, 
+            tr.eta, 
+            mo.delv_week
+        ORDER BY 
+            tr.invoice_id, tr.cont_id, tr.so_id
+    ) mo 
+    WHERE mo.realization_quantity > 0
+    ` + status + find + range + order_by_week;
         // console.log(timestamp, "getRealizationAllIn",
         //     {
         //         page, limit, order_by_week, desc, status, stuffingstart, stuffingend, range, find
@@ -425,6 +434,7 @@ WHERE
         mct.container_name,
         CASE WHEN md.cont_qty = 0 THEN 1 ELSE md.cont_qty END cont_qty,   
         DATE_FORMAT(mo.po_date, '%b %d, %Y') created_date,
+        mo.po_date,
         mo.tolling_id,
         md.cont_size
     FROM
@@ -452,7 +462,15 @@ WHERE
         mc.country_name_id = st.text_id
         AND st.lang_id = 1
     WHERE
-        mo.company_id = ${req.dataToken.company_id} ` + status + find + range + order_by_week;
+        mo.company_id = ${req.dataToken.company_id} `
+            +
+            status
+            +
+            find
+            +
+            range
+            +
+            order_by_week;
 
         // console.log(timestamp, "getOrderHeader",
         //     {
@@ -580,7 +598,7 @@ WHERE
 
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + "Error getOrderDetail!", err)
+                        console.log(timestamp + "Error getOrderDetail 1!", err)
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get getOrderDetail for: ${req.dataToken.company_id} success `)
@@ -637,6 +655,7 @@ WHERE
                                 mco.company_name,
                                 det.created_by,
                                 su.firstname,
+                                mo.delv_week,
                                 CASE
                                                         WHEN det.cont_size = 8 THEN ms.detail_id
                                     ELSE det.detail_id
@@ -713,7 +732,15 @@ WHERE
                             LEFT JOIN m_product_link mpls ON
                                 ms.sku = mpls.product_code
                             WHERE
-                                det.company_id = ${req.dataToken.company_id}` + status + find + range + order_by_week;
+                                det.company_id = ${req.dataToken.company_id}`
+                    +
+                    status
+                    +
+                    find
+                    +
+                    range
+                    +
+                    order_by_week;
 
                 // console.log(timestamp, "getOrderDetail2",
                 //     {
@@ -724,7 +751,7 @@ WHERE
 
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + "Error getOrderDetail!", err)
+                        console.log(timestamp + "Error getOrderDetail 2!", err)
                     } else {
 
                         if (results) {

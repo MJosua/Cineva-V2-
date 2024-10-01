@@ -83,7 +83,7 @@ module.exports = {
               res.status(500).send(err);
               console.log(timestamp + "Error!", err);
             } else {
-              res.status(200).send(results); 
+              res.status(200).send(results);
               console.log(timestamp + `get cart Header success: ${req.dataToken.user_id}`);
               addSqlLogger(req.dataToken.user_id, '-- query data cart', '-- data cart', 'getCartHeader');
             }
@@ -139,7 +139,7 @@ module.exports = {
             res.status(500).send(err);
             console.log(timestamp + "Error!", err);
           } else {
-            res.status(200).send(results); 
+            res.status(200).send(results);
             console.log(timestamp + `get cart Detail: ${req.dataToken.company_id}`);
             addSqlLogger(req.dataToken.user_id, '-- query data cart', '-- data cart', 'getCartDetail');
           }
@@ -168,13 +168,14 @@ module.exports = {
       //   let { company_id, created_date } = req.body;
       //   let rev_created_date = "'" + created_date + "'";
 
-      let cart_id = req.params.cart_id;
+      let cart_id = req.params.cart_id ? req.params.cart_id : req.query.cart_id;
+      let created_date = req.query.created_date;
 
       console.log(timestamp, "req.params", req.params);
       console.log(timestamp, "cart_id", cart_id);
 
 
-      if (cart_id) {
+      if (cart_id && !created_date) {
 
         let query = `
         DELETE FROM m_cart WHERE cart_id = ?; 
@@ -187,15 +188,55 @@ module.exports = {
           (err, results) => {
             if (err) {
               res.status(500).send(err);
-              console.log(timestamp + "Error while deleteing cart:", err);
+              console.log(timestamp + "Error while deleteing cart using cart_id:", err);
             } else {
               res.status(200).send(results);
-              console.log(timestamp + "delete Cart for : ", req.dataToken.company_id + "| cart_id: " + cart_id);
+              console.log(timestamp + "delete Cart using cart_id for : ", req.dataToken.company_id + "| cart_id: " + cart_id);
               addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), 'deleteCart');
             }
           }
         );
 
+      } else if (!cart_id && created_date) {
+        let query = `
+        DELETE FROM m_cart WHERE created_date = ? AND created_by = ${req.dataToken.user_id}; 
+        
+        DELETE FROM m_cart_dtl WHERE created_date = ? AND created_by = ${req.dataToken.user_id}; 
+        `
+        let parameter = [created_date, created_date];
+
+        dbConf.query(query, parameter,
+          (err, results) => {
+            if (err) {
+              res.status(500).send(err);
+              console.log(timestamp + "Error while deleteing cart using created_date:", err);
+            } else {
+              res.status(200).send(results);
+              console.log(timestamp + "delete Cart using created_date for : ", req.dataToken.user_id + "| created_date: " + created_date);
+              addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), 'deleteCart');
+            }
+          }
+        );
+      } else if (cart_id && created_date) {
+        let query = `
+        DELETE FROM m_cart WHERE created_date = ? AND cart_id = ?; 
+        
+        DELETE FROM m_cart_dtl WHERE created_date = ? AND cart_id = ?; 
+        `
+        let parameter = [created_date, cart_id, created_date, cart_id];
+
+        dbConf.query(query, parameter,
+          (err, results) => {
+            if (err) {
+              res.status(500).send(err);
+              console.log(timestamp + "Error while deleteing cart using created_date:", err);
+            } else {
+              res.status(200).send(results);
+              console.log(timestamp + "delete Cart using created_date for : ", req.dataToken.company_id + "| created_date: " + created_date);
+              addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), 'deleteCart');
+            }
+          }
+        );
       } else {
         res.status(200).send();
         console.log(timestamp + "cart is not deleted :/ ");
@@ -570,7 +611,7 @@ module.exports = {
     */
 
     let cart = req.body.cart
- 
+
 
     async function generate_cart_id(year) {
 
@@ -655,7 +696,7 @@ module.exports = {
 
           cartIndex++;
 
-          let cart_id = cart_id_raw + cartIndex; 
+          let cart_id = cart_id_raw + cartIndex;
 
           let {
             po_buyer,
@@ -675,7 +716,7 @@ module.exports = {
           let tolling_id = cart_data.tolling_id ? cart_data.tolling_id : 0;
 
           let stuffing_date_rev = cart_data.stuffing_date ? cart_data.stuffing_date : formattedDate;
-          let final_dest_check = final_dest ? final_dest : 0;
+          let final_dest_check = final_dest ? final_dest : "-";
 
           let id_year = parseInt(delv_year.toString() + delv_week.toString())
 
@@ -692,9 +733,9 @@ module.exports = {
         `
 
           let parameter = [
-            cart_id, company_id, delv_week, delv_week_desc, 
+            cart_id, company_id, delv_week, delv_week_desc,
             delv_year, id_year, po_buyer,
-            port_shipment, ship_to, po_url, 
+            port_shipment, ship_to, po_url,
             user_id, stuffing_date_rev, final_dest_check, tolling_id
           ]
 
@@ -713,7 +754,7 @@ module.exports = {
 
                 //memasukkan detailll
                 for (const detail of (cart_data.detail)) {
-  
+
                   let queryDetail = ` INSERT INTO m_cart_dtl
                   (cart_id, company_id, created_by, detail_id, 
                     cont_size, cont_qty, 
@@ -762,7 +803,7 @@ module.exports = {
             }
           );
 
-          
+
 
         }
         setTimeout(() => {

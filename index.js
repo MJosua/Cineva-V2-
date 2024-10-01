@@ -17,11 +17,18 @@
 // SEBELUM KITA MEMULAI KODINGAN INI, 
 // MARILAH KITA JALANI HIDUP SAMBIL MISHUH-MISUH
 
+// const greenColor = '\x1b[32m'; // Green
+// const blueColor = '\x1b[34m'; // Blue
+// const redColor = '\x1b[31m'; // Red
+// const yellowColor = '\x1b[33m'; // Yellow
+// const purpleColor = '\x1b[35m'; // Purple
+// const reset = '\\x1b[0m';
+
 const express = require("express");
 const App = express();
 const bearerToken = require("express-bearer-token");
 const helmet = require("helmet");
-
+const cookieParser = require('cookie-parser');
 // API CONFIG FOR SERVER 104 (i2i join)
 const https = require('https');
 const fs = require('fs');
@@ -50,11 +57,16 @@ App.use(
   })
 );
 App.use(cors());
+
+// App.use(cors({
+//   origin: 'https://www.indofoodinternational.com/', // Sesuaikan dengan URL frontend Anda
+//   credentials: true // Izinkan pengiriman kredensial
+// }));
 App.use(helmet());
 App.use(express.json());
 App.use(express.static("./public"));
 App.use(bearerToken());
-
+App.use(cookieParser());
 
 
 // API CONFIG FOR SERVER 104 (i2i join deploy)
@@ -85,7 +97,11 @@ const {
   trademarkRouter,
   authRouterTest,
   productRouterTest,
-  cardGenerator
+  cardGenerator,
+  hotsAuth,
+  hotsAdmin,
+  hotsTicket,
+  hotsSettings
 } = require("./routers");
 
 // Auth: 
@@ -118,6 +134,19 @@ App.use("/tm_card", trademarkRouter);
 //Card Generator:
 App.use("/card_generator", cardGenerator);
 
+//hots_auth
+App.use("/hots_auth", hotsAuth);
+
+//hots_admin
+App.use("/hots_admin", hotsAdmin);
+
+//hots_ticket
+App.use("/hots_ticket", hotsTicket);
+
+//hots_settings
+App.use("/hots_settings", hotsSettings);
+
+
 // ========= for test program ============
 
 // Auth_test: 
@@ -144,9 +173,9 @@ App.get("/", (req, res) => {
 //DB CONNECTION CHECK
 const {
   dbConf,
-  dbTM, 
+  dbTM,
   dbIndomieku,
-  dbCardGeneratorCardGenerator,
+  dbHots,
   dbCardGenerator
 } = require("./config/db");
 
@@ -172,6 +201,13 @@ dbCardGenerator.getConnection((error, connection) => {
   console.log(`DB Card Generator has been connected ${connection.threadId}`);
 });
 
+dbHots.getConnection((error, connection) => {
+  if (error) {
+    console.log("Error DB HOTS Connection!", error.sqlMessage);
+  }
+  console.log(`DB HOTS has been connected ${connection.threadId}`);
+});
+
 /*
 dbIndomieku.getConnection((error, connection) => {
   if (error) {
@@ -190,13 +226,13 @@ dbIndomieku.getConnection((error, connection) => {
 const {
   trademarkMgmtAuto,
   notification
-  
+
 } = require('./automation');
 
-trademarkMgmtAuto.runCheck(); 
+trademarkMgmtAuto.runCheck();
 notification.shippingMailNotification();
 notification.callInsertSO();
- 
+
 
 //============================= UPDATE REGISTER =============================
 /**

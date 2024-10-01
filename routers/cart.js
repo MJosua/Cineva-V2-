@@ -19,6 +19,7 @@ route.post('/add_cart', readToken, cartController.addCart)
 
 //modify
 route.delete('/delete/:cart_id', readToken, cartController.delete)
+route.delete('/delete', readToken, cartController.delete)
 route.patch('/edit_header', readToken, cartController.editCartHeader)
 route.patch('/edit_detail', readToken, cartController.editCartDetail)
 

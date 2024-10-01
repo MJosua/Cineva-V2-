@@ -68,6 +68,16 @@ const dbCardGenerator = mysql.createPool({
 
 const dbQueryCardGenerator = util.promisify(dbCardGenerator.query).bind(dbCardGenerator);
 
+const dbHots = mysql.createPool({
+    // connectionLimit : 20, 
+    multipleStatements: true,
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME_HT
+});
+
+const dbQueryHots = util.promisify(dbHots.query).bind(dbHots);
 
 /**
  * 
@@ -102,6 +112,7 @@ module.exports = {
     dbTM, dbTMQuery,
     dbIndomieku, dbQueryIndomieku,
     dbCardGenerator, dbQueryCardGenerator,
+    dbHots, dbQueryHots,
     addSqlLogger
 
 }

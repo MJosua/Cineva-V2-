@@ -1,17 +1,20 @@
-const authRouter = require('./auth') 
-const authTmRouter = require('./authTM') 
+const authRouter = require('./auth')
+const authTmRouter = require('./authTM')
 const cartRouter = require('./cart')
 const userRouter = require('./user')
 const orderRouter = require('./order')
 const productRouter = require('./product')
 const adminRouter = require('./admin')
 const spectatorRouter = require('./spectator')
-const trademarkRouter= require('./trademark')
-const authRouterTest = require('./auth_test')  
-const productRouterTest = require('./product_test') 
+const trademarkRouter = require('./trademark')
+const authRouterTest = require('./auth_test')
+const productRouterTest = require('./product_test')
 const cardGenerator = require('./cardGenerator')
 const hotsAuth = require('./hotsAuth')
-
+const hotsAdmin = require('./hotsAdmin')
+const hotsTicket = require('./hotsTicket')
+const hotsSettings = require('./hotsSettings')
+    
 module.exports = {
     authRouter,
     authTmRouter,
@@ -22,8 +25,11 @@ module.exports = {
     adminRouter,
     spectatorRouter,
     trademarkRouter,
-    authRouterTest, 
+    authRouterTest,
     productRouterTest,
-	cardGenerator,
-    hotsAuth
+    cardGenerator,
+    hotsAuth,
+    hotsAdmin,
+    hotsTicket,
+    hotsSettings
 } 

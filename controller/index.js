@@ -11,7 +11,9 @@ const authControllerTest = require('./auth_test')
 const productControllerTest = require('./product_test')
 const cardGenerator = require('./cardGenerator')
 const hotsAuth = require('./hotsAuth')
-
+const hotsAdmin = require('./hotsAdmin')
+const hotsTicket = require('./hotsTicket')
+const hotsSettingsController = require('./hotsSettingsController')
 module.exports = {
     authController,
     authTmController,
@@ -25,5 +27,9 @@ module.exports = {
     authControllerTest,
     productControllerTest,
     cardGenerator,
-    hotsAuth
+    hotsAuth,
+    hotsAdmin,
+    hotsTicket,
+    hotsSettingsController,
+
 };
