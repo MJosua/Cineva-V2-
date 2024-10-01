@@ -103,8 +103,7 @@ module.exports = {
         jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY_HT, (err, decode) => {
              
             if (err) {
-                console.log("Invalid Token Read Token HT", req.token);
-
+                console.log("Invalid Token Read Token HT");
                 return res.status(401).send({
                     message: 'UNAUTHORIZED!'
                 })

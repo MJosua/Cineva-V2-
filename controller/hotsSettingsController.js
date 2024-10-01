@@ -112,7 +112,7 @@ module.exports = {
             const role_id = results1[0].role_id;
 
             // Query to get the menu based on the role
-            const queryGetMenu = `
+            let queryGetMenu = `
             SELECT *
             FROM service
             `;
