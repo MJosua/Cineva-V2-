@@ -60,23 +60,47 @@ module.exports = {
       if (req.dataToken.user_id) {
         dbConf.query(
           `
-            SELECT DISTINCT 
-            mc.cart_id, mc.ship_to , mco.company_name, mc.delv_week, mc.delv_week_desc, mc.delv_year, mc.id_year,
-            mc.po_buyer, mc.final_dest , mc.po_buyer, stp.company_name , 
-            mc.po_url, su.firstname  created_by, mcd.cont_size, 
-            mcd.cont_qty, mct.container_name, 
-            date_format(mc.created_date,'%Y-%m-%d-%T ') created_date,
-            mc.port_shipment, mpfd.harbour_id, mc.stuffing_date
-            FROM 
-                    m_cart mc
-                    JOIN mst_company mco ON mc.company_id = mco.company_id  
-                    LEFT JOIN map_port_for_dist mpfd ON mc.port_shipment = mpfd.harbour_id 
-                    AND mc.company_id  = mpfd.distributor_id  
-                    LEFT JOIN mst_company stp ON stp.company_id = mc.ship_to 
-                    LEFT JOIN sys_user su ON su.user_id = mc.created_by 
-                    LEFT JOIN m_cart_dtl mcd ON mc.cart_id = mcd.cart_id 
-                    LEFT JOIN mst_container mct ON mct.container_id = mcd.cont_size 
-                    WHERE mc.created_by  = ${req.dataToken.user_id} ;
+          select
+	distinct 
+                    mc.cart_id,
+	mc.ship_to ,
+	mco.company_name,
+	mc.delv_week,
+	mc.delv_week_desc,
+	mc.delv_year,
+	mc.id_year,
+	mc.po_buyer,
+	mc.final_dest ,
+	mc.po_buyer,
+	stp.company_name ,
+	mc.po_url,
+	su.firstname created_by,
+	mcd.cont_size,
+	mcd.cont_qty,
+	mct.container_name,
+	date_format(mc.created_date, '%Y-%m-%d-%T ') created_date,
+	mc.port_shipment,
+	mpfd.harbour_id,
+	mc.stuffing_date,
+	mh.harbour_name
+from
+	m_cart mc
+join mst_company mco on
+	mc.company_id = mco.company_id
+left join map_port_for_dist mpfd on
+	mc.port_shipment = mpfd.harbour_id
+	and mc.company_id = mpfd.distributor_id
+left join mst_company stp on
+	stp.company_id = mc.ship_to
+left join sys_user su on
+	su.user_id = mc.created_by
+left join m_cart_dtl mcd on
+	mc.cart_id = mcd.cart_id
+left join mst_container mct on
+	mct.container_id = mcd.cont_size
+left join mst_harbour mh on mpfd.harbour_id = mh.harbour_id 
+where
+	mc.created_by = ${req.dataToken.user_id} ;
                         `,
           (err, results) => {
             if (err) {
