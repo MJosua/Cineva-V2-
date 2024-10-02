@@ -26,7 +26,7 @@ module.exports = {
                                 u.employee_id,
                                 u.firstname,
                                 u.lastname,
-                                u.type_id,
+                                u.role_id,
                                 u.uid,
                                 u.active,
                                 u.login_attempt
@@ -90,9 +90,9 @@ module.exports = {
                                                 u.role_id = r.role_id
                                             LEFT JOIN department d ON
                                                 u.department_id = d.department_id
-                                                WHERE
+                                            WHERE
                                                 uid = ?
-                                                AND pswd = ?
+                                                AND password = ?
                                                 AND u.role_id IN (1, 2, 4)
                      `
                         let paramMatchUidPswd = [uid, asin]
