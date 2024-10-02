@@ -5,9 +5,16 @@ const { hotsSettingsController } = require('../controller');
 
 
 route.get('/get_menu', decodeTokenHT, hotsSettingsController.getmenu)
+route.get('/get_menu_active', decodeTokenHT, hotsSettingsController.getserviceactive)
+route.get('/get_menu_inactive', decodeTokenHT, hotsSettingsController.getserviceinactive)
+route.post('/toggle_menu', decodeTokenHT, hotsSettingsController.setserviceactivestatus)
+
+
 route.get('/get_service', decodeTokenHT, hotsSettingsController.getservice)
 route.get('/get_category', decodeTokenHT, hotsSettingsController.getcategory)
 route.get('/get_completionstatus', decodeTokenHT, hotsSettingsController.getcompletionstatus)
+
+
 
 module.exports = route
 
