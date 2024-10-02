@@ -115,6 +115,8 @@ module.exports = {
             let queryGetMenu = `
             SELECT *
             FROM service
+            where
+            active = 1
             `;
 
             if (role_id !== 4) {
@@ -147,6 +149,153 @@ module.exports = {
             });
         });
     },
+
+    getserviceactive: (req, res) => {
+
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        let user_id = req.dataToken.user_id
+
+        // cari username dulu
+
+
+        // Query to get the menu based on the role
+        let queryGetMenu = `
+            SELECT *
+            FROM service
+            where
+            active = 1
+            `;
+
+        dbHots.execute(queryGetMenu, (err2, results2) => {
+            if (err2) {
+                res.status(502).send({
+                    success: false,
+                    message: err2
+                });
+                console.log(timestamp, "HOTS Menu Fetch Error: ", err2);
+                return;
+            }
+
+            if (!results2.length) {
+                res.status(404).send({
+                    success: false,
+                    message: 'Menu not found!'
+                });
+                return;
+            }
+            res.status(200).send({
+                success: true,
+                message: "GET MENU Active SUCCESS",
+                data: results2 // include menu data in the response
+            });
+            console.log(timestamp, "GET MENU SUCCESS");
+        });
+        ;
+    },
+
+    getserviceinactive: (req, res) => {
+
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        let user_id = req.dataToken.user_id
+
+        // cari username dulu
+
+
+        // Query to get the menu based on the role
+        let queryGetMenu = `
+            SELECT *
+            FROM service
+            where
+            active = 0
+            `;
+
+        dbHots.execute(queryGetMenu, (err2, results2) => {
+            if (err2) {
+                res.status(502).send({
+                    success: false,
+                    message: err2
+                });
+                console.log(timestamp, "HOTS Menu Fetch Error: ", err2);
+                return;
+            }
+
+            if (!results2.length) {
+                res.status(404).send({
+                    success: false,
+                    message: 'Menu not found!'
+                });
+                return;
+            }
+            res.status(200).send({
+                success: true,
+                message: "GET MENU In-Active SUCCESS",
+                data: results2 // include menu data in the response
+            });
+            console.log(timestamp, "GET MENU SUCCESS");
+        });
+        ;
+    },
+
+
+    setserviceactivestatus: (req, res) => {
+
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        let service_ids = req.body.service_ids; // Array of service IDs
+        let nextStatus = req.body.nextStatus;
+        // cari username dulu
+
+        if (!Array.isArray(service_ids) || service_ids.length === 0) {
+            return res.status(400).send({
+                success: false,
+                message: "Please Check the Selected Service"
+            });
+        }
+
+        // Query to get the menu based on the role
+        let queryGetMenu = `
+        UPDATE service
+        SET active = ?
+        WHERE service_id IN (${service_ids.map(() => '?').join(', ')})
+        `;
+
+        let params = [nextStatus, ...service_ids];
+
+        dbHots.execute(queryGetMenu, params, (err2, results2) => {
+            if (err2) {
+                console.log("queryGetMenu")
+                console.log(nextStatus, service_id)
+
+                res.status(502).send({
+                    success: false,
+                    message: err2
+                });
+                console.log(timestamp, "HOTS Menu Fetch Error: ", err2);
+                return;
+            }
+
+            if (results2.affectedRows === 0) {
+                res.status(404).send({
+                    success: false,
+                    message: 'Menu not found!'
+                });
+                return;
+            }
+            res.status(200).send({
+                success: true,
+                message: "GET MENU SUCCESS",
+                data: results2 // include menu data in the response
+            });
+            console.log(timestamp, "Set Service Status nextStatus SUCCESS");
+        });
+        ;
+    },
+
     getcategory: (req, res) => {
 
         let date = new Date();

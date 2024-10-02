@@ -90,20 +90,20 @@ module.exports = {
                                                 u.role_id = r.role_id
                                             LEFT JOIN department d ON
                                                 u.department_id = d.department_id
-                                            WHERE
-                                                uid = 'fartam'
-                                                AND asin = 'b6fc7d0ebea5a77b0322378a3bf1de6beb47dd321f6d9c6118af3b03bcef00f5'
+                                                WHERE
+                                                uid = ?
+                                                AND pswd = ?
                                                 AND u.role_id IN (1, 2, 4)
                      `
-                        let paramMatchUidPswd = [uid, hashPasswordHT(asin)]
+                        let paramMatchUidPswd = [uid, asin]
 
                         dbHots.execute(queryMatchUidPswd, paramMatchUidPswd, (err2, results2) => {
 
                             if (err2) {
 
-                                res.status(500).send({
+                                res.status(501).send({
                                     success: false,
-                                    message: err2,
+                                    message: 'Username and Password Combination is not correct!',
                                     userData: {},
                                     tokek: ''
                                 })

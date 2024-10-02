@@ -312,7 +312,7 @@ module.exports = {
 
             destination: (req, file, cb) => {
 
-  
+
                 let fileIsExist = req.files[0]
                 console.log("fileIsExist", fileIsExist)
 
@@ -339,23 +339,23 @@ module.exports = {
             },
             filename: (req, file, cb) => {
 
-                let userData = jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY, (err, decode) => {
+                let userData = jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY_HT, (err, decode) => {
                     if (err) {
                         console.log("ERROR IN AUTH at upload")
                     }
                     return decode
                 })
-
+                console.log("userData",userData)
                 let ext = file.originalname.split('.');
 
 
                 let time = new Date;
                 let timestamp = time.toLocaleDateString('sv-SE') + '-' + Date.now()
 
-                let user_id = userData.user_id + '-'
+                let user_id = `${userData.user_id}-`
 
 
-                let newName = filePrefix + file.originalname + user_id + timestamp + '.' + ext[ext.length - 1];
+                let newName = user_id + timestamp + '.' + ext[ext.length - 1];
 
                 cb(null, newName);
 
@@ -365,16 +365,21 @@ module.exports = {
             }
         })
 
-        const fileFilter = (file, cb) => {
-            const extFilter = /\.(pdf|xls|xlsx|doc|docx|jpg|jpeg|png|)$/i;
+        const fileFilter = (req, file, cb) => {
+            const extFilter = /\.(pdf|xls|xlsx|doc|docx|jpg|jpeg|png)$/i;
 
-
-            if (file.originalname.toLowerCase().match(extFilter)) {
-                cb(null, true)
+            if (file.originalname && typeof file.originalname === 'string') {
+                if (file.originalname.toLowerCase().match(extFilter)) {
+                    console.log(`File passed: ${file.originalname}`); // Log the file name
+                    cb(null, true);  // Accept the file
+                } else {
+                    console.log(`File rejected: ${file.originalname}`); // Log the rejected file name
+                    cb(new Error('Your file extension is denied ❌'), false);  // Reject the file
+                }
             } else {
-                cb(new Error('Your file ext are denied ❌', false));
+                cb(new Error('File originalname is invalid'), false);  // Handle missing or invalid file name
             }
-        }
+        };
 
         return multer({ storage: storageUploader, fileFilter })
     },
