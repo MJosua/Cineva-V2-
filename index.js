@@ -146,7 +146,7 @@ App.use("/hots_ticket", hotsTicket);
 //hots_settings
 App.use("/hots_settings", hotsSettings);
 
-
+App.use('/public', express.static(path.join(__dirname, 'public')));
 // ========= for test program ============
 
 // Auth_test: 
