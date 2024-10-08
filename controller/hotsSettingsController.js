@@ -115,8 +115,6 @@ module.exports = {
             let queryGetMenu = `
             SELECT *
             FROM service
-            where
-            active = 1
             `;
 
             if (role_id !== 4) {
@@ -147,6 +145,66 @@ module.exports = {
                 });
                 console.log(timestamp, "GET MENU SUCCESS");
             });
+        });
+    },
+
+    getmember: (req, res) => {
+        const date = new Date();
+        const timestamp = date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ';
+
+        const team_id = req.params.team_id;
+
+        // Check if team_id is valid
+        if (!team_id) {
+            res.status(400).send({
+                success: false,
+                message: 'Invalid team ID!'
+            });
+            console.log(timestamp, "HOTS Member Fetch Error: Invalid team ID");
+            return;
+        }
+
+        const queryGetMember = `
+        select
+        tm.*,
+        CONCAT(u.firstname, ' ', u.lastname) as fullname
+        from
+            team_member tm
+        join 
+            user u on
+            tm.user_id = u.user_id
+        where
+            tm.team_id = ?
+            and 
+            tm.team_leader = 0;
+        `;
+
+        dbHots.execute(queryGetMember, [team_id], (err, results) => {
+            if (err) {
+                res.status(502).send({
+                    success: false,
+                    message: 'Database query error',
+                    error: err
+                });
+                console.log(timestamp, "HOTS Member Fetch Error: ", err);
+                return;
+            }
+
+            if (!results.length) {
+                res.status(405).send({
+                    success: false,
+                    message: 'No members found for the given team ID!'
+                });
+                console.log(timestamp, "GET MEMBER: No members found.");
+                return;
+            }
+
+            res.status(200).send({
+                success: true,
+                message: "GET MEMBER SUCCESS",
+                data: results // include member data in the response
+            });
+            console.log(timestamp, "GET MEMBER SUCCESS");
         });
     },
 
@@ -328,6 +386,51 @@ module.exports = {
             }
         });
     },
+
+
+    getsuperior: (req, res) => {
+
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        let user_id = req.dataToken.user_id
+
+        // cari username dulu
+        const queryGetSuperior = `
+        SELECT
+            u.superior_id,
+            CONCAT(us.firstname, " ", us.lastname) AS manager,
+            u.final_superior_id,
+            CONCAT(uf.firstname, " ", uf.lastname) AS bod
+        FROM
+            user u
+        LEFT JOIN
+            user us ON us.user_id = u.superior_id
+        LEFT JOIN
+            user uf ON uf.user_id = u.final_superior_id
+        WHERE
+            u.user_id = ?
+        `;
+
+        dbHots.execute(queryGetSuperior, [user_id], (err1, results1) => {
+            if (err1) {
+                res.status(500).send({
+                    success: false,
+                    message: err1
+                });
+                console.log(timestamp, "HOTS Get  Superior Error: ", err1);
+                return;
+            } else {
+                res.status(200).send({
+                    success: true,
+                    message: "GET  Superior   SUCCESS",
+                    data: results1 // include menu data in the response
+                });
+                console.log(timestamp, "GET  Superior   SUCCESS");
+            }
+        });
+    },
+
     getcompletionstatus: (req, res) => {
 
         let date = new Date();

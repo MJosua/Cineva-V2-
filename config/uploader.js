@@ -304,7 +304,7 @@ module.exports = {
     hotsITSupport: (req, directory, filePrefix) => {
 
         // Define lokasi default directory
-        let defaultDir = './public/hots/';
+        let defaultDir = './public/files/hots/';
 
 
         // Konfigurasi untuk multer
