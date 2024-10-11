@@ -217,12 +217,18 @@ module.exports = {
                                                 u.superior_id,
                                                 u.nik,
                                                 (
-                                                select distinct 
-                                                    JSON_ARRAYAGG(u2.superior_id)
-                                                from
-                                                    user u2
-                                                where 
-                                                superior_id is not null 
+                                                    SELECT JSON_ARRAYAGG(element) AS combined_data
+                                                    FROM (
+                                                        SELECT u2.superior_id AS element
+                                                        FROM user u2
+                                                        WHERE u2.superior_id IS NOT NULL
+                                                    
+                                                        UNION ALL
+                                                    
+                                                        SELECT t.assigned_to  AS element
+                                                        FROM ticket t
+                                                        WHERE t.assigned_to  IS NOT NULL
+                                                    ) AS combined
                                                 ) as team_leader_user_id
                                             FROM
                                                 user u
