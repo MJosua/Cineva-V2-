@@ -5,6 +5,9 @@ const {
 } = require("../config/db");
 const { param } = require("../routers/auth");
 const { uploadFile } = require("./order");
+
+const { io } = require('../index');
+
 const hotsCheckApprovalLevel = require("../config/hotsCheckApprovalLevel");
 // const { generateTokenHT, hashPasswordHT } = require("../config/encrypts"); 
 
@@ -1438,7 +1441,7 @@ module.exports = {
                                     'sender_id', a.user_id, 
                                     'text', a.comment,
                                     'sender', CONCAT(u.firstname, " ", u.lastname),
-                                    'date_created', DATE_FORMAT(a.date_created, '%Y-%m-%d %H:%i:%s') -- Format date
+                                    'date_created', DATE_FORMAT(a.date_created, '%Y-%m-%d %H:%i') -- Format date
                                 )
                             )
                         FROM
@@ -1469,7 +1472,6 @@ module.exports = {
                     }
 
                     if (results.length > 0 && results[0].comment_list) {
-                        console.log(timestamp, `getTicketComment success for ID ${ticket_id}`);
 
                         return res.status(200).send({
                             success: true,
@@ -1478,7 +1480,7 @@ module.exports = {
                         });
                     } else {
                         console.log(timestamp, `getTicketComment success with empty list for ID ${ticket_id}`);
-                       
+
                         return res.status(404).send({
                             success: false,
                             message: "No data found",
@@ -1505,7 +1507,105 @@ module.exports = {
             });
         }
 
+    },
+    setTicketComment: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = magenta + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ';
+        let ticket_id = req.params.ticket_id;
+
+        let comment = req.body.comment;
+
+        let user_id = req.dataToken.user_id;
+        if (req.dataToken && req.dataToken.user_id) {
+
+            if (ticket_id) {
+
+
+                let commentCount =
+                    `
+                    select
+                        COUNT(*) as comment_count
+                    from
+                        comment c
+                    where
+                        c.ticket_id = ?
+                    `
+                dbHots.query(commentCount, [ticket_id], (err, results) => {
+
+                    if (err) {
+                        console.error(timestamp, "Error Creating setOpenTiketCount", err);
+                        return res.status(501).send({
+                            success: false,
+                            message: "Internal server error",
+                            error: err
+                        });
+                    } else {
+
+                        let ticket_order = results[0].comment_count + 1
+
+                        let commentQuery =
+
+                            `
+    
+                        INSERT 
+                        INTO 
+                        comment
+                        ( comment_id, ticket_id, user_id, comment, date_created)
+                        VALUES
+                        ( ?, ?, ?, ?, NOW() );          
+                                        
+                          `
+
+
+
+                        dbHots.query(commentQuery, [ticket_order, ticket_id, user_id, comment], (err, results) => {
+
+                            if (err) {
+                                console.error(timestamp, "Error Creating setOpenTiketCount", err);
+                                return res.status(500).send({
+                                    success: false,
+                                    message: "Internal server error",
+                                    error: err
+                                });
+                            } else {
+                                
+                                return res.status(200).send({
+                                    success: true,
+                                    message: "Comment added successfully"
+                                });
+                            }
+                        })
+
+
+                    }
+                })
+
+
+
+
+
+            } else {
+                console.warn(timestamp, "Creating setOpenTiketCount Unauthorized");
+                return res.status(404).send({
+                    success: false,
+                    message: "404 error no data with that ticket ID"
+                });
+            }
+
+
+
+
+        } else {
+            console.warn(timestamp, "Creating setOpenTiketCount Unauthorized");
+            return res.status(401).send({
+                success: false,
+                message: "Unauthorized access"
+            });
+        }
+
     }
+
 
 
 }

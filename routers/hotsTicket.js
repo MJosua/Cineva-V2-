@@ -21,6 +21,8 @@ route.get('/all_tiket', decodeTokenHT, hotsTicket.getAllTiket)
 route.get('/task_list', decodeTokenHT, hotsTicket.getTaskList)
 
 route.get('/comment/:ticket_id', decodeTokenHT, hotsTicket.getTicketComment)
+route.post('/comment/:ticket_id', decodeTokenHT, hotsTicket.setTicketComment)
+
 
 route.get('/fullfilled_tiket_count', decodeTokenHT, hotsTicket.getFullFilledTiketCount)
 route.get('/open_tiket_count', decodeTokenHT, hotsTicket.getOpenTiketCount)
