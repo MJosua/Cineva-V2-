@@ -3,7 +3,7 @@
 /**
  * IOD INTEGRATED API:
  * ADALAH API YANG MENGAKOMODASIKAN BERBAGAI WEBAPPP IOD UNTUK DIGUNAKAN SECARA BERSAMA-SAMA DAN TERINTEGRASI
- * API INI DIBAGUN BERDASARKAN API ONLINE ORDER YANG DIKEMBANGKAN UNTUK MENYEDIAKAN BERBAGAI 
+ * API INI DIBANGUN BERDASARKAN API ONLINE ORDER YANG DIKEMBANGKAN UNTUK MENYEDIAKAN BERBAGAI 
  * APLIKASI YANG TERINTEGRASI DAN TIDAK TERINTEGRASI DENGAN BEBERAPA DATABASE MAUPUN BERDIRI SENDIRI
  * 
  * APLIKASI INI TIDAK DIPERKENANKAN UNTUK DIBAGIKAN MAUPUN DIGUNAKAN DALAM KEPERLUAN PENGEMBANGAN 
@@ -23,20 +23,23 @@
 // const yellowColor = '\x1b[33m'; // Yellow
 // const purpleColor = '\x1b[35m'; // Purple
 // const reset = '\\x1b[0m';
-
 const express = require("express");
 const App = express();
+const { Server } = require("socket.io")
+
 const bearerToken = require("express-bearer-token");
 const helmet = require("helmet");
 const cookieParser = require('cookie-parser');
 // API CONFIG FOR SERVER 104 (i2i join)
 const https = require('https');
+const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
 const dotenv = require("dotenv");
-const cors = require("cors");
 dotenv.config();
+
+const cors = require("cors");
 
 const session = require("express-session");
 
@@ -45,40 +48,89 @@ const SSL = {
   cert: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_CERT))
 };
 
-const svr = https.createServer(SSL, App);
-const PORT = process.env.PORT_SSL; // or any other port number you prefer
 
+
+// const svr = https.createServer(SSL, App);
+const svr = http.createServer(App);
+
+
+
+const io = new Server(
+  svr,
+  {
+    cors: {
+      origin: "*"
+    },
+    connectionStateRecovery: {
+      // the backup duration of the sessions and the packets
+      maxDisconnectionDuration: 2 * 60 * 1000,
+      // whether to skip middlewares upon successful recovery
+      skipMiddlewares: true,
+    }
+
+  },
+
+
+);
+
+
+
+const PORT = process.env.PORT_SSL; // or any other port number you prefer
 
 App.use(
   session({
     resave: false,
     saveUninitialized: true,
     secret: "SECRET",
+    cookie: { secure: true }
   })
 );
-App.use(cors());
 
-// App.use(cors({
-//   origin: 'https://www.indofoodinternational.com/', // Sesuaikan dengan URL frontend Anda
-//   credentials: true // Izinkan pengiriman kredensial
-// }));
-App.use(helmet());
+App.use(cors({
+  origin: '*',
+}));
+
+App.use((req, res, next) => {
+  res.set({
+    'Cross-Origin-Resource-Policy': 'cross-origin',
+    'Cross-Origin-Opener-Policy': 'cross-origin', // if needed
+  });
+  next();
+});
+
+App.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },  // Override default policy
+}));
 App.use(express.json());
 App.use(express.static("./public"));
 App.use(bearerToken());
 App.use(cookieParser());
 
-
-// API CONFIG FOR SERVER 104 (i2i join deploy)
-
 svr.listen(PORT, () => {
   console.log(`INTEGRATED API SSL Server running on port ${PORT}`);
 });
 
-// END OF API CONFIG FOR SERVER 104 (i2i join deploy)
+io.on('connection', (socket) => {
 
-// ==> MYSQL 1
-// var connection = mysql.createConnection({ multipleStatements: true });
+
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
+  });
+
+  socket.on('message', (msg) => {
+    io.emit('message', msg);
+  });
+
+  if (socket.recovered) {
+    console.log("Recovery was successful: socket.id, socket.rooms, and socket.data were restored");
+  } else {
+  }
+
+  socket.on('error', (err) => {
+    console.error(`Socket error on ${socket.id}: ${err.message}`);
+  });
+
+});
 
 
 
@@ -116,53 +168,75 @@ App.use("/cart", cartRouter);
 // User: 
 App.use("/user", userRouter);
 
-//Product: 
+// Product: 
 App.use("/product", productRouter);
 
-//Order: 
+// Order: 
 App.use("/order", orderRouter);
 
-//admin: 
+// Admin: 
 App.use("/admin", adminRouter);
 
-//spectator:
+// Spectator:
 App.use("/spectator", spectatorRouter);
 
-//trademark:
+// Trademark:
 App.use("/tm_card", trademarkRouter);
 
-//Card Generator:
+// Card Generator:
 App.use("/card_generator", cardGenerator);
 
-//hots_auth
+// Hots Auth
 App.use("/hots_auth", hotsAuth);
 
-//hots_admin
+// Hots Admin
 App.use("/hots_admin", hotsAdmin);
 
-//hots_ticket
+// Hots Ticket
 App.use("/hots_ticket", hotsTicket);
 
-//hots_settings
+// Hots Settings
 App.use("/hots_settings", hotsSettings);
 
 App.use('/public', express.static(path.join(__dirname, 'public')));
+
+
+App.use('/public/files/hots/it_support', express.static(path.join(__dirname, 'public', 'files', 'hots', 'it_support')));
+
+App.get('/public/files/hots/it_support/:imageId', (req, res) => {
+  const imageId = req.params.imageId;
+  const imagePath = path.join(__dirname, 'public', 'files', 'hots', 'it_support', imageId);
+
+  // Set the required headers
+  res.set({
+    'Content-Type': 'image/jpeg',  // Adjust based on image type (png, gif, etc.)
+    'Cross-Origin-Resource-Policy': 'cross-origin',  // Allow sharing across origins
+  });
+
+  // Send the image file
+  res.sendFile(imagePath, (err) => {
+    if (err) {
+      console.error('Error serving image:', err);
+      res.status(404).send('Image not found');
+    }
+  });
+});
+
 // ========= for test program ============
 
 // Auth_test: 
 //App.use("/bdrtny", authRouterTest);
 
-//Product_test: 
+// Product_test: 
 //App.use("/vgerbhyy", productRouterTest);
-
 
 //======================================================================
 
-//LISTEN TO THE PORT
+// LISTEN TO THE PORT
 App.listen(process.env.PORT);
 console.log(`INTEGRATED API running at Port: ${process.env.PORT}`);
 
-//TEST and DISPLAY APP
+// TEST and DISPLAY APP
 App.get("/", (req, res) => {
   res
     .status(200)
@@ -170,7 +244,8 @@ App.get("/", (req, res) => {
       "<h1>CONNECTION BLOCKED!</h2> <br> <h2> YOU ARE NOT SUPPOSE TO ACCESS THIS SITE WITH PAGE!  </h2>"
     );
 });
-//DB CONNECTION CHECK
+
+// DB CONNECTION CHECK
 const {
   dbConf,
   dbTM,
@@ -179,7 +254,7 @@ const {
   dbCardGenerator
 } = require("./config/db");
 
-//FOR POOLING CONNECTION
+// FOR POOLING CONNECTION
 dbConf.getConnection((error, connection) => {
   if (error) {
     console.log("Error DB e-Order Connection!", error.sqlMessage);
@@ -208,16 +283,6 @@ dbHots.getConnection((error, connection) => {
   console.log(`DB HOTS has been connected ${connection.threadId}`);
 });
 
-/*
-dbIndomieku.getConnection((error, connection) => {
-  if (error) {
-    console.log("Error DB Trademark Management Connection!", error.sqlMessage);
-  }
-  console.log(`DB Indomieku_test Management has been connected ${connection.threadId}`);
-});
-*/
-
-
 // ============================ Automation job =========================
 /*
   TULIS function yang akan dijalankan secara otomatis di sini.
@@ -226,18 +291,16 @@ dbIndomieku.getConnection((error, connection) => {
 const {
   trademarkMgmtAuto,
   notification
-
 } = require('./automation');
 
 trademarkMgmtAuto.runCheck();
 notification.shippingMailNotification();
 notification.callInsertSO();
 
-
-//============================= UPDATE REGISTER =============================
+// ============================ UPDATE REGISTER =============================
 /**
  * 2024-02-22 12.07:V 2.1.1- add   : menambah fitur special treatment: complete data ship to party
- * 2024-05-10 1907 :V 2.2.0- MAJOR : Integrasi dengan card genereator  
+ * 2024-05-10 1907 :V 2.2.0- MAJOR : Integrasi dengan card generator  
  * 2024-05-10 1907 :V 2.2.1- patch : ubah posisi otomation ke bawah index.js
  * 2024-05-10 1907 :V 2.2.2- patch : Improvement timestamp minor di cronjob
  * 2024-05-10 1907 :V 2.2.3- add   : Menambah cron job untuk call insert_so
@@ -246,9 +309,4 @@ notification.callInsertSO();
  * 2024-05-21 1040 :V 2.3.2- patch : ganti quewry getOrderAllIn
  * 2024-05-21 1040 :V 2.3.3- add   : nambah getRealizationAllIn di contrller dan router
  * 2024-05-21 1040 :V 2.4.0- add   : menambah table event_logger di e-Order_iod* 
- * 
- * 
- * 
- * 
- * 
  */
