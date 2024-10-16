@@ -3,25 +3,30 @@ const route = express.Router();
 const { decodeTokenHT } = require('../config/encrypts')
 
 const { hotsTicket } = require('../controller');
-const { hotsITSupport } = require('../config/uploader');
+const { hotsITSupport, hotsITComment } = require('../config/uploader');
 
 const uploadFileITSupport = hotsITSupport('it_support', 'it_support').array('file', 10);
+const uploadFileITComment = hotsITComment('it_support', 'it_support').array('file', 10);
 
-route.post('/it_support_ticket', decodeTokenHT, uploadFileITSupport, hotsTicket.addTicketITSupport)
+route.post('/it_support_ticket'    , decodeTokenHT, uploadFileITSupport, hotsTicket.addTicketITSupport)
+
+route.post('/setTicket/:service_id', decodeTokenHT, uploadFileITSupport, hotsTicket.setTicket)
 
 
 route.post('/pc_request', decodeTokenHT, hotsTicket.addTicketPCRequest)
 route.post('/pc_request_detail', decodeTokenHT, hotsTicket.addTicketPCRequest)
 
 
-route.post('/upload_file', decodeTokenHT, uploadFileITSupport, hotsTicket.uploadFileITSupport)
+
+
+// route.post('/upload_file', decodeTokenHT, uploadFileITSupport, hotsTicket.uploadFileITSupport)
 
 route.get('/my_tiket', decodeTokenHT, hotsTicket.getMyTiket)
 route.get('/all_tiket', decodeTokenHT, hotsTicket.getAllTiket)
 route.get('/task_list', decodeTokenHT, hotsTicket.getTaskList)
 
 route.get('/comment/:ticket_id', decodeTokenHT, hotsTicket.getTicketComment)
-route.post('/comment/:ticket_id', decodeTokenHT, hotsTicket.setTicketComment)
+route.post('/comment/:ticket_id', decodeTokenHT, uploadFileITComment, hotsTicket.setTicketComment)
 
 
 route.get('/fullfilled_tiket_count', decodeTokenHT, hotsTicket.getFullFilledTiketCount)
@@ -33,6 +38,10 @@ route.get('/laptop_specs', decodeTokenHT, hotsTicket.laptopSpeck)
 route.get('/detail/:service_id/:ticket_id', decodeTokenHT, hotsTicket.getTicketDetail)
 route.post('/approve/:service_id/:ticket_id', decodeTokenHT, hotsTicket.setApprove)
 route.post('/reject/:ticket_id', decodeTokenHT, hotsTicket.setReject)
+
+route.post('/status_change/:ticket_id', decodeTokenHT, hotsTicket.setStatusChange)
+route.post('/assingto_change/:ticket_id', decodeTokenHT, hotsTicket.setAssignToChange)
+route.post('/ticket_change/:ticket_id', decodeTokenHT, hotsTicket.setTicketChange)
 
 
 module.exports = route

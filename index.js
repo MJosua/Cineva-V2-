@@ -25,21 +25,21 @@
 // const reset = '\\x1b[0m';
 const express = require("express");
 const App = express();
+const { Server } = require("socket.io")
+
 const bearerToken = require("express-bearer-token");
 const helmet = require("helmet");
 const cookieParser = require('cookie-parser');
 // API CONFIG FOR SERVER 104 (i2i join)
-// const https = require('https');
+const https = require('https');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
 const dotenv = require("dotenv");
-const cors = require("cors");
-const { Server } = require('socket.io');
-
-
 dotenv.config();
+
+const cors = require("cors");
 
 const session = require("express-session");
 
@@ -48,14 +48,32 @@ const SSL = {
   cert: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_CERT))
 };
 
+
+
 // const svr = https.createServer(SSL, App);
 const svr = http.createServer(App);
-const io = new Server(svr, {
-  cors: {
-    origin: "*", // Allow all origins temporarily for testing
-    methods: ["GET", "POST"],
+
+
+
+const io = new Server(
+  svr,
+  {
+    cors: {
+      origin: "*"
+    },
+    connectionStateRecovery: {
+      // the backup duration of the sessions and the packets
+      maxDisconnectionDuration: 2 * 60 * 1000,
+      // whether to skip middlewares upon successful recovery
+      skipMiddlewares: true,
+    }
+
   },
-});
+
+
+);
+
+
 
 const PORT = process.env.PORT_SSL; // or any other port number you prefer
 
@@ -64,10 +82,25 @@ App.use(
     resave: false,
     saveUninitialized: true,
     secret: "SECRET",
+    cookie: { secure: true }
   })
 );
-App.use(cors());
-App.use(helmet());
+
+App.use(cors({
+  origin: '*',
+}));
+
+App.use((req, res, next) => {
+  res.set({
+    'Cross-Origin-Resource-Policy': 'cross-origin',
+    'Cross-Origin-Opener-Policy': 'cross-origin', // if needed
+  });
+  next();
+});
+
+App.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },  // Override default policy
+}));
 App.use(express.json());
 App.use(express.static("./public"));
 App.use(bearerToken());
@@ -77,28 +110,29 @@ svr.listen(PORT, () => {
   console.log(`INTEGRATED API SSL Server running on port ${PORT}`);
 });
 
-// Socket.IO Connection
 io.on('connection', (socket) => {
-  console.log('A user connected', socket.id);
 
-  socket.on('error', (error) => {
-    console.error('Socket error:', error);
+
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
   });
 
-  socket.on('disconnect', (reason) => {
-    console.log(`User disconnected: ${reason}`);
+  socket.on('message', (msg) => {
+    io.emit('message', msg);
   });
 
-  // Add this to capture any transport errors
-  socket.on('transport error', (error) => {
-    console.error('Transport error:', error);
+  if (socket.recovered) {
+    console.log("Recovery was successful: socket.id, socket.rooms, and socket.data were restored");
+  } else {
+  }
+
+  socket.on('error', (err) => {
+    console.error(`Socket error on ${socket.id}: ${err.message}`);
   });
+
 });
 
 
-
-
-module.exports = { io, svr };
 
 //================================ ROUTERS =============================
 
@@ -165,6 +199,28 @@ App.use("/hots_ticket", hotsTicket);
 App.use("/hots_settings", hotsSettings);
 
 App.use('/public', express.static(path.join(__dirname, 'public')));
+
+
+App.use('/public/files/hots/it_support', express.static(path.join(__dirname, 'public', 'files', 'hots', 'it_support')));
+
+App.get('/public/files/hots/it_support/:imageId', (req, res) => {
+  const imageId = req.params.imageId;
+  const imagePath = path.join(__dirname, 'public', 'files', 'hots', 'it_support', imageId);
+
+  // Set the required headers
+  res.set({
+    'Content-Type': 'image/jpeg',  // Adjust based on image type (png, gif, etc.)
+    'Cross-Origin-Resource-Policy': 'cross-origin',  // Allow sharing across origins
+  });
+
+  // Send the image file
+  res.sendFile(imagePath, (err) => {
+    if (err) {
+      console.error('Error serving image:', err);
+      res.status(404).send('Image not found');
+    }
+  });
+});
 
 // ========= for test program ============
 
