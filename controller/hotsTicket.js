@@ -36,6 +36,7 @@ SELECT COUNT(*) as row_number
 FROM ticket t 
 WHERE created_by = ? AND service_id = ?
 `
+
 const queryCheckTeamRow = `
 select
 	t.team_id,

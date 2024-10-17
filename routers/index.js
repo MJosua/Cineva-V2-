@@ -3,6 +3,7 @@ const authTmRouter = require('./authTM')
 const cartRouter = require('./cart')
 const userRouter = require('./user')
 const orderRouter = require('./order')
+const eventRouter = require('./event')
 const productRouter = require('./product')
 const adminRouter = require('./admin')
 const spectatorRouter = require('./spectator')
@@ -31,5 +32,6 @@ module.exports = {
     hotsAuth,
     hotsAdmin,
     hotsTicket,
-    hotsSettings
+    hotsSettings,
+    eventRouter
 } 
