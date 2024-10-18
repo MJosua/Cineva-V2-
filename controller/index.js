@@ -3,6 +3,7 @@ const authTmController = require('./authTM');
 const cartController = require('./cart');
 const userController = require('./user');
 const orderController = require('./order');
+const eventController = require('./event');
 const productController = require('./product');
 const adminController = require('./admin');
 const spectatorController = require('./spectator');
@@ -20,6 +21,7 @@ module.exports = {
     cartController,
     userController,
     orderController,
+    eventController,
     productController,
     adminController,
     spectatorController,

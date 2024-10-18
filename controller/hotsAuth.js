@@ -31,7 +31,7 @@ module.exports = {
                                 u.active,
                                 u.login_attempt
                             FROM
-                                USER u
+                                user u
                             WHERE
                                 u.uid = ?
                                 AND u.active = 1
@@ -96,10 +96,10 @@ module.exports = {
                                                 from
                                                     user u
                                                 left join 
-                                                    role r on
+                                                    m_role r on
                                                     u.role_id = r.role_id
                                                 left join 
-                                                    department d on
+                                                    m_department d on
                                                     u.department_id = d.department_id
                                                 WHERE
                                                     uid = ?
@@ -226,15 +226,15 @@ module.exports = {
                                                         UNION ALL
                                                     
                                                         SELECT t.assigned_to  AS element
-                                                        FROM ticket t
+                                                        FROM t_ticket t
                                                         WHERE t.assigned_to  IS NOT NULL
                                                     ) AS combined
                                                 ) as team_leader_user_id
                                             FROM
                                                 user u
-                                            LEFT JOIN ROLE r ON
+                                            LEFT JOIN m_role r ON
                                                 u.role_id = r.role_id
-                                            LEFT JOIN department d ON
+                                            LEFT JOIN m_department d ON
                                                 u.department_id = d.department_id
                                             WHERE user_id = ?  
                                             `
