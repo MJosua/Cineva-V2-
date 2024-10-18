@@ -18,7 +18,7 @@ module.exports = {
         // cari username dulu
         const queryGetRole = `
         SELECT u.role_id
-        FROM USER u
+        FROM user u
         WHERE u.user_id = ? AND u.active = 1
         LIMIT 1`;
 
@@ -87,7 +87,7 @@ module.exports = {
         // cari username dulu
         const queryGetRole = `
         SELECT u.role_id
-        FROM USER u
+        FROM user u
         WHERE u.user_id = ? AND u.active = 1
         LIMIT 1`;
 
@@ -114,7 +114,7 @@ module.exports = {
             // Query to get the menu based on the role
             let queryGetMenu = `
             SELECT *
-            FROM service
+            FROM m_service
             `;
 
             if (role_id !== 4) {
@@ -169,7 +169,7 @@ module.exports = {
         tm.*,
         CONCAT(u.firstname, ' ', u.lastname) as fullname
         from
-            team_member tm
+            m_team_member tm
         join 
             user u on
             tm.user_id = u.user_id
@@ -221,7 +221,7 @@ module.exports = {
         // Query to get the menu based on the role
         let queryGetMenu = `
             SELECT *
-            FROM service
+            FROM m_service
             where
             active = 1
             `;
@@ -266,7 +266,7 @@ module.exports = {
         // Query to get the menu based on the role
         let queryGetMenu = `
             SELECT *
-            FROM service
+            FROM m_service
             where
             active = 0
             `;
@@ -317,7 +317,7 @@ module.exports = {
 
         // Query to get the menu based on the role
         let queryGetMenu = `
-        UPDATE service
+        UPDATE m_service
         SET active = ?
         WHERE service_id IN (${service_ids.map(() => '?').join(', ')})
         `;
@@ -365,7 +365,7 @@ module.exports = {
         const queryGetRole = `
         SELECT *
         FROM 
-        service
+        m_service
         `;
 
         dbHots.execute(queryGetRole, [user_id], (err1, results1) => {
@@ -442,7 +442,7 @@ module.exports = {
         const queryGetRole = `
         SELECT *
         FROM 
-        ticket_status
+        m_ticket_status
         `;
 
         dbHots.execute(queryGetRole, [user_id], (err1, results1) => {

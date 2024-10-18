@@ -43,10 +43,10 @@ module.exports = {
             d.department_name,  
             u.superior_id 
         FROM
-            sys_user u
-        LEFT JOIN role r ON
+            user u
+        LEFT JOIN m_role r ON
             u.role_id = r.role_id 
-        LEFT JOIN department d ON 
+        LEFT JOIN m_department d ON 
             u.department_id = d.department_id
         WHERE s.role_id IN (1,2,4) `+ desc + find;
 
@@ -109,7 +109,7 @@ module.exports = {
 
         if (req.dataToken.role_id = 4) {
 
-            let queryInsert = `INSERT INTO sys_user (
+            let queryInsert = `INSERT INTO user (
              firstname, lastname, uid, email,
                 department_id, description, superiorID,
                  pswd, asin,
@@ -176,7 +176,7 @@ module.exports = {
             u.phone,
             u.grade
         FROM
-            sys_user su
+            user su
         WHERE su.user_id = ?`
 
             let paramGetAccountData = [req.params.user_id]
@@ -318,7 +318,7 @@ module.exports = {
         let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         if (req.dataToken.role_id = 4) {
-            let queryGetAdmin = 'SELECT * FROM `role`'
+            let queryGetAdmin = 'SELECT * FROM `m_role`'
 
             dbHots.query(queryGetAdmin, (err, results) => {
                 if (err) {
@@ -479,14 +479,14 @@ module.exports = {
                 t.last_udpate,
                 t.fulfilment_comment
             FROM
-                ticket t
-            LEFT JOIN service s ON
+                t_ticket t
+            LEFT JOIN m_service s ON
                 t.service_id = s.service_id
-            LEFT JOIN USER u ON
+            LEFT JOIN user u ON
                 u.user_id = t.assigned_to
-            LEFT JOIN ticket_status ts ON
+            LEFT JOIN m_ticket_status ts ON
                 ts.status_id = t.status_id
-            LEFT JOIN team tm ON
+            LEFT JOIN m_team tm ON
                 t.assigned_team = tm.team_id `;
                 // + desc + find;
 

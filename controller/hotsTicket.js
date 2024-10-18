@@ -32,8 +32,8 @@ const generateID = (user_id, service_id, row_number) => {
 
 // UNTUK GENERATE NOMOR BELAKANG ID
 const queryCheckTicketRow = `
-SELECT COUNT(*) as row_number
-FROM ticket t 
+SELECT COUNT(*) as r_number
+FROM t_ticket t 
 WHERE created_by = ? AND service_id = ?
 `
 
@@ -44,9 +44,9 @@ select
 	s.service_id,
 	s.approval_level
 from
-	team_member t
+	m_team_member t
 left join
-service s on
+m_service s on
 	t.team_id = s.team_id
 where 
 	t.team_leader = 1
@@ -84,17 +84,17 @@ module.exports = {
                 const [resRow] = await dbHots.promise().query(queryCheckTicketRow, paramTicketCheck);
 
                 // Insert ticket
-                let ticketId = generateID(req.dataToken.user_id, servicetype, resRow[0].row_number);
+                let ticketId = generateID(req.dataToken.user_id, servicetype, resRow[0].r_number);
 
                 let queryInsertTicket = `
-                    INSERT INTO ticket 
+                    INSERT INTO t_ticket 
                     (ticket_id, service_id, status_id, created_by, assigned_team, 
                     creation_date, reason)
                     VALUES 
                     (?, ?, 0, ?, ?, 
                     now(), ?);
     
-                    INSERT INTO d_it_support (ticket_id, type)
+                    INSERT INTO t_it_support (ticket_id, type)
                     VALUES (?, ?);
                 `;
                 let paramInsertTicket = [
@@ -107,13 +107,13 @@ module.exports = {
                 const paramInsertApproval = hotsCheckApprovalLevel(ticketId, approvalLevel, team_leader, superiorID);
 
                 if (paramInsertApproval.length > 0) {
-                    const queryInsertApproval = `INSERT INTO approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                    const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
                     await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                 }
 
                 // File attachment
                 if (req.files && req.files.length > 0) {
-                    let queryInsertFiles = `INSERT INTO attachment (ticket_id, url) VALUES (?, ?);`;
+                    let queryInsertFiles = `INSERT INTO t_attachment (ticket_id, url) VALUES (?, ?);`;
                     for (let file of req.files) {
                         let file_url = `/public/files/hots/it_support/${file.filename}`;
                         await dbHots.promise().query(queryInsertFiles, [ticketId, file_url]);
@@ -161,14 +161,14 @@ module.exports = {
                         const [resRow] = await dbHots.promise().query(queryCheckTicketRow, [user_id, service_id]);
 
                         // Generate Ticket ID
-                        let ticketId = await generateID(user_id, service_id, resRow[0].row_number);
+                        let ticketId = await generateID(user_id, service_id, resRow[0].r_number);
 
                         // Insert Ticket and Idea Bank Entry
                         let queryInsertTicket = `
-                            INSERT INTO ticket (ticket_id, created_by, reason, service_id, status_id, assigned_team, creation_date)
+                            INSERT INTO t_ticket (ticket_id, created_by, reason, service_id, status_id, assigned_team, creation_date)
                             VALUES (?, ?, ?, 8, 0, 8, now());
     
-                            INSERT INTO d_idea_bank (ticket_id, service_reason) 
+                            INSERT INTO t_idea_bank (ticket_id, service_reason) 
                             VALUES (?, ?);
                         `;
 
@@ -177,13 +177,13 @@ module.exports = {
                         // Insert Approval Events
                         const paramInsertApproval = hotsCheckApprovalLevel(ticketId, approvalLevel, team_leader, superiorID);
                         if (paramInsertApproval.length > 0) {
-                            const queryInsertApproval = `INSERT INTO approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                            const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
                             await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                         }
 
                         // File Attachments
                         if (req.files && req.files.length > 0) {
-                            let queryInsertFiles = `INSERT INTO attachment (ticket_id, url) VALUES (?, ?);`;
+                            let queryInsertFiles = `INSERT INTO t_attachment (ticket_id, url) VALUES (?, ?);`;
                             for (let file of req.files) {
                                 let file_url = `/public/files/hots/it_support/${file.filename}`;
                                 await dbHots.promise().query(queryInsertFiles, [ticketId, file_url]);
@@ -237,31 +237,31 @@ module.exports = {
 
                 let paramTicketCheck = [req.dataToken.user_id, servicetype];
                 const [resRow] = await dbHots.promise().query(queryCheckTicketRow, paramTicketCheck);
-                let ticketId = generateID(req.dataToken.user_id, servicetype, resRow[0].row_number);
+                let ticketId = generateID(req.dataToken.user_id, servicetype, resRow[0].r_number);
 
                 let queryInsertTicket = old_device ? `
-                INSERT INTO ticket 
+                INSERT INTO t_ticket 
                 (ticket_id, service_id, status_id, created_by, assigned_team, 
                 creation_date, reason)
                 VALUES
                 (?, ?, 0, ?, ?,
                 now(), ? );
 
-                INSERT INTO d_it_support
+                INSERT INTO t_it_support
                 (ticket_id, job_desc, laptop_spec_id, old_device, date_acquisition, old_device_spec)
                 VALUES
                 (?, ?, ?, ?, ?, ?);
 
                 `:
                     `
-                INSERT INTO ticket 
+                INSERT INTO t_ticket 
                 (ticket_id, service_id, status_id, created_by, assigned_team, 
                 creation_date, reason)
                 VALUES
                 (?, ?, 0, ?, ?,
                 now(), ? );
 
-                INSERT INTO d_it_support
+                INSERT INTO t_it_support
                 (ticket_id, job_desc,  laptop_spec_id)
                 VALUES
                 (?, ?, ?);
@@ -285,7 +285,7 @@ module.exports = {
                 const paramInsertApproval = hotsCheckApprovalLevel(ticketId, approvalLevel, team_leader, superiorID);
 
                 if (paramInsertApproval.length > 0) {
-                    const queryInsertApproval = `INSERT INTO approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                    const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
                     await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                 }
 
@@ -403,7 +403,7 @@ module.exports = {
                             )
                         )
                     FROM
-                        approval_event a
+                        t_approval_event a
                     LEFT JOIN
                         user u ON u.user_id = a.approver_id
                     WHERE
@@ -413,7 +413,7 @@ module.exports = {
                             SELECT
                                 tm.user_id
                             FROM
-                                team_member tm
+                                m_team_member tm
                             WHERE
                                 tm.team_id = t.assigned_team
                             AND
@@ -421,16 +421,16 @@ module.exports = {
                             LIMIT 1
                         ) AS team_leader_id
                 from
-                    ticket t
-                left join service s on
+                    t_ticket t
+                left join m_service s on
                     t.service_id = s.service_id
                 left join user u on
                     u.user_id = t.assigned_to
-                left join ticket_status ts on
+                left join m_ticket_status ts on
                     ts.status_id = t.status_id
-                left join team tm on
+                left join m_team tm on
                     t.assigned_team = tm.team_id
-                left join approval_event ae on
+                left join t_approval_event ae on
                     t.ticket_id = ae.approval_id
                 where
                 t.created_by = ${req.dataToken.user_id}
@@ -439,11 +439,11 @@ module.exports = {
 
             let countQuery = `
             SELECT COUNT(*) AS total_count
-            FROM ticket t
-            LEFT JOIN service s ON t.service_id = s.service_id
-            LEFT JOIN USER u ON u.user_id = t.assigned_to
-            LEFT JOIN ticket_status ts ON ts.status_id = t.status_id
-            LEFT JOIN team tm ON t.assigned_team = tm.team_id
+            FROM t_ticket t
+            LEFT JOIN m_service s ON t.service_id = s.service_id
+            LEFT JOIN user u ON u.user_id = t.assigned_to
+            LEFT JOIN m_ticket_status ts ON ts.status_id = t.status_id
+            LEFT JOIN m_team tm ON t.assigned_team = tm.team_id
             WHERE created_by = ${req.dataToken.user_id}
             `;
 
@@ -560,7 +560,7 @@ module.exports = {
                                 )
                             )
                         from
-                            attachment a
+                            t_attachment a
                         where
                             a.ticket_id = d.ticket_id
                             and
@@ -571,7 +571,7 @@ module.exports = {
                         select
                             tm.user_id
                         from
-                            team_member tm
+                            m_team_member tm
                         where
                             tm.team_id = t.assigned_team
                             and
@@ -580,12 +580,12 @@ module.exports = {
                         ) 
                         as team_leader_id
                         from
-                            d_idea_bank d
+                            t_idea_bank d
                         left join
-                                                ticket t on
+                                                t_ticket t on
                             t.ticket_id = d.ticket_id
                         left join
-                                                ticket_status ts on
+                                                m_ticket_status ts on
                             ts.status_id = t.status_id
                         left join user uc on
                             uc.user_id = t.created_by
@@ -636,7 +636,7 @@ module.exports = {
                                     )
                                 )
                         from
-                            attachment a
+                            t_attachment a
                         where
                             a.ticket_id = d.ticket_id
                         AND
@@ -656,7 +656,7 @@ module.exports = {
                                     )
                                 )
                             FROM
-                                approval_event a
+                                t_approval_event a
                             LEFT JOIN
                                 user u ON u.user_id = a.approver_id
                             WHERE
@@ -666,7 +666,7 @@ module.exports = {
                             SELECT
                                 tm.user_id
                             FROM
-                                team_member tm
+                                m_team_member tm
                             WHERE
                                 tm.team_id = t.assigned_team
                             AND
@@ -674,11 +674,11 @@ module.exports = {
                             LIMIT 1
                         ) AS team_leader_id
                         from
-                            d_it_support d
+                            t_it_support d
                         LEFT JOIN
-                        ticket t ON t.ticket_id = d.ticket_id
+                        t_ticket t ON t.ticket_id = d.ticket_id
                         LEFT JOIN
-                        ticket_status ts ON ts.status_id = t.status_id
+                        m_ticket_status ts ON ts.status_id = t.status_id
                         left join user uc on
                         uc.user_id = t.created_by
                         where
@@ -748,7 +748,7 @@ module.exports = {
                                 )
                             )
                         FROM
-                            approval_event a
+                            t_approval_event a
                         LEFT JOIN
                             user u ON u.user_id = a.approver_id
                         WHERE
@@ -758,7 +758,7 @@ module.exports = {
                             SELECT
                                 tm.user_id
                             FROM
-                                team_member tm
+                                m_team_member tm
                             WHERE
                                 tm.team_id = t.assigned_team
                             AND
@@ -766,11 +766,11 @@ module.exports = {
                             LIMIT 1
                         ) AS team_leader_id
                     FROM
-                        d_it_support d
+                        t_it_support d
                     LEFT JOIN
-                        ticket t ON t.ticket_id = d.ticket_id
+                        t_ticket t ON t.ticket_id = d.ticket_id
                     LEFT JOIN
-                         ticket_status ts ON t.status_id = ts.status_id
+                         m_ticket_status ts ON t.status_id = ts.status_id
                     LEFT JOIN
                          user uc ON uc.user_id = t.created_by
                     WHERE
@@ -836,7 +836,7 @@ module.exports = {
                     `;
 
                     let queryUpdateTicketITSupport = `
-                        UPDATE ticket
+                        UPDATE t_ticket
                         SET 
                             status_id = 1,
                             last_update = NOW(),
@@ -855,10 +855,10 @@ module.exports = {
                         await dbHots.execute(queryUpdateTicketITSupport, paramUpdateTicketITSupport);
 
 
-                        console.log(timestamp, " UPDATE approval_event case 7: IT Support");
+                        console.log(timestamp, " UPDATE t_approval_event case 7: IT Support");
                         return res.status(200).send({ success: true, message: "Approval updated successfully." });
                     } catch (err) {
-                        console.log(timestamp, " UPDATE approval_event case 7: IT Support error", err);
+                        console.log(timestamp, " UPDATE t_approval_event case 7: IT Support error", err);
                         return res.status(500).send({
                             success: false,
                             message: err
@@ -922,7 +922,7 @@ module.exports = {
                                 select
                                     COUNT(ae.approval_order) as Aproval_unit
                                 from
-                                    approval_event ae
+                                    t_approval_event ae
                                 where
                                     ae.approval_id = ?
                                     
@@ -933,7 +933,7 @@ module.exports = {
                                 select
                                     COUNT(ae.approval_order) as Aproval_unit
                                 from
-                                    approval_event ae
+                                    t_approval_event ae
                                 where
                                     ae.approval_id = ?
                                     and
@@ -970,7 +970,7 @@ module.exports = {
                                         console.log("jalan")
 
                                         let queryUpdateTicketRequest = `
-                                            UPDATE ticket
+                                            UPDATE t_ticket
                                             SET 
                                                 status_id = 1,
                                                 last_update = NOW()
@@ -1047,7 +1047,7 @@ module.exports = {
         // Second query to update ticket status
         let queryUpdateTicket = `
         UPDATE
-        ticket
+        t_ticket
         SET
         status_id = 4
         WHERE
@@ -1102,7 +1102,7 @@ module.exports = {
                     SELECT
                         *
                     FROM
-                        laptop_spec ls
+                        m_laptop_spec ls
                     WHERE
                         NOW() BETWEEN ls.start_date AND COALESCE(ls.end_date, '9999-12-31' );`,
                 (err, results) => {
@@ -1173,23 +1173,23 @@ module.exports = {
                         )
                     )
                 FROM
-                    approval_event a
+                    t_approval_event a
                 LEFT JOIN
                     user u ON u.user_id = a.approver_id
                 WHERE
                     a.approval_id = t.ticket_id 
             ) AS list_approval
             from
-                ticket t
-            left join service s on
+                t_ticket t
+            left join m_service s on
                 t.service_id = s.service_id
             left join user u on
                 u.user_id = t.assigned_to
-            left join ticket_status ts on
+            left join m_ticket_status ts on
                 ts.status_id = t.status_id
-            left join team tm on
+            left join m_team tm on
                 t.assigned_team = tm.team_id
-            LEFT JOIN approval_event ae ON 
+            LEFT JOIN t_approval_event ae ON 
                 t.ticket_id = ae.approval_id 
             WHERE 
             1=1
@@ -1197,11 +1197,11 @@ module.exports = {
 
             let countQuery = `
             SELECT COUNT(*) AS total_count
-            FROM ticket t
-            LEFT JOIN service s ON t.service_id = s.service_id
-            LEFT JOIN USER u ON u.user_id = t.assigned_to
-            LEFT JOIN ticket_status ts ON ts.status_id = t.status_id
-            LEFT JOIN team tm ON t.assigned_team = tm.team_id
+            FROM t_ticket t
+            LEFT JOIN m_service s ON t.service_id = s.service_id
+            LEFT JOIN user u ON u.user_id = t.assigned_to
+            LEFT JOIN m_ticket_status ts ON ts.status_id = t.status_id
+            LEFT JOIN m_team tm ON t.assigned_team = tm.team_id
             `;
 
             if ((status !== "" || status) && status !== "-1") {
@@ -1221,7 +1221,7 @@ module.exports = {
 
             queryGetMyTiket += `  GROUP BY t.ticket_id, ae.approver_id   `
 
-            queryGetMyTiket += `  ORDER BY t.ticket_id DESC  `
+            queryGetMyTiket += `  ORDER BY t.creation_date DESC  `
 
 
             if (limit >= 1) {
@@ -1315,7 +1315,7 @@ module.exports = {
                 t.fulfilment_comment,
                 (
                     SELECT COUNT(ae.approve_date)
-                    FROM approval_event ae
+                    FROM t_approval_event ae
                     WHERE ae.approval_id = t.ticket_id
                 ) AS approval_status,
                 (
@@ -1330,34 +1330,34 @@ module.exports = {
                             )
                         )
                     FROM
-                        approval_event a
+                        t_approval_event a
                     LEFT JOIN
                         user u ON u.user_id = a.approver_id
                     WHERE
                         a.approval_id = t.ticket_id
                 ) AS list_approval
             FROM
-                ticket t
-            LEFT JOIN service s ON
+                t_ticket t
+            LEFT JOIN m_service s ON
                 t.service_id = s.service_id
             LEFT JOIN user u ON
                 u.user_id = t.assigned_to -- Join for assigned_to user
             LEFT JOIN user uc ON
                 uc.user_id = t.created_by -- Self-join for created_by user
-            LEFT JOIN ticket_status ts ON
+            LEFT JOIN m_ticket_status ts ON
                 ts.status_id = t.status_id
-            LEFT JOIN team tm ON
+            LEFT JOIN m_team tm ON
                 t.assigned_team = tm.team_id
-            LEFT JOIN approval_event ae ON
+            LEFT JOIN t_approval_event ae ON
                 t.ticket_id = ae.approval_id AND ae.approver_id = ${req.dataToken.user_id} -- Left join with the approver_id condition
             WHERE
                 (
                     ae.approval_id IS NULL -- Case where there are no approval events
                     OR (
-                        ae.approval_id IS NOT NULL -- If approval_event exists
+                        ae.approval_id IS NOT NULL -- If t_approval_event exists
                         AND NOT EXISTS (
                             SELECT 1
-                            FROM approval_event ae_prev
+                            FROM t_approval_event ae_prev
                             WHERE ae_prev.approval_id = t.ticket_id
                             AND ae_prev.approval_order < ae.approval_order
                             AND ae_prev.approve_date IS NULL
@@ -1372,16 +1372,16 @@ module.exports = {
             SELECT
                 COUNT(DISTINCT t.ticket_id) AS total_count 
             FROM
-                ticket t
-            LEFT JOIN service s ON
+                t_ticket t
+            LEFT JOIN m_service s ON
                 t.service_id = s.service_id
-            LEFT JOIN approval_event ae ON 
+            LEFT JOIN t_approval_event ae ON 
                 t.ticket_id = ae.approval_id 
             WHERE 
                 ae.approver_id = ${req.dataToken.user_id} 
                 AND NOT EXISTS (
                     SELECT 1
-                    FROM approval_event ae_prev
+                    FROM t_approval_event ae_prev
                     WHERE ae_prev.approval_id = t.ticket_id
                     AND ae_prev.approval_order < ae.approval_order 
                     AND ae_prev.approve_date IS NULL 
@@ -1410,7 +1410,7 @@ module.exports = {
             `
 
             queryGetMyTiket += ` ORDER BY
-            t.ticket_id DESC
+            t.creation_date DESC
             `
 
             if (limit >= 1) {
@@ -1484,12 +1484,12 @@ module.exports = {
             select
             COUNT(*) as total_fullfill
         from
-            ticket t
-        left join service s on
+            t_ticket t
+        left join m_service s on
             t.service_id = s.service_id
-        left join ticket_status ts on
+        left join m_ticket_status ts on
             ts.status_id = t.status_id
-        left join team tm on
+        left join m_team tm on
             t.assigned_team = tm.team_id
         where
             t.status_id = 2;
@@ -1544,12 +1544,12 @@ module.exports = {
             select
                     COUNT(*) as total_count
                 from
-                    ticket t
-                left join service s on
+                    t_ticket t
+                left join m_service s on
                     t.service_id = s.service_id
-                left join ticket_status ts on
+                left join m_ticket_status ts on
                     ts.status_id = t.status_id
-                left join team tm on
+                left join m_team tm on
                     t.assigned_team = tm.team_id
                 where
                     t.status_id IN (0, 1, 5);
@@ -1599,10 +1599,10 @@ module.exports = {
 
             let countQuery = `
                 SELECT COUNT(*) AS total_count
-                FROM ticket t
-                LEFT JOIN service s ON t.service_id = s.service_id
-                LEFT JOIN ticket_status ts ON ts.status_id = t.status_id
-                LEFT JOIN team tm ON t.assigned_team = tm.team_id
+                FROM t_ticket t
+                LEFT JOIN m_service s ON t.service_id = s.service_id
+                LEFT JOIN m_ticket_status ts ON ts.status_id = t.status_id
+                LEFT JOIN m_team tm ON t.assigned_team = tm.team_id
                 WHERE t.status_id = 4;
             `;
 
@@ -1663,6 +1663,7 @@ module.exports = {
                         c.comment_id,
                         c.user_id as sender_id,
                         c.comment as text,
+                        c.status,
                         DATE_FORMAT(c.date_created, '%W, ') as day_created,
                         DATE_FORMAT(c.date_created,'%d-%b-%Y ') as date_created,
                         DATE_FORMAT(c.date_created, '%H:%i') as time_created,
@@ -1670,9 +1671,9 @@ module.exports = {
                         a.url as attachment_url,
                         CONCAT(u.firstname, " ", u.lastname) as sender
                     from
-                        comment c
+                        t_comment c
                     left join 
-                        attachment a on
+                        t_attachment a on
                         c.comment_id = a.comment_id
                     left join
                         user u on
@@ -1684,7 +1685,7 @@ module.exports = {
                         `
                 let countquery =
                     `
-                SELECT COUNT(comment_id) cnt FROM comment WHERE ticket_id = ?
+                SELECT COUNT(comment_id) cnt FROM t_comment WHERE ticket_id = ?
                 
                 `
 
@@ -1781,7 +1782,7 @@ module.exports = {
                     select
                         COUNT(*) as comment_count
                     from
-                        comment c
+                        t_comment c
                     where
                         c.ticket_id = ?
                     `
@@ -1804,7 +1805,7 @@ module.exports = {
     
                         INSERT 
                         INTO 
-                        comment
+                        t_comment
                         ( comment_id, ticket_id, user_id, comment, date_created)
                         VALUES
                         ( ?, ?, ?, ?, NOW() );          
@@ -1827,7 +1828,7 @@ module.exports = {
                                 if (req.files && req.files.length > 0) {
                                     let queryInsertFiles = `
                                         INSERT INTO 
-                                        attachment (ticket_id, url, comment_id) 
+                                        t_attachment (ticket_id, url, comment_id) 
                                         VALUES (?, ?, ?)
                                     `;
 
@@ -1908,7 +1909,7 @@ module.exports = {
         }
 
         let querySetApproval = `
-            UPDATE ticket
+            UPDATE t_ticket
             SET status_id = ?,
                 last_update = NOW()`;
 
@@ -1959,7 +1960,7 @@ module.exports = {
 
         // SQL query to update the assigned_to field
         let querySetApproval = `
-            UPDATE ticket
+            UPDATE t_ticket
             SET assigned_to = ?,
                 last_update = NOW()
             WHERE ticket_id = ?`;
@@ -2000,7 +2001,7 @@ module.exports = {
         }
 
         let queryUpdateStatus = `
-            UPDATE ticket
+            UPDATE t_ticket
             SET status_id = ?,
                 last_update = NOW()`;
 
@@ -2033,7 +2034,7 @@ module.exports = {
             } else {
 
                 let querySetAssign = `
-                UPDATE ticket
+                UPDATE t_ticket
                 SET assigned_to = ?,
                     last_update = NOW()
                 WHERE ticket_id = ?`;
@@ -2050,8 +2051,74 @@ module.exports = {
                             message: err
                         });
                     } else {
-                        console.log(timestamp, `paramUpdateStatus  ${ticket_id} : status updated`);
-                        return res.status(200).send({ message: "success" });
+
+                        if (fullfillment_comment) {
+
+                            let commentCount =
+                                `
+                            select
+                                COUNT(*) as comment_count
+                            from
+                                t_comment c
+                            where
+                                c.ticket_id = ?
+                            `
+                            dbHots.query(commentCount, [ticket_id], (err, results) => {
+
+                                if (err) {
+                                    console.error(timestamp, "Error Creating setOpenTiketCount", err);
+                                    return res.status(501).send({
+                                        success: false,
+                                        message: "Internal server error",
+                                        error: err
+                                    });
+                                } else {
+
+                                    let ticket_order = results[0].comment_count + 1
+
+                                    let commentQuery =
+
+                                        `
+            
+                                INSERT 
+                                INTO 
+                                t_comment
+                                ( comment_id, ticket_id, user_id, comment, date_created, status)
+                                VALUES
+                                ( ?, ?, "999999", ?, NOW(), ? );          
+                                                
+                                  `
+
+
+
+                                    dbHots.query(commentQuery, [ticket_order, ticket_id, fullfillment_comment, status], (err, results) => {
+                                        if (err) {
+                                            console.error(timestamp, "Error Creating setOpenTiketCount", err);
+                                            return res.status(500).send({
+                                                success: false,
+                                                message: "Internal server error",
+                                                error: err
+                                            });
+                                        } else {
+                                            console.log(timestamp, `paramUpdateStatus  ${ticket_id} : status updated`);
+                                            return res.status(200).send({ message: "success" });
+                                        }
+                                    }
+                                    )
+
+                                }
+                            }
+                            )
+
+                        } else {
+                            console.log(timestamp, `paramUpdateStatus  ${ticket_id} : status updated`);
+                            return res.status(200).send({ message: "success" });
+
+                        }
+
+
+
+
                     }
                 });
 
