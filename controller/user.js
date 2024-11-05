@@ -15,7 +15,7 @@ module.exports = {
                 let company_id = req.dataToken.company_id
 
                 let query = `
-                SELECT md.harbour_id, concat(h.harbour_name, ", " ,tp.txt, " - ", md.final_dest  )   harbour_name, tp.txt, md.final_dest  FROM map_port_for_dist md
+                SELECT md.harbour_id, concat(h.harbour_name, ", " ,tp.txt, " - ", md.final_dest  )   harbour_name, harbour_code, tp.txt, md.final_dest  FROM map_port_for_dist md
                 LEFT JOIN mst_harbour h ON md.harbour_id = h.harbour_id 
                 LEFT JOIN mst_country mc on h.country_id = mc.country_id  
                 LEFT JOIN sys_text tp ON tp.text_id = mc.country_name_id  AND tp.lang_id = 1

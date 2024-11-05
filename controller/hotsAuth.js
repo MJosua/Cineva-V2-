@@ -33,7 +33,7 @@ module.exports = {
                             FROM
                                 user u
                             WHERE
-                                u.uid = ?
+                                LOWER(u.uid) = LOWER(?)
                                 AND u.active = 1
                             LIMIT 1`
         let paramGetUid = [uid]
@@ -102,7 +102,7 @@ module.exports = {
                                                     m_department d on
                                                     u.department_id = d.department_id
                                                 WHERE
-                                                    uid = ?
+                                                    LOWER(uid) = LOWER(?)
                                                     AND pswd = ?
                                                     AND u.role_id IN (1, 2, 4)
                     
@@ -228,6 +228,12 @@ module.exports = {
                                                         SELECT t.assigned_to  AS element
                                                         FROM t_ticket t
                                                         WHERE t.assigned_to  IS NOT NULL
+
+                                                        UNION ALL
+
+                                                        select tm.user_id AS element
+                                                        from m_team_member tm
+                                                        where tm.team_leader = 1
                                                     ) AS combined
                                                 ) as team_leader_user_id
                                             FROM

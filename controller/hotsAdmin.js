@@ -28,27 +28,28 @@ module.exports = {
 
         if (req.dataToken.role_id = 4) {
 
-            let queryGetAccount = ` SELECT
-            u.user_id, 
-            u.firstname,
-            u.lastname,
-            u.uid,
-            u.last_pswd_changed,
-            u.active,
-            u.email,
-            u.nik,
-            u.phone,
-            u.grade,
-            r.role_name,
-            d.department_name,  
-            u.superior_id 
-        FROM
-            user u
-        LEFT JOIN m_role r ON
-            u.role_id = r.role_id 
-        LEFT JOIN m_department d ON 
-            u.department_id = d.department_id
-        WHERE s.role_id IN (1,2,4) `+ desc + find;
+            let queryGetAccount = ` 
+            SELECT
+                u.user_id, 
+                u.firstname,
+                u.lastname,
+                u.uid,
+                u.last_pswd_changed,
+                u.active,
+                u.email,
+                u.nik,
+                u.phone,
+                u.grade_id,
+                r.role_name,
+                d.department_name,  
+                u.superior_id 
+            FROM
+                user u
+            LEFT JOIN m_role r ON
+                u.role_id = r.role_id 
+            LEFT JOIN m_department d ON 
+                u.department_id = d.department_id
+            WHERE r.role_id IN (1,2,4) `+ desc + find;
 
             dbHots.execute(queryGetAccount, (err, results) => {
 
@@ -174,7 +175,7 @@ module.exports = {
             u.plant_id,
             u.nik,
             u.phone,
-            u.grade
+            u.grade_id
         FROM
             user su
         WHERE su.user_id = ?`
@@ -425,7 +426,7 @@ module.exports = {
 
         if (req.dataToken.role_id = 4) {
 
-            queryGetDepartment = `SELECT * FROM department d `
+            queryGetDepartment = `SELECT * FROM m_department d `
 
             dbHots.query(queryGetDepartment, (err, results) => {
                 if (err) {

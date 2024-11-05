@@ -29,6 +29,7 @@ const App = express();
 
 const { Server } = require("socket.io")
 
+
 const bearerToken = require("express-bearer-token");
 const helmet = require("helmet");
 const cookieParser = require('cookie-parser');
@@ -56,7 +57,7 @@ const SSL = {
 // const svr = https.createServer(SSL, App);  
 
 //development
-const svr = http.createServer(App);  
+const svr = http.createServer(App);
 
 const PORT = process.env.PORT_SSL; // or any other port number you prefer
 
@@ -171,7 +172,8 @@ const {
   hotsAdmin,
   hotsTicket,
   hotsSettings,
-  eventRouter
+  eventRouter,
+  shortener
 } = require("./routers");
 
 // Auth: 
@@ -218,6 +220,9 @@ App.use("/hots_ticket", hotsTicket);
 
 //hots_settings
 App.use("/hots_settings", hotsSettings);
+
+//Shortener
+App.use("/shortener", shortener);
 
 App.use('/public', express.static(path.join(__dirname, 'public')));
 
@@ -273,7 +278,8 @@ const {
   dbTM,
   dbIndomieku,
   dbHots,
-  dbCardGenerator
+  dbCardGenerator,
+  dbClick
 } = require("./config/db");
 
 //FOR POOLING CONNECTION
@@ -305,6 +311,15 @@ dbHots.getConnection((error, connection) => {
   console.log(`DB HOTS has been connected ${connection.threadId}`);
 });
 
+
+dbClick.getConnection((error, connection) => {
+  if (error) {
+    console.log("Error DB Click Connection!", error.sqlMessage);
+  }
+  console.log(`DB Click has been connected ${connection.threadId}`);
+});
+
+
 /*
 dbIndomieku.getConnection((error, connection) => {
   if (error) {
@@ -325,6 +340,7 @@ const {
   notification
 
 } = require('./automation');
+const { error } = require("console");
 
 trademarkMgmtAuto.runCheck();
 notification.shippingMailNotification();

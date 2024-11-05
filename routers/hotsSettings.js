@@ -18,6 +18,9 @@ route.get('/get_service', decodeTokenHT, hotsSettingsController.getservice)
 route.get('/get_category', decodeTokenHT, hotsSettingsController.getcategory)
 route.get('/get_completionstatus', decodeTokenHT, hotsSettingsController.getcompletionstatus)
 
+route.get('/get_srf_plant', decodeTokenHT, hotsSettingsController.getSRFPlant)
+route.get('/get_srf_sampleCategory', decodeTokenHT, hotsSettingsController.getSRFSampleCategory)
+route.get('/get_srf_deliverTo', decodeTokenHT, hotsSettingsController.getSRFDeliverTo)
 
 
 
