@@ -439,13 +439,13 @@ module.exports = {
         let user_id = req.dataToken.user_id
 
         // cari username dulu
-        const queryGetRole = `
+        const queryGetData = `
         SELECT *
         FROM 
         m_ticket_status
         `;
 
-        dbHots.execute(queryGetRole, [user_id], (err1, results1) => {
+        dbHots.execute(queryGetData, [user_id], (err1, results1) => {
             if (err1) {
                 res.status(500).send({
                     success: false,
@@ -462,6 +462,117 @@ module.exports = {
                 console.log(timestamp, "GET Completion Status  SUCCESS");
             }
         });
+
+    },
+
+    getSRFPlant: (req, res) => {
+
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        let user_id = req.dataToken.user_id
+
+        // cari username dulu
+        const queryGetData = `
+        SELECT 
+            *
+        FROM 
+            m_plant
+        `;
+
+        dbHots.execute(queryGetData, (err1, results1) => {
+            if (err1) {
+                res.status(500).send({
+                    success: false,
+                    message: err1
+                });
+                console.log(timestamp, "HOTS getSRFPlant Status Error: ", err1);
+                return;
+            } else {
+                res.status(200).send({
+                    success: true,
+                    message: "getSRFPlant Status  SUCCESS",
+                    data: results1 // include menu data in the response
+                });
+                console.log(timestamp, "getSRFPlant Status  SUCCESS");
+            }
+        });
+
+    },
+
+    getSRFSampleCategory: (req, res) => {
+
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        let user_id = req.dataToken.user_id
+
+        // cari username dulu
+        const queryGetData = `
+        SELECT 
+            *
+        FROM 
+            m_sample_category
+        `;
+
+        dbHots.execute(queryGetData, (err1, results1) => {
+            if (err1) {
+                res.status(500).send({
+                    success: false,
+                    message: err1
+                });
+                console.log(timestamp, "HOTS Get getSRFSampleCategory Error: ", err1);
+                return;
+            } else {
+                res.status(200).send({
+                    success: true,
+                    message: "GET getSRFSampleCategory  SUCCESS",
+                    data: results1 // include menu data in the response
+                });
+                console.log(timestamp, "GET getSRFSampleCategory  SUCCESS");
+            }
+        });
+
+    },
+
+    getSRFDeliverTo: (req, res) => {
+
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        let user_id = req.dataToken.user_id
+
+        const queryGetData = `
+        SELECT mc.company_id company_id, upper(mc.company_name) company_name FROM iod.map_resp_for_dist md LEFT JOIN iod.mst_team mt ON md.team_id = mt.team_id AND md.company_id = mt.company_id  
+        LEFT JOIN iod.mst_team_member mtm ON mtm.team_id = mt.team_id AND mtm.company_id = mt.company_id LEFT JOIN iod.mst_employee me ON mtm.employee_id = me.employee_id
+        LEFT JOIN user u ON me.employee_id = u.employee_id 
+        LEFT JOIN iod.mst_company mc ON md.distributor_id = mc.company_id 
+        WHERE u.user_id = ${user_id}
+        UNION 
+        SELECT 999998, 'SPIT IOD - Lt. 23' company_name
+        UNION 
+        SELECT 999999, upper('Kedutaan Besar Republik Indonesia (KBRI)') company_name
+        ORDER BY 1 asc 
+        `;
+
+        dbHots.execute(queryGetData, (err1, results1) => {
+            if (err1) {
+                res.status(500).send({
+                    success: false,
+                    message: err1
+                });
+                console.log(timestamp, "HOTS Get getSRFSampleCategory Error: ", err1);
+                return;
+            } else {
+                res.status(200).send({
+                    success: true,
+                    message: "GET getSRFSampleCategory  SUCCESS",
+                    data: results1 // include menu data in the response
+                });
+                console.log(timestamp, "GET getSRFSampleCategory  SUCCESS");
+            }
+        });
+
 
     }
 

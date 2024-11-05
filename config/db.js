@@ -79,6 +79,18 @@ const dbHots = mysql.createPool({
 
 const dbQueryHots = util.promisify(dbHots.query).bind(dbHots);
 
+
+const dbClick = mysql.createPool({
+    // connectionLimit : 20, 
+    multipleStatements: true,
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME_Click
+});
+
+const dbQueryClick = util.promisify(dbClick.query).bind(dbClick);
+
 /**
  * 
  * @param {number} user_id -  berkaitan dengan user_id aatau yg bertanggungjawab
@@ -112,7 +124,7 @@ module.exports = {
     dbTM, dbTMQuery,
     dbIndomieku, dbQueryIndomieku,
     dbCardGenerator, dbQueryCardGenerator,
-    dbHots, dbQueryHots,
+    dbHots,dbClick, dbQueryHots, dbQueryClick,
     addSqlLogger
 
 }

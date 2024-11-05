@@ -27,7 +27,7 @@ const generateID = (user_id, service_id, row_number) => {
     // Ensure service_id is a two-digit string
     const formattedServiceID = String(service_id).padStart(2, '0');
 
-    return parseInt(`${year}${month}${day}${formattedServiceID}${user_id}${row_number + 1}`);
+    return parseInt(`${year}${month}${day}${user_id}${formattedServiceID}${row_number + 1}`);
 }
 
 // UNTUK GENERATE NOMOR BELAKANG ID
@@ -69,7 +69,7 @@ where
 module.exports = {
     addTicketITSupport: async (req, res) => {
         let timestamp = magenta + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        let servicetype = 7; // IT Support Request
+        let service_id = 7; // IT Support Request
         const { type, issue_desc } = req.body;
 
         if (req.dataToken.user_id) {
@@ -77,14 +77,14 @@ module.exports = {
                 const [resSuperior] = await dbHots.promise().query(queryCheckSuperiorRow, [req.dataToken.user_id]);
                 const { superior_id: superiorID, final_superior_id: headId } = resSuperior[0];
 
-                const [resTeam] = await dbHots.promise().query(queryCheckTeamRow, [servicetype]);
-                const { user_id: team_leader, team_id, approval_level: approvalLevel } = resTeam[0];
-
-                let paramTicketCheck = [req.dataToken.user_id, servicetype];
+                const [resTeam] = await dbHots.promise().query(queryCheckTeamRow, [service_id]);
+                const team_leader = resTeam.map(row => row.user_id); // Collects all team leaders as an array
+                const approvalLevel = resTeam[0]?.approval_level;
+                let paramTicketCheck = [req.dataToken.user_id, service_id];
                 const [resRow] = await dbHots.promise().query(queryCheckTicketRow, paramTicketCheck);
 
                 // Insert ticket
-                let ticketId = generateID(req.dataToken.user_id, servicetype, resRow[0].r_number);
+                let ticketId = generateID(req.dataToken.user_id, service_id, resRow[0].r_number);
 
                 let queryInsertTicket = `
                     INSERT INTO t_ticket 
@@ -98,7 +98,7 @@ module.exports = {
                     VALUES (?, ?);
                 `;
                 let paramInsertTicket = [
-                    ticketId, servicetype, req.dataToken.user_id, team_id, issue_desc,
+                    ticketId, service_id, req.dataToken.user_id, service_id, issue_desc,
                     ticketId, type,
                 ];
                 await dbHots.promise().query(queryInsertTicket, paramInsertTicket);
@@ -142,6 +142,110 @@ module.exports = {
             console.log(timestamp, "addTicketITSupport is Unauthorized");
         }
     },
+
+    addTicketPCRequest: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = magenta + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+        // 1 === PCRequest
+        let service_id = 1;
+        const { job_desc, reason, laptop_spec_id, old_device, date_acquisition, old_device_spec } = req.body;
+
+        if (req.dataToken.user_id) {
+            try {
+                const [resSuperior] = await dbHots.promise().query(queryCheckSuperiorRow, [req.dataToken.user_id]);
+                const { superior_id: superiorID, final_superior_id: headId } = resSuperior[0];
+
+                const [resTeam] = await dbHots.promise().query(queryCheckTeamRow, [service_id]);
+                const team_leader = resTeam.map(row => row.user_id); // Collects all team leaders as an array
+                const approvalLevel = resTeam[0]?.approval_level;
+
+                let paramTicketCheck = [req.dataToken.user_id, service_id];
+                const [resRow] = await dbHots.promise().query(queryCheckTicketRow, paramTicketCheck);
+                let ticketId = generateID(req.dataToken.user_id, service_id, resRow[0].r_number);
+
+                let queryInsertTicket = old_device ? `
+                INSERT INTO t_ticket 
+                (ticket_id, service_id, status_id, created_by, assigned_team, 
+                creation_date, reason)
+                VALUES
+                (?, ?, 0, ?, ?,
+                now(), ? );
+
+                INSERT INTO t_it_support
+                (ticket_id, job_desc, laptop_spec_id, old_device, date_acquisition, old_device_spec)
+                VALUES
+                (?, ?, ?, ?, ?, ?);
+
+                `:
+                    `
+                INSERT INTO t_ticket 
+                (ticket_id, service_id, status_id, created_by, assigned_team, 
+                creation_date, reason)
+                VALUES
+                (?, ?, 0, ?, ?,
+                now(), ? );
+
+                INSERT INTO t_it_support
+                (ticket_id, job_desc,  laptop_spec_id)
+                VALUES
+                (?, ?, ?);
+
+                `
+
+                let paramInsertTicket =
+                    old_device ? [
+                        ticketId, service_id, req.dataToken.user_id, service_id, reason,
+                        ticketId, job_desc, laptop_spec_id, old_device, date_acquisition, old_device_spec
+                    ]
+                        :
+                        [
+                            ticketId, service_id, req.dataToken.user_id, service_id, reason,
+                            ticketId, job_desc, laptop_spec_id
+                        ]
+
+                await dbHots.promise().query(queryInsertTicket, paramInsertTicket);
+
+
+                const paramInsertApproval = hotsCheckApprovalLevel(ticketId, approvalLevel, team_leader, superiorID);
+
+                if (paramInsertApproval.length > 0) {
+                    const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                    await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
+                }
+
+                res.status(200).send({
+                    success: true,
+                    message: "ticket has been created",
+                    ticket_number: ticketId
+                })
+                console.log(timestamp, "add Ticket PC Request success ")
+
+
+            } catch (err) {
+                console.log("old_device_spec", old_device_spec)
+
+                res.status(500).send({
+                    success: false,
+                    message: err.message
+                });
+                console.log(timestamp, "error addTicketPCRequest", err);
+            }
+
+
+
+
+        }
+        else {
+            res.status(401).send({
+                success: false,
+                message: `Unauthorized`
+            })
+            console.log(timestamp, " addTicketPCRequest is Unauthorized ")
+        }
+
+    }
+    ,
     setTicket: async (req, res) => {
         let timestamp = new Date().toLocaleString('id');
         let service_id = req.params.service_id;
@@ -150,13 +254,14 @@ module.exports = {
 
         if (service_id) {
             switch (parseInt(service_id)) {
-                case 8: // IT tech support
+                case 8: // Idea Bank
                     try {
                         const [resSuperior] = await dbHots.promise().query(queryCheckSuperiorRow, [user_id]);
                         const { superior_id: superiorID } = resSuperior[0];
 
                         const [resTeam] = await dbHots.promise().query(queryCheckTeamRow, [service_id]);
-                        const { user_id: team_leader, approval_level: approvalLevel } = resTeam[0];
+                        const team_leader = resTeam.map(row => row.user_id); // Collects all team leaders as an array
+                        const approvalLevel = resTeam[0]?.approval_level;
 
                         const [resRow] = await dbHots.promise().query(queryCheckTicketRow, [user_id, service_id]);
 
@@ -201,10 +306,125 @@ module.exports = {
                             success: false,
                             message: err.message,
                         });
-                        console.log(timestamp, "Error in addTicketITSupport", err);
+                        console.log(timestamp, "Error in IdeaBank", err);
                     }
                     break;
+
+                case 6: // IT tech support
+
+                    let {
+                        Requestby,
+                        SampleCategory,
+                        Division,
+                        Plant,
+                        Location,
+                        DeliverTo,
+                        SRFNO,
+                        Total,
+                        Sample,
+                        samplecatgroup
+                    } = req.body
+                    const sampleData = JSON.parse(req.body.Sample); // Parse JSON data
+
+                    // console.log("req.body", req.body)
+                    // console.log("req.body", req.body.Sample)
+                    // console.log(sampleData); 
+
+                    try {
+                        const [resSuperior] = await dbHots.promise().query(queryCheckSuperiorRow, [user_id]);
+                        const { superior_id: superiorID } = resSuperior[0];
+
+                        const [resTeam] = await dbHots.promise().query(queryCheckTeamRow, [service_id]);
+                        const team_leader = resTeam.map(row => row.user_id); // Collects all team leaders as an array
+                        const approvalLevel = resTeam[0]?.approval_level;
+
+                        const querycheckticketsrf =
+                            `
+                        select
+                            COUNT(*) as r_number
+                        from
+                            t_srf t
+                        where
+                            plant_id = ?
+                            and 
+                            samplecat_id = ?
+                        `
+
+                        const [resRowSRF] = await dbHots.promise().query(querycheckticketsrf, [Plant, samplecatgroup]);
+
+                        let paramTicketCheck = [req.dataToken.user_id, service_id];
+                        const [resRow] = await dbHots.promise().query(queryCheckTicketRow, paramTicketCheck);
+
+
+                        const paddedNumber = String(resRowSRF[0].r_number + 1).padStart(3, '0');
+                        const formattedSRFNO = `${paddedNumber + SRFNO}`
+                        // Generate Ticket ID
+                        let ticketId = await generateID(user_id, service_id, resRow[0].r_number);
+
+                        // Insert Ticket and Idea Bank Entry
+                        let queryInsertTicket = `
+                            INSERT INTO t_ticket (ticket_id, created_by, reason, service_id, status_id, assigned_team, creation_date)
+                            VALUES (?, ?, ?, 6, 0, 6, now() );
+    
+                            INSERT INTO t_srf (ticket_id, plant_id, srf_no, deliver_to, request_by, samplecat_id, purpose) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?);
+
+                           
+                        `;
+
+                        await dbHots.promise().query(queryInsertTicket,
+                            [ticketId, user_id, ticket_reason,
+                                ticketId, Plant, formattedSRFNO, DeliverTo, user_id, SampleCategory, service_reason,
+                            ]
+                        );
+
+                        let queryInsertSRFDetails = `
+                                INSERT INTO td_srf (ticket_id, item_name, quantity, contain)
+                                VALUES (?, ?, ?, ?);
+                            `;
+
+                        // Loop through the Sample array to insert each item
+                        for (const item of sampleData) {
+                            await dbHots.promise().query(queryInsertSRFDetails, [
+                                ticketId,
+                                item.name,  // Assuming the object has item_name
+                                item.quantity,   // Assuming the object has quantity
+                                //item.quantity_uom, // Assuming the object has quantity_uom
+                                item.contain || 0,    // Assuming the object has contain
+                                //item.contain_uom  // Assuming the object has contain_uom
+                            ]);
+                        }
+
+                        // Insert Approval Events
+                        const paramInsertApproval = hotsCheckApprovalLevel(ticketId, approvalLevel, team_leader, superiorID);
+                        if (paramInsertApproval.length > 0) {
+                            const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                            await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
+                        }
+
+
+                        // Final Response
+                        console.log(timestamp, `Success set ticket with service 06 for ${user_id}`)
+                        res.status(200).send({
+                            success: true,
+                            message: "Ticket has been created",
+                            ticket_number: ticketId,
+                        });
+                    } catch (err) {
+                        res.status(500).send({
+                            success: false,
+                            message: err.message,
+                        });
+                        console.log(timestamp, "Error in add Ticket for SRF service id 6");
+                        console.log('===========================================================');
+
+                        console.log(err);
+
+                    }
+                    break;
+
                 default:
+                    console.log("Trying to set Ticket without service")
                     res.status(400).send({
                         success: false,
                         message: "Invalid service_id provided.",
@@ -219,107 +439,7 @@ module.exports = {
         }
     }
 
-    , addTicketPCRequest: async (req, res) => {
 
-        let date = new Date();
-        let timestamp = magenta + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        // 1 === PCRequest
-        let servicetype = 1;
-        const { job_desc, reason, laptop_spec_id, old_device, date_acquisition, old_device_spec } = req.body;
-
-        if (req.dataToken.user_id) {
-            try {
-                const [resSuperior] = await dbHots.promise().query(queryCheckSuperiorRow, [req.dataToken.user_id]);
-                const { superior_id: superiorID, final_superior_id: headId } = resSuperior[0];
-
-                const [resTeam] = await dbHots.promise().query(queryCheckTeamRow, [servicetype]);
-                const { user_id: team_leader, team_id, approval_level: approvalLevel } = resTeam[0];
-
-                let paramTicketCheck = [req.dataToken.user_id, servicetype];
-                const [resRow] = await dbHots.promise().query(queryCheckTicketRow, paramTicketCheck);
-                let ticketId = generateID(req.dataToken.user_id, servicetype, resRow[0].r_number);
-
-                let queryInsertTicket = old_device ? `
-                INSERT INTO t_ticket 
-                (ticket_id, service_id, status_id, created_by, assigned_team, 
-                creation_date, reason)
-                VALUES
-                (?, ?, 0, ?, ?,
-                now(), ? );
-
-                INSERT INTO t_it_support
-                (ticket_id, job_desc, laptop_spec_id, old_device, date_acquisition, old_device_spec)
-                VALUES
-                (?, ?, ?, ?, ?, ?);
-
-                `:
-                    `
-                INSERT INTO t_ticket 
-                (ticket_id, service_id, status_id, created_by, assigned_team, 
-                creation_date, reason)
-                VALUES
-                (?, ?, 0, ?, ?,
-                now(), ? );
-
-                INSERT INTO t_it_support
-                (ticket_id, job_desc,  laptop_spec_id)
-                VALUES
-                (?, ?, ?);
-
-                `
-
-                let paramInsertTicket =
-                    old_device ? [
-                        ticketId, servicetype, req.dataToken.user_id, team_id, reason,
-                        ticketId, job_desc, laptop_spec_id, old_device, date_acquisition, old_device_spec
-                    ]
-                        :
-                        [
-                            ticketId, servicetype, req.dataToken.user_id, team_id, reason,
-                            ticketId, job_desc, laptop_spec_id
-                        ]
-
-                await dbHots.promise().query(queryInsertTicket, paramInsertTicket);
-
-
-                const paramInsertApproval = hotsCheckApprovalLevel(ticketId, approvalLevel, team_leader, superiorID);
-
-                if (paramInsertApproval.length > 0) {
-                    const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
-                    await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
-                }
-
-                res.status(200).send({
-                    success: true,
-                    message: "ticket has been created",
-                    ticket_number: ticketId
-                })
-                console.log(timestamp, "add Ticket PC Request success ")
-
-
-            } catch (err) {
-                console.log("old_device_spec", old_device_spec)
-
-                res.status(500).send({
-                    success: false,
-                    message: err.message
-                });
-                console.log(timestamp, "error addTicketITSupport", err);
-            }
-
-
-
-
-        }
-        else {
-            res.status(401).send({
-                success: false,
-                message: `Unauthorized`
-            })
-            console.log(timestamp, " addTicketPCRequest is Unauthorized ")
-        }
-
-    }
 
     // ALASAN KENAPA DISATUKAN UPLOAD DAN SUBMIT, SOALNYA KALO SATU-SATU GA KETAHUAN SALAH SATU GAGAL ATAU MASUK
     , uploadFileITSupport: async (req, res) => {
@@ -367,7 +487,7 @@ module.exports = {
         ///hots_ticket/my_tiket
         const status = req.query.status || "";
         const category = req.query.category || "";
-        const searchBarOnTop = req.query.searchBarOnTop || "";
+        const searchBarOnTop = req.query.search || "";
 
         const limit = parseInt(req.query.limit, 10) || 10;
         const currentPage = parseInt(req.query.page, 10) || 1;
@@ -535,7 +655,6 @@ module.exports = {
         let service_id = req.params.service_id
         let ticket_id = req.params.ticket_id
 
-
         if (service_id) {
             switch (parseInt(service_id)) {
                 case 8: // Idea Bank
@@ -547,6 +666,7 @@ module.exports = {
                         t.service_id,
                         t.assigned_to,
                         d.service_reason,
+                        t.service_id,
                         t.status_id,
                         ts.color_hex,
                         CONCAT(uc.firstname, " ", uc.lastname) as created_by_username,
@@ -589,6 +709,8 @@ module.exports = {
                             ts.status_id = t.status_id
                         left join user uc on
                             uc.user_id = t.created_by
+                        LEFT JOIN
+                            m_service s ON t.service_id = s.service_id      
                         where
                             d.ticket_id = ?
                         `;
@@ -622,6 +744,7 @@ module.exports = {
                         t.reason,
                         t.assigned_team,
                         t.service_id,
+                        s.service_name,
                         t.assigned_to,
                         t.status_id,
                         ts.color_hex,
@@ -681,6 +804,8 @@ module.exports = {
                         m_ticket_status ts ON ts.status_id = t.status_id
                         left join user uc on
                         uc.user_id = t.created_by
+                        LEFT JOIN
+                        m_service s ON t.service_id = s.service_id  
                         where
                             d.ticket_id =?
                         `;
@@ -700,10 +825,129 @@ module.exports = {
                     });
                     break;
                 case 6: //sample request form
-                    return res.status(200).send({
-                        success: false,
-                        message: "service_id must be provided "
-                    });;
+                    let queryGetSampleRequest = `
+                            select
+                                d.ticket_id,
+                                d.purpose,
+                                d.plant_id,
+                                d.srf_no,
+                                d.deliver_to,
+                                d.request_by,
+                                d.samplecat_id,
+                                d.purpose,
+                                d.executor_remarks,
+                                t.reason,
+                                t.assigned_team,
+                                t.service_id,
+                                t.assigned_to,
+                                t.service_id,
+                                t.status_id,
+                                s.service_name,
+                                ts.color_hex,
+                                CONCAT(uc.firstname, " ", uc.lastname) as created_by_username,
+                                ts.status_name,
+                                (
+                                select
+                                    JSON_ARRAYAGG(
+                                                                                            JSON_OBJECT(
+                                                                                            'item_name', td.item_name, 
+                                                                                            'quantity', td.quantity,
+                                                                                            'quantity_uom', td.quantity_uom,
+                                                                                            'contain', td.contain,
+                                                                                            'contain_uom', td.contain_uom
+                                                                                        )
+                                                                                    )
+                                from
+                                    td_srf td
+                                where
+                                    td.ticket_id = d.ticket_id
+                                                                                ) 
+                                                                                as list_item,
+                                (
+                                select
+                                    JSON_ARRAYAGG(
+                                                                                            JSON_OBJECT(
+                                                                                            'attachment_id', a.attachment_id, 
+                                                                                            'url', a.url
+                                                                                        )
+                                                                                    )
+                                from
+                                    t_attachment a
+                                where
+                                    a.ticket_id = d.ticket_id
+                                    and
+                                                                                comment_id is null
+                                                                                ) 
+                                                                                as list_foto,
+                                (
+                                select
+                                    tm.user_id
+                                from
+                                    m_team_member tm
+                                where
+                                    tm.team_id = t.assigned_team
+                                    and
+                                                                                    tm.team_leader = 1
+                                limit 1
+                                                                                ) 
+                                                                                as team_leader_id,
+                                                                                 (
+                        SELECT
+                            JSON_ARRAYAGG(
+                                JSON_OBJECT(
+                                    'approver_id', a.approver_id, 
+                                    'approval_order', a.approval_order,
+                                    'approver_name', CONCAT(u.firstname, " ", u.lastname),
+                                    'approval_status', a.approval_status,
+                                    'approval_date',  DATE_FORMAT(a.approve_date, '%Y-%m-%d'),
+                                    'cancel_remark', a.rejection_remark
+
+                                )
+                            )
+                        FROM
+                            t_approval_event a
+                        LEFT JOIN
+                            user u ON u.user_id = a.approver_id
+                        WHERE
+                            a.approval_id = d.ticket_id 
+                    ) AS list_approval
+                            from
+                                t_srf d
+                            left join
+                                                                                                        t_ticket t on
+                                t.ticket_id = d.ticket_id
+                            left join
+                                                                                                        m_ticket_status ts on
+                                ts.status_id = t.status_id
+                            left join user uc on
+                                uc.user_id = t.created_by
+                            left join
+                                                                                    m_service s on
+                                t.service_id = s.service_id
+                            where
+                                d.ticket_id = ?
+                    `;
+
+                    dbHots.execute(queryGetSampleRequest, [ticket_id], (err, results) => {
+                        if (err) {
+                            console.log(timestamp, `getTicketDetail case ${service_id}: queryGetSampleRequest`);
+                            return res.status(500).send({
+                                success: false,
+                                message: err
+                            });
+                        } else {
+                            console.log(timestamp, `getTicketDetail case ${service_id}: queryGetSampleRequest`);
+                            if (results.length > 0) {
+
+                                return res.status(200).send({ data: results });
+                            }
+                            else {
+                                return res.status(405).send({ message: "0 data", success: false });
+
+                            }
+                        }
+                    });
+                    break;
                 case 5:
                     return res.status(200).send({
                         success: false,
@@ -733,6 +977,7 @@ module.exports = {
                     t.*,
                     ts.status_name,
                     ts.color_hex,
+                    s.service_name,
                     CONCAT(uc.firstname, " ", uc.lastname) AS created_by_username,
                     (
                         SELECT
@@ -773,6 +1018,8 @@ module.exports = {
                          m_ticket_status ts ON t.status_id = ts.status_id
                     LEFT JOIN
                          user uc ON uc.user_id = t.created_by
+                    LEFT JOIN
+                         m_service s ON t.service_id = s.service_id     
                     WHERE
                           t.ticket_id = ?;  
                 `
@@ -825,7 +1072,7 @@ module.exports = {
                 case 7: // IT tech support
                     let querySetApprovalITSupport =
                         `
-                        UPDATE approval_event
+                        UPDATE t_approval_event
                         SET 
                             approve_date = NOW(), 
                             approval_status = 1
@@ -864,28 +1111,155 @@ module.exports = {
                             message: err
                         });
                     }
-                case 6: //sample request form
-                    return res.status(200).send({
-                        success: false,
-                        message: "service_id must be provided "
-                    });;
+                case 6: // Sample request form
+                    console.log("Access sample request form Approval");
+
+                    // Update approval event
+                    let querySetApprovalRequestSRF = `
+                        UPDATE t_approval_event
+                        SET 
+                            approve_date = NOW(), 
+                            approval_status = 1
+                        WHERE 
+                            approval_id = ?
+                        AND
+                            approver_id = ? 
+                    `;
+
+                    // Query to check for team members
+                    const querycheckmembersrf = `
+                        SELECT 
+                            user_id 
+                        FROM 
+                            m_team_member mtm
+                        WHERE
+                            mtm.team_leader = 0
+                        AND
+                            mtm.team_id = 6
+                    `;
+
+                    try {
+                        // Retrieve the team member for assignment
+                        const [resRowSRF] = await dbHots.promise().query(querycheckmembersrf);
+
+                        if (resRowSRF.length === 0) {
+                            return res.status(400).send({ success: false, message: "No team member found to assign." });
+                        }
+
+                        // Extract user_id to assign
+                        const assignedToUserId = resRowSRF[0].user_id;
+                        let paramApprovalRequest = [ticket_id, user_id];
+
+                        // Execute approval update query
+                        dbHots.execute(querySetApprovalRequestSRF, paramApprovalRequest, (err, results) => {
+                            if (err) {
+                                console.log("Error processing querySetApprovalRequestSRF on approval", err);
+                                return res.status(500).send({ success: false, message: "Error in approval update." });
+                            }
+
+
+
+                            // Queries to check total approvals and approved counts
+                            let querycheckapproval = `
+                                SELECT
+                                    COUNT(ae.approval_order) AS Approval_unit
+                                FROM
+                                    t_approval_event ae
+                                WHERE
+                                    ae.approval_id = ?
+                            `;
+
+                            let querycheckapproved = `
+                                SELECT
+                                    COUNT(ae.approval_order) AS Approval_unit
+                                FROM
+                                    t_approval_event ae
+                                WHERE
+                                    ae.approval_id = ?
+                                    AND ae.approval_status = 1
+                            `;
+
+                            let paramUpdateTicketRequest = [ticket_id];
+                            let approvalCount, approvedCount;
+
+                            // Check total approvals count
+                            dbHots.execute(querycheckapproval, [ticket_id], (err, results) => {
+                                if (err) {
+                                    console.log("Error with approval count", err);
+                                    return res.status(504).send({ success: false, message: "Error checking approval count" });
+                                }
+                                approvalCount = results;
+
+                                // Check approved count within the same callback
+                                dbHots.execute(querycheckapproved, [ticket_id], (err, results) => {
+                                    if (err) {
+                                        console.log("Error with approved count", err);
+                                        return res.status(505).send({ success: false, message: "Error checking approved count" });
+                                    }
+                                    approvedCount = results;
+
+                                    console.log("Approval count:", approvalCount);
+                                    console.log("Approved count:", approvedCount);
+
+                                    // If all approvals are complete, update ticket status
+                                    if (approvalCount[0].Approval_unit === approvedCount[0].Approval_unit) {
+                                        console.log("All approvals complete");
+
+                                        let queryUpdateTicketRequest = `
+                                            UPDATE t_ticket
+                                            SET 
+                                                status_id = 1,
+                                                assigned_to = ?,
+                                                last_update = NOW()
+                                            WHERE 
+                                                ticket_id = ?;
+                                        `;
+
+                                        dbHots.execute(queryUpdateTicketRequest, [assignedToUserId, ...paramUpdateTicketRequest], (err, results) => {
+                                            if (err) {
+                                                console.log("Error updating ticket status to submitted", err);
+                                                return res.status(502).send({
+                                                    success: false,
+                                                    message: "Error updating ticket status"
+                                                });
+                                            } else {
+                                                console.log("Request successful");
+                                                return res.status(200).send({ success: true, message: "Approval and assignment updated successfully." });
+                                            }
+                                        });
+                                    } else {
+                                        return res.status(200).send({
+                                            success: true,
+                                            message: " Approved for this user "
+                                        });
+                                    }
+                                });
+                            });
+                        });
+                    } catch (error) {
+                        console.log("Error executing team member query", error);
+                        return res.status(500).send({ success: false, message: "Error retrieving team member." });
+                    }
+
+                    break;
+
                 case 5:
-                    return res.status(200).send({
+                    return res.status(400).send({
                         success: false,
                         message: "service_id must be provided "
                     });;
                 case 4:
-                    return res.status(200).send({
+                    return res.status(400).send({
                         success: false,
                         message: "service_id must be provided "
                     });;
                 case 3:
-                    return res.status(200).send({
+                    return res.status(400).send({
                         success: false,
                         message: "service_id must be provided "
                     });;
                 case 2:
-                    return res.status(200).send({
+                    return res.status(400).send({
                         success: false,
                         message: "service_id must be provided "
                     });;
@@ -893,7 +1267,7 @@ module.exports = {
                     console.log("Access IT REQUEST Approval")
                     let querySetApprovalRequest =
                         `
-                        UPDATE approval_event
+                        UPDATE t_approval_event
                         SET 
                             approve_date = NOW(), 
                             approval_status = 1
@@ -1015,7 +1389,7 @@ module.exports = {
                 success: false,
                 message: "service_id must be provided "
             })
-            console.log(timestamp, "getTicketDetail service_id is not provided ")
+            console.log(timestamp, "setApprove service_id is not provided ")
         }
 
 
@@ -1033,7 +1407,7 @@ module.exports = {
 
         let querySetApproval = `
         update
-            approval_event
+            t_approval_event
         set
             approve_date = now(),
             approval_status = 2,
@@ -1140,7 +1514,7 @@ module.exports = {
 
         const status = req.query.status || "";
         const category = req.query.category || "";
-        const searchBarOnTop = req.query.searchBarOnTop || "";
+        const searchBarOnTop = req.query.search || "";
 
 
 
@@ -1291,7 +1665,7 @@ module.exports = {
 
         const status = req.query.status || "";
         const category = req.query.category || "";
-        const searchBarOnTop = req.query.searchBarOnTop || "";
+        const searchBarOnTop = req.query.search || "";
 
 
 
@@ -1348,6 +1722,8 @@ module.exports = {
                 ts.status_id = t.status_id
             LEFT JOIN m_team tm ON
                 t.assigned_team = tm.team_id
+           LEFT JOIN m_team_member tmm ON
+                tmm.team_id = tm.team_id AND tmm.user_id = ${req.dataToken.user_id}
             LEFT JOIN t_approval_event ae ON
                 t.ticket_id = ae.approval_id AND ae.approver_id = ${req.dataToken.user_id} -- Left join with the approver_id condition
             WHERE
@@ -1364,27 +1740,28 @@ module.exports = {
                         )
                     )
                 )
-            OR t.assigned_to = ${req.dataToken.user_id} -- Case where user is assigned to the ticket
-
+            
             `
 
             let countQuery = `
-            SELECT
-                COUNT(DISTINCT t.ticket_id) AS total_count 
-            FROM
-                t_ticket t
-            LEFT JOIN m_service s ON
-                t.service_id = s.service_id
-            LEFT JOIN t_approval_event ae ON 
-                t.ticket_id = ae.approval_id 
-            WHERE 
-                ae.approver_id = ${req.dataToken.user_id} 
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM t_approval_event ae_prev
-                    WHERE ae_prev.approval_id = t.ticket_id
-                    AND ae_prev.approval_order < ae.approval_order 
-                    AND ae_prev.approve_date IS NULL 
+            SELECT COUNT(DISTINCT t.ticket_id) AS total_count 
+                FROM t_ticket t
+                LEFT JOIN m_service s ON t.service_id = s.service_id
+                LEFT JOIN t_approval_event ae ON t.ticket_id = ae.approval_id
+                LEFT JOIN m_team tm ON t.assigned_team = tm.team_id
+                LEFT JOIN m_team_member tmm ON tmm.team_id = tm.team_id AND tmm.user_id = ${req.dataToken.user_id}
+                WHERE 
+                (
+                    (ae.approver_id = ${req.dataToken.user_id} AND 
+                    NOT EXISTS (
+                        SELECT 1
+                        FROM t_approval_event ae_prev
+                        WHERE ae_prev.approval_id = t.ticket_id
+                        AND ae_prev.approval_order < ae.approval_order 
+                        AND ae_prev.approve_date IS NULL 
+                    )) 
+                    OR t.assigned_to = ${req.dataToken.user_id}  -- The current user is assigned to the ticket
+                    OR tmm.team_leader = 1 -- The current user is a team leader for the ticket
                 )
             `;
 
@@ -1403,6 +1780,14 @@ module.exports = {
                 countQuery += ` AND ( LOWER(t.ticket_id) LIKE LOWER('%${searchBarOnTop}%') OR LOWER(t.reason) LIKE LOWER('%${searchBarOnTop}%') ) `;
             }
 
+            queryGetMyTiket +=
+                `
+            AND (
+                t.assigned_to = ${req.dataToken.user_id}  -- The current user is assigned to the ticket
+                OR ae.approver_id = ${req.dataToken.user_id} -- The current user is an approver for the ticket
+                OR tmm.team_leader = 1 -- The current user is a team leader for the ticket
+                )
+            `
 
             queryGetMyTiket += `  GROUP BY
             t.ticket_id, s.service_id, s.service_name, u.firstname, u.lastname, ts.status_name, ts.color, tm.team_name, t.last_update, t.reason, 
@@ -1674,6 +2059,8 @@ module.exports = {
                         t_comment c
                     left join 
                         t_attachment a on
+                        c.ticket_id = a.ticket_id 
+                    and
                         c.comment_id = a.comment_id
                     left join
                         user u on
@@ -2091,7 +2478,7 @@ module.exports = {
 
 
 
-                                    dbHots.query(commentQuery, [ticket_order, ticket_id, fullfillment_comment, status], (err, results) => {
+                                    dbHots.query(commentQuery, [ticket_order, ticket_id, fullfillment_comment || " ticked ended by system", status], (err, results) => {
                                         if (err) {
                                             console.error(timestamp, "Error Creating setOpenTiketCount", err);
                                             return res.status(500).send({
