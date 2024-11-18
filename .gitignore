@@ -2,4 +2,8 @@
 /.env
 
 /.zip
-*.zip
+
+/.jpg
+/.jpeg
+/.png
+
