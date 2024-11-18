@@ -845,6 +845,7 @@ module.exports = {
                                 s.service_name,
                                 ts.color_hex,
                                 CONCAT(uc.firstname, " ", uc.lastname) as created_by_username,
+                                CONCAT(ac.firstname, " ", ac.lastname) as assign_to_username,
                                 ts.status_name,
                                 (
                                 select
@@ -914,13 +915,15 @@ module.exports = {
                             from
                                 t_srf d
                             left join
-                                                                                                        t_ticket t on
+                                t_ticket t on
                                 t.ticket_id = d.ticket_id
                             left join
-                                                                                                        m_ticket_status ts on
+                                m_ticket_status ts on
                                 ts.status_id = t.status_id
                             left join user uc on
                                 uc.user_id = t.created_by
+                            left join user ac on
+                                ac.user_id = t.assigned_to    
                             left join
                                                                                     m_service s on
                                 t.service_id = s.service_id
@@ -2127,6 +2130,201 @@ module.exports = {
 
 
 
+
+            }
+            else {
+                console.warn(timestamp, "getRejectTiketCount Unauthorized");
+                return res.status(404).send({
+                    success: false,
+                    message: "404 error no data with that ticket ID"
+                });
+            }
+
+
+
+
+
+        } else {
+            console.warn(timestamp, "getRejectTiketCount Unauthorized");
+            return res.status(401).send({
+                success: false,
+                message: "Unauthorized access"
+            });
+        }
+
+    },
+    getTicketEmail: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = magenta + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ';
+        let ticket_id = req.params.ticket_id;
+
+        let user_id = req.dataToken.user_id
+        if (req.dataToken && req.dataToken.user_id) {
+
+            if (ticket_id) {
+
+                let emailQuery =
+
+                    `
+                    select
+                        *
+                    from
+                        t_srf_mail c
+                    where
+                        c.ticket_id = ?
+                        `
+
+                dbHots.query(emailQuery, [ticket_id], (err, results) => {
+
+                    if (err) {
+                        console.error(timestamp, "Error fetching getTicketEmail", err);
+                        return res.status(500).send({
+                            success: false,
+                            message: "Internal server error",
+                            error: err
+                        });
+                    }
+                    const list = results;
+                    if (results.length > 0) {
+                        console.log(timestamp, `getTicketEmail success for ID ${ticket_id}`);
+
+                        return res.status(200).send({
+                            success: true,
+                            data: list,  // Return the comment list
+                        });
+                    } else {
+                        console.log(timestamp, `getTicketEmail failed with empty list for ID ${ticket_id}`);
+
+                        return res.status(200).send({
+                            success: true,
+                            message: "No data found",
+                            totalData: 0
+                        });
+                    }
+                })
+
+            }
+            else {
+                console.warn(timestamp, "getRejectTiketCount Unauthorized");
+                return res.status(404).send({
+                    success: false,
+                    message: "404 error no data with that ticket ID"
+                });
+            }
+
+
+
+
+
+        } else {
+            console.warn(timestamp, "getRejectTiketCount Unauthorized");
+            return res.status(401).send({
+                success: false,
+                message: "Unauthorized access"
+            });
+        }
+
+    },
+    setTicketEmail: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = magenta + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ';
+        let ticket_id = req.params.ticket_id;
+        const { email, emailtype } = req.body;
+
+        let user_id = req.dataToken.user_id
+        if (req.dataToken && req.dataToken.user_id) {
+
+            if (ticket_id) {
+
+                let emailQuery =
+
+                    `
+                        INSERT INTO t_srf_mail
+                        ( email, email_type, ticket_id)
+                        VALUES
+                        (?, ?, ?);
+                        `
+
+                dbHots.query(emailQuery, [email, emailtype, ticket_id], (err, results) => {
+
+                    if (err) {
+                        console.error(timestamp, "Error fetching setTicketEmail", err);
+                        return res.status(500).send({
+                            success: false,
+                            message: "Internal server error",
+                            error: err
+                        });
+                    }
+                    else {
+                        console.log(timestamp, `setTicketEmail success ID ${ticket_id}`);
+                        return res.status(200).send({
+                            success: true,
+                        });
+                    }
+                })
+
+            }
+            else {
+                console.warn(timestamp, "getRejectTiketCount Unauthorized");
+                return res.status(404).send({
+                    success: false,
+                    message: "404 error no data with that ticket ID"
+                });
+            }
+
+
+
+
+
+        } else {
+            console.warn(timestamp, "getRejectTiketCount Unauthorized");
+            return res.status(401).send({
+                success: false,
+                message: "Unauthorized access"
+            });
+        }
+
+    },
+    delTicketEmail: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = magenta + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ';
+        const { ticket_id } = req.params;  // Extract ticket_id from URL parameter
+        const { email_id } = req.query;
+
+        let user_id = req.dataToken.user_id
+        if (req.dataToken && req.dataToken.user_id) {
+
+            if (ticket_id) {
+
+                let emailQuery =
+
+                    `
+                        DELETE FROM t_srf_mail
+                        WHERE 
+                        email_id = ? ;
+                        `
+
+                dbHots.query(emailQuery, [email_id], (err, results) => {
+
+                    if (err) {
+                        console.error(timestamp, "Error fetching delTicketEmail", err);
+                        return res.status(500).send({
+                            success: false,
+                            message: "Internal server error",
+                            error: err
+                        });
+                    }
+                    else {
+                        console.log(timestamp, `delTicketEmail success for ID ${ticket_id} and email ${email_id}`);
+
+                        return res.status(200).send({
+                            success: true,
+                        });
+                    }
+                })
 
             }
             else {

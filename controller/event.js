@@ -35,11 +35,16 @@ module.exports = {
             queryUnique
         } = req.body;
 
+
+        console.log("Form Fields:", req.body);
+        console.log("filename Fields:", req.files[0].filename);
+
+
         if (queryUnique) {
             let valueToCheck;
 
             // Dynamically select the column based on queryUnique
-            switch (queryUnique) {
+            switch (Number(queryUnique)) {
                 case 1:
                     valueToCheck = column_1;
                     break;
@@ -84,21 +89,24 @@ module.exports = {
                     });
             }
 
+
+
+
             try {
-                let uniqueQueryResult = await dbQuery(
+                // Query the database to check if the value is unique
+                const uniqueQueryResult = await dbQuery(
                     `SELECT COUNT(*) as count FROM cstm_form WHERE column_${queryUnique} = ? AND event_id = ?`,
                     [valueToCheck, Event_id]
                 );
 
-                // Check if the value already exists
                 if (uniqueQueryResult[0].count > 0) {
                     return res.status(409).send({
                         success: false,
-                        message: "The value already exists in the system",
+                        message: "The invoice already registered in the system",
                     });
                 }
             } catch (error) {
-                console.error("Database query failed", error);
+                console.error("Database query failed:", error);
                 return res.status(500).send({
                     success: false,
                     message: "Database error while checking for unique value",
@@ -106,48 +114,58 @@ module.exports = {
             }
         }
 
-        let paramTicketCheck = [Country, Event_id];
+        const paramTicketCheck = [Country, Event_id];
+        const queryCheckTicketRow = `
+            SELECT COUNT(*) AS row_number FROM cstm_form WHERE country_id = ? AND event_id = ?
+        `;
 
         dbConf.query(queryCheckTicketRow, paramTicketCheck, async (err, results) => {
             if (err) {
-                console.error("Error executing queryCheckTicketRow", err);
+                console.error("Error executing queryCheckTicketRow:", err);
                 return res.status(500).send({
                     success: false,
                     message: "Ticket not created",
                 });
             }
 
-            let formID = generateID(Country, Event_id, results[0].row_number);
+            const rowNumber = results[0].row_number + 1; // Increment row number
+            const formID = generateID(Country, Event_id, rowNumber); // Generate unique form ID
 
-            let queryForm = `
+            let file_url = `/public/files/DoorPrize/event_taiwan_1/${req.files[0].filename}`;
+            // Insert the form data into the database
+            const queryForm = `
                 INSERT INTO cstm_form
                     (
-                        column_1, column_2, column_3, column_4, column_5, 
-                        country_id, attachment_id, event_id, submit_date
+                        column_1, column_2, column_3, column_4, column_5,
+                        country_id, attachment_id, event_id, file_path,  submit_date
                     )
-                    VALUES 
-                    (?, ?, ?, ?, ?, ?, ?, ?, Now());
+                VALUES 
+                    (?, ?, ?, ?, ?, ?, ?, ?,? , NOW());
             `;
 
-            let parameterForm = [
+            const parameterForm = [
                 column_1, column_2, column_3, column_4, column_5,
-                Country, formID, Event_id
+                Country, formID, Event_id, file_url
             ];
 
             dbConf.query(queryForm, parameterForm, (err, results) => {
                 if (err) {
-                    console.error("Error inserting form data", err);
+                    console.error("Error inserting form data:", err);
                     return res.status(501).send({
                         success: false,
                         message: "Ticket not created",
                     });
                 }
+                // if (req.file) {
 
+                // }
+                // else {
                 // Successful insert
                 res.status(200).send({
                     success: true,
                     message: "Ticket has been created",
                 });
+                // }
             });
         });
     }
