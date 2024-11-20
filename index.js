@@ -48,16 +48,29 @@ const cors = require("cors");
 
 const session = require("express-session");
 
-const SSL = {
-  key: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_KEY)),
-  cert: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_CERT))
-};
+// const SSL = {
+//   key: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_KEY)),
+//   cert: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_CERT))
+// };
+
+if (process.env.NODE_ENV === 'production') {
+  // Load SSL credentials for production
+  const SSL = {
+      key: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_KEY)),
+      cert: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_CERT))
+  };
+
+  return https.createServer(SSL, App);
+} else {
+  // Use HTTP for development
+  return http.createServer(App);
+}
 
 //production
 // const svr = https.createServer(SSL, App);  
 
 //development
-const svr = http.createServer(App);
+// const svr = createServer(App);
 
 const PORT = process.env.PORT_SSL; // or any other port number you prefer
 
