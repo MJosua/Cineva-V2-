@@ -133,18 +133,75 @@ module.exports = {
 
             let file_url = `/public/files/DoorPrize/event_taiwan_1/${req.files[0].filename}`;
             // Insert the form data into the database
-            const queryForm = `
-                INSERT INTO cstm_form
-                    (
-                        column_1, column_2, column_3, column_4, column_5,
-                        country_id, attachment_id, event_id, file_path,  submit_date
-                    )
-                VALUES 
-                    (?, ?, ?, ?, ?, ?, ?, ?,? , NOW());
-            `;
+            let columns = ["column_1"];
+            let values = ["?"]; // Placeholder for prepared statements
+
+            // Dynamically add columns and placeholders
+            if (column_2) {
+                columns.push("column_2");
+                values.push("?");
+            }
+            if (column_3) {
+                columns.push("column_3");
+                values.push("?");
+            }
+            if (column_4) {
+                columns.push("column_4");
+                values.push("?");
+            }
+            if (column_5) {
+                columns.push("column_5");
+                values.push("?");
+            }
+            if (column_6) {
+                columns.push("column_6");
+                values.push("?");
+            }
+            if (column_7) {
+                columns.push("column_7");
+                values.push("?");
+            }
+            if (column_8) {
+                columns.push("column_8");
+                values.push("?");
+            }
+            if (column_9) {
+                columns.push("column_9");
+                values.push("?");
+            }
+            if (column_10) {
+                columns.push("column_10");
+                values.push("?");
+            }
+            if (column_11) {
+                columns.push("column_11");
+                values.push("?");
+            }
+            if (column_12) {
+                columns.push("column_12");
+                values.push("?");
+            }
+            // Add more columns as needed...
+
+            // Mandatory columns
+            columns.push("country_id", "attachment_id", "event_id", "file_path", "submit_date");
+            values.push("?", "?", "?", "?", "?");
+
 
             const parameterForm = [
-                column_1, column_2, column_3, column_4, column_5,
+                column_1,
+                ...(column_2 ? [column_2] : []),
+                ...(column_3 ? [column_3] : []),
+                ...(column_4 ? [column_4] : []),
+                ...(column_5 ? [column_5] : []),
+                ...(column_6 ? [column_6] : []),
+                ...(column_7 ? [column_7] : []),
+                ...(column_8 ? [column_8] : []),
+                ...(column_9 ? [column_9] : []),
+                ...(column_10 ? [column_10] : []),
+                ...(column_11 ? [column_11] : []),
+                ...(column_12 ? [column_12] : []),
+
                 Country, formID, Event_id, file_url
             ];
 
