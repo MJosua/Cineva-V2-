@@ -6,7 +6,8 @@ const { eventDoorPrize } = require("../config/uploader");
 const uploadFileDoorPrize = eventDoorPrize('event_taiwan_1', 'event_taiwan_1').array('file', 10);
 
 //get data
-route.post("/doorprize", uploadFileDoorPrize, eventController.setDoorprize)
+route.post("/doorprize", uploadFileDoorPrize, eventController.setDoorprize);
+route.get("/showticket", eventController.showticket);
 
 
 module.exports = route;
