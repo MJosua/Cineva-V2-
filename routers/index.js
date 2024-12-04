@@ -1,3 +1,19 @@
+
+/**
+ * @swagger
+ * tags:
+ *   - name: E-Order
+ *     description: E-Order APIs
+ *   - name: Hots
+ *     description: Hots APIs
+ *   - name: CardManagement
+ *     description: CardManagement APIs
+ *   - name: TM-Management
+ *     description: TradeMark APIs
+ *   - name: Shortener
+ *     description: Shortener for Click APIs
+ */
+
 const authRouter = require('./auth')
 const authTmRouter = require('./authTM')
 const cartRouter = require('./cart')

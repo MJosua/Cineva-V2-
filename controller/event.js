@@ -10,8 +10,22 @@ const axios = require('axios');
 
 let green = "\x1b[32m"
 
+let date = new Date();
+let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+
+const now = new Date();
+const formattedDate = `${now.getFullYear()}-${(now.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")} ${now
+        .getHours()
+        .toString()
+        .padStart(2, "0")}:${now.getMinutes()
+            .toString()
+            .padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+
 const queryCheckTicketRow = `
-    SELECT COUNT(*) as row_number
+    SELECT COUNT(*) as rownumber
     FROM 
     cstm_form c 
     WHERE 
@@ -20,10 +34,10 @@ const queryCheckTicketRow = `
     c.event_id = ?
     `
 
-const generateID = (country, event_id, row_number) => {
+const generateID = (country, event_id, rownumber) => {
     // Ensure service_id is a two-digit string
     const formattedEventID = String(event_id).padStart(2, '0');
-    return parseInt(`${country}${formattedEventID}${row_number + 1}`);
+    return parseInt(`${country}${formattedEventID}${rownumber + 1}`);
 
 }
 
@@ -114,9 +128,11 @@ module.exports = {
             }
         }
 
+
+
         const paramTicketCheck = [Country, Event_id];
         const queryCheckTicketRow = `
-            SELECT COUNT(*) AS row_number FROM cstm_form WHERE country_id = ? AND event_id = ?
+            SELECT COUNT(*) AS rownumber FROM cstm_form WHERE country_id = ? AND event_id = ?
         `;
 
         dbConf.query(queryCheckTicketRow, paramTicketCheck, async (err, results) => {
@@ -128,7 +144,7 @@ module.exports = {
                 });
             }
 
-            const rowNumber = results[0].row_number + 1; // Increment row number
+            const rowNumber = results[0].rownumber + 1; // Increment row number
             const formID = generateID(Country, Event_id, rowNumber); // Generate unique form ID
 
             let file_url = `/public/files/DoorPrize/event_taiwan_1/${req.files[0].filename}`;
@@ -187,7 +203,11 @@ module.exports = {
             columns.push("country_id", "attachment_id", "event_id", "file_path", "submit_date");
             values.push("?", "?", "?", "?", "?");
 
-
+            let queryForm = `
+                INSERT INTO cstm_form (${columns.join(", ")})
+                VALUES (${values.join(", ")})
+            `;
+            const submitDate = formattedDate;
             const parameterForm = [
                 column_1,
                 ...(column_2 ? [column_2] : []),
@@ -202,7 +222,7 @@ module.exports = {
                 ...(column_11 ? [column_11] : []),
                 ...(column_12 ? [column_12] : []),
 
-                Country, formID, Event_id, file_url
+                Country, formID, Event_id, file_url, submitDate
             ];
 
             dbConf.query(queryForm, parameterForm, (err, results) => {
@@ -225,5 +245,39 @@ module.exports = {
                 // }
             });
         });
+    },
+
+    showticket: async (req, res) => {
+
+        const queryGetTicket = `SELECT * FROM cstm_form WHERE event_id = ?;`;
+        const queryGetCount = `SELECT COUNT(*) AS total FROM cstm_form WHERE event_id = ?;`;
+
+        try {
+            // Use dbQuery to execute both queries
+            const tickets = await dbQuery(queryGetTicket, [1]);
+            const count = await dbQuery(queryGetCount, [1]);
+
+            if (tickets.length > 0) {
+                console.log(new Date().toISOString(), "getTicketDetail case Event TW");
+                return res.status(200).send({
+                    success: true,
+                    data: tickets,
+                    total: count[0]?.total, // Safely access count
+                });
+            } else {
+                return res.status(404).send({
+                    success: false,
+                    message: "No data found",
+                });
+            }
+        } catch (error) {
+            console.error(new Date().toISOString(), "Error fetching tickets:", error.message);
+            return res.status(500).send({
+                success: false,
+                message: "Internal server error",
+            });
+        }
+
     }
+
 };

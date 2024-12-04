@@ -48,24 +48,52 @@ const cors = require("cors");
 
 const session = require("express-session");
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+
 // const SSL = {
 //   key: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_KEY)),
 //   cert: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_CERT))
 // };
 
-if (process.env.NODE_ENV === 'production') {
-  // Load SSL credentials for production
-  const SSL = {
-      key: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_KEY)),
-      cert: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_CERT))
-  };
 
-  return https.createServer(SSL, App);
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Indofood API',
+      version: '1.0.0',
+      description: 'A simple API to manage resources',
+    },
+  },
+  // Path to the API docs
+  apis: ['./controllers/*.js', './routers/*.js'], // Points to your route files where API is defined
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+
+let svr;
+
+if (process.env.PORT === '9999') {
+  try {
+    // Load SSL credentials
+    const SSL_LOC = path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE);
+    const SSL = {
+      key: fs.readFileSync(path.join(SSL_LOC, process.env.SSL_FILE_KEY)),
+      cert: fs.readFileSync(path.join(SSL_LOC, process.env.SSL_FILE_CERT))
+    };
+
+    svr = https.createServer(SSL, App);
+    console.log('Production server running with HTTPS');
+  } catch (err) {
+    console.error('Error loading SSL credentials:', err.message);
+    process.exit(1); // Exit if SSL files are missing or invalid
+  }
 } else {
-  // Use HTTP for development
-  return http.createServer(App);
+  svr = http.createServer(App);
+  console.log('Development server running with HTTP');
 }
-
 //production
 // const svr = https.createServer(SSL, App);  
 
@@ -238,6 +266,7 @@ App.use("/hots_settings", hotsSettings);
 App.use("/shortener", shortener);
 
 App.use('/public', express.static(path.join(__dirname, 'public')));
+App.use(express.static(path.join(__dirname, 'public')));
 
 
 App.use('/public/files/hots/it_support', express.static(path.join(__dirname, 'public', 'files', 'hots', 'it_support')));
@@ -260,6 +289,17 @@ App.get('/public/files/hots/it_support/:imageId', (req, res) => {
     }
   });
 });
+
+// ========= for Documentation ============
+
+App.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: `
+        .response-control-media-type {
+            display: none !important;
+        }
+    `,  // Inline CSS
+}));
+
 
 // ========= for test program ============
 
