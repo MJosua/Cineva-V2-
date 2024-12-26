@@ -250,10 +250,85 @@ module.exports = {
         let timestamp = new Date().toLocaleString('id');
         let service_id = req.params.service_id;
         let user_id = req.dataToken.user_id;
-        let { ticket_reason, service_reason } = req.body;
+        let { ticket_reason, service_reason, } = req.body;
 
         if (service_id) {
             switch (parseInt(service_id)) {
+
+                case 9: // Data Update
+                    try {
+                        let { 
+                            type,
+                            issue_desc
+                        } = req.body;
+
+                        const [resSuperior] = await dbHots.promise().query(queryCheckSuperiorRow, [user_id]);
+                        const { superior_id: superiorID } = resSuperior[0];
+
+                        const [resTeam] = await dbHots.promise().query(queryCheckTeamRow, [service_id]);
+                        const team_leader = resTeam.map(row => row.user_id); // Collects all team leaders as an array
+                        const approvalLevel = resTeam[0]?.approval_level;
+
+                        const [resRow] = await dbHots.promise().query(queryCheckTicketRow, [user_id, service_id]);
+
+                        // Generate Ticket ID
+                        let ticketId = await generateID(user_id, service_id, resRow[0].r_number);
+
+                        // Insert Ticket and Idea Bank Entry
+                        let queryInsertTicket = `
+                            INSERT INTO t_ticket (ticket_id, created_by, reason, service_id, status_id, assigned_team, creation_date)
+                            VALUES (?, ?, ?, 9, 0, 9, now());
+    
+                            INSERT INTO t_data_update (ticket_id, system_name) 
+                            VALUES (?, ?);
+                        `;
+
+                        await dbHots.promise().query(queryInsertTicket, [ticketId, user_id, issue_desc, ticketId, type]);
+
+                        // Insert Approval Events
+
+                        const paramInsertApproval = [];
+
+                        paramInsertApproval.push([ticketId, 1, superiorID]);
+
+                        if (type === 101) {
+                            paramInsertApproval.push([ticketId, 2, 1078]);
+                        } else {
+                            paramInsertApproval.push([ticketId, 2, 1001]);
+                        }
+
+                        if (paramInsertApproval.length > 0) {
+                            const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                            await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
+                        }
+
+
+
+                        // File Attachments
+                        if (req.files && req.files.length > 0) {
+                            let queryInsertFiles = `INSERT INTO t_attachment (ticket_id, url) VALUES (?, ?);`;
+                            for (let file of req.files) {
+                                let file_url = `/public/files/hots/it_support/${file.filename}`;
+                                await dbHots.promise().query(queryInsertFiles, [ticketId, file_url]);
+                            }
+                        }
+
+                        // Final Response
+                        res.status(200).send({
+                            success: true,
+                            message: "Ticket has been created",
+                            ticket_number: ticketId,
+                        });
+                    } catch (err) {
+                        res.status(500).send({
+                            success: false,
+                            message: err.message,
+                        });
+                        console.log(timestamp, "Error in IdeaBank", err);
+                    }
+                    break;
+
+
                 case 8: // Idea Bank
                     try {
                         const [resSuperior] = await dbHots.promise().query(queryCheckSuperiorRow, [user_id]);
@@ -310,7 +385,7 @@ module.exports = {
                     }
                     break;
 
-                case 6: // IT tech support
+                case 6: // SRF Sample category  form
 
                     let {
                         Requestby,
@@ -657,6 +732,98 @@ module.exports = {
 
         if (service_id) {
             switch (parseInt(service_id)) {
+
+                case 9: // Data Update
+                    let queryGetDataUpdate = `
+                select
+                    d.support_id,
+                    d.ticket_id,
+                    d.system_name,
+                    t.reason,
+                    t.assigned_team,
+                    t.service_id,
+                    s.service_name,
+                    t.assigned_to,
+                    t.status_id,
+                    ts.color_hex,
+                    CONCAT(uc.firstname, " ", uc.lastname) as created_by_username,
+                    ts.status_name,
+                    (
+                    select
+                        JSON_ARRAYAGG(
+                                JSON_OBJECT(
+                                    'attachment_id', a.attachment_id, 
+                                    'url', a.url
+                                )
+                            )
+                    from
+                        t_attachment a
+                    where
+                        a.ticket_id = d.ticket_id
+                    AND
+                    comment_id IS NULL
+                    ) as list_foto,
+                    (
+                    SELECT
+                            JSON_ARRAYAGG(
+                                JSON_OBJECT(
+                                    'approver_id', a.approver_id, 
+                                    'approval_order', a.approval_order,
+                                    'approver_name', CONCAT(u.firstname, " ", u.lastname),
+                                    'approval_status', a.approval_status,
+                                    'approval_date',  DATE_FORMAT(a.approve_date, '%Y-%m-%d'),
+                                    'cancel_remark', a.rejection_remark
+
+                                )
+                            )
+                        FROM
+                            t_approval_event a
+                        LEFT JOIN
+                            user u ON u.user_id = a.approver_id
+                        WHERE
+                            a.approval_id = d.ticket_id 
+                    ) AS list_approval,
+                     (
+                        SELECT
+                            tm.user_id
+                        FROM
+                            m_team_member tm
+                        WHERE
+                            tm.team_id = t.assigned_team
+                        AND
+                            tm.team_leader = 1
+                        LIMIT 1
+                    ) AS team_leader_id
+                    from
+                        t_data_update d
+                    LEFT JOIN
+                    t_ticket t ON t.ticket_id = d.ticket_id
+                    LEFT JOIN
+                    m_ticket_status ts ON ts.status_id = t.status_id
+                    left join user uc on
+                    uc.user_id = t.created_by
+                    LEFT JOIN
+                    m_service s ON t.service_id = s.service_id  
+                    where
+                        d.ticket_id =?
+                    `;
+                    let paramGetDataUpdate = [ticket_id];
+
+                    dbHots.execute(queryGetDataUpdate, paramGetDataUpdate, (err, results) => {
+                        if (err) {
+                            console.log(timestamp, "getTicketDetail case 9: Data Update Revision error");
+                            return res.status(500).send({
+                                success: false,
+                                message: err
+                            });
+                        } else {
+                            console.log(timestamp, "getTicketDetail case  9 : Data Update Revision Support");
+                            return res.status(200).send({ data: results });
+                        }
+                    });
+                    break;
+
+
                 case 8: // Idea Bank
                     let queryGetIdeaBank = `
                     select

@@ -574,7 +574,41 @@ module.exports = {
         });
 
 
-    }
+    },
+
+    getservice_dataupdate: (req, res) => {
+
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        let user_id = req.dataToken.user_id
+
+        // cari username dulu
+        const queryGetRole = `
+        SELECT u.type_id, u.system_shortname
+        FROM m_iod_system u`;
+
+        dbHots.execute(queryGetRole, [user_id], (err1, results1) => {
+            if (err1) {
+                res.status(500).send({
+                    success: false,
+                    message: err1
+                });
+                console.log(timestamp, "HOTS Auth Role Error: ", err1);
+                return;
+            } else {
+                res.status(200).send({
+                    success: true,
+                    message: "success get data servcice_INdofood",
+                    data: results1
+                });
+                console.log(timestamp, "HOTS Auth Role Error: ", err1);
+                return;
+            }
+
+
+        });
+    },
 
 
     /* 

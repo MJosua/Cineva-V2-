@@ -13,14 +13,16 @@ route.get('/get_superior', decodeTokenHT, hotsSettingsController.getsuperior)
 
 
 route.get('/get_team_member/:team_id', decodeTokenHT, hotsSettingsController.getmember)
-
 route.get('/get_service', decodeTokenHT, hotsSettingsController.getservice)
 route.get('/get_category', decodeTokenHT, hotsSettingsController.getcategory)
 route.get('/get_completionstatus', decodeTokenHT, hotsSettingsController.getcompletionstatus)
 
+// SRF
 route.get('/get_srf_plant', decodeTokenHT, hotsSettingsController.getSRFPlant)
 route.get('/get_srf_sampleCategory', decodeTokenHT, hotsSettingsController.getSRFSampleCategory)
 route.get('/get_srf_deliverTo', decodeTokenHT, hotsSettingsController.getSRFDeliverTo)
+
+route.get('/get_data_update_service', decodeTokenHT, hotsSettingsController.getservice_dataupdate)
 
 
 
