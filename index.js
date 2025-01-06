@@ -27,30 +27,103 @@
 
 const express = require("express");
 const App = express();
+
+const { Server } = require("socket.io")
+
+
 const bearerToken = require("express-bearer-token");
 const helmet = require("helmet");
 const cookieParser = require('cookie-parser');
 // API CONFIG FOR SERVER 104 (i2i join)
 const https = require('https');
+
+const http = require('http');
+
 const fs = require('fs');
 const path = require('path');
 
 //TEST COMMIT AT farizBranch2
 
 const dotenv = require("dotenv");
-const cors = require("cors");
 dotenv.config();
+
+const cors = require("cors");
 
 const session = require("express-session");
 
-const SSL = {
-  key: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_KEY)),
-  cert: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_CERT))
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+
+// const SSL = {
+//   key: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_KEY)),
+//   cert: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_CERT))
+// };
+
+// TEST PUSH
+
+
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Indofood API',
+      version: '1.0.0',
+      description: 'A simple API to manage resources',
+    },
+  },
+  // Path to the API docs
+  apis: ['./controllers/*.js', './routers/*.js'], // Points to your route files where API is defined
 };
 
-const svr = https.createServer(SSL, App);
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+
+let svr;
+
+if (process.env.PORT === '9999') {
+  try {
+    // Load SSL credentials
+    const SSL_LOC = path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE);
+    const SSL = {
+      key: fs.readFileSync(path.join(SSL_LOC, process.env.SSL_FILE_KEY)),
+      cert: fs.readFileSync(path.join(SSL_LOC, process.env.SSL_FILE_CERT))
+    };
+
+    svr = https.createServer(SSL, App);
+    console.log('Production server running with HTTPS');
+  } catch (err) {
+    console.error('Error loading SSL credentials:', err.message);
+    process.exit(1); // Exit if SSL files are missing or invalid
+  }
+} else {
+  svr = http.createServer(App);
+  console.log('Development server running with HTTP');
+}
+//production
+// const svr = https.createServer(SSL, App);  
+
+//development
+// const svr = createServer(App);
+
 const PORT = process.env.PORT_SSL; // or any other port number you prefer
 
+const io = new Server(
+  svr,
+  {
+    cors: {
+      origin: "*"
+    },
+    connectionStateRecovery: {
+      // the backup duration of the sessions and the packets
+      maxDisconnectionDuration: 2 * 60 * 1000,
+      // whether to skip middlewares upon successful recovery
+      skipMiddlewares: true,
+    }
+
+  },
+
+
+);
 
 App.use(
   session({
@@ -59,13 +132,30 @@ App.use(
     secret: "SECRET",
   })
 );
-App.use(cors());
+
+App.use(cors({
+  origin: '*', // Specify Ionic app's origin
+  credentials: true
+}));
+
+App.use((req, res, next) => {
+  res.set({
+    'Cross-Origin-Resource-Policy': 'cross-origin',
+    'Cross-Origin-Opener-Policy': 'cross-origin', // if needed
+  });
+  next();
+});
+
+App.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },  // Override default policy
+}));
+
 
 // App.use(cors({
 //   origin: 'https://www.indofoodinternational.com/', // Sesuaikan dengan URL frontend Anda
 //   credentials: true // Izinkan pengiriman kredensial
 // }));
-App.use(helmet());
+// App.use(helmet());
 App.use(express.json());
 App.use(express.static("./public"));
 App.use(bearerToken());
@@ -76,6 +166,29 @@ App.use(cookieParser());
 
 svr.listen(PORT, () => {
   console.log(`INTEGRATED API SSL Server running on port ${PORT}`);
+});
+
+
+io.on('connection', (socket) => {
+
+
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
+  });
+
+  socket.on('message', (msg) => {
+    io.emit('message', msg);
+  });
+
+  if (socket.recovered) {
+    console.log("Recovery was successful: socket.id, socket.rooms, and socket.data were restored");
+  } else {
+  }
+
+  socket.on('error', (err) => {
+    console.error(`Socket error on ${socket.id}: ${err.message}`);
+  });
+
 });
 
 // END OF API CONFIG FOR SERVER 104 (i2i join deploy)
@@ -104,7 +217,9 @@ const {
   hotsAuth,
   hotsAdmin,
   hotsTicket,
-  hotsSettings
+  hotsSettings,
+  eventRouter,
+  shortener
 } = require("./routers");
 
 // Auth: 
@@ -124,6 +239,9 @@ App.use("/product", productRouter);
 
 //Order: 
 App.use("/order", orderRouter);
+
+//additional  Indofood international
+App.use("/event", eventRouter);
 
 //admin: 
 App.use("/admin", adminRouter);
@@ -149,6 +267,44 @@ App.use("/hots_ticket", hotsTicket);
 //hots_settings
 App.use("/hots_settings", hotsSettings);
 
+//Shortener
+App.use("/shortener", shortener);
+
+App.use('/public', express.static(path.join(__dirname, 'public')));
+App.use(express.static(path.join(__dirname, 'public')));
+
+
+App.use('/public/files/hots/it_support', express.static(path.join(__dirname, 'public', 'files', 'hots', 'it_support')));
+
+App.get('/public/files/hots/it_support/:imageId', (req, res) => {
+  const imageId = req.params.imageId;
+  const imagePath = path.join(__dirname, 'public', 'files', 'hots', 'it_support', imageId);
+
+  // Set the required headers
+  res.set({
+    'Content-Type': 'image/jpeg',  // Adjust based on image type (png, gif, etc.)
+    'Cross-Origin-Resource-Policy': 'cross-origin',  // Allow sharing across origins
+  });
+
+  // Send the image file
+  res.sendFile(imagePath, (err) => {
+    if (err) {
+      console.error('Error serving image:', err);
+      res.status(404).send('Image not found');
+    }
+  });
+});
+
+// ========= for Documentation ============
+
+App.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: `
+        .response-control-media-type {
+            display: none !important;
+        }
+    `,  // Inline CSS
+}));
+
 
 // ========= for test program ============
 
@@ -167,6 +323,7 @@ console.log(`INTEGRATED API running at Port: ${process.env.PORT}`);
 
 //TEST and DISPLAY APP
 App.get("/", (req, res) => {
+  console.log("Aktif")
   res
     .status(200)
     .send(
@@ -179,7 +336,8 @@ const {
   dbTM,
   dbIndomieku,
   dbHots,
-  dbCardGenerator
+  dbCardGenerator,
+  dbClick
 } = require("./config/db");
 
 //FOR POOLING CONNECTION
@@ -211,6 +369,15 @@ dbHots.getConnection((error, connection) => {
   console.log(`DB HOTS has been connected ${connection.threadId}`);
 });
 
+
+dbClick.getConnection((error, connection) => {
+  if (error) {
+    console.log("Error DB Click Connection!", error.sqlMessage);
+  }
+  console.log(`DB Click has been connected ${connection.threadId}`);
+});
+
+
 /*
 dbIndomieku.getConnection((error, connection) => {
   if (error) {
@@ -231,6 +398,7 @@ const {
   notification
 
 } = require('./automation');
+const { error } = require("console");
 
 trademarkMgmtAuto.runCheck();
 notification.shippingMailNotification();

@@ -3,6 +3,7 @@ const authTmController = require('./authTM');
 const cartController = require('./cart');
 const userController = require('./user');
 const orderController = require('./order');
+const eventController = require('./event');
 const productController = require('./product');
 const adminController = require('./admin');
 const spectatorController = require('./spectator');
@@ -14,12 +15,14 @@ const hotsAuth = require('./hotsAuth')
 const hotsAdmin = require('./hotsAdmin')
 const hotsTicket = require('./hotsTicket')
 const hotsSettingsController = require('./hotsSettingsController')
+const shortenerController = require('./shortenerController')
 module.exports = {
     authController,
     authTmController,
     cartController,
     userController,
     orderController,
+    eventController,
     productController,
     adminController,
     spectatorController,
@@ -31,5 +34,6 @@ module.exports = {
     hotsAdmin,
     hotsTicket,
     hotsSettingsController,
+    shortenerController
 
 };

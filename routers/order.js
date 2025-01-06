@@ -11,6 +11,34 @@ const uploadPO = poUploader('poFile', 'poFile-').array('file', 1)
 
 //GET
 route.get('/get_id', readToken, orderController.getOrder_id)
+/**
+ * @swagger
+ * /order/get_id:
+ *   post:
+ *     summary: Get Order with specific ID
+ *     description: Get Order with specific ID
+ *     tags:
+ *       - E-Order
+ *     parameters:
+ *       - in: query
+ *         name: API_Shortener
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The input field for the query
+ *     responses:
+ *       200:
+ *         description: Result is the shortened URL
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 shortenedUrl:
+ *                   type: string
+ *                   description: The shortened version of the URL
+ *                   example: https://short.ly/abc123
+ */
 route.get('/container', readToken, orderController.getContainer)
 route.get('/stuffingweek', readToken, orderController.stuffingWeek)
 route.get('/get_header', readToken, orderController.getOrderHeader)
@@ -19,7 +47,7 @@ route.get('/get_detail_2', readToken, orderController.getOrderDetail2)
 route.get('/get_po', readToken, orderController.getExistPo)
 route.get('/pi/:id', readToken, orderController.getPI)
 route.get('/tolling', readToken, orderController.getOrderDetailTolling)
-route.get('/stuffing_date/:limit', readToken, orderController.getStuffingDateTrucking)
+route.get('/stuffing_date', readToken, orderController.getStuffingDateTrucking)
 route.get('/get_all_in', readToken, orderController.getOrderAllIn) 
 route.get('/get_realization', readToken, orderController.getRealizationAllIn)
 route.get('/get_order_detail/:order_id', readToken, orderController.getOneOrderDetail)

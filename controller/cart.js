@@ -594,14 +594,8 @@ where
     }
 
   },
-  addCart: async (req, res) => {
 
-    let date = new Date();
-    let timestamp = magenta + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-
-    let { user_id, company_id } = req.dataToken;
-
-    //   request bodynya jadi gini: 
+  //   request bodynya jadi gini: 
     /*
            cart: {
                     [
@@ -633,6 +627,16 @@ where
                     ]
                 };
     */
+
+  addCart: async (req, res) => {
+
+    let date = new Date();
+    let timestamp = magenta + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+    let { user_id, company_id } = req.dataToken;
+    console.log("data", req.body)
+
+    
 
     let cart = req.body.cart
 
@@ -734,6 +738,8 @@ where
           let formattedDate = `${year}-${month}-${day}`;
 
           let delv_year = cart_data.delv_year ? cart_data.delv_year : 0;
+          console.log("cart_data.stuffing_date", cart_data.stuffing_date)
+          console.log("cart_data", (await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik)
 
           let delv_week = cart_data.delv_week ? cart_data.delv_week : (await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik;
           let delv_week_desc = cart_data.delv_week_desc ? cart_data.delv_week_desc : `Week: ${(await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik} Date: ${cart_data.stuffing_date} `

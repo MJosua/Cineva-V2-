@@ -1153,54 +1153,109 @@ module.exports = {
             let weekLimit = getWeekLimit ? getWeekLimit.value : 13
 
             let query = `
-                        SELECT
-                            a.*
-                        --	a.opcal_id, a.id, a.year, a.week, a.startingDate, a.endingDate  
+                 SELECT
+                            *
                         FROM
                             (
                             SELECT
                                 max(opcal_id) opcal_id,
-                                CAST(concat(YEAR, RIGHT(concat('00', week), 2))AS UNSIGNED) AS id,
+                                CAST(concat(YEAR,
+                                RIGHT(concat('00',
+                                week),
+                                2))AS unsigned) AS id,
                                 YEAR,
                                 week,
-                                DATE_FORMAT(FROM_UNIXTIME(concat(min(opcal_id), '00')), '%b %d, %Y') startingDate,
-                                DATE_FORMAT(FROM_UNIXTIME(concat(max(opcal_id), '00')), '%b %d, %Y') endingDate
+                                DATE_FORMAT(FROM_UNIXTIME(concat(min(opcal_id),
+                                '00')),
+                                '%b %d, %Y') startingDate,
+                                DATE_FORMAT(FROM_UNIXTIME(concat(max(opcal_id),
+                                '00')),
+                                '%b %d, %Y') endingDate,
+                                @min_week := (
+                                SELECT
+                                    min(week)
+                                FROM
+                                    dat_operational_calendar doc
+                                WHERE
+                                    opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE
+                                        YEAR
+                                        WHEN YEAR(now()) THEN now()
+                                        ELSE date_add(now(),
+                                        INTERVAL 1 YEAR)
+                                    END ,
+                                    '%Y-01-01')),
+                                    8)
+                                    AND opcal_id = LEFT(unix_timestamp(DATE_FORMAT(CASE
+                                        YEAR
+                                        WHEN YEAR(now()) THEN now()
+                                        ELSE date_add(now(),
+                                        INTERVAL 1 YEAR)
+                                    END ,
+                                    '%Y-%m-%d')),
+                                        8)
+                                LIMIT 1) min_week,
+                                @time_fence := CASE
+                                    WHEN COALESCE(mc.time_fence,
+                                    0) = 0 THEN st.txt
+                                    ELSE mc.time_fence
+                                END AS time_fence,
+                                @rownum := @rownum + 1 AS rownum
                             FROM
                                 dat_operational_calendar doc
+                            LEFT JOIN map_cont_for_dist mc ON
+                                    mc.company_id = 100
+                                AND mc.dist_id = ${req.dataToken.company_id}
+                            LEFT JOIN sys_text st ON
+                                    st.lang_id = 1
+                                AND st.text_id = -100,
+                                (
+                                SELECT
+                                    @min_week := 0) x,
+                                (
+                                SELECT
+                                    @time_fence := 0) y,
+                                (
+                                SELECT
+                                    @rownum := 0) r
                             WHERE
-                                opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE YEAR WHEN YEAR(now()) THEN now() ELSE date_add(now(), INTERVAL 1 YEAR) END , '%Y-01-01')),
+                                opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE
+                                    YEAR
+                                    WHEN YEAR(now()) THEN now()
+                                    ELSE date_add(now(),
+                                    INTERVAL 1 YEAR)
+                                END ,
+                                '%Y-01-01')),
                                 8)
+                                AND YEAR = YEAR(DATE_FORMAT(FROM_UNIXTIME(concat(opcal_id,
+                                '00')),
+                                '%Y-%m-%d'))
                             GROUP BY
                                 2,
                                 3,
                                 4) a
                         WHERE
-                            a.opcal_id >= (SELECT
+                            a.opcal_id >= (
+                            SELECT
                                 opcal_id
                             FROM
                                 dat_operational_calendar
-                            LEFT JOIN map_cont_for_dist mc ON
-                            mc.company_id = 100
-                            AND mc.dist_id = ${req.dataToken.company_id}
-                            LEFT JOIN sys_text st ON
-                            st.lang_id = 1
-                            AND st.text_id = -100
-                            WHERE week = (
-                            SELECT
-                                min(week)
-                            FROM
-                                dat_operational_calendar doc
                             WHERE
-                                opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE YEAR WHEN YEAR(now()) THEN now() ELSE date_add(now(), INTERVAL 1 YEAR) END , '%Y-01-01')),
-                                8)
-                                    AND opcal_id = LEFT(unix_timestamp(DATE_FORMAT(CASE YEAR WHEN YEAR(now()) THEN now() ELSE date_add(now(), INTERVAL 1 YEAR) END , '%Y-%m-%d')),
+                                opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE
+                                    YEAR
+                                    WHEN YEAR(now()) THEN now()
+                                    ELSE date_add(now(),
+                                    INTERVAL 1 YEAR)
+                                END ,
+                                '%Y-01-01')),
                                     8)
-                                LIMIT 1) + CASE
-                                WHEN COALESCE(mc.time_fence, 0) = 0 THEN st.txt
-                                ELSE mc.time_fence
-                            END AND opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE YEAR WHEN YEAR(now()) THEN now() ELSE date_add(now(), INTERVAL 1 YEAR) END , '%Y-01-01')),
-                                8) ORDER BY opcal_id ASC LIMIT 1) 
-                            ORDER BY id LIMIT ${weekLimit};`
+                            ORDER BY
+                                    opcal_id ASC
+                            LIMIT 1)
+                            AND rownum >= @min_week + @time_fence
+                        ORDER BY
+                            id
+                        LIMIT ${weekLimit}
+                    `
 
 
             dbConf.query(query, (err, results) => {
@@ -1891,6 +1946,7 @@ module.exports = {
     , getStuffingDateTrucking: async (req, res) => {
 
         let date = new Date();
+
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let limit = req.params.limit ? req.params.limit : 5
@@ -1898,49 +1954,15 @@ module.exports = {
         if (req.dataToken.active === 1) {
 
             let query = `
-            SELECT
-            min(a.stuffDate) minDate, max(a.stuffDate) maxDate
-        FROM
-            (
-            SELECT
-                DATE_FORMAT(FROM_UNIXTIME(concat(opcal_id, '00')), '%Y-%m-%d') stuffDate,
-                YEAR,
-                week
-            FROM
-                dat_operational_calendar doc
-            WHERE
-                opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE YEAR WHEN YEAR(now()) THEN now() ELSE date_add(now(), INTERVAL 1 YEAR) END , '%Y-01-01')),
-                8)
-            GROUP BY 1,2,3
-            ORDER BY 1
-            ) a
-        LEFT JOIN sys_text st ON
-            st.lang_id = 1
-            AND st.text_id = -100
-        WHERE
-            a.week >= (
-            SELECT
-                week
-            FROM
-                dat_operational_calendar
-            WHERE
-                opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE YEAR WHEN YEAR(now()) THEN now() ELSE date_add(now(), INTERVAL 1 YEAR) END , '%Y-01-01')),
-                8)
-                    AND opcal_id = LEFT(unix_timestamp(DATE_FORMAT(CASE YEAR WHEN YEAR(now()) THEN now() ELSE date_add(now(), INTERVAL 1 YEAR) END , '%Y-%m-%d')),
-                    8)
-                LIMIT 1) + 5
-                AND 
-        a.week <= (
-            SELECT
-                week
-            FROM
-                dat_operational_calendar
-            WHERE
-                opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE YEAR WHEN YEAR(now()) THEN now() ELSE date_add(now(), INTERVAL 1 YEAR) END , '%Y-01-01')),
-                8)
-                    AND opcal_id = LEFT(unix_timestamp(DATE_FORMAT(CASE YEAR WHEN YEAR(now()) THEN now() ELSE date_add(now(), INTERVAL 1 YEAR) END , '%Y-%m-%d')),
-                    8)
-                LIMIT 1) + ?  + 13 ;`;
+            SELECT date_format(from_unixtime(min(concat(opcal_id,'00'))),'%Y-%m-%d') min_date, date_format(from_unixtime(max(concat(opcal_id,'00'))),'%Y-%m-%d') max_date  
+            FROM dat_operational_calendar doc 
+            WHERE op_month = CASE WHEN DAY(now()) > 20 THEN MONTH(DATE_ADD(now(), INTERVAL 2 MONTH)) 
+            ELSE MONTH(DATE_ADD(now(), 
+            INTERVAL 1 MONTH)) END AND year = CASE 
+            WHEN DAY(now()) > 20 THEN YEAR(DATE_ADD(now(), INTERVAL 2 MONTH)) 
+            ELSE YEAR(DATE_ADD(now(), INTERVAL 1 MONTH)) END AND date_format(from_unixtime(concat(opcal_id,'00')),'%Y') = case
+	        when day (now()) > 20 then year(date_add(now(), interval 2 month)) else year(date_add(now(), interval 1 month)) end
+            `;
 
             let parameter = [limit];
 

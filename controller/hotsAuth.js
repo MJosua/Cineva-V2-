@@ -26,14 +26,14 @@ module.exports = {
                                 u.employee_id,
                                 u.firstname,
                                 u.lastname,
-                                u.type_id,
+                                u.role_id,
                                 u.uid,
                                 u.active,
                                 u.login_attempt
                             FROM
-                                USER u
+                                user u
                             WHERE
-                                u.uid = ?
+                                LOWER(u.uid) = LOWER(?)
                                 AND u.active = 1
                             LIMIT 1`
         let paramGetUid = [uid]
@@ -73,37 +73,49 @@ module.exports = {
 
 
                         let queryMatchUidPswd = `
-                                             SELECT
-                                                u.user_id,
-                                                u.firstname,
-                                                u.lastname,
-                                                u.uid,
-                                                u.active,
-                                                r.role_id,
-                                                r.role_name,
-                                                d.department_name,
-                                                d.department_id,
-                                                u.superior_id 
-                                            FROM
-                                                user u
-                                            LEFT JOIN ROLE r ON
-                                                u.role_id = r.role_id
-                                            LEFT JOIN department d ON
-                                                u.department_id = d.department_id
-                                            WHERE
-                                                uid = 'fartam'
-                                                AND asin = 'b6fc7d0ebea5a77b0322378a3bf1de6beb47dd321f6d9c6118af3b03bcef00f5'
-                                                AND u.role_id IN (1, 2, 4)
+                                            select
+                                            u.user_id,
+                                            u.firstname,
+                                            u.lastname,
+                                            u.uid,
+                                            u.active,
+                                            r.role_id,
+                                            r.role_name,
+                                            d.department_name,
+                                            d.department_id,
+                                            u.superior_id,
+                                            u.nik,
+                                            (
+                                            select distinct 
+                                                JSON_ARRAYAGG(u2.superior_id)
+                                            from
+                                                user u2
+                                            where 
+                                            superior_id is not null 
+                                            ) as team_leader_user_id
+                                                from
+                                                    user u
+                                                left join 
+                                                    m_role r on
+                                                    u.role_id = r.role_id
+                                                left join 
+                                                    m_department d on
+                                                    u.department_id = d.department_id
+                                                WHERE
+                                                    LOWER(uid) = LOWER(?)
+                                                    AND pswd = ?
+                                                    AND u.role_id IN (1, 2, 4)
+                    
                      `
-                        let paramMatchUidPswd = [uid, hashPasswordHT(asin)]
+                        let paramMatchUidPswd = [uid, asin]
 
                         dbHots.execute(queryMatchUidPswd, paramMatchUidPswd, (err2, results2) => {
 
                             if (err2) {
 
-                                res.status(500).send({
+                                res.status(501).send({
                                     success: false,
-                                    message: err2,
+                                    message: 'Username and Password Combination is not correct!',
                                     userData: {},
                                     tokek: ''
                                 })
@@ -189,10 +201,10 @@ module.exports = {
                         success: false,
                         message: `error at validate token `
                     })
-                } else if (results1[0]) {
+                }
 
-                    let queryGetUserData = `
-                                            SELECT
+                let queryGetUserData = `
+                                            select
                                                 u.user_id,
                                                 u.firstname,
                                                 u.lastname,
@@ -202,66 +214,80 @@ module.exports = {
                                                 r.role_name,
                                                 d.department_name,
                                                 d.department_id,
-                                                u.superior_id 
+                                                u.superior_id,
+                                                u.nik,
+                                                (
+                                                    SELECT JSON_ARRAYAGG(element) AS combined_data
+                                                    FROM (
+                                                        SELECT u2.superior_id AS element
+                                                        FROM user u2
+                                                        WHERE u2.superior_id IS NOT NULL
+                                                    
+                                                        UNION ALL
+                                                    
+                                                        SELECT t.assigned_to  AS element
+                                                        FROM t_ticket t
+                                                        WHERE t.assigned_to  IS NOT NULL
+
+                                                        UNION ALL
+
+                                                        select tm.user_id AS element
+                                                        from m_team_member tm
+                                                        where tm.team_leader = 1
+                                                    ) AS combined
+                                                ) as team_leader_user_id
                                             FROM
                                                 user u
-                                            LEFT JOIN ROLE r ON
+                                            LEFT JOIN m_role r ON
                                                 u.role_id = r.role_id
-                                            LEFT JOIN department d ON
+                                            LEFT JOIN m_department d ON
                                                 u.department_id = d.department_id
                                             WHERE user_id = ?  
                                             `
-                    let paramGetUserData = [req.dataToken.user_id]
+                let paramGetUserData = [req.dataToken.user_id]
 
-                    dbHots.execute(queryGetUserData, paramGetUserData, (err, results) => {
+                dbHots.execute(queryGetUserData, paramGetUserData, (err, results) => {
 
-                        if (err) {
-                            res.status(500).send({
-                                success: false,
-                                message: `error at keeplogin`
+                    if (err) {
+                        res.status(500).send({
+                            success: false,
+                            message: `error at keeplogin`
+                        })
+                    } else {
+                        if (results[0]) {
+                            let tokek = generateTokenHT(results[0])
+                            let userData = results[0]
+                            res.status(200).send({
+                                success: true,
+                                userData,
+                                tokek
                             })
-                        } else {
-                            if (results[0]) {
-                                let tokek = generateTokenHT(results[0])
-                                let userData = results[0]
-                                res.status(200).send({
-                                    success: true,
-                                    userData,
-                                    tokek
-                                })
-                                let queryUpdateToken = `UPDATE user 
+                            let queryUpdateToken = `UPDATE user 
                                                         SET 
                                                         registration_nr = ? 
                                                         WHERE user_id = ?`
-                                let paramUpdateToken = [tokek, req.dataToken.user_id]
+                            let paramUpdateToken = [tokek, req.dataToken.user_id]
 
-                                dbHots.execute(queryUpdateToken, paramUpdateToken)
-                                // res.status(200).cookie('tokek', tokek, {
-                                //     httpOnly: true,
-                                //     secure: true, // Gunakan ini hanya jika menggunakan HTTPS
-                                //     maxAge: 3600000 // Cookie berlaku selama 1 jam 
-                                // }).send({
-                                //     success: true,
-                                //     userData,
-                                //     tokek
-                                console.log(timestamp, `Hots_auth KeepLogin ${req.dataToken.uid} success`)
-                            } else {
-                                console.log(timestamp, "Hots_auth KeepLogin No Data")
-                                res.status(200).send({
-                                    success: false,
-                                    message: `no data`
-                                })
-                            };
+                            dbHots.execute(queryUpdateToken, paramUpdateToken)
+                            // res.status(200).cookie('tokek', tokek, {
+                            //     httpOnly: true,
+                            //     secure: true, // Gunakan ini hanya jika menggunakan HTTPS
+                            //     maxAge: 3600000 // Cookie berlaku selama 1 jam 
+                            // }).send({
+                            //     success: true,
+                            //     userData,
+                            //     tokek
+                            console.log(timestamp, `Hots_auth KeepLogin ${req.dataToken.uid} success`)
+                        } else {
+                            console.log(timestamp, "Hots_auth KeepLogin No Data")
+                            res.status(200).send({
+                                success: false,
+                                message: `no data`
+                            })
+                        };
 
-                        }
-                    })
-                } else {
-                    res.status(401).send({
-                        success: false,
-                        message: `Unauthorized`
-                    })
-                }
-
+                    }
+                })
 
             })
 
