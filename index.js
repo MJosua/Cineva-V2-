@@ -24,6 +24,7 @@
 // const purpleColor = '\x1b[35m'; // Purple
 // const reset = '\\x1b[0m';
 
+
 const express = require("express");
 const App = express();
 const bearerToken = require("express-bearer-token");
@@ -33,6 +34,8 @@ const cookieParser = require('cookie-parser');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+
+//TEST COMMIT AT farizBranch2
 
 const dotenv = require("dotenv");
 const cors = require("cors");
