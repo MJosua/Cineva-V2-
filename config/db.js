@@ -46,7 +46,7 @@ function production() {
     } else {
         // return "development"
         return false;
-    } 
+    }
 }
 
 const host_config = production() ? process.env.DB_HOST : process.env.DEV_DB_HOST;
@@ -76,6 +76,7 @@ const dbTM = mysql.createPool({
 });
 const dbTMQuery = util.promisify(dbTM.query).bind(dbTM);
 
+// for tester or test
 const dbIndomieku = mysql.createPool({
     // connectionLimit : 20, 
     multipleStatements: true,
@@ -84,9 +85,9 @@ const dbIndomieku = mysql.createPool({
     password: password_config,
     database: process.env.DB_NAME_INDOMIEKU
 });
-
 const dbQueryIndomieku = util.promisify(dbIndomieku.query).bind(dbIndomieku);
 
+//card generator
 const dbCardGenerator = mysql.createPool({
     // connectionLimit : 20, 
     multipleStatements: true,
@@ -95,9 +96,9 @@ const dbCardGenerator = mysql.createPool({
     password: password_config,
     database: process.env.DB_NAME_CARD_GENERATOR
 });
-
 const dbQueryCardGenerator = util.promisify(dbCardGenerator.query).bind(dbCardGenerator);
 
+//for HOTS
 const dbHots = mysql.createPool({
     // connectionLimit : 20, 
     multipleStatements: true,
@@ -106,10 +107,9 @@ const dbHots = mysql.createPool({
     password: password_config,
     database: process.env.DB_NAME_HT
 });
-
 const dbQueryHots = util.promisify(dbHots.query).bind(dbHots);
 
-
+//for click shorten
 const dbClick = mysql.createPool({
     // connectionLimit : 20, 
     multipleStatements: true,
@@ -118,9 +118,9 @@ const dbClick = mysql.createPool({
     password: password_config,
     database: process.env.DB_NAME_Click
 });
-
 const dbQueryClick = util.promisify(dbClick.query).bind(dbClick);
 
+// for event logger
 /**
  * 
  * @param {number} user_id -  berkaitan dengan user_id aatau yg bertanggungjawab
@@ -149,6 +149,9 @@ const addSqlLogger = (user_id, sql_parameter, message, function_name) => {
 }
 
 // dbConf.connect()
+
+
+//export
 module.exports = {
     dbConf, dbQuery,
     dbTM, dbTMQuery,
