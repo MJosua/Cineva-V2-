@@ -1,7 +1,6 @@
 const {
     dbHots,
     dbQueryHots,
-    addSqlLogger
 } = require("../config/db");
 const { param } = require("../routers/auth");
 const { uploadFile } = require("./order");
