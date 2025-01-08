@@ -4,6 +4,7 @@ const {
 } = require("../config/db");
 const { param } = require("../routers/auth");
 const { uploadFile } = require("./order");
+const { hotsMailer } = require('../config/mailer')
 
 const { io } = require('../index');
 
@@ -82,6 +83,10 @@ module.exports = {
                 let paramTicketCheck = [req.dataToken.user_id, service_id];
                 const [resRow] = await dbHots.promise().query(queryCheckTicketRow, paramTicketCheck);
 
+                //untuk dapatkan alamat email penerima yg bikin tiket
+                const mailAddress = await dbQueryHots(`SELECT email  FROM USER WHERE user_id = ${req.dataToken.user_id}`);
+                const fullName = `${req.dataToken.firstname}  ${req.dataToken.lastname} `
+
                 // Insert ticket
                 let ticketId = generateID(req.dataToken.user_id, service_id, resRow[0].r_number);
 
@@ -125,6 +130,13 @@ module.exports = {
                     ticket_number: ticketId
                 });
                 console.log(timestamp, "addTicketITSupport success", ticketId);
+
+                //buat email;
+                hotsMailer(mailAddress, 'Your IT Support ticket just created!', `
+                    <div>
+                    <p> Dear ${fullName}, 
+                    <div>
+                    `);
 
             } catch (err) {
                 res.status(500).send({
@@ -256,7 +268,7 @@ module.exports = {
 
                 case 9: // Data Update
                     try {
-                        let { 
+                        let {
                             type,
                             issue_desc
                         } = req.body;
@@ -511,12 +523,14 @@ module.exports = {
             });
             console.log(timestamp, "Service ID is not provided.");
         }
-    }
+    },
 
 
-
-    // ALASAN KENAPA DISATUKAN UPLOAD DAN SUBMIT, SOALNYA KALO SATU-SATU GA KETAHUAN SALAH SATU GAGAL ATAU MASUK
-    , uploadFileITSupport: async (req, res) => {
+    /*
+        ALASAN KENAPA DISATUKAN UPLOAD DAN SUBMIT, 
+        SOALNYA KALO SATU-SATU GA KETAHUAN SALAH SATU GAGAL ATAU MASUK
+    */
+    uploadFileITSupport: async (req, res) => {
 
         let date = new Date();
         let timestamp = magenta + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
