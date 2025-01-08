@@ -982,7 +982,7 @@ module.exports = {
 
         } catch (error) {
 
-            console.log(`${timestamp} Error sending mail to ${emailAdress} error message: ${error}`)
+            console.log(`${timestamp} Error sending mail with error message: ${error}`)
 
         }
 
