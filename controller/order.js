@@ -1953,6 +1953,7 @@ module.exports = {
 
         if (req.dataToken.active === 1) {
 
+            //update to activate trucing 
             let query = `
             SELECT date_format(from_unixtime(min(concat(opcal_id,'00'))),'%Y-%m-%d') min_date, date_format(from_unixtime(max(concat(opcal_id,'00'))),'%Y-%m-%d') max_date  
             FROM dat_operational_calendar doc 
