@@ -1261,7 +1261,7 @@ module.exports = {
             dbConf.query(query, (err, results) => {
                 if (err) {
                     res.status(500).send(err);
-
+                    console.log("|ERROR| GET STUFFINGWEEK", err)
                 } else {
                     res.status(200).send(results);
                     console.log(timestamp + `get Order Stuffing Week for ${req.dataToken.company_id} limit ${weekLimit} success`);
@@ -1953,6 +1953,7 @@ module.exports = {
 
         if (req.dataToken.active === 1) {
 
+            //update to activate trucing 
             let query = `
             SELECT date_format(from_unixtime(min(concat(opcal_id,'00'))),'%Y-%m-%d') min_date, date_format(from_unixtime(max(concat(opcal_id,'00'))),'%Y-%m-%d') max_date  
             FROM dat_operational_calendar doc 
