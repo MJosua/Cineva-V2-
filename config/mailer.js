@@ -951,14 +951,7 @@ module.exports = {
 
 
     //hots 
-    ,
-    /**
-         * @param {string} emailAdress - Alamat email penerima. Diambil dari database user.
-         * @param {string} mailSubject - Judul  email penerima. Di prefiks sudah ditambah "[IOD HOTS]" sebagai identitas  .
-         * @param {string} mailBody - Isi Email dengan format HTML. Gunakan <div> untuk mengawali dan mengakhiri.
-         * 
-         */
-    hotsMailer: async (emailAdress, mailSubject, mailBody) => {
+    , hotsMailer: async (emailAdress, mailSubject, mailBody) => {
 
         let date = new Date();
         let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
@@ -982,11 +975,12 @@ module.exports = {
 
         } catch (error) {
 
-            console.log(`${timestamp} Error sending mail with error message: ${error}`)
+            console.log(`${timestamp} Error sending mail to ${emailAdress} error message: ${error}`)
 
         }
 
 
 
     }
+
 }
