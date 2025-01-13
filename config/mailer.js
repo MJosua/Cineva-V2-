@@ -946,4 +946,39 @@ module.exports = {
         }
     }
 
+
+
+    //hots 
+    , hotsMailer: async (emailAdress, mailSubject, mailBody) => {
+
+        let date = new Date();
+        let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        try {
+
+            if (emailAdress, mailSubject, mailBody) {
+                await transporter.sendMail({
+                    from: 'no-reply@indofoodinternational.com',
+                    to: emailAdress,
+                    subject: `[IOD HOTS] ${mailSubject}`,
+                    html: `${mailBody}`,
+                })
+
+                console.log(`${timestamp} Cannot Send Mail! emailAdress, mailSubject, mailBody is invalid or not exist`)
+
+            } else {
+
+                console.log(`${timestamp} Sending Mail to ${emailAdress} with mailSubject : ${mailSubject}`)
+            }
+
+        } catch (error) {
+
+            console.log(`${timestamp} Error sending mail to ${emailAdress} error message: ${error}`)
+
+        }
+
+
+
+    }
+
 }

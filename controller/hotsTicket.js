@@ -17,6 +17,9 @@ const magenta = '\x1b[35m';
 
 let date = new Date();
 
+const mailAddress = await dbQueryHots(`SELECT email  FROM USER WHERE user_id = ${req.dataToken.user_id}`);
+const fullName = `${req.dataToken.firstname}  ${req.dataToken.lastname} `
+
 
 // UNTUK GENERATE ID
 const generateID = (user_id, service_id, row_number) => {
@@ -151,6 +154,8 @@ module.exports = {
         let service_id = 1;
         const { job_desc, reason, laptop_spec_id, old_device, date_acquisition, old_device_spec } = req.body;
 
+
+
         if (req.dataToken.user_id) {
             try {
                 const [resSuperior] = await dbHots.promise().query(queryCheckSuperiorRow, [req.dataToken.user_id]);
@@ -221,6 +226,13 @@ module.exports = {
                 })
                 console.log(timestamp, "add Ticket PC Request success ")
 
+
+                hotsMailer(
+                    mailAddress, 'Your IT Support ticket just created!', `
+                    <div>
+                    <p> Dear ${fullName}, 
+                    <div>
+                    `);
 
             } catch (err) {
                 console.log("old_device_spec", old_device_spec)
