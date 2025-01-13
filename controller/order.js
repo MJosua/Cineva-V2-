@@ -1261,7 +1261,7 @@ module.exports = {
             dbConf.query(query, (err, results) => {
                 if (err) {
                     res.status(500).send(err);
-
+                    console.log("|ERROR| GET STUFFINGWEEK", err)
                 } else {
                     res.status(200).send(results);
                     console.log(timestamp + `get Order Stuffing Week for ${req.dataToken.company_id} limit ${weekLimit} success`);
