@@ -275,6 +275,87 @@ module.exports = {
         if (req.dataToken.user_id) {
             let user_id = req.dataToken.user_id;
 
+                case 10: // Data Update
+                    try {
+                        let {
+                            type,
+                            issue_desc
+                        } = req.body;
+
+                        const [resSuperior] = await dbHots.promise().query(queryCheckSuperiorRow, [user_id]);
+                        const { superior_id: superiorID } = resSuperior[0];
+
+                        const [resTeam] = await dbHots.promise().query(queryCheckTeamRow, [service_id]);
+                        const team_leader = resTeam.map(row => row.user_id); // Collects all team leaders as an array
+                        const approvalLevel = resTeam[0]?.approval_level;
+
+                        const [resRow] = await dbHots.promise().query(queryCheckTicketRow, [user_id, service_id]);
+
+                        // Generate Ticket ID
+                        let ticketId = await generateID(user_id, service_id, resRow[0].r_number);
+
+                        // Insert Ticket and Idea Bank Entry
+                        let queryInsertTicket = `
+                            INSERT INTO t_ticket (ticket_id, created_by, reason, service_id, status_id, assigned_team, creation_date)
+                            VALUES (?, ?, ?, 9, 0, 9, now());
+    
+                            INSERT INTO t_data_update (ticket_id, system_name) 
+                            VALUES (?, ?);
+                        `;
+
+                        await dbHots.promise().query(queryInsertTicket, [ticketId, user_id, issue_desc, ticketId, type]);
+
+                        // Insert Approval Events
+
+                        const paramInsertApproval = [];
+
+                        paramInsertApproval.push([ticketId, 1, superiorID]);
+
+                        if (type === 101) {
+                            paramInsertApproval.push([ticketId, 2, 1078]);
+                        } else {
+                            paramInsertApproval.push([ticketId, 2, 1001]);
+                        }
+
+                        if (paramInsertApproval.length > 0) {
+                            const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                            await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
+                        }
+
+
+
+                        // File Attachments
+                        if (req.files && req.files.length > 0) {
+                            let queryInsertFiles = `INSERT INTO t_attachment (ticket_id, url) VALUES (?, ?);`;
+                            for (let file of req.files) {
+                                let file_url = `/public/files/hots/it_support/${file.filename}`;
+                                await dbHots.promise().query(queryInsertFiles, [ticketId, file_url]);
+                            }
+                        }
+
+                        // Final Response
+                        res.status(200).send({
+                            success: true,
+                            message: "Ticket has been created",
+                            ticket_number: ticketId,
+                        });
+                        console.log(timestamp, "Input Ticket Success ID : ", res.ticket_number, "service : ", service_id);
+
+                    } catch (err) {
+                        res.status(500).send({
+                            success: false,
+                            message: err.message,
+                        });
+                        console.log(timestamp, "Error in IdeaBank", err);
+                    }
+                    break;
+
+                case 9: // Data Update
+                    try {
+                        let {
+                            type,
+                            issue_desc
+                        } = req.body;
             const mailAddress = await dbQueryHots(`SELECT email  FROM USER WHERE user_id = ${req.dataToken.user_id}`);
             const fullName = `${req.dataToken.firstname}  ${req.dataToken.lastname} `
 
@@ -363,6 +444,22 @@ module.exports = {
                         }
                         break;
 
+                        // Final Response
+                        res.status(200).send({
+                            success: true,
+                            message: "Ticket has been created",
+                            ticket_number: ticketId,
+                        });
+                        console.log(timestamp, "Input Ticket Success ID : ", res.ticket_number, "service : ", service_id);
+
+                    } catch (err) {
+                        res.status(500).send({
+                            success: false,
+                            message: err.message,
+                        });
+                        console.log(timestamp, "Error in IdeaBank", err);
+                    }
+                    break;
 
                     case 8: // Idea Bank
                         try {
@@ -428,6 +525,22 @@ module.exports = {
                         }
                         break;
 
+                        // Final Response
+                        res.status(200).send({
+                            success: true,
+                            message: "Ticket has been created",
+                            ticket_number: ticketId,
+                        });
+                        console.log(timestamp, "Input Ticket Success ID : ", res.ticket_number, "service : ", service_id);
+
+                    } catch (err) {
+                        res.status(500).send({
+                            success: false,
+                            message: err.message,
+                        });
+                        console.log(timestamp, "Error in IdeaBank", err);
+                    }
+                    break;
                     case 6: // SRF Sample category  form
 
                         let {
@@ -524,6 +637,22 @@ module.exports = {
                             // Final Response
                             console.log(timestamp, `Success set ticket with service 06 for ${user_id}`)
 
+                        // Final Response
+                        console.log(timestamp, `Success set ticket with service 06 for ${user_id}`)
+                        res.status(200).send({
+                            success: true,
+                            message: "Ticket has been created",
+                            ticket_number: ticketId,
+                        });
+                        console.log(timestamp, "Input Ticket Success ID : ", res.ticket_number, "service : ", service_id);
+
+                    } catch (err) {
+                        res.status(500).send({
+                            success: false,
+                            message: err.message,
+                        });
+                        console.log(timestamp, "Error in add Ticket for SRF service id 6");
+                        console.log('===========================================================');
                             hotsMailer(mailAddress, 'Your IT Support ticket just created!', `
                                 <div>
                                 <p> Dear ${fullName}, 
@@ -3130,3 +3259,5 @@ module.exports = {
 
 
 }
+
+//test

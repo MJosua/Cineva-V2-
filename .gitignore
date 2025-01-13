@@ -7,3 +7,7 @@
 /.jpeg
 /.png
 /.vscode
+
+*.jpg
+*.jpeg
+*.png
