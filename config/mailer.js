@@ -30,6 +30,8 @@ const gmailTransporter = nodemailer.createTransport({
 module.exports = {
 
 
+
+
     orderRecievedMailSender: async (user_id, employee_id, order_id) => {
 
         let date = new Date();
@@ -946,4 +948,45 @@ module.exports = {
         }
     }
 
+
+
+    //hots 
+    ,
+    /**
+         * @param {string} emailAdress - Alamat email penerima. Diambil dari database user.
+         * @param {string} mailSubject - Judul  email penerima. Di prefiks sudah ditambah "[IOD HOTS]" sebagai identitas  .
+         * @param {string} mailBody - Isi Email dengan format HTML. Gunakan <div> untuk mengawali dan mengakhiri.
+         * 
+         */
+    hotsMailer: async (emailAdress, mailSubject, mailBody) => {
+
+        let date = new Date();
+        let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        try {
+
+            if (emailAdress, mailSubject, mailBody) {
+                await transporter.sendMail({
+                    from: 'no-reply@indofoodinternational.com',
+                    to: emailAdress,
+                    subject: `[IOD HOTS] ${mailSubject}`,
+                    html: `${mailBody}`,
+                })
+
+                console.log(`${timestamp} Cannot Send Mail! emailAdress, mailSubject, mailBody is invalid or not exist`)
+
+            } else {
+
+                console.log(`${timestamp} Sending Mail to ${emailAdress} with mailSubject : ${mailSubject}`)
+            }
+
+        } catch (error) {
+
+            console.log(`${timestamp} Error sending mail with error message: ${error}`)
+
+        }
+
+
+
+    }
 }

@@ -48,16 +48,15 @@ const cors = require("cors");
 
 const session = require("express-session");
 
+const os = require('os');
+
+//for production
+
+/*
+
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
-
-// const SSL = {
-//   key: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_KEY)),
-//   cert: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_CERT))
-// };
-
-// TEST PUSH
-
+ 
 
 const swaggerOptions = {
   definition: {
@@ -102,7 +101,49 @@ if (process.env.PORT === '9999') {
 //development
 // const svr = createServer(App);
 
-const PORT = process.env.PORT_SSL; // or any other port number you prefer
+// const PORT = process.env.PORT_SSL; // or any other port number you prefer
+*/
+
+
+//auto config
+
+
+//reading SSL certification directory
+const SSL = {
+  key: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_KEY)),
+  cert: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_CERT))
+};
+
+function production() {
+
+  function getLocalIp() {
+    const networkInterfaces = os.networkInterfaces();
+    for (const interfaceName in networkInterfaces) {
+      const addresses = networkInterfaces[interfaceName];
+      for (const address of addresses) {
+        if (address.family === 'IPv4' && !address.internal) {
+          return address.address; // Return the local IP address
+        }
+      }
+    }
+  }
+
+  if (getLocalIp() == "10.126.106.105") {
+    // return "production"
+    return true;
+  } else {
+    // return "development"
+    return false;
+  }
+
+
+} 
+let svr = production() ? https.createServer(SSL, App) : http.createServer(App);
+let PORT = production() ? process.env.PORT_SSL : process.env.PORT;
+console.log("Server status is Production?", production())
+
+
+
 
 const io = new Server(
   svr,
@@ -320,7 +361,6 @@ console.log(`INTEGRATED API running at Port: ${process.env.PORT}`);
 
 //TEST and DISPLAY APP
 App.get("/", (req, res) => {
-  console.log("Aktif")
   res
     .status(200)
     .send(
