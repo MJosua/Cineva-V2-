@@ -17,8 +17,7 @@ const magenta = '\x1b[35m';
 
 let date = new Date();
 
-const mailAddress = await dbQueryHots(`SELECT email  FROM USER WHERE user_id = ${req.dataToken.user_id}`);
-const fullName = `${req.dataToken.firstname}  ${req.dataToken.lastname} `
+
 
 
 // UNTUK GENERATE ID
@@ -263,6 +262,9 @@ module.exports = {
         let service_id = req.params.service_id;
         let user_id = req.dataToken.user_id;
         let { ticket_reason, service_reason, } = req.body;
+
+        const mailAddress = await dbQueryHots(`SELECT email  FROM USER WHERE user_id = ${req.dataToken.user_id}`);
+        const fullName = `${req.dataToken.firstname}  ${req.dataToken.lastname} `
 
         if (service_id) {
             switch (parseInt(service_id)) {
