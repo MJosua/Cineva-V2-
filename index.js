@@ -52,8 +52,6 @@ const os = require('os');
 
 //for production
 
-/*
-
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
  
@@ -72,6 +70,10 @@ const swaggerOptions = {
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+/*
+
+
 
 
 let svr;
@@ -139,7 +141,7 @@ function production() {
 
 } 
 let svr = production() ? https.createServer(SSL, App) : http.createServer(App);
-let PORT = production() ? process.env.PORT_SSL : process.env.PORT;
+let PORT = production() ? process.env.PORT_SSL : process.env.DEV_PORT;
 console.log("Server status is Production?", production())
 
 
@@ -335,13 +337,13 @@ App.get('/public/files/hots/it_support/:imageId', (req, res) => {
 
 // ========= for Documentation ============
 
-App.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: `
-        .response-control-media-type {
-            display: none !important;
-        }
-    `,  // Inline CSS
-}));
+// App.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+//   customCss: `
+//         .response-control-media-type {
+//             display: none !important;
+//         }
+//     `,  // Inline CSS
+// }));
 
 
 // ========= for test program ============
@@ -356,8 +358,8 @@ App.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 //======================================================================
 
 //LISTEN TO THE PORT
-App.listen(process.env.PORT);
-console.log(`INTEGRATED API running at Port: ${process.env.PORT}`);
+// App.listen(PORT);
+// console.log(`INTEGRATED API running at Port: ${PORT}`);
 
 //TEST and DISPLAY APP
 App.get("/", (req, res) => {
