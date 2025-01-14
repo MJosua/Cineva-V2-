@@ -51,7 +51,7 @@ module.exports = {
                         message: `successfully get data region`,
                         results
                     });
-                    console.log(timestamp, "Error at getRegion, message:", err);
+                    console.log(timestamp, "successfully getRegion!");
                 }
 
             })
@@ -73,6 +73,62 @@ module.exports = {
 
 
         if (req.dataToken.user_id) {
+
+            let specific_region = req.params.region_id ? 0 : req.params.region_id;
+
+            let query = specific_region ? `
+                                SELECT
+                        st.txt country_name,
+                        mc.country_id,
+                        mc.iso_code
+                    FROM
+                        map_region_countries mrc
+                    LEFT JOIN mst_country mc ON
+                        mrc.country_id = MC.country_id
+                    LEFT JOIN sys_text st ON
+                        mc.country_name_id = st.text_id
+                    WHERE
+                        region_id = ?
+                        AND active = 1` :
+                `
+                        
+                    SELECT
+                        st.txt country_name,
+                        mc.country_id,
+                        mc.iso_code
+                    FROM
+                        map_region_countries mrc
+                    LEFT JOIN mst_country mc ON
+                        mrc.country_id = MC.country_id
+                    LEFT JOIN sys_text st ON
+                        mc.country_name_id = st.text_id
+                    WHERE
+                        active = 1
+                        `;
+
+            let parameter = [specific_region]
+
+            dbConf.execute(query, parameter, (err, results) => {
+
+                if (err) {
+                    res.status(500).send({
+                        success: false,
+                        message: `INTERNAL SERVER ERROR`
+                    });
+                    console.log(timestamp, "Error at getCountry, message:", err);
+                } else {
+                    res.status(500).send({
+                        success: true,
+                        message: `successfully get data Country`,
+                        results
+                    });
+                    console.log(timestamp, "successfully getCountry!");
+                }
+
+            })
+
+
+
 
         } else {
             res.status(401).send({
