@@ -335,13 +335,13 @@ App.get('/public/files/hots/it_support/:imageId', (req, res) => {
 
 // ========= for Documentation ============
 
-App.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: `
-        .response-control-media-type {
-            display: none !important;
-        }
-    `,  // Inline CSS
-}));
+// App.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+//   customCss: `
+//         .response-control-media-type {
+//             display: none !important;
+//         }
+//     `,  // Inline CSS
+// }));
 
 
 // ========= for test program ============
@@ -356,8 +356,8 @@ App.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 //======================================================================
 
 //LISTEN TO THE PORT
-App.listen(process.env.PORT);
-console.log(`INTEGRATED API running at Port: ${process.env.PORT}`);
+// App.listen(PORT);
+// console.log(`INTEGRATED API running at Port: ${PORT}`);
 
 //TEST and DISPLAY APP
 App.get("/", (req, res) => {
