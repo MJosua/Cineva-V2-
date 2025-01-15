@@ -146,6 +146,44 @@ module.exports = {
 
         if (req.dataToken.user_id) {
 
+            let query = `
+            SELECT
+            DISTINCT
+                    concat(su.firstname, " ", su.lastname) name,
+                    me.employee_id
+            FROM
+                mst_employee me
+            LEFT JOIN person p ON
+                me.person_id = p.person_id
+            LEFT JOIN sys_user su ON
+                su.employee_id = me.employee_id
+            WHERE
+                me.department_id = 4
+                AND su.active = 1
+                AND su.firstname IS NOT NULL
+                AND su.lastname IS NOT NULL
+                AND su.type_id = 2`
+
+            dbConf.execute(query, parameter, (err, results) => {
+
+                if (err) {
+                    res.status(500).send({
+                        success: false,
+                        message: `INTERNAL SERVER ERROR`
+                    });
+                    console.log(timestamp, "Error at getAnalyst, message:", err);
+                } else {
+                    res.status(200).send({
+                        success: true,
+                        message: `successfully get data Analyst`,
+                        results
+                    });
+                    console.log(timestamp, "successfully getAnalyst!");
+                }
+
+            })
+
+
         } else {
             res.status(401).send({
                 success: false,
