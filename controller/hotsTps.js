@@ -74,7 +74,7 @@ module.exports = {
 
         if (req.dataToken.user_id) {
 
-            let specific_region = req.params.region_id ? 0 : req.params.region_id;
+            let specific_region = req.params.region_id ? req.params.region_id : 0;
 
             let query = specific_region ? `
                                 SELECT
