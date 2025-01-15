@@ -302,6 +302,89 @@ module.exports = {
         }
 
     },
+    getPort: async (req, res) => {
+
+
+        let date = new Date();
+        let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+
+        if (req.dataToken.user_id) {
+
+            let company_id = req.params.company_id
+
+            if (!company_id || company_id == 0) {
+
+                res.status(204).send({
+                    success: false,
+                    message: `company_id is not provided properly`
+                });
+
+                console.log(timestamp, "company_id is not provided properly");
+
+            } else {
+
+                let query = `SELECT
+                                md.harbour_id,
+                                concat(h.harbour_name, ", " , tp.txt, " - ", md.final_dest ) harbour_name,
+                                h.harbour_name port_name,
+                                harbour_code,
+                                tp.txt,
+                                md.final_dest
+                            FROM
+                                map_port_for_dist md
+                            LEFT JOIN mst_harbour h ON
+                                md.harbour_id = h.harbour_id
+                            LEFT JOIN mst_country mc ON
+                                h.country_id = mc.country_id
+                            LEFT JOIN sys_text tp ON
+                                tp.text_id = mc.country_name_id
+                                AND tp.lang_id = 1
+                            WHERE
+                                md.company_id = 100
+                                AND distributor_id = ?
+                                AND now() BETWEEN md.creation_date AND COALESCE(md.finish_date, '9999-12-31') ;
+	
+	
+                                    `
+
+                let parameter = [company_id]
+
+                dbConf.execute(query, parameter, (err, results) => {
+
+                    if (err) {
+
+                        res.status(500).send({
+                            success: false,
+                            message: `INTERNAL SERVER ERROR`
+                        });
+                        console.log(timestamp, "Error at getPort, message:", err);
+
+                    } else {
+                        res.status(200).send({
+                            success: true,
+                            message: `successfully get data Port`,
+                            results
+                        });
+                        console.log(timestamp, "successfully getPort!");
+                    }
+
+                })
+
+            }
+
+
+        } else {
+            res.status(401).send({
+                success: false,
+                message: `Unauthorized`
+            });
+            console.log(timestamp, "getPort is Unauthorized");
+
+
+        }
+
+    },
     getSKU: async (req, res) => {
 
         let date = new Date();
