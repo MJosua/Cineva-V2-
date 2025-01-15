@@ -6,6 +6,7 @@ const { hotsTps } = require('../controller');
 
 route.get('/region', decodeTokenHT, hotsTps.getRegion);
 route.get('/country', decodeTokenHT, hotsTps.getCountry);
+route.get('/analyst', decodeTokenHT, hotsTps.getAnaliyst);
 
 
 
