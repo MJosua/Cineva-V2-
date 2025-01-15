@@ -68,64 +68,67 @@ module.exports = {
     getCountry: async (req, res) => {
 
 
+        //get country with analyzt employee_id parameter
+
         let date = new Date();
         let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
 
         if (req.dataToken.user_id) {
 
-            let specific_region = req.params.region_id ? req.params.region_id : 0;
+            let employee_id = req.params.employee_id
+            if (!employee_id || employee_id == 0) {
+                res.status(204).send({
+                    success: false,
+                    message: `employee_id is not provided properly`
+                });
+                console.log(timestamp, "employee_id is not provided properly");
+            } else {
 
-            let query = specific_region ? `
-                                SELECT
-                        st.txt country_name,
-                        mc.country_id,
-                        mc.iso_code
-                    FROM
-                        map_region_countries mrc
-                    LEFT JOIN mst_country mc ON
-                        mrc.country_id = MC.country_id
-                    LEFT JOIN sys_text st ON
-                        mc.country_name_id = st.text_id
-                    WHERE
-                        region_id = ?
-                        AND active = 1` :
-                `
-                        
-                    SELECT
-                        st.txt country_name,
-                        mc.country_id,
-                        mc.iso_code
-                    FROM
-                        map_region_countries mrc
-                    LEFT JOIN mst_country mc ON
-                        mrc.country_id = MC.country_id
-                    LEFT JOIN sys_text st ON
-                        mc.country_name_id = st.text_id
-                    WHERE
-                        active = 1
-                        `;
+                let query = `SELECT
+                                    DISTINCT c.country_id,
+                                    st.txt country
+                                FROM
+                                    map_resp_for_dist MAP
+                                LEFT JOIN mst_company mc ON
+                                    MAP.distributor_id = mc.company_id
+                                LEFT JOIN mst_country c ON
+                                    mc.country_id = c.country_id
+                                LEFT JOIN sys_text st ON
+                                    c.country_name_id = st.text_id
+                                    AND st.lang_id = 1
+                                LEFT JOIN mst_team mt ON
+                                    MAP.team_id = mt.team_id
+                                    AND MAP.company_id = mt.company_id
+                                LEFT JOIN mst_team_member mtm ON
+                                    mt.team_id = mtm.team_id
+                                    AND mt.company_id = mtm.company_id
+                                WHERE
+                                    mtm.employee_id = ?
+                                    AND MAP.finish_date IS NULL `;
 
-            let parameter = [specific_region]
+                let parameter = [employee_id]
 
-            dbConf.execute(query, parameter, (err, results) => {
+                dbConf.execute(query, parameter, (err, results) => {
 
-                if (err) {
-                    res.status(500).send({
-                        success: false,
-                        message: `INTERNAL SERVER ERROR`
-                    });
-                    console.log(timestamp, "Error at getCountry, message:", err);
-                } else {
-                    res.status(200).send({
-                        success: true,
-                        message: `successfully get data Country`,
-                        results
-                    });
-                    console.log(timestamp, "successfully getCountry!");
-                }
+                    if (err) {
+                        res.status(500).send({
+                            success: false,
+                            message: `INTERNAL SERVER ERROR`
+                        });
+                        console.log(timestamp, "Error at getCountry, message:", err);
+                    } else {
+                        res.status(200).send({
+                            success: true,
+                            message: `successfully get data Country`,
+                            results
+                        });
+                        console.log(timestamp, "successfully getCountry!");
+                    }
 
-            })
+                })
+            }
+
 
 
 
