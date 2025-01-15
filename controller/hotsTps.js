@@ -74,9 +74,9 @@ module.exports = {
 
         if (req.dataToken.user_id) {
 
-            let specific_region = req.params.region_id ? req.params.region_id : 0;
+            let specific_region = req.params.region_id !== 0 ? req.params.region_id : 0;
 
-            let query = specific_region ? `
+            let query = specific_region !== 0 ? `
                                 SELECT
                         st.txt country_name,
                         mc.country_id,
@@ -89,7 +89,8 @@ module.exports = {
                         mc.country_name_id = st.text_id
                     WHERE
                         region_id = ?
-                        AND active = 1` :
+                        AND active = 1` 
+                        :
                 `
                         
                     SELECT
@@ -103,6 +104,7 @@ module.exports = {
                     LEFT JOIN sys_text st ON
                         mc.country_name_id = st.text_id
                     WHERE
+                     region_id = 5 AND
                         active = 1
                         `;
 
@@ -122,7 +124,7 @@ module.exports = {
                         message: `successfully get data Country`,
                         results
                     });
-                    console.log(timestamp, "successfully getCountry!");
+                    console.log(timestamp, "successfully getCountry! with region_id " + specific_region);
                 }
 
             })
