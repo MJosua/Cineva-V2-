@@ -259,7 +259,8 @@ const {
   hotsTicket,
   hotsSettings,
   eventRouter,
-  shortener
+  shortener,
+  hotsTps
 } = require("./routers");
 
 // Auth: 
@@ -309,6 +310,9 @@ App.use("/hots_settings", hotsSettings);
 
 //Shortener
 App.use("/shortener", shortener);
+
+//hots pricing structure
+App.use("/hots_ps", hotsTps);
 
 App.use('/public', express.static(path.join(__dirname, 'public')));
 App.use(express.static(path.join(__dirname, 'public')));

@@ -1,5 +1,5 @@
 const {
-    // untuk hots
+    // untuk koneksi ke database hots
     dbHots,
     dbQueryHots,
 
