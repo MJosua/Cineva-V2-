@@ -164,7 +164,7 @@ module.exports = {
                 AND su.lastname IS NOT NULL
                 AND su.type_id = 2`
 
-            dbConf.execute(query, parameter, (err, results) => {
+            dbConf.execute(query, (err, results) => {
 
                 if (err) {
                     res.status(500).send({
