@@ -312,7 +312,7 @@ App.use("/hots_settings", hotsSettings);
 App.use("/shortener", shortener);
 
 //hots pricing structure
-App.use("/hots_ps", hotsTps);
+App.use("/hots_Tps", hotsTps);
 
 App.use('/public', express.static(path.join(__dirname, 'public')));
 App.use(express.static(path.join(__dirname, 'public')));
