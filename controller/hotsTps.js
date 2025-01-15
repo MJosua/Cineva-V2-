@@ -35,26 +35,57 @@ module.exports = {
 
         if (req.dataToken.user_id) {
 
-            let query = `SELECT region_id, region_desc FROM mst_region mr`
+            let country_id = req.params.country_id
 
-            dbConf.execute(query, (err, results) => {
+            if (!country_id || country_id == 0) {
 
-                if (err) {
-                    res.status(500).send({
-                        success: false,
-                        message: `INTERNAL SERVER ERROR`
-                    });
-                    console.log(timestamp, "Error at getRegion, message:", err);
-                } else {
-                    res.status(200).send({
-                        success: true,
-                        message: `successfully get data region`,
-                        results
-                    });
-                    console.log(timestamp, "successfully getRegion!");
-                }
+                res.status(204).send({
+                    success: false,
+                    message: `country_id is not provided properly`
+                });
 
-            })
+                console.log(timestamp, "country_id is not provided properly");
+
+            } else {
+
+                let query = `SELECT
+                                    mr.region_id, st.txt 
+                                FROM
+                                    map_region_countries mrc
+                                LEFT JOIN mst_region mr ON
+                                    mrc.region_id = mr.region_id
+                                LEFT JOIN sys_text st ON
+                                    st.text_id = mr.region_name_id
+                                WHERE
+                                    mrc.country_id = ? -- param untuk dilempar
+                                    AND st.lang_id = 1 -- fix
+                                    `
+
+                let parameter = [country_id]
+
+                dbConf.execute(query, parameter, (err, results) => {
+
+                    if (err) {
+
+                        res.status(500).send({
+                            success: false,
+                            message: `INTERNAL SERVER ERROR`
+                        });
+                        console.log(timestamp, "Error at getRegion, message:", err);
+
+                    } else {
+                        res.status(200).send({
+                            success: true,
+                            message: `successfully get data region`,
+                            results
+                        });
+                        console.log(timestamp, "successfully getRegion!");
+                    }
+
+                })
+
+            }
+
 
         } else {
             res.status(401).send({
@@ -62,6 +93,8 @@ module.exports = {
                 message: `Unauthorized`
             });
             console.log(timestamp, "getRegion is Unauthorized");
+
+
         }
 
     },
@@ -77,12 +110,17 @@ module.exports = {
         if (req.dataToken.user_id) {
 
             let employee_id = req.params.employee_id
+
             if (!employee_id || employee_id == 0) {
+
                 res.status(204).send({
                     success: false,
                     message: `employee_id is not provided properly`
                 });
+
                 console.log(timestamp, "employee_id is not provided properly");
+
+
             } else {
 
                 let query = `SELECT
