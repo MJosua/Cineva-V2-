@@ -16,6 +16,9 @@ const hotsAdmin = require('./hotsAdmin')
 const hotsTicket = require('./hotsTicket')
 const hotsSettingsController = require('./hotsSettingsController')
 const shortenerController = require('./shortenerController')
+const hotsTps = require('./hotsTps')
+
+
 module.exports = {
     authController,
     authTmController,
@@ -34,6 +37,7 @@ module.exports = {
     hotsAdmin,
     hotsTicket,
     hotsSettingsController,
-    shortenerController
+    shortenerController,
+    hotsTps
 
 };
