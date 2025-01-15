@@ -9,6 +9,7 @@ route.get('/country/:employee_id', decodeTokenHT, hotsTps.getCountry);
 route.get('/analyst', decodeTokenHT, hotsTps.getAnaliyst);
 route.get('/distributor/:country_id', decodeTokenHT, hotsTps.getDistributor);
 route.get('/port/:company_id', decodeTokenHT, hotsTps.getPort);
+route.get('/sku/:company_id', decodeTokenHT, hotsTps.getSKU);
 
 
 
