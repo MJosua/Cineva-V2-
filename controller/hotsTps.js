@@ -235,6 +235,73 @@ module.exports = {
 
 
     },
+    getDistributor: async (req, res) => {
+
+
+        let date = new Date();
+        let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+
+        if (req.dataToken.user_id) {
+
+            let country_id = req.params.country_id
+
+            if (!country_id || country_id == 0) {
+
+                res.status(204).send({
+                    success: false,
+                    message: `country_id is not provided properly`
+                });
+
+                console.log(timestamp, "country_id is not provided properly");
+
+            } else {
+
+                let query = `SELECT
+                                mc.company_id ,
+                                mc.company_name 
+                            FROM
+                                mst_company mc
+                            WHERE country_id = ? -- untuk PARAMETER country TO distributor
+                                    `
+
+                let parameter = [country_id]
+
+                dbConf.execute(query, parameter, (err, results) => {
+
+                    if (err) {
+
+                        res.status(500).send({
+                            success: false,
+                            message: `INTERNAL SERVER ERROR`
+                        });
+                        console.log(timestamp, "Error at getDistributor, message:", err);
+
+                    } else {
+                        res.status(200).send({
+                            success: true,
+                            message: `successfully get data Distributor`,
+                            results
+                        });
+                        console.log(timestamp, "successfully getDistributor!");
+                    }
+
+                })
+
+            }
+
+
+        } else {
+            res.status(401).send({
+                success: false,
+                message: `Unauthorized`
+            });
+            console.log(timestamp, "getDistributor is Unauthorized");
+
+
+        }
+
+    },
     getSKU: async (req, res) => {
 
         let date = new Date();
