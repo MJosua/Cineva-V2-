@@ -46,7 +46,7 @@ module.exports = {
                     });
                     console.log(timestamp, "Error at getRegion, message:", err);
                 } else {
-                    res.status(500).send({
+                    res.status(200).send({
                         success: true,
                         message: `successfully get data region`,
                         results
@@ -117,7 +117,7 @@ module.exports = {
                     });
                     console.log(timestamp, "Error at getCountry, message:", err);
                 } else {
-                    res.status(500).send({
+                    res.status(200).send({
                         success: true,
                         message: `successfully get data Country`,
                         results

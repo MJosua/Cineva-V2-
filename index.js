@@ -52,8 +52,6 @@ const os = require('os');
 
 //for production
 
-/*
-
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
  
@@ -72,6 +70,10 @@ const swaggerOptions = {
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+/*
+
+
 
 
 let svr;
@@ -139,7 +141,7 @@ function production() {
 
 } 
 let svr = production() ? https.createServer(SSL, App) : http.createServer(App);
-let PORT = production() ? process.env.PORT_SSL : process.env.PORT;
+let PORT = production() ? process.env.PORT_SSL : process.env.DEV_PORT;
 console.log("Server status is Production?", production())
 
 
@@ -310,7 +312,7 @@ App.use("/hots_settings", hotsSettings);
 App.use("/shortener", shortener);
 
 //hots pricing structure
-App.use("/hots_ps", hotsTps);
+App.use("/hots_Tps", hotsTps);
 
 App.use('/public', express.static(path.join(__dirname, 'public')));
 App.use(express.static(path.join(__dirname, 'public')));
