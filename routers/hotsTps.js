@@ -5,7 +5,7 @@ const { decodeTokenHT } = require('../config/encrypts');
 const { hotsTps } = require('../controller');
 
 route.get('/region', decodeTokenHT, hotsTps.getRegion);
-route.get('/country', decodeTokenHT, hotsTps.getCountry);
+route.get('/country/:region_id', decodeTokenHT, hotsTps.getCountry);
 
 
 
