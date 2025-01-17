@@ -203,7 +203,8 @@ module.exports = {
                 AND su.active = 1
                 AND su.firstname IS NOT NULL
                 AND su.lastname IS NOT NULL
-                AND su.type_id = 2`
+                AND su.type_id = 2
+                AND me.email IS NOT null`
 
             dbConf.execute(query, (err, results) => {
 
@@ -257,12 +258,14 @@ module.exports = {
 
             } else {
 
-                let query = `SELECT
-                                mc.company_id ,
-                                mc.company_name 
-                            FROM
-                                mst_company mc
-                            WHERE country_id = ? -- untuk PARAMETER country TO distributor
+                let query = `	SELECT
+                                    mc.company_id ,
+                                    mc.company_name
+                                FROM
+                                    mst_company mc
+                                WHERE
+                                    country_id = ?	-- untuk PARAMETER country TO distributor
+                                    AND company_type_id = 2
                                     `
 
                 let parameter = [country_id]
@@ -524,6 +527,133 @@ module.exports = {
             console.log(timestamp, "getSKU is Unauthorized");
         }
 
+
+    },
+    addPs: async (req, res) => {
+
+
+        let date = new Date();
+        let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+
+        if (req.dataToken.user_id) {
+
+            let {
+                country_id,
+                cost_analyst_id,
+                rm_id,
+                matcode,
+                CBP,
+                RBP,
+                DBP,
+                CIF,
+                FOB,
+                TP1,
+                TP2,
+                Incentive,
+                COGS,
+                GP_after_freight,
+                curr_code,
+                distributor,
+                port,
+                proposal_no,
+                proposal_date,
+                created_date,
+                SKU,
+
+            } = req.body
+
+            let query = ` INSER INTO t_ps_summary 
+                            (country_id,
+                                cost_analyst_id,
+                                rm_id,
+                                matcode,
+                                CBP,
+                                RBP,
+                                DBP,
+                                CIF,
+                                FOB,
+                                TP1,
+                                TP2,
+                                Incentive,
+                                COGS,
+                                GP_after_freight,
+                                curr_code,
+                                distributor,
+                                port,
+                                proposal_no,
+                                proposal_date,
+                                created_date,
+                                SKU)
+                            VALUES
+                            (?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?)`;
+            let parameter = [country_id,
+                cost_analyst_id,
+                rm_id,
+                matcode,
+                CBP,
+                RBP,
+                DBP,
+                CIF,
+                FOB,
+                TP1,
+                TP2,
+                Incentive,
+                COGS,
+                GP_after_freight,
+                curr_code,
+                distributor,
+                port,
+                proposal_no,
+                proposal_date,
+                created_date,
+                SKU];
+
+            dbHots.execute(query, parameter, (err) => {
+
+                if (err) {
+                    res.status(500).send({
+                        success: true,
+                        message: `INTERNAL SERVER ERROR`
+                    });
+                    console.log(timestamp, "Error HOTS postAddPs is Unauthorized");
+
+                } else {
+                    res.status(200).send({
+                        success: true,
+                        message: `Pricing Structure Added!`
+                    });
+                    console.log(timestamp, "HOTS postAddPs is SUCCESS");
+                }
+            })
+
+        } else {
+            res.status(401).send({
+                success: false,
+                message: `Unauthorized`
+            });
+            console.log(timestamp, "postAddPs is Unauthorized");
+        }
 
     }
 
