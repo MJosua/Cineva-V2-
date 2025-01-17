@@ -203,7 +203,8 @@ module.exports = {
                 AND su.active = 1
                 AND su.firstname IS NOT NULL
                 AND su.lastname IS NOT NULL
-                AND su.type_id = 2`
+                AND su.type_id = 2
+                AND me.email IS NOT null`
 
             dbConf.execute(query, (err, results) => {
 
@@ -635,14 +636,14 @@ module.exports = {
                         success: true,
                         message: `INTERNAL SERVER ERROR`
                     });
-                    console.log(timestamp, "Error HOTS getAddPs is Unauthorized");
+                    console.log(timestamp, "Error HOTS postAddPs is Unauthorized");
 
                 } else {
                     res.status(200).send({
                         success: true,
                         message: `Pricing Structure Added!`
                     });
-                    console.log(timestamp, "HOTS getAddPs is SUCCESS");
+                    console.log(timestamp, "HOTS postAddPs is SUCCESS");
                 }
             })
 
@@ -651,7 +652,7 @@ module.exports = {
                 success: false,
                 message: `Unauthorized`
             });
-            console.log(timestamp, "getSKU is Unauthorized");
+            console.log(timestamp, "postAddPs is Unauthorized");
         }
 
     }

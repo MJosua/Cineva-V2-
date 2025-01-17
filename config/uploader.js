@@ -542,5 +542,94 @@ module.exports = {
         // Return multer configuration with storage and file filter
         return multer({ storage: storageUploader, fileFilter });
     },
+    hotsPS: (req, directory, filePrefix) => {
+
+        let date = new Date();
+        let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+
+        // Define the default directory
+        let defaultDir = './public/files/hots/';
+
+        // Multer storage configuration
+        const storageUploader = multer.diskStorage({
+
+            // Define destination for uploaded files
+            destination: (req, file, cb) => {
+                // Check if the first file exists in req.files
+                let fileIsExist = req.files && req.files[0];
+                console.log(timestamp, "UPLOADER fileIsExist:", fileIsExist);
+
+                // Define the path where the files will be stored
+                const pathDir = directory ? defaultDir + directory : defaultDir;
+
+                // Check if the directory exists, if not create it
+                if (fs.existsSync(pathDir)) {
+                    cb(null, pathDir);  // Directory exists, proceed to store the file
+                } else {
+                    fs.mkdir(pathDir, { recursive: true }, (err) => {
+                        if (err) {
+                            console.log(timestamp, 'UPLOADER Error creating directory:', err);
+                            cb(err);  // Call cb with the error
+                        } else {
+                            console.log(timestamp, `UPLOADER Directory created: ${pathDir}`);
+                            cb(null, pathDir);  // Directory created successfully
+                        }
+                    });
+                }
+            },
+
+            // Define the filename for uploaded files
+            filename: (req, file, cb) => {
+                // Verify the user token to extract user data
+                let userData = jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY_HT, (err, decode) => {
+                    if (err) {
+                        console.log(timestamp, "UPLOADER Error in authentication during file upload");
+                        return cb(new Error('Authentication failed'));
+                    }
+                    return decode;
+                });
+
+                console.log(timestamp, " UPLOADER userData:", userData);
+
+                // Split the original filename to get the extension
+                let ext = file.originalname.split('.');
+
+                // Generate a timestamp for the file name
+                let time = new Date();
+                let timestamp = time.toLocaleDateString('sv-SE') + '-' + Date.now();
+
+                // Generate the new filename with the user ID and timestamp
+                let user_id = `${userData.user_id}-`;
+                let newName = user_id + timestamp + '.' + ext[ext.length - 1];
+
+                cb(null, newName);  // Pass the new filename to multer
+
+                // Save the new filename to req for later use
+                req.newName = newName;
+            }
+        });
+
+        // File filter to accept only specific file types
+        const fileFilter = (req, file, cb) => {
+            // Allowed file extensions
+            const extFilter = /\.(pdf|xls|xlsx|doc|docx)$/i;
+
+            if (file.originalname && typeof file.originalname === 'string') {
+                if (file.originalname.toLowerCase().match(extFilter)) {
+                    console.log(timestamp, `File passed: ${file.originalname}`);  // Log accepted file
+                    cb(null, true);  // Accept the file
+                } else {
+                    console.log(`File rejected: ${file.originalname}`);  // Log rejected file
+                    cb(new Error('Your file extension is denied ❌'), false);  // Reject the file
+                }
+            } else {
+                cb(new Error('Invalid file name ❌'), false);  // Handle missing or invalid file name
+            }
+        };
+
+        // Return multer configuration with storage and file filter
+        return multer({ storage: storageUploader, fileFilter });
+    },
 
 }
