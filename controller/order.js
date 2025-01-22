@@ -3635,8 +3635,7 @@ module.exports = {
                                                     UNION ALL 
                                                     SELECT order_id FROM m_summary WHERE company_id  = ${req.dataToken.company_id}
                                                     ) AS all_order_id;`))[0].LATEST;
-                // let prevOrderId = (await dbQuery(`SELECT MAX(order_id) AS LATEST FROM m_order WHERE company_id = ${req.dataToken.company_id} AND delv_year = ${year};`))[0].LATEST;
-
+                 
 
                 // membuat kepala tahun order_id 
 
