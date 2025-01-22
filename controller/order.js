@@ -3639,44 +3639,41 @@ module.exports = {
 
 
                 // membuat kepala tahun order_id 
-                let yearOrderId = selectYear ? selectYear.toString() : date.getFullYear().toString();
+
+                // ini dulu. based on lemparan
+                // let yearOrderId = selectYear ? selectYear.toString() : date.getFullYear().toString();
+                let yearOrderId = parseInt((new Date()).getFullYear())
                 let stringCuttedYear = yearOrderId.slice(2, 5);
 
-                //penciptaan order_id
-                // satu kali API call ini menghabiskan satu order_id
-                /*
                 if (prevOrderId === null) {
-                    // if (orderIDX === 0) {
-                    // order_id = parseInt(stringCuttedYear + "00" + company_id + "00001");
-                    console.log(timestamp + "No existing order! Starting Order ID: ", prevOrderId);
-                    return (parseInt(stringCuttedYear + "00" + company_id + "00001"));
-                    // } else if (orderIDX > 0) {
-                    // order_id = parseInt(stringCuttedYear + "00" + company_id + "00001") + orderIDX;
-                    // console.log("Order ID 10: ", order_id, orderIDX);
-                    // }
-                } else if (prevOrderId !== null) {
-                    // order_id = parseInt(prevOrderId) + parseInt(orderIDX + 1);
-                    // console.log("Order ID 11: ", order_id, orderIDX + 1);
-                    console.log(timestamp + "Order ID 11: ", (prevOrderId + 1));
-                    return (parseInt(prevOrderId) + 1)
-                    // order_id = parseInt(prevOrderId) + 1
-                }
-                    */
-                if (prevOrderId === null) {
-                    // if (orderIDX === 0) {
-                    // order_id = parseInt(stringCuttedYear + "00" + company_id + "00001");
-                    // console.log(timestamp + "No existing order! Starting Order ID: ", prevOrderId);
+
                     return (parseInt(stringCuttedYear + "00" + company_id + "00000"));
-                    // } else if (orderIDX > 0) {
-                    // order_id = parseInt(stringCuttedYear + "00" + company_id + "00001") + orderIDX;
-                    // console.log("Order ID 10: ", order_id, orderIDX);
-                    // }
+
                 } else if (prevOrderId !== null) {
-                    // order_id = parseInt(prevOrderId) + parseInt(orderIDX + 1);
-                    // console.log("Order ID 11: ", order_id, orderIDX + 1);
-                    // console.log(timestamp + "Order ID 11: ", (prevOrderId));
-                    return (parseInt(prevOrderId))
-                    // order_id = parseInt(prevOrderId) + 1
+
+                    //new tuning here: 
+
+                    // baca tahun dari karakter pertama order_id
+                    let stringifyLatest_id = prevOrderId.toString()
+                    let trimLatest_id = stringifyLatest_id.slice(0, 2);
+
+                    //ambil 2 karakter tahun sekarang
+                    let latestYear = parseInt((new Date()).getFullYear());
+                    let latestYear_string = latestYear.toString()
+                    let trimLatestYear = latestYear_string.slice(2, 4);
+
+                    if (trimLatest_id == trimLatestYear) {
+
+                        //lempar id sebelumnya
+                        return (parseInt(prevOrderId))
+
+                    } else {
+
+                        //paksa lempar id baru
+                        return (parseInt(trimLatestYear + "00" + company_id + "00000"));
+
+                    }
+
                 }
 
             } catch (error) {
