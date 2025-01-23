@@ -4304,6 +4304,61 @@ module.exports = {
             return latestId ? parseInt(latestId) : parseInt(`${yearPrefix}00${company_id}00000`);
         };
 
+                let prevOrderId = (await dbQuery(`SELECT
+                                                    MAX(order_id) AS LATEST
+                                                    FROM (
+                                                    SELECT order_id FROM m_order mo WHERE company_id  = ${req.dataToken.company_id} AND delv_year = ${selectYear}
+                                                    UNION ALL  
+                                                    SELECT order_id  FROM m_order_dtl WHERE company_id  = ${req.dataToken.company_id} AND delv_year = ${selectYear}
+                                                    UNION ALL 
+                                                    SELECT order_id FROM m_summary WHERE company_id  = ${req.dataToken.company_id}
+                                                    ) AS all_order_id;`))[0].LATEST;
+                 
+
+                // membuat kepala tahun order_id 
+
+                // ini dulu. based on lemparan
+                // let yearOrderId = selectYear ? selectYear.toString() : date.getFullYear().toString();
+                let yearOrderId = parseInt((new Date()).getFullYear())
+                let stringCuttedYear = yearOrderId.slice(2, 5);
+
+                if (prevOrderId === null) {
+
+                    return (parseInt(stringCuttedYear + "00" + company_id + "00000"));
+
+                } else if (prevOrderId !== null) {
+
+                    //new tuning here: 
+
+                    // baca tahun dari karakter pertama order_id
+                    let stringifyLatest_id = prevOrderId.toString()
+                    let trimLatest_id = stringifyLatest_id.slice(0, 2);
+
+                    //ambil 2 karakter tahun sekarang
+                    let latestYear = parseInt((new Date()).getFullYear());
+                    let latestYear_string = latestYear.toString()
+                    let trimLatestYear = latestYear_string.slice(2, 4);
+
+                    if (trimLatest_id == trimLatestYear) {
+
+                        //lempar id sebelumnya
+                        return (parseInt(prevOrderId))
+
+                    } else {
+
+                        //paksa lempar id baru
+                        return (parseInt(trimLatestYear + "00" + company_id + "00000"));
+
+                    }
+
+                }
+
+            } catch (error) {
+                console.log(timestamp + "error get order_id: " + error)
+            }
+
+        }
+
         async function emergencyDeleteOrder(order, last_order_id) {
             const queryEmergencyDeleteOrder = 'CALL delete_order(?);';
             console.log(timestamp, "order_id delete list", orderList);
