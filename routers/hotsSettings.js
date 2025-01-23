@@ -22,7 +22,11 @@ route.get('/get_srf_plant', decodeTokenHT, hotsSettingsController.getSRFPlant)
 route.get('/get_srf_sampleCategory', decodeTokenHT, hotsSettingsController.getSRFSampleCategory)
 route.get('/get_srf_deliverTo', decodeTokenHT, hotsSettingsController.getSRFDeliverTo)
 
+//Data Update
 route.get('/get_data_update_service', decodeTokenHT, hotsSettingsController.getservice_dataupdate)
+
+// Pricing Structure Settings
+route.get('/get_ps_ticket_row', decodeTokenHT, hotsSettingsController.getpricingstructure_row)
 
 
 
