@@ -43,7 +43,7 @@ module.exports = {
         let query = `
         SELECT
         su.uid,
-        su. user_id,
+        su.user_id,
         su.lang_id,
         su.employee_id,
         mc.country_id,
@@ -354,6 +354,8 @@ module.exports = {
           res.status(200).send([...userID, token]);
 
         } else {
+
+          //pisahkan data yang diencrypt dan dikirim 
           let token = createToken(...userID);
           res.status(200).send([...userID, token]);
 
@@ -459,7 +461,7 @@ module.exports = {
         su.uid =  ${dbConf.escape(req.body.uid)};`))[0];
 
       //buat token
-      let token = createToken({ ...getUid })
+      let token = createToken({ ...getUid }, '5m')
 
       if (getUid) {
 
@@ -468,6 +470,7 @@ module.exports = {
         //Trigger send mail
         forgotPasswordMailSender(getUid.email, token);
 
+        //ganti tempatnya bukan di registration_nr supaya user existing bisa
         let query = `UPDATE sys_user  SET registration_nr = '${token}' WHERE uid = ${dbConf.escape(req.body.uid)};`
         let sqlUpdateToken = await dbQuery(query);
 
