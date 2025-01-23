@@ -3,14 +3,29 @@ const route = express.Router();
 const { decodeTokenHT } = require('../config/encrypts')
 
 const { hotsTicket } = require('../controller');
-const { hotsITSupport, hotsITComment } = require('../config/uploader');
+const { hotsPS, hotsITSupport, hotsITComment } = require('../config/uploader');
 
 const uploadFileITSupport = hotsITSupport('it_support', 'it_support').array('file', 10);
+const uploadFilePricingStructure = hotsPS('pricing_structure', 'pricing_structure').array('file', 10);            
+
 const uploadFileITComment = hotsITComment('it_support', 'it_support').array('file', 10);
+
 
 route.post('/it_support_ticket'    , decodeTokenHT, uploadFileITSupport, hotsTicket.addTicketITSupport)
 
-route.post('/setTicket/:service_id', decodeTokenHT, uploadFileITSupport, hotsTicket.setTicket)
+
+const dynamicUploadMiddleware = (req, res, next) => {
+    const service_id = parseInt(req.params.service_id, 10); // Ensure service_id is parsed as an integer
+
+    if (service_id === 11) {
+        // Use uploadFilePricingStructure for service_id === 11
+        return uploadFilePricingStructure(req, res, next);
+    } else {
+        // Use uploadFileITSupport for all other service_id values
+        return uploadFileITSupport(req, res, next);
+    }
+};
+route.post('/setTicket/:service_id', decodeTokenHT, dynamicUploadMiddleware, hotsTicket.setTicket)
 
 
 route.post('/pc_request', decodeTokenHT, hotsTicket.addTicketPCRequest)

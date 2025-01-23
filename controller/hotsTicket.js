@@ -269,6 +269,222 @@ module.exports = {
         if (service_id) {
             switch (parseInt(service_id)) {
 
+                case 11: // Pricing Structure
+                    try {
+                        let {
+                            analyst,
+                            analyst_name,
+                            country,
+                            rm_id,
+                            region_id,
+                            distributor,
+                            port,
+                            proposal_no,
+                            proposal_date,
+                            sku_id,
+
+                            CBP,
+                            RBP,
+                            DBP,
+                            CIF,
+                            FOB,
+                            TP1,
+                            TP2,
+                            Incentive,
+                            COGS,
+                            GP_after_freight,
+                            curr_code,
+                            SKU,
+
+                            file,
+
+
+
+                        } = req.body;
+
+                        const localCurrencyData = JSON.parse(req.body.localCurrencyData); // Local Currency data
+                        const usdCurrencyData = JSON.parse(req.body.usdCurrencyData);
+
+                        console.log("reg.body", req.body)
+
+                        if (!localCurrencyData || localCurrencyData.length === 0) {
+                            return res.status(400).json({ message: "No data received" });
+                        }
+
+                        if (!usdCurrencyData || usdCurrencyData.length === 0) {
+                            return res.status(400).json({ message: "No data received" });
+                        }
+
+
+                        const [resSuperior] = await dbHots.promise().query(queryCheckSuperiorRow, [user_id]);
+                        const { superior_id: superiorID } = resSuperior[0];
+
+                        const [resTeam] = await dbHots.promise().query(queryCheckTeamRow, [service_id]);
+                        const team_leader = resTeam.map(row => row.user_id); // Collects all team leaders as an array
+                        const approvalLevel = resTeam[0]?.approval_level;
+
+                        const [resRow] = await dbHots.promise().query(queryCheckTicketRow, [user_id, service_id]);
+
+                        // Generate Ticket ID
+                        let ticketId = await generateID(user_id, service_id, resRow[0].r_number);
+
+                        // Insert Ticket and Idea Bank Entry
+                        let queryInsertTicket = `
+                        INSERT INTO t_ticket (
+                        ticket_id, created_by, reason, service_id, status_id, assigned_team, creation_date
+                        )
+                        VALUES (
+                        ?, ?, ?, 11, 0, 11, now()
+                        );
+
+                        
+
+                            INSERT INTO t_ps_header
+                            (
+                                analyst_id,
+                                analyst_name,
+                                country_id,
+                                region_id,
+                                distributor_id,
+                                port_id,
+                                proposal_id,
+                                sku_id,
+                                ticket_id,
+                                proposal_date 
+                                )
+                            VALUES
+                            (
+                            ?,?,?,?,?,
+                            ?,?,?,?,?
+                            );
+                    `;
+
+                        await dbHots.promise().query(
+                            queryInsertTicket,
+                            [
+                                ticketId,
+                                user_id,
+                                "Need Approval BOD For Pricing Structure",
+
+
+
+
+
+
+                                analyst,
+                                analyst_name,
+                                country,
+                                region_id,
+                                distributor,
+                                port,
+                                proposal_no,
+                                sku_id,
+                                ticketId,
+                                proposal_date
+                            ]
+                        );
+
+                        let queryInsertTicket_Summary = `
+                        INSERT INTO t_ps_summary
+                            (
+                                CBP,
+                                RBP,
+                                DBP,
+                                CIF,
+                                FOB,
+                                TP1,
+                                TP2,
+                                TP3,
+                                Incentive,
+                                COGS,
+                                GP_after_freight,
+                                curr_code,
+                                ticket_id
+                            )
+                        VALUES
+                            (
+                            ?,?,?,?,?,
+                            ?,?,?,?,?,
+                            ?,?,?
+                        );
+                    `;
+
+                        await dbHots.promise().query(
+                            queryInsertTicket_Summary,
+                            [
+                                localCurrencyData[0]?.localCurrency || 0,  // CBP
+                                localCurrencyData[1]?.localCurrency || 0,  // RBP
+                                localCurrencyData[2]?.localCurrency || 0,  // DBP
+                                localCurrencyData[3]?.localCurrency || 0,  // CIF
+                                localCurrencyData[4]?.localCurrency || 0,  // FOB
+                                localCurrencyData[5]?.localCurrency || 0,  // TP1
+                                localCurrencyData[6]?.localCurrency || 0,  // TP2
+                                localCurrencyData[7]?.localCurrency || 0,  // TP3
+                                localCurrencyData[8]?.localCurrency || 0,  // Incentive
+                                localCurrencyData[9]?.localCurrency || 0,  // COGS
+                                localCurrencyData[10]?.localCurrency || 0,
+                                0,
+                                ticketId
+                            ]
+                        );
+
+                        await dbHots.promise().query(
+                            queryInsertTicket_Summary,
+                            [
+                                usdCurrencyData[0]?.usdCurrency || 0,     // CBP (USD)
+                                usdCurrencyData[1]?.usdCurrency || 0,     // RBP (USD)
+                                usdCurrencyData[2]?.usdCurrency || 0,     // DBP (USD)
+                                usdCurrencyData[3]?.usdCurrency || 0,     // CIF (USD)
+                                usdCurrencyData[4]?.usdCurrency || 0,     // FOB (USD)
+                                usdCurrencyData[5]?.usdCurrency || 0,     // TP1 (USD)
+                                usdCurrencyData[6]?.usdCurrency || 0,     // TP2 (USD)
+                                usdCurrencyData[7]?.usdCurrency || 0,     // TP3 (USD)
+                                usdCurrencyData[8]?.usdCurrency || 0,     // Incentive (USD)
+                                usdCurrencyData[9]?.usdCurrency || 0,     // COGS (USD)
+                                usdCurrencyData[10]?.usdCurrency || 0,
+                                1,
+                                ticketId
+                            ]
+                        );
+
+                        // Insert Approval Events
+
+                        const paramInsertApproval = hotsCheckApprovalLevel(ticketId, approvalLevel, team_leader, superiorID);
+                        if (paramInsertApproval.length > 0) {
+                            const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                            await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
+                        }
+
+
+
+
+
+                        // File Attachments
+                        if (req.files && req.files.length > 0) {
+                            let queryInsertFiles = `INSERT INTO t_attachment (ticket_id, url) VALUES (?, ?);`;
+                            for (let file of req.files) {
+                                let file_url = `/public/files/pricing_structure/${file.filename}`;
+                                await dbHots.promise().query(queryInsertFiles, [ticketId, file_url]);
+                            }
+                        }
+
+                        // Final Response
+                        res.status(200).send({
+                            success: true,
+                            message: "Ticket has been created",
+                            ticket_number: ticketId,
+                        });
+                        console.log(timestamp, "Input Ticket Success ID : ", ticketId, "service : ", service_id);
+
+                    } catch (err) {
+                        res.status(500).send({
+                            success: false,
+                            message: err.message,
+                        });
+                        console.log(timestamp, "Error in Pricing Structure", err);
+                    }
+                    break;
+
                 case 10: // Data Update
                     try {
                         let {
@@ -828,6 +1044,138 @@ module.exports = {
         if (service_id) {
             switch (parseInt(service_id)) {
 
+                case 11: // Pricing Structure
+                    let queryGetDataPS = `
+            select
+                dh.analyst_name,
+                dh.analyst_id,
+                dh.country_id,
+                dh.region_id,
+                dh.distributor_id,
+                dh.port_id,
+                DATE_FORMAT(dh.proposal_date, '%Y-%m-%d') as proposal_date,
+                
+                dh.proposal_id,
+                dh.sku_id,
+                dh.ticket_id,
+
+                t.reason,
+                t.assigned_team,
+                t.service_id,
+                s.service_name,
+                t.assigned_to,
+                t.status_id,
+                ts.color_hex,
+                CONCAT(uc.firstname, " ", uc.lastname) as created_by_username,
+                ts.status_name,
+                (
+                select
+                    JSON_ARRAYAGG(
+                                        JSON_OBJECT(
+                                            'attachment_id', a.attachment_id, 
+                                            'url', a.url
+                                        )
+                                    )
+                from
+                    t_attachment a
+                where
+                    a.ticket_id = d.ticket_id
+                    and
+                            comment_id is null
+                            ) as list_foto,
+                (
+                select
+                    JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            't_ps_id', tpsa.t_ps_id,
+                            'ticket_id', tpsa.ticket_id,
+                            'CBP', tpsa.CBP,
+                            'RBP', tpsa.RBP,
+                            'DBP', tpsa.DBP,
+                            'CIF', tpsa.CIF,
+                            'FOB', tpsa.FOB,
+                            'TP1', tpsa.TP1,
+                            'TP2', tpsa.TP2,
+                            'TP3', tpsa.TP3,
+                            'Incentive', tpsa.Incentive,
+                            'COGS', tpsa.COGS,
+                            'GP_after_freight', tpsa.GP_after_freight,
+                            'curr_code', tpsa.curr_code
+                        )
+                    )
+                from
+                    t_ps_summary tpsa
+                where
+                    tpsa.ticket_id = d.ticket_id
+            ) as list_data,             
+                (
+                select
+                    JSON_ARRAYAGG(
+                                        JSON_OBJECT(
+                                            'approver_id', a.approver_id, 
+                                            'approval_order', a.approval_order,
+                                            'approver_name', CONCAT(u.firstname, " ", u.lastname),
+                                            'approval_status', a.approval_status,
+                                            'approval_date', DATE_FORMAT(a.approve_date, '%Y-%m-%d'),
+                                            'cancel_remark', a.rejection_remark
+
+                                        )
+                                    )
+                from
+                    t_approval_event a
+                left join
+                                    user u on
+                    u.user_id = a.approver_id
+                where
+                    a.approval_id = d.ticket_id 
+                            ) as list_approval,
+                (
+                select
+                    tm.user_id
+                from
+                    m_team_member tm
+                where
+                    tm.team_id = t.assigned_team
+                    and
+                                    tm.team_leader = 1
+                limit 1
+                            ) as team_leader_id
+            from
+                t_ps_summary d
+            left join
+                            t_ticket t on
+                t.ticket_id = d.ticket_id
+            left join
+                            m_ticket_status ts on
+                ts.status_id = t.status_id
+            left join user uc on
+                uc.user_id = t.created_by
+            left join
+                            m_service s on
+                t.service_id = s.service_id
+            left join
+               t_ps_header dh on
+                dh.ticket_id = d.ticket_id   
+            where
+                d.ticket_id = ?
+                `;
+                    let paramGetDataPS = [ticket_id];
+
+                    dbHots.execute(queryGetDataPS, paramGetDataPS, (err, results) => {
+                        if (err) {
+                            console.log(timestamp, "getTicketDetail case 9: Data Update Revision error");
+                            return res.status(500).send({
+                                success: false,
+                                message: err
+                            });
+                        } else {
+                            console.log(timestamp, "getTicketDetail case  9 : Data Update Revision Support");
+                            return res.status(200).send({ data: results });
+                        }
+                    });
+                    break;
+
+
                 case 9: // Data Update
                     let queryGetDataUpdate = `
                 select
@@ -1334,6 +1682,50 @@ module.exports = {
         //important : data additional bisa jadi apa aja, bisa jadi assign_to di halaman it support, etc.
         if (service_id) {
             switch (parseInt(service_id)) {
+
+                case 11: // IT tech support
+                    let querySetApprovalPricingstructure =
+                        `
+                        UPDATE t_approval_event
+                        SET 
+                            approve_date = NOW(), 
+                            approval_status = 1
+                        WHERE 
+                            approval_id = ?
+                            and
+                            approver_id = ?
+                    `;
+
+                    let queryUpdatePricingstructure = `
+                        UPDATE t_ticket
+                        SET 
+                            status_id = 1,
+                            last_update = NOW(),
+                            assigned_to = ? 
+                        WHERE 
+                            ticket_id = ?;
+                    `;
+
+
+
+                    let paramSetApprovalPricingstructure = [ticket_id, user_id];
+                    let paramUpdatePricingstructure = [assign_to, ticket_id];
+
+                    try {
+                        await dbHots.execute(querySetApprovalPricingstructure, paramSetApprovalPricingstructure);
+                        await dbHots.execute(queryUpdatePricingstructure, paramUpdatePricingstructure);
+
+
+                        console.log(timestamp, " UPDATE t_approval_event case 11: Pricing Structure");
+                        return res.status(200).send({ success: true, message: "Approval updated successfully." });
+                    } catch (err) {
+                        console.log(timestamp, " UPDATE t_approval_event case 11 : Pricing Structure error", err);
+                        return res.status(500).send({
+                            success: false,
+                            message: err
+                        });
+                    }
+
                 case 7: // IT tech support
                     let querySetApprovalITSupport =
                         `
@@ -1644,7 +2036,7 @@ module.exports = {
                     break;
 
                 default:
-                    return res.status(200).send({
+                    return res.status(500).send({
                         success: false,
                         message: "service_id must be provided "
                     });
