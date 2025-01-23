@@ -63,6 +63,8 @@ route.get('/email/:ticket_id', decodeTokenHT, hotsTicket.getTicketEmail)
 route.post('/email/:ticket_id', decodeTokenHT, hotsTicket.setTicketEmail)
 route.delete('/email/:ticket_id', decodeTokenHT, hotsTicket.delTicketEmail)
 
+route.post('/testemail', hotsTicket.testEmail)
+
 
 module.exports = route
 

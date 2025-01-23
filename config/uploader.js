@@ -590,7 +590,7 @@ module.exports = {
                     return decode;
                 });
 
-                console.log(timestamp, " UPLOADER userData:", userData);
+                // console.log(timestamp, " UPLOADER userData:", userData);
 
                 // Split the original filename to get the extension
                 let ext = file.originalname.split('.');
