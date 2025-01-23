@@ -11,7 +11,8 @@ const { io } = require('../index');
 const hotsCheckApprovalLevel = require("../config/hotsCheckApprovalLevel");
 // const { generateTokenHT, hashPasswordHT } = require("../config/encrypts"); 
 
-const fs = require('fs')
+const fs = require('fs');
+const { hotsMailer } = require("../config/mailer");
 
 const magenta = '\x1b[35m';
 
@@ -255,7 +256,43 @@ module.exports = {
             console.log(timestamp, " addTicketPCRequest is Unauthorized ")
         }
 
+    },
+
+    testEmail: async (req, res) => {
+        const timestamp = new Date().toLocaleString('id'); // Get timestamp in the Indonesian locale
+        const mailAddress = "josua.prima@gmail.com"
+        const fullName = "Yosua Prima Gultom"
+        try {
+            // Check if mailAddress is provided and not empty
+            if (mailAddress && mailAddress.length > 0) {
+                // Call the hotsMailer function to send the email
+                await hotsMailer(
+                    mailAddress,
+                    'Your IT Support ticket has been created!',
+                    `
+                    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                        <p>Dear ${fullName},</p>
+                        <p>Your IT Support ticket has just been created! Our team will review it and get back to you shortly.</p>
+                        <p>Best regards,</p>
+                        <p>IT Support Team</p>
+                        <p><small>Generated on: ${timestamp}</small></p>
+                    </div>
+                    `
+                );
+
+                // Send success response
+                return res.status(200).json({ message: 'Email sent successfully!' });
+            } else {
+                // Handle missing email address
+                return res.status(400).json({ error: 'Invalid or missing email address.' });
+            }
+        } catch (error) {
+            console.error('Error sending email:', error);
+            // Send error response
+            return res.status(500).json({ error: 'Failed to send email.', details: error.message });
+        }
     }
+
     ,
     setTicket: async (req, res) => {
         let timestamp = new Date().toLocaleString('id');
@@ -266,11 +303,15 @@ module.exports = {
         const mailAddress = await dbQueryHots(`SELECT email  FROM USER WHERE user_id = ${req.dataToken.user_id}`);
         const fullName = `${req.dataToken.firstname}  ${req.dataToken.lastname} `
 
+        
+
+        
         if (service_id) {
             switch (parseInt(service_id)) {
 
                 case 11: // Pricing Structure
                     try {
+
                         let {
                             analyst,
                             analyst_name,
@@ -305,7 +346,6 @@ module.exports = {
                         const localCurrencyData = JSON.parse(req.body.localCurrencyData); // Local Currency data
                         const usdCurrencyData = JSON.parse(req.body.usdCurrencyData);
 
-                        console.log("reg.body", req.body)
 
                         if (!localCurrencyData || localCurrencyData.length === 0) {
                             return res.status(400).json({ message: "No data received" });
@@ -455,7 +495,18 @@ module.exports = {
                             await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                         }
 
-
+                        const firstapprovermailAddress = await dbQueryHots(`select
+                            u.email,
+                            u.user_id
+                        from
+                            user u
+                        left join
+                        m_team_member mtm on
+                            u.user_id = mtm.user_id
+                        where
+                        u.user_id = 
+                        ${paramInsertApproval[0][2]}
+                        `);
 
 
 
@@ -468,12 +519,158 @@ module.exports = {
                             }
                         }
 
+
+                        if (mailAddress && mailAddress.length > 0) {
+                            // Call the hotsMailer function to send the email
+                            await hotsMailer(
+                                mailAddress,
+                                `[No-Reply] [Ticket ID: ${ticketId}] Your Ticket Has Been Submitted `,
+                                `
+                                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                                    <p>Dear ${fullName},</p>
+                                    <p>Thank you for submitting your ticket. Below are the details of your request: </p>
+                                    <p><strong>Service </strong>: ${service_id} </p>
+                                    <p>IT Support Team</p>
+                                    <p><strong>Ticket Details:</strong> </p>
+                                    <table>
+                                        <thead>
+                                        <tr>
+
+                                        <td>
+                                            ticketId
+                                        </td>
+                                        <td>
+                                            analyst_name
+                                        </td>
+                                        <td>
+                                            proposal_no
+                                        </td>
+                                        <td>
+                                            matcode
+                                        </td>
+                                        <td>
+                                            proposal_date
+                                        </td>
+
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr>
+                                              <td>
+                                                ${ticketId}
+                                            </td>
+                                            <td>
+                                                ${analyst_name}
+
+                                            </td>
+                                            <td>
+                                                ${proposal_no}
+                                            </td>
+                                            <td>
+                                                ${sku_id}
+                                            </td>
+                                         
+                                            <td>
+                                                ${proposal_date}
+                                            </td>
+                                            
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                    <p>Your ticket has been successfully received and is currently awaiting processing. </p>
+                                    <p> <strong> Approval List: </strong></p>
+                                    <p>For additional details or to track your request, please visit your ticket in the helpdesk system.</p>
+                                    <p>Thank you </p>
+                                </div>
+                                `
+                            );
+                            if (firstApproverResult.length > 0) {
+                            hotsMailer(
+                                firstapprovermailAddress,
+                                `[No-Reply] [Ticket ID: {Ticket_Number}] Approval Required `,
+                                `
+                                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                                    <p>Dear ${fullName},</p>
+                                    <p>A new ticket has been submitted and requires your approval. Please review the details below:  </p>
+                                    <p><strong>Service </strong>: ${service_id} </p>
+                                    <p><strong>Ticket ID </strong>: ${ticketId} </p>
+                                    </br>
+                                    <p>Requester Information: </p>
+                                    <p><strong>Requested by	 </strong>: ${service_id} </p>
+                                    <p><strong>Department </strong>: IOD </p>
+                                    <p><strong>Submission Date </strong>: ${timestamp} </p>
+                                    </br>
+                                    <p><strong>Ticket Details </strong>:  </p>
+                                    <table>
+                                        <thead>
+                                        <tr>
+
+                                        <td>
+                                            ticketId
+                                        </td>
+                                        <td>
+                                            analyst_name
+                                        </td>
+                                        <td>
+                                            proposal_no
+                                        </td>
+                                        <td>
+                                            matcode
+                                        </td>
+                                        <td>
+                                            proposal_date
+                                        </td>
+
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr>
+                                              <td>
+                                                ${ticketId}
+                                            </td>
+                                            <td>
+                                                ${analyst_name}
+
+                                            </td>
+                                            <td>
+                                                ${proposal_no}
+                                            </td>
+                                            <td>
+                                                ${sku_id}
+                                            </td>
+                                         
+                                            <td>
+                                                ${proposal_date}
+                                            </td>
+                                            
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                    <p>Your ticket has been successfully received and is currently awaiting processing. </p>
+                                    <p> <strong> Approval List: </strong></p>
+                                    <p>For additional details or to track your request, please visit your ticket in the helpdesk system.</p>
+                                    <p>Thank you </p>
+                                </div>
+                                `
+                            );
+                        }else{
+                            console.log("approver email not sent, no approver email found")
+                        }
+
+                            // Send success response
+                        } else {
+                            // Handle missing email address
+                            return res.status(400).json({ error: 'Invalid or missing email address.' });
+                        }
+
                         // Final Response
                         res.status(200).send({
                             success: true,
                             message: "Ticket has been created",
                             ticket_number: ticketId,
                         });
+
+
                         console.log(timestamp, "Input Ticket Success ID : ", ticketId, "service : ", service_id);
 
                     } catch (err) {
@@ -2827,7 +3024,8 @@ module.exports = {
                         t_srf_mail c
                     where
                         c.ticket_id = ?
-                        `
+                    
+                    `
 
                 dbHots.query(emailQuery, [ticket_id], (err, results) => {
 
