@@ -1149,15 +1149,15 @@ module.exports = {
 
             //untuk menampilkan berapa week yang akan ditampilkan di user
             let getWeekLimit = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 9 AND mcn.company_id = ${req.dataToken.company_id}  AND mcn.active = 1;`))[0]
-            
+
             //cuma 13 data week yang ditampilin untuk default.
             let weekLimit = getWeekLimit ? getWeekLimit.value : 13
-            
+
             //untuk menghilangkan week tertentu.
             let getBlockingDate = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 10 AND mcn.company_id = 100  AND mcn.active = 1;`))[0]
-
-            //
-            let blockingDate = getBlockingDate ? getBlockingDate : 0
+ 
+            //error prevention
+            let blockingDate = getBlockingDate ? getBlockingDate.value : 0
 
             let query = `
                  SELECT
@@ -3616,7 +3616,7 @@ module.exports = {
 
 
         let order = req.body.order
-        console.log(timestamp, "order data", order)
+        // console.log(timestamp, "order data", order)
 
         //query mendapatkan order_id terakhir dari database 
         async function generate_order_id(year) {
@@ -3635,15 +3635,16 @@ module.exports = {
                                                     UNION ALL 
                                                     SELECT order_id FROM m_summary WHERE company_id  = ${req.dataToken.company_id}
                                                     ) AS all_order_id;`))[0].LATEST;
-                 
+
 
                 // membuat kepala tahun order_id 
 
                 // ini dulu. based on lemparan
                 // let yearOrderId = selectYear ? selectYear.toString() : date.getFullYear().toString();
-                let yearOrderId = parseInt((new Date()).getFullYear())
+                let yearOrderId = ((new Date()).getFullYear()).toString();
+                
                 let stringCuttedYear = yearOrderId.slice(2, 5);
-
+ 
                 if (prevOrderId === null) {
 
                     return (parseInt(stringCuttedYear + "00" + company_id + "00000"));
@@ -3663,13 +3664,14 @@ module.exports = {
 
                     if (trimLatest_id == trimLatestYear) {
 
-                        //lempar id sebelumnya
+                        //lempar id sebelumnya 
                         return (parseInt(prevOrderId))
 
                     } else {
 
                         //paksa lempar id baru
-                        return (parseInt(trimLatestYear + "00" + company_id + "00000"));
+                        let new_id = trimLatestYear + "00" + company_id + "00000" 
+                        return (parseInt(new_id));
 
                     }
 

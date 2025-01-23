@@ -1129,6 +1129,13 @@ WHERE
             console.log(timestamp + " XXXX FAILURE Admin getCompany by : " + req.dataToken.uid + 'fail:' + err)
 
           } else {
+            console.log(" getCompany results", results)
+
+            let global_parameter = { company_id: 100, company_name: 'Global Configuration' }
+
+            let injectedResults = results.unshift(global_parameter)
+
+            console.log("admin getCompany injectedResults", injectedResults);
             //success
             res.status(200).send({
               message: 'berhasil get data status',
@@ -1221,7 +1228,7 @@ WHERE
           let packet = results.slice(startIndex, endIndex)
           let totalDataLength = results.length
           let totalPage = Math.round(results.length / limit)
- 
+
           res.status(200).send({ packet, totalPage, totalDataLength, page });
           console.log(timestamp + "Admin getAudit by : " + req.dataToken.uid + ' success')
         }
