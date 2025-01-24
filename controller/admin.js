@@ -1128,8 +1128,7 @@ WHERE
             });
             console.log(timestamp + " XXXX FAILURE Admin getCompany by : " + req.dataToken.uid + 'fail:' + err)
 
-          } else {
-            console.log(" getCompany results", results)
+          } else { 
 
             let global_parameter = { company_id: 100, company_name: 'Global Configuration' }
 
