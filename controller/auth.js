@@ -106,7 +106,8 @@ module.exports = {
 
             } else {
 
-
+              
+              let userData = results;
 
               //berhasil login
               if (results[0]) {
@@ -127,7 +128,7 @@ module.exports = {
                 //new token
                 let token = createToken(dataToken);
 
-                console.log(timestamp, "userData[0] @login", results[0])
+                console.log(timestamp, "userData[0] @login", userData[0])
                 console.log(timestamp, "dataToken @login", dataToken)
 
 
@@ -365,7 +366,7 @@ module.exports = {
             type_id: rawDataToken.type_id
           }
 
-          console.log(timestamp, "dataToken @keepLogin", dataToken)
+          console.log(timestamp,"dataToken @keepLogin", dataToken)
           console.log(timestamp, "userID[0] @keepLogin", userID[0])
 
 
