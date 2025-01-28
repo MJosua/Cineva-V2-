@@ -32,7 +32,7 @@ module.exports = {
                     message: 'ERROR IN AUTH!'
                 })
             }
-
+            console.log("decodeded token",decode)
             req.dataToken = decode;
             next();
         })
@@ -98,10 +98,10 @@ module.exports = {
     },
     decodeTokenHT: (req, res, next) => {
 
-        
+
         // jwt.verify(req.cookies.tokek, process.env.SECURITY_TOKEN_KEY_HT, (err, decode) => {
         jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY_HT, (err, decode) => {
-             
+
             if (err) {
                 console.log("Invalid Token Read Token HT");
                 return res.status(401).send({
