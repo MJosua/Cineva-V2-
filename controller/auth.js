@@ -126,7 +126,7 @@ module.exports = {
                 // let token = createToken({ ...results[0] });
 
                 //new token
-                let token = createToken({ dataToken });
+                let token = createToken(dataToken);
 
 
 
@@ -365,7 +365,7 @@ module.exports = {
           }
 
           console.log("dataToken @keepLogin", dataToken)
- 
+
 
           //pisahkan data yang diencrypt dan dikirim 
           let token = createToken(dataToken);
