@@ -54,7 +54,7 @@ const os = require('os');
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
- 
+
 
 const swaggerOptions = {
   definition: {
@@ -139,7 +139,7 @@ function production() {
   }
 
 
-} 
+}
 let svr = production() ? https.createServer(SSL, App) : http.createServer(App);
 let PORT = production() ? process.env.PORT_SSL : process.env.DEV_PORT;
 console.log("Server status is Production?", production())
@@ -387,37 +387,44 @@ const {
 dbConf.getConnection((error, connection) => {
   if (error) {
     console.log("Error DB e-Order Connection!", error.sqlMessage);
+  } else {
+    console.log(`DB e-Order has been connected ${connection.threadId}`);
   }
-  console.log(`DB e-Order has been connected ${connection.threadId}`);
 });
 
 dbTM.getConnection((error, connection) => {
   if (error) {
     console.log("Error DB Trademark Management Connection!", error.sqlMessage);
+  } else {
+    console.log(`DB Trademark Management has been connected ${connection.threadId}`);
   }
-  console.log(`DB Trademark Management has been connected ${connection.threadId}`);
 });
 
 dbCardGenerator.getConnection((error, connection) => {
   if (error) {
     console.log("Error DB Card Generator Connection!", error.sqlMessage);
+  } else {
+    console.log(`DB Card Generator has been connected ${connection.threadId}`);
   }
-  console.log(`DB Card Generator has been connected ${connection.threadId}`);
 });
 
 dbHots.getConnection((error, connection) => {
   if (error) {
     console.log("Error DB HOTS Connection!", error.sqlMessage);
+  }else {
+    console.log(`DB HOTS has been connected ${connection.threadId}`);
   }
-  console.log(`DB HOTS has been connected ${connection.threadId}`);
+ 
 });
 
 
 dbClick.getConnection((error, connection) => {
   if (error) {
     console.log("Error DB Click Connection!", error.sqlMessage);
+  }else {
+    console.log(`DB Click has been connected ${connection.threadId}`);
   }
-  console.log(`DB Click has been connected ${connection.threadId}`);
+  
 });
 
 

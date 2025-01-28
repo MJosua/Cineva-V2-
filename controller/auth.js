@@ -43,7 +43,7 @@ module.exports = {
         let query = `
         SELECT
         su.uid,
-        su. user_id,
+        su.user_id,
         su.lang_id,
         su.employee_id,
         mc.country_id,
@@ -106,11 +106,28 @@ module.exports = {
 
             } else {
 
-              let token = createToken({ ...results[0] });
               let userData = results;
+
 
               //berhasil login
               if (userData[0]) {
+
+                let rawDataToken = results[0];
+                let dataToken = {
+                  uid: rawDataToken.uid,
+                  user_id: rawDataToken.user_id,
+                  employee_id: rawDataToken.employee_id,
+                  company_id: rawDataToken.company_id,
+                  active: rawDataToken.active,
+                  type_id: rawDataToken.type_id
+                }
+
+                //old token
+                // let token = createToken({ ...results[0] });
+
+                //new token
+                let token = createToken({ dataToken });
+
 
 
                 // UPDATE TOKEN yang disimpan di sys_user untuk proses kalibrasi validasi token existing
@@ -327,25 +344,6 @@ module.exports = {
                    
               `
         );
-        // OLD Query
-        // let userID = await dbQuery(
-        //   `
-        //           SELECT 
-        //           su.uid, su. user_id, su.lang_id, su.employee_id, 
-        //           mc.country_id, mc.company_name, mc.company_id, 
-        //           mct.country_desc, su.active, su.type_id, 
-        //           mut.user_type, COALESCE(mcg.max_sku, 2) max_sku, COALESCE(mcg.pallet, 0) pallet,
-        //   COALESCE(p.firstname, '') firstname , COALESCE(p.midname, '') midname ,COALESCE(p.lastname, '') lastname
-        //           FROM sys_user su 
-        //           JOIN mst_company mc ON su.company_id = mc.company_id 
-        //           JOIN mst_country mct ON mct.country_id = mc.country_id
-        //           join m_user_type mut on su.type_id = mut.type_id 
-        //           LEFT JOIN m_config mcg ON su.company_id = mcg.company_id
-        //   LEFT JOIN mst_employee me ON me.employee_id = su.employee_id
-        //   LEFT JOIN person p ON p.person_id = me.employee_id
-        //           WHERE su.user_id= ${dbConf.escape(req.dataToken.user_id)};
-        //       `
-        // );
 
 
         if (userID[0].active === 2) {
@@ -354,7 +352,29 @@ module.exports = {
           res.status(200).send([...userID, token]);
 
         } else {
-          let token = createToken(...userID);
+
+          // optimized dengan mengirim data token lebih sedikiiiiit
+          let rawDataToken = userID[0];
+          let dataToken = {
+            uid: rawDataToken.uid,
+            user_id: rawDataToken.user_id,
+            employee_id: rawDataToken.employee_id,
+            company_id: rawDataToken.company_id,
+            active: rawDataToken.active,
+            type_id: rawDataToken.type_id
+          }
+
+          console.log("dataToken @keepLogin", dataToken)
+
+          let newToken = createToken(dataToken);
+
+          //pisahkan data yang diencrypt dan dikirim 
+          let token = createToken(...newToken);
+
+          //old token
+          // let token = createToken(...userID);
+
+
           res.status(200).send([...userID, token]);
 
           let sqlUpdateToken = await dbQuery(`UPDATE sys_user 
@@ -459,7 +479,7 @@ module.exports = {
         su.uid =  ${dbConf.escape(req.body.uid)};`))[0];
 
       //buat token
-      let token = createToken({ ...getUid })
+      let token = createToken({ ...getUid }, '5m')
 
       if (getUid) {
 
@@ -468,6 +488,7 @@ module.exports = {
         //Trigger send mail
         forgotPasswordMailSender(getUid.email, token);
 
+        //ganti tempatnya bukan di registration_nr supaya user existing bisa
         let query = `UPDATE sys_user  SET registration_nr = '${token}' WHERE uid = ${dbConf.escape(req.body.uid)};`
         let sqlUpdateToken = await dbQuery(query);
 
