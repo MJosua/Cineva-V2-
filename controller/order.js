@@ -118,7 +118,7 @@ module.exports = {
 
             try {
 
-  
+
                 dbConf.query(query,
                     (err, results) => {
 
@@ -336,22 +336,23 @@ module.exports = {
     }
     , getOrderHeader: async (req, res) => {
 
+
+        let date = new Date();
+        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+        // timestamp + 
+
+        // add feature on 20240105
+        let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
+        let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
+        let desc = req.query.desc ? `DESC ` : ``;
+        let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
+        let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
+        let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
+        let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
+        let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%') AND mo.company_id = ${req.dataToken.company_id} ` : ''
+        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}, mo.order_id ${desc}, mo.po_buyer ${desc}` : ` ORDER BY mo.po_date ${desc} , mo.order_id ${desc}, mo.po_buyer ${desc}`;
+        
         if (req.dataToken.user_id) {
-
-            let date = new Date();
-            let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-            // timestamp + 
-
-            // add feature on 20240105
-            let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
-            let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
-            let desc = req.query.desc ? `DESC ` : ``;
-            let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
-            let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
-            let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
-            let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
-            let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%') AND mo.company_id = ${req.dataToken.company_id} ` : ''
-            let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}, mo.order_id ${desc}, mo.po_buyer ${desc}` : ` ORDER BY mo.po_date ${desc} , mo.order_id ${desc}, mo.po_buyer ${desc}`;
 
             const startIndex = (page - 1) * limit;
             const endIndex = page * limit;
@@ -587,12 +588,12 @@ module.exports = {
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
 
-        
-        
+
+
         try {
-            
+
             if (req.dataToken.user_id) {
-                
+
                 let available_week = (await dbQuery(`SELECT DISTINCT mo.delv_week, mo.delv_week_desc FROM m_order mo WHERE mo.company_id = ${req.dataToken.company_id}  `))
 
                 let query = `
