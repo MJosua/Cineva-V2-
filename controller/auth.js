@@ -125,7 +125,7 @@ module.exports = {
                 // let token = createToken({ ...results[0] });
 
                 //new token
-                let token = createToken(...dataToken);
+                let token = createToken(dataToken);
 
                 console.log(timestamp, "userData[0] @login", userData[0])
                 console.log(timestamp, "dataToken @login", dataToken)
@@ -370,7 +370,7 @@ module.exports = {
 
 
           //pisahkan data yang diencrypt dan dikirim 
-          let token = createToken(...dataToken);
+          let token = createToken(dataToken);
 
           //old token
           // let token = createToken(...userID);
