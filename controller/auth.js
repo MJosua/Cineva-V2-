@@ -123,10 +123,10 @@ module.exports = {
                 }
 
                 //old token
-                // let token = createToken({ ...results[0] });
+                let token = createToken({ ...results[0] });
 
                 //new token
-                let token = createToken(dataToken);
+                // let token = createToken(dataToken);
 
 
 
@@ -368,10 +368,10 @@ module.exports = {
 
 
           //pisahkan data yang diencrypt dan dikirim 
-          let token = createToken(dataToken);
+          // let token = createToken(dataToken);
 
           //old token
-          // let token = createToken(...userID);
+          let token = createToken(...userID);
 
 
           res.status(200).send([...userID, token]);
