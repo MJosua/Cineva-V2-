@@ -1264,6 +1264,7 @@ module.exports = {
                     console.log("|ERROR| GET STUFFINGWEEK", err)
                 } else {
                     res.status(200).send(results);
+					console.table(results);
                     console.log(timestamp + `get Order Stuffing Week for ${req.dataToken.company_id} limit ${weekLimit} success`);
                     addSqlLogger(req.dataToken.user_id, '-- query stuffing week', '--data stuffing week', 'getStuffingWeek')
                 }
