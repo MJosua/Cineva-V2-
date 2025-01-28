@@ -365,11 +365,10 @@ module.exports = {
           }
 
           console.log("dataToken @keepLogin", dataToken)
-
-          let newToken = createToken(dataToken);
+ 
 
           //pisahkan data yang diencrypt dan dikirim 
-          let token = createToken(...newToken);
+          let token = createToken(...dataToken);
 
           //old token
           // let token = createToken(...userID);
