@@ -127,7 +127,7 @@ module.exports = {
                 //new token
                 let token = createToken(dataToken);
 
-                console.log(timestamp, "userData[0] @login", userData[0])
+                console.log(timestamp, "userData[0] @login", results[0])
                 console.log(timestamp, "dataToken @login", dataToken)
 
 
