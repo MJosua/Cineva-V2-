@@ -368,7 +368,7 @@ module.exports = {
  
 
           //pisahkan data yang diencrypt dan dikirim 
-          let token = createToken(...dataToken);
+          let token = createToken(dataToken);
 
           //old token
           // let token = createToken(...userID);
