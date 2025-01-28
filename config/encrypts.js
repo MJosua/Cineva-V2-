@@ -32,7 +32,7 @@ module.exports = {
                     message: 'ERROR IN AUTH!'
                 })
             }
-            console.log("decodeded token",decode)
+            // console.log("decodeded token",decode)
             req.dataToken = decode;
             next();
         })
