@@ -128,8 +128,8 @@ module.exports = {
                 //new token
                 let token = createToken(dataToken);
 
-                console.log(timestamp, "userData[0] @login", userData[0])
-                console.log(timestamp, "dataToken @login", dataToken)
+                //console.log(timestamp, "userData[0] @login", userData[0])
+                //console.log(timestamp, "dataToken @login", dataToken)
 
 
                 // UPDATE TOKEN yang disimpan di sys_user untuk proses kalibrasi validasi token existing
@@ -366,8 +366,8 @@ module.exports = {
             type_id: rawDataToken.type_id
           }
 
-          console.log(timestamp,"dataToken @keepLogin", dataToken)
-          console.log(timestamp, "userID[0] @keepLogin", userID[0])
+          //console.log(timestamp,"dataToken @keepLogin", dataToken)
+          //console.log(timestamp, "userID[0] @keepLogin", userID[0])
 
 
           //pisahkan data yang diencrypt dan dikirim 
