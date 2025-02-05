@@ -51,7 +51,7 @@ function production() {
 
 const host_config = production() ? process.env.DB_HOST : process.env.DEV_DB_HOST;
 const user_config = production() ? process.env.DB_USER : process.env.DEV_DB_USER;
-const password_config = production() ? process.env.DEV_DB_PASSWORD : process.env.DEV_DB_PASSWORD;
+const password_config = production() ? process.env.DB_PASSWORD : process.env.DEV_DB_PASSWORD;
 const db_trademark = production() ? process.env.DB_NAME_TM : process.env.DEV_DB_NAME_TM;
 
 console.log("@db - host_config", host_config)
@@ -137,18 +137,18 @@ const addSqlLogger = (user_id, sql_parameter, message, function_name) => {
     //user_id = number, user ID yang melakukan perubahan pada SQL
     //sql_code = SQL yang melakukan perubahan. PASTIKAN HANYA menggunakan ""
 
-    // const dbLog = mysql.createPool({
-    //     // connectionLimit : 20, 
-    //     multipleStatements: true,
-    //     host: host_config,
-    //     user: user_config,
-    //     password: password_config,
-    //     database: process.env.DB_NAME
-    // });
+    const dbLog = mysql.createPool({
+        // connectionLimit : 20, 
+        multipleStatements: true,
+        host: host_config,
+        user: user_config,
+        password: password_config,
+        database: process.env.DB_NAME
+    });
 
-    // let parameter = [user_id, sql_parameter, message, function_name]
-    // let query = `INSERT INTO action_logger (time_event, user_id, sql_code, message, function_name) VALUES (now(), ?, ?, ?, ?)`
-    // dbLog.query(query, parameter)
+    let parameter = [user_id, sql_parameter, message, function_name]
+    let query = `INSERT INTO action_logger (time_event, user_id, sql_code, message, function_name) VALUES (now(), ?, ?, ?, ?)`
+    dbLog.query(query, parameter)
 
 
 }
