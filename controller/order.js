@@ -804,85 +804,74 @@ module.exports = {
 
                 let query = `
                     SELECT DISTINCT
-                        det.order_id,
-                        det.company_id,
-                        mco.company_name,
-                        det.created_by,
-                        su.firstname,
-                        CASE
-		                    WHEN det.cont_size  = 8 THEN ms.detail_id
-                    		ELSE det.detail_id
-	                    END detail_id,
-                        mc.container_name,
-                        CASE
-                            WHEN det.cont_qty = 0 THEN 1
-                            ELSE det.cont_qty
-                        END cont_qty,  
-                        CASE
-                            WHEN det.cont_size = 8 THEN ms.sku
-                            ELSE det.sku1
-                        END sku1,
-                        CASE
-                            WHEN det.cont_size = 8 THEN COALESCE(mps.product_name_no, mps.product_name)
-                            ELSE COALESCE(mp1.product_name_no, mp1.product_name)
-                        END product_name_1,
-                        CASE
-                            WHEN det.cont_size = 8 THEN mpls.img
-                            ELSE mpl1.img
-                        END url_1,
-                        CASE
-                            WHEN det.cont_size = 8 THEN ms.qty
-                            ELSE det.qty1
-                        END qty1,
-                        det.price1,
-                        CASE
-                            WHEN det.cont_size = 8 THEN mps.product_sku
-                            ELSE mp1.product_sku
-                        END prod_sku_1, 
-                        det.sku2,
-                        COALESCE(mp2.product_name_no, mp2.product_name) product_name_2,
-                        mpl2.img url_2,
-                        det.qty2,
-                        det.price2,
-                        mp2.product_sku prod_sku_2,
-                        det.sku2,
-                        COALESCE(mp3.product_name_no, mp3.product_name) product_name_3,
-                        mpl3.img url_3,
-                        det.qty3,
-                        det.price3,
-                        mp3.product_sku prod_sku_3,
-                        det.remarks,
-                        det.bulk
-                    FROM
-                        m_order_dtl det
-                    INNER JOIN m_order mo ON
-                        mo.order_id = det.order_id
-                    JOIN mst_company mco ON
-                        det.company_id = mco.company_id
-                    LEFT JOIN sys_user su ON
-                        su.user_id = det.created_by
-                    LEFT JOIN mst_container mc ON
-                        mc.container_id = det.cont_size
-                    LEFT JOIN mst_product mp1 ON
-                        det.sku1 = mp1.product_code
-                    LEFT JOIN mst_product mp2 ON
-                        det.sku2 = mp2.product_code
-                    LEFT JOIN mst_product mp3 ON
-                        det.sku3 = mp3.product_code
-                    LEFT JOIN m_product_link mpl1 ON
-                        det.sku1 = mpl1.product_code
-                    LEFT JOIN m_product_link mpl2 ON
-                        det.sku2 = mpl2.product_code
-                    LEFT JOIN m_product_link mpl3 ON
-                        det.sku3 = mpl3.product_code
-                    LEFT JOIN m_summary ms ON
-                        mo.order_id = ms.order_id
-                    LEFT JOIN mst_product mps ON
-                        ms.sku = mps.product_code
-                    LEFT JOIN m_product_link mpls ON
-                        ms.sku = mpls.product_code
-                    WHERE
-                        det.order_id = ?`
+                    det.order_id,
+                    det.company_id,
+                    mco.company_name,
+                    det.created_by,
+                    su.firstname,
+                    CASE
+                        WHEN det.cont_size = 8 THEN ms.detail_id
+                        ELSE det.detail_id
+                    END AS detail_id,
+                    mc.container_name,
+                    CASE
+                        WHEN det.cont_qty = 0 THEN 1
+                        ELSE det.cont_qty
+                    END AS cont_qty,
+                    CASE
+                        WHEN det.cont_size = 8 THEN ms.sku
+                        ELSE det.sku1
+                    END AS sku1,
+                    CASE
+                        WHEN det.cont_size = 8 THEN COALESCE(mps.product_name_no, mps.product_name)
+                        ELSE COALESCE(mp1.product_name_no, mp1.product_name)
+                    END AS product_name_1,
+                    CASE
+                        WHEN det.cont_size = 8 THEN mpls.img
+                        ELSE mpl1.img
+                    END AS url_1,
+                    CASE
+                        WHEN det.cont_size = 8 THEN ms.qty
+                        ELSE det.qty1
+                    END AS qty1,
+                    det.price1,
+                    CASE
+                        WHEN det.cont_size = 8 THEN mps.product_sku
+                        ELSE mp1.product_sku
+                    END AS prod_sku_1,
+                    det.sku2,
+                    COALESCE(mp2.product_name_no, mp2.product_name) AS product_name_2,
+                    mpl2.img AS url_2,
+                    det.qty2,
+                    det.price2,
+                    mp2.product_sku AS prod_sku_2,
+                    det.sku3,
+                    COALESCE(mp3.product_name_no, mp3.product_name) AS product_name_3,
+                    mpl3.img AS url_3,
+                    det.qty3,
+                    det.price3,
+                    mp3.product_sku AS prod_sku_3,
+                    det.remarks,
+                    det.bulk,
+                    so.so_id,
+                    mo.po_date  -- Added for ORDER BY clause
+                    FROM m_order_dtl det
+                    INNER JOIN m_order mo ON mo.order_id = det.order_id
+                    JOIN mst_company mco ON det.company_id = mco.company_id
+                    LEFT JOIN sys_user su ON su.user_id = det.created_by
+                    LEFT JOIN mst_container mc ON mc.container_id = det.cont_size
+                    LEFT JOIN mst_product mp1 ON det.sku1 = mp1.product_code
+                    LEFT JOIN mst_product mp2 ON det.sku2 = mp2.product_code
+                    LEFT JOIN mst_product mp3 ON det.sku3 = mp3.product_code
+                    LEFT JOIN m_product_link mpl1 ON det.sku1 = mpl1.product_code
+                    LEFT JOIN m_product_link mpl2 ON det.sku2 = mpl2.product_code
+                    LEFT JOIN m_product_link mpl3 ON det.sku3 = mpl3.product_code
+                    LEFT JOIN m_summary ms ON mo.order_id = ms.order_id
+                    LEFT JOIN mst_product mps ON ms.sku = mps.product_code
+                    LEFT JOIN m_product_link mpls ON ms.sku = mpls.product_code
+                    LEFT JOIN trs_sales_order so ON mo.order_id = so.e_order AND so.cancel = 0
+                    WHERE det.order_id = ?;  
+`
 
                 let parameter = [order_id]
 

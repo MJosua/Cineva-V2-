@@ -11,7 +11,8 @@ const { io } = require('../index');
 const hotsCheckApprovalLevel = require("../config/hotsCheckApprovalLevel");
 // const { generateTokenHT, hashPasswordHT } = require("../config/encrypts"); 
 
-const fs = require('fs')
+const fs = require('fs');
+const { hotsMailer } = require("../config/mailer");
 
 const magenta = '\x1b[35m';
 
@@ -255,7 +256,43 @@ module.exports = {
             console.log(timestamp, " addTicketPCRequest is Unauthorized ")
         }
 
+    },
+
+    testEmail: async (req, res) => {
+        const timestamp = new Date().toLocaleString('id'); // Get timestamp in the Indonesian locale
+        const mailAddress = "josua.prima@gmail.com"
+        const fullName = "Yosua Prima Gultom"
+        try {
+            // Check if mailAddress is provided and not empty
+            if (mailAddress && mailAddress.length > 0) {
+                // Call the hotsMailer function to send the email
+                await hotsMailer(
+                    mailAddress,
+                    'Your IT Support ticket has been created!',
+                    `
+                    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                        <p>Dear ${fullName},</p>
+                        <p>Your IT Support ticket has just been created! Our team will review it and get back to you shortly.</p>
+                        <p>Best regards,</p>
+                        <p>IT Support Team</p>
+                        <p><small>Generated on: ${timestamp}</small></p>
+                    </div>
+                    `
+                );
+
+                // Send success response
+                return res.status(200).json({ message: 'Email sent successfully!' });
+            } else {
+                // Handle missing email address
+                return res.status(400).json({ error: 'Invalid or missing email address.' });
+            }
+        } catch (error) {
+            console.error('Error sending email:', error);
+            // Send error response
+            return res.status(500).json({ error: 'Failed to send email.', details: error.message });
+        }
     }
+
     ,
     setTicket: async (req, res) => {
         let timestamp = new Date().toLocaleString('id');
@@ -266,8 +303,384 @@ module.exports = {
         const mailAddress = await dbQueryHots(`SELECT email  FROM USER WHERE user_id = ${req.dataToken.user_id}`);
         const fullName = `${req.dataToken.firstname}  ${req.dataToken.lastname} `
 
+        
+
+        
         if (service_id) {
             switch (parseInt(service_id)) {
+
+                case 11: // Pricing Structure
+                    try {
+
+                        let {
+                            analyst,
+                            analyst_name,
+                            country,
+                            rm_id,
+                            region_id,
+                            distributor,
+                            port,
+                            proposal_no,
+                            proposal_date,
+                            sku_id,
+
+                            CBP,
+                            RBP,
+                            DBP,
+                            CIF,
+                            FOB,
+                            TP1,
+                            TP2,
+                            Incentive,
+                            COGS,
+                            GP_after_freight,
+                            curr_code,
+                            SKU,
+
+                            file,
+
+
+
+                        } = req.body;
+
+                        const localCurrencyData = JSON.parse(req.body.localCurrencyData); // Local Currency data
+                        const usdCurrencyData = JSON.parse(req.body.usdCurrencyData);
+
+
+                        if (!localCurrencyData || localCurrencyData.length === 0) {
+                            return res.status(400).json({ message: "No data received" });
+                        }
+
+                        if (!usdCurrencyData || usdCurrencyData.length === 0) {
+                            return res.status(400).json({ message: "No data received" });
+                        }
+
+
+                        const [resSuperior] = await dbHots.promise().query(queryCheckSuperiorRow, [user_id]);
+                        const { superior_id: superiorID } = resSuperior[0];
+
+                        const [resTeam] = await dbHots.promise().query(queryCheckTeamRow, [service_id]);
+                        const team_leader = resTeam.map(row => row.user_id); // Collects all team leaders as an array
+                        const approvalLevel = resTeam[0]?.approval_level;
+
+                        const [resRow] = await dbHots.promise().query(queryCheckTicketRow, [user_id, service_id]);
+
+                        // Generate Ticket ID
+                        let ticketId = await generateID(user_id, service_id, resRow[0].r_number);
+
+                        // Insert Ticket and Idea Bank Entry
+                        let queryInsertTicket = `
+                        INSERT INTO t_ticket (
+                        ticket_id, created_by, reason, service_id, status_id, assigned_team, creation_date
+                        )
+                        VALUES (
+                        ?, ?, ?, 11, 0, 11, now()
+                        );
+
+                        
+
+                            INSERT INTO t_ps_header
+                            (
+                                analyst_id,
+                                analyst_name,
+                                country_id,
+                                region_id,
+                                distributor_id,
+                                port_id,
+                                proposal_id,
+                                sku_id,
+                                ticket_id,
+                                proposal_date 
+                                )
+                            VALUES
+                            (
+                            ?,?,?,?,?,
+                            ?,?,?,?,?
+                            );
+                    `;
+
+                        await dbHots.promise().query(
+                            queryInsertTicket,
+                            [
+                                ticketId,
+                                user_id,
+                                "Need Approval BOD For Pricing Structure",
+
+
+
+
+
+
+                                analyst,
+                                analyst_name,
+                                country,
+                                region_id,
+                                distributor,
+                                port,
+                                proposal_no,
+                                sku_id,
+                                ticketId,
+                                proposal_date
+                            ]
+                        );
+
+                        let queryInsertTicket_Summary = `
+                        INSERT INTO t_ps_summary
+                            (
+                                CBP,
+                                RBP,
+                                DBP,
+                                CIF,
+                                FOB,
+                                TP1,
+                                TP2,
+                                TP3,
+                                Incentive,
+                                COGS,
+                                GP_after_freight,
+                                curr_code,
+                                ticket_id
+                            )
+                        VALUES
+                            (
+                            ?,?,?,?,?,
+                            ?,?,?,?,?,
+                            ?,?,?
+                        );
+                    `;
+
+                        await dbHots.promise().query(
+                            queryInsertTicket_Summary,
+                            [
+                                localCurrencyData[0]?.localCurrency || 0,  // CBP
+                                localCurrencyData[1]?.localCurrency || 0,  // RBP
+                                localCurrencyData[2]?.localCurrency || 0,  // DBP
+                                localCurrencyData[3]?.localCurrency || 0,  // CIF
+                                localCurrencyData[4]?.localCurrency || 0,  // FOB
+                                localCurrencyData[5]?.localCurrency || 0,  // TP1
+                                localCurrencyData[6]?.localCurrency || 0,  // TP2
+                                localCurrencyData[7]?.localCurrency || 0,  // TP3
+                                localCurrencyData[8]?.localCurrency || 0,  // Incentive
+                                localCurrencyData[9]?.localCurrency || 0,  // COGS
+                                localCurrencyData[10]?.localCurrency || 0,
+                                0,
+                                ticketId
+                            ]
+                        );
+
+                        await dbHots.promise().query(
+                            queryInsertTicket_Summary,
+                            [
+                                usdCurrencyData[0]?.usdCurrency || 0,     // CBP (USD)
+                                usdCurrencyData[1]?.usdCurrency || 0,     // RBP (USD)
+                                usdCurrencyData[2]?.usdCurrency || 0,     // DBP (USD)
+                                usdCurrencyData[3]?.usdCurrency || 0,     // CIF (USD)
+                                usdCurrencyData[4]?.usdCurrency || 0,     // FOB (USD)
+                                usdCurrencyData[5]?.usdCurrency || 0,     // TP1 (USD)
+                                usdCurrencyData[6]?.usdCurrency || 0,     // TP2 (USD)
+                                usdCurrencyData[7]?.usdCurrency || 0,     // TP3 (USD)
+                                usdCurrencyData[8]?.usdCurrency || 0,     // Incentive (USD)
+                                usdCurrencyData[9]?.usdCurrency || 0,     // COGS (USD)
+                                usdCurrencyData[10]?.usdCurrency || 0,
+                                1,
+                                ticketId
+                            ]
+                        );
+
+                        // Insert Approval Events
+
+                        const paramInsertApproval = hotsCheckApprovalLevel(ticketId, approvalLevel, team_leader, superiorID);
+                        if (paramInsertApproval.length > 0) {
+                            const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                            await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
+                        }
+
+                        const firstapprovermailAddress = await dbQueryHots(`select
+                            u.email,
+                            u.user_id
+                        from
+                            user u
+                        left join
+                        m_team_member mtm on
+                            u.user_id = mtm.user_id
+                        where
+                        u.user_id = 
+                        ${paramInsertApproval[0][2]}
+                        `);
+
+
+
+                        // File Attachments
+                        if (req.files && req.files.length > 0) {
+                            let queryInsertFiles = `INSERT INTO t_attachment (ticket_id, url) VALUES (?, ?);`;
+                            for (let file of req.files) {
+                                let file_url = `/public/files/pricing_structure/${file.filename}`;
+                                await dbHots.promise().query(queryInsertFiles, [ticketId, file_url]);
+                            }
+                        }
+
+
+                        // if (mailAddress && mailAddress.length > 0) {
+                        //     // Call the hotsMailer function to send the email
+                        //     await hotsMailer(
+                        //         mailAddress,
+                        //         `[No-Reply] [Ticket ID: ${ticketId}] Your Ticket Has Been Submitted `,
+                        //         `
+                        //         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                        //             <p>Dear ${fullName},</p>
+                        //             <p>Thank you for submitting your ticket. Below are the details of your request: </p>
+                        //             <p><strong>Service </strong>: ${service_id} </p>
+                        //             <p>IT Support Team</p>
+                        //             <p><strong>Ticket Details:</strong> </p>
+                        //             <table>
+                        //                 <thead>
+                        //                 <tr>
+
+                        //                 <td>
+                        //                     ticketId
+                        //                 </td>
+                        //                 <td>
+                        //                     analyst_name
+                        //                 </td>
+                        //                 <td>
+                        //                     proposal_no
+                        //                 </td>
+                        //                 <td>
+                        //                     matcode
+                        //                 </td>
+                        //                 <td>
+                        //                     proposal_date
+                        //                 </td>
+
+                        //                 </tr>
+                        //                 </thead>
+                        //                 <tbody>
+                        //                 <tr>
+                        //                       <td>
+                        //                         ${ticketId}
+                        //                     </td>
+                        //                     <td>
+                        //                         ${analyst_name}
+
+                        //                     </td>
+                        //                     <td>
+                        //                         ${proposal_no}
+                        //                     </td>
+                        //                     <td>
+                        //                         ${sku_id}
+                        //                     </td>
+                                         
+                        //                     <td>
+                        //                         ${proposal_date}
+                        //                     </td>
+                                            
+                        //                 </tr>
+                        //                 </tbody>
+                        //             </table>
+                        //             <p>Your ticket has been successfully received and is currently awaiting processing. </p>
+                        //             <p> <strong> Approval List: </strong></p>
+                        //             <p>For additional details or to track your request, please visit your ticket in the helpdesk system.</p>
+                        //             <p>Thank you </p>
+                        //         </div>
+                        //         `
+                        //     );
+                        //     if (firstApproverResult.length > 0) {
+                        //     hotsMailer(
+                        //         firstapprovermailAddress,
+                        //         `[No-Reply] [Ticket ID: {Ticket_Number}] Approval Required `,
+                        //         `
+                        //         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                        //             <p>Dear ${fullName},</p>
+                        //             <p>A new ticket has been submitted and requires your approval. Please review the details below:  </p>
+                        //             <p><strong>Service </strong>: ${service_id} </p>
+                        //             <p><strong>Ticket ID </strong>: ${ticketId} </p>
+                        //             </br>
+                        //             <p>Requester Information: </p>
+                        //             <p><strong>Requested by	 </strong>: ${service_id} </p>
+                        //             <p><strong>Department </strong>: IOD </p>
+                        //             <p><strong>Submission Date </strong>: ${timestamp} </p>
+                        //             </br>
+                        //             <p><strong>Ticket Details </strong>:  </p>
+                        //             <table>
+                        //                 <thead>
+                        //                 <tr>
+
+                        //                 <td>
+                        //                     ticketId
+                        //                 </td>
+                        //                 <td>
+                        //                     analyst_name
+                        //                 </td>
+                        //                 <td>
+                        //                     proposal_no
+                        //                 </td>
+                        //                 <td>
+                        //                     matcode
+                        //                 </td>
+                        //                 <td>
+                        //                     proposal_date
+                        //                 </td>
+
+                        //                 </tr>
+                        //                 </thead>
+                        //                 <tbody>
+                        //                 <tr>
+                        //                       <td>
+                        //                         ${ticketId}
+                        //                     </td>
+                        //                     <td>
+                        //                         ${analyst_name}
+
+                        //                     </td>
+                        //                     <td>
+                        //                         ${proposal_no}
+                        //                     </td>
+                        //                     <td>
+                        //                         ${sku_id}
+                        //                     </td>
+                                         
+                        //                     <td>
+                        //                         ${proposal_date}
+                        //                     </td>
+                                            
+                        //                 </tr>
+                        //                 </tbody>
+                        //             </table>
+                        //             <p>Your ticket has been successfully received and is currently awaiting processing. </p>
+                        //             <p> <strong> Approval List: </strong></p>
+                        //             <p>For additional details or to track your request, please visit your ticket in the helpdesk system.</p>
+                        //             <p>Thank you </p>
+                        //         </div>
+                        //         `
+                        //     );
+                        // }else{
+                        //     console.log("email not sent for")
+                        // }
+
+                            // Send success response
+                        // } else {
+                        //     // Handle missing email address
+                        //     return res.status(400).json({ error: 'Invalid or missing email address.' });
+                        // }
+
+                        // Final Response
+                        res.status(200).send({
+                            success: true,
+                            message: "Ticket has been created",
+                            ticket_number: ticketId,
+                        });
+
+
+                        console.log(timestamp, "Input Ticket Success ID : ", ticketId, "service : ", service_id);
+
+                    } catch (err) {
+                        res.status(500).send({
+                            success: false,
+                            message: err.message,
+                        });
+                        console.log(timestamp, "Error in Pricing Structure", err);
+                    }
+                    break;
 
                 case 10: // Data Update
                     try {
@@ -828,6 +1241,138 @@ module.exports = {
         if (service_id) {
             switch (parseInt(service_id)) {
 
+                case 11: // Pricing Structure
+                    let queryGetDataPS = `
+            select
+                dh.analyst_name,
+                dh.analyst_id,
+                dh.country_id,
+                dh.region_id,
+                dh.distributor_id,
+                dh.port_id,
+                DATE_FORMAT(dh.proposal_date, '%Y-%m-%d') as proposal_date,
+                
+                dh.proposal_id,
+                dh.sku_id,
+                dh.ticket_id,
+
+                t.reason,
+                t.assigned_team,
+                t.service_id,
+                s.service_name,
+                t.assigned_to,
+                t.status_id,
+                ts.color_hex,
+                CONCAT(uc.firstname, " ", uc.lastname) as created_by_username,
+                ts.status_name,
+                (
+                select
+                    JSON_ARRAYAGG(
+                                        JSON_OBJECT(
+                                            'attachment_id', a.attachment_id, 
+                                            'url', a.url
+                                        )
+                                    )
+                from
+                    t_attachment a
+                where
+                    a.ticket_id = d.ticket_id
+                    and
+                            comment_id is null
+                            ) as list_foto,
+                (
+                select
+                    JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            't_ps_id', tpsa.t_ps_id,
+                            'ticket_id', tpsa.ticket_id,
+                            'CBP', tpsa.CBP,
+                            'RBP', tpsa.RBP,
+                            'DBP', tpsa.DBP,
+                            'CIF', tpsa.CIF,
+                            'FOB', tpsa.FOB,
+                            'TP1', tpsa.TP1,
+                            'TP2', tpsa.TP2,
+                            'TP3', tpsa.TP3,
+                            'Incentive', tpsa.Incentive,
+                            'COGS', tpsa.COGS,
+                            'GP_after_freight', tpsa.GP_after_freight,
+                            'curr_code', tpsa.curr_code
+                        )
+                    )
+                from
+                    t_ps_summary tpsa
+                where
+                    tpsa.ticket_id = d.ticket_id
+            ) as list_data,             
+                (
+                select
+                    JSON_ARRAYAGG(
+                                        JSON_OBJECT(
+                                            'approver_id', a.approver_id, 
+                                            'approval_order', a.approval_order,
+                                            'approver_name', CONCAT(u.firstname, " ", u.lastname),
+                                            'approval_status', a.approval_status,
+                                            'approval_date', DATE_FORMAT(a.approve_date, '%Y-%m-%d'),
+                                            'cancel_remark', a.rejection_remark
+
+                                        )
+                                    )
+                from
+                    t_approval_event a
+                left join
+                                    user u on
+                    u.user_id = a.approver_id
+                where
+                    a.approval_id = d.ticket_id 
+                            ) as list_approval,
+                (
+                select
+                    tm.user_id
+                from
+                    m_team_member tm
+                where
+                    tm.team_id = t.assigned_team
+                    and
+                                    tm.team_leader = 1
+                limit 1
+                            ) as team_leader_id
+            from
+                t_ps_summary d
+            left join
+                            t_ticket t on
+                t.ticket_id = d.ticket_id
+            left join
+                            m_ticket_status ts on
+                ts.status_id = t.status_id
+            left join user uc on
+                uc.user_id = t.created_by
+            left join
+                            m_service s on
+                t.service_id = s.service_id
+            left join
+               t_ps_header dh on
+                dh.ticket_id = d.ticket_id   
+            where
+                d.ticket_id = ?
+                `;
+                    let paramGetDataPS = [ticket_id];
+
+                    dbHots.execute(queryGetDataPS, paramGetDataPS, (err, results) => {
+                        if (err) {
+                            console.log(timestamp, "getTicketDetail case 9: Data Update Revision error");
+                            return res.status(500).send({
+                                success: false,
+                                message: err
+                            });
+                        } else {
+                            console.log(timestamp, "getTicketDetail case  9 : Data Update Revision Support");
+                            return res.status(200).send({ data: results });
+                        }
+                    });
+                    break;
+
+
                 case 9: // Data Update
                     let queryGetDataUpdate = `
                 select
@@ -1334,6 +1879,50 @@ module.exports = {
         //important : data additional bisa jadi apa aja, bisa jadi assign_to di halaman it support, etc.
         if (service_id) {
             switch (parseInt(service_id)) {
+
+                case 11: // IT tech support
+                    let querySetApprovalPricingstructure =
+                        `
+                        UPDATE t_approval_event
+                        SET 
+                            approve_date = NOW(), 
+                            approval_status = 1
+                        WHERE 
+                            approval_id = ?
+                            and
+                            approver_id = ?
+                    `;
+
+                    let queryUpdatePricingstructure = `
+                        UPDATE t_ticket
+                        SET 
+                            status_id = 1,
+                            last_update = NOW(),
+                            assigned_to = ? 
+                        WHERE 
+                            ticket_id = ?;
+                    `;
+
+
+
+                    let paramSetApprovalPricingstructure = [ticket_id, user_id];
+                    let paramUpdatePricingstructure = [assign_to, ticket_id];
+
+                    try {
+                        await dbHots.execute(querySetApprovalPricingstructure, paramSetApprovalPricingstructure);
+                        await dbHots.execute(queryUpdatePricingstructure, paramUpdatePricingstructure);
+
+
+                        console.log(timestamp, " UPDATE t_approval_event case 11: Pricing Structure");
+                        return res.status(200).send({ success: true, message: "Approval updated successfully." });
+                    } catch (err) {
+                        console.log(timestamp, " UPDATE t_approval_event case 11 : Pricing Structure error", err);
+                        return res.status(500).send({
+                            success: false,
+                            message: err
+                        });
+                    }
+
                 case 7: // IT tech support
                     let querySetApprovalITSupport =
                         `
@@ -1644,7 +2233,7 @@ module.exports = {
                     break;
 
                 default:
-                    return res.status(200).send({
+                    return res.status(500).send({
                         success: false,
                         message: "service_id must be provided "
                     });
@@ -2435,7 +3024,8 @@ module.exports = {
                         t_srf_mail c
                     where
                         c.ticket_id = ?
-                        `
+                    
+                    `
 
                 dbHots.query(emailQuery, [ticket_id], (err, results) => {
 

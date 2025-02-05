@@ -602,11 +602,46 @@ module.exports = {
                     message: "success get data servcice_INdofood",
                     data: results1
                 });
-                console.log(timestamp, "HOTS Auth Role Error: ", err1);
+
                 return;
             }
 
 
+        });
+    },
+
+    getpricingstructure_row: (req, res) => {
+
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        let user_id = req.dataToken.user_id
+
+        const queryPricingStructureRow = `
+        SELECT COALESCE(COUNT(*), 0) AS total_rows
+        FROM t_ps_header
+    `;
+
+        dbHots.execute(queryPricingStructureRow, (err1, results1) => {
+            if (err1) {
+                res.status(500).send({
+                    success: false,
+                    message: 'Error retrieving pricing structure row count',
+                    error: err1
+                });
+                console.error(`${timestamp} HOTS Auth Role Error:`, err1);
+                return;
+            }
+
+            // Assuming results1 is an array and the count is in the first row
+            const totalRows = results1[0]?.total_rows || 0;
+
+            res.status(200).send({
+                success: true,
+                message: `Success fetching row data pricing structure for user ${user_id}`,
+                data: totalRows
+            });
+            console.log(`${timestamp} Success fetching row data pricing structure for user ${user_id}. Total rows: ${totalRows}`);
         });
     },
 
