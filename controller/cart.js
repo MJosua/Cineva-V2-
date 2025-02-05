@@ -635,6 +635,7 @@ where
 
     let { user_id, company_id } = req.dataToken;
     console.log("data", req.body)
+    console.log("data_detail", req.body.cart.detail)
 
     
 
@@ -738,8 +739,7 @@ where
           let formattedDate = `${year}-${month}-${day}`;
 
           let delv_year = cart_data.delv_year ? cart_data.delv_year : 0;
-          console.log("cart_data.stuffing_date", cart_data.stuffing_date)
-          console.log("cart_data", (await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik)
+          // console.log("cart_data", (await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik)
 
           let delv_week = cart_data.delv_week ? cart_data.delv_week : (await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik;
           let delv_week_desc = cart_data.delv_week_desc ? cart_data.delv_week_desc : `Week: ${(await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik} Date: ${cart_data.stuffing_date} `
@@ -750,16 +750,23 @@ where
 
           let id_year = parseInt(delv_year.toString() + delv_week.toString())
 
+         
+
           let query = ` 
           INSERT INTO m_cart 
-            (cart_id, company_id, delv_week, delv_week_desc, 
-             delv_year, id_year, po_buyer, 
-             created_date, port_shipment, ship_to, po_url, 
-             created_by, stuffing_date, final_dest, tolling_id )
+            (cart_id, company_id, 
+            delv_week, delv_week_desc, delv_year, id_year, po_buyer, 
+             created_date, 
+             port_shipment, ship_to, po_url,created_by, 
+             stuffing_date, 
+             final_dest, tolling_id )
             VALUES
-            (?, ?, ?, ?, ?, ?, ?, 
-            date_format(now(),'%Y-%m-%d-%T '), ?, ?, ?, ?,
-             ?, ?, ?); 
+            (?, ?, 
+            ?, ?, ?, ?, ?, 
+            date_format(now(),'%Y-%m-%d-%T '), 
+            ?, ?, ?, ?,
+             ?, 
+             ?, ?); 
         `
 
           let parameter = [
@@ -768,6 +775,7 @@ where
             port_shipment, ship_to, po_url,
             user_id, stuffing_date_rev, final_dest_check, tolling_id
           ]
+
 
           dbConf.query(query, parameter,
 
@@ -810,6 +818,8 @@ where
                     0, 0, 0,
                     cart_data.remarks, detail.bulk, delv_week, delv_year, id_year
                   ]
+
+                  console.log("parameterDetail",parameterDetail)
 
                   dbConf.query(queryDetail, parameterDetail,
                     (err, results) => {
