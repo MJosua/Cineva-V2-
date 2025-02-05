@@ -520,148 +520,148 @@ module.exports = {
                         }
 
 
-                        if (mailAddress && mailAddress.length > 0) {
-                            // Call the hotsMailer function to send the email
-                            await hotsMailer(
-                                mailAddress,
-                                `[No-Reply] [Ticket ID: ${ticketId}] Your Ticket Has Been Submitted `,
-                                `
-                                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                                    <p>Dear ${fullName},</p>
-                                    <p>Thank you for submitting your ticket. Below are the details of your request: </p>
-                                    <p><strong>Service </strong>: ${service_id} </p>
-                                    <p>IT Support Team</p>
-                                    <p><strong>Ticket Details:</strong> </p>
-                                    <table>
-                                        <thead>
-                                        <tr>
+                        // if (mailAddress && mailAddress.length > 0) {
+                        //     // Call the hotsMailer function to send the email
+                        //     await hotsMailer(
+                        //         mailAddress,
+                        //         `[No-Reply] [Ticket ID: ${ticketId}] Your Ticket Has Been Submitted `,
+                        //         `
+                        //         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                        //             <p>Dear ${fullName},</p>
+                        //             <p>Thank you for submitting your ticket. Below are the details of your request: </p>
+                        //             <p><strong>Service </strong>: ${service_id} </p>
+                        //             <p>IT Support Team</p>
+                        //             <p><strong>Ticket Details:</strong> </p>
+                        //             <table>
+                        //                 <thead>
+                        //                 <tr>
 
-                                        <td>
-                                            ticketId
-                                        </td>
-                                        <td>
-                                            analyst_name
-                                        </td>
-                                        <td>
-                                            proposal_no
-                                        </td>
-                                        <td>
-                                            matcode
-                                        </td>
-                                        <td>
-                                            proposal_date
-                                        </td>
+                        //                 <td>
+                        //                     ticketId
+                        //                 </td>
+                        //                 <td>
+                        //                     analyst_name
+                        //                 </td>
+                        //                 <td>
+                        //                     proposal_no
+                        //                 </td>
+                        //                 <td>
+                        //                     matcode
+                        //                 </td>
+                        //                 <td>
+                        //                     proposal_date
+                        //                 </td>
 
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        <tr>
-                                              <td>
-                                                ${ticketId}
-                                            </td>
-                                            <td>
-                                                ${analyst_name}
+                        //                 </tr>
+                        //                 </thead>
+                        //                 <tbody>
+                        //                 <tr>
+                        //                       <td>
+                        //                         ${ticketId}
+                        //                     </td>
+                        //                     <td>
+                        //                         ${analyst_name}
 
-                                            </td>
-                                            <td>
-                                                ${proposal_no}
-                                            </td>
-                                            <td>
-                                                ${sku_id}
-                                            </td>
+                        //                     </td>
+                        //                     <td>
+                        //                         ${proposal_no}
+                        //                     </td>
+                        //                     <td>
+                        //                         ${sku_id}
+                        //                     </td>
                                          
-                                            <td>
-                                                ${proposal_date}
-                                            </td>
+                        //                     <td>
+                        //                         ${proposal_date}
+                        //                     </td>
                                             
-                                        </tr>
-                                        </tbody>
-                                    </table>
-                                    <p>Your ticket has been successfully received and is currently awaiting processing. </p>
-                                    <p> <strong> Approval List: </strong></p>
-                                    <p>For additional details or to track your request, please visit your ticket in the helpdesk system.</p>
-                                    <p>Thank you </p>
-                                </div>
-                                `
-                            );
-                            if (firstApproverResult.length > 0) {
-                            hotsMailer(
-                                firstapprovermailAddress,
-                                `[No-Reply] [Ticket ID: {Ticket_Number}] Approval Required `,
-                                `
-                                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                                    <p>Dear ${fullName},</p>
-                                    <p>A new ticket has been submitted and requires your approval. Please review the details below:  </p>
-                                    <p><strong>Service </strong>: ${service_id} </p>
-                                    <p><strong>Ticket ID </strong>: ${ticketId} </p>
-                                    </br>
-                                    <p>Requester Information: </p>
-                                    <p><strong>Requested by	 </strong>: ${service_id} </p>
-                                    <p><strong>Department </strong>: IOD </p>
-                                    <p><strong>Submission Date </strong>: ${timestamp} </p>
-                                    </br>
-                                    <p><strong>Ticket Details </strong>:  </p>
-                                    <table>
-                                        <thead>
-                                        <tr>
+                        //                 </tr>
+                        //                 </tbody>
+                        //             </table>
+                        //             <p>Your ticket has been successfully received and is currently awaiting processing. </p>
+                        //             <p> <strong> Approval List: </strong></p>
+                        //             <p>For additional details or to track your request, please visit your ticket in the helpdesk system.</p>
+                        //             <p>Thank you </p>
+                        //         </div>
+                        //         `
+                        //     );
+                        //     if (firstApproverResult.length > 0) {
+                        //     hotsMailer(
+                        //         firstapprovermailAddress,
+                        //         `[No-Reply] [Ticket ID: {Ticket_Number}] Approval Required `,
+                        //         `
+                        //         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                        //             <p>Dear ${fullName},</p>
+                        //             <p>A new ticket has been submitted and requires your approval. Please review the details below:  </p>
+                        //             <p><strong>Service </strong>: ${service_id} </p>
+                        //             <p><strong>Ticket ID </strong>: ${ticketId} </p>
+                        //             </br>
+                        //             <p>Requester Information: </p>
+                        //             <p><strong>Requested by	 </strong>: ${service_id} </p>
+                        //             <p><strong>Department </strong>: IOD </p>
+                        //             <p><strong>Submission Date </strong>: ${timestamp} </p>
+                        //             </br>
+                        //             <p><strong>Ticket Details </strong>:  </p>
+                        //             <table>
+                        //                 <thead>
+                        //                 <tr>
 
-                                        <td>
-                                            ticketId
-                                        </td>
-                                        <td>
-                                            analyst_name
-                                        </td>
-                                        <td>
-                                            proposal_no
-                                        </td>
-                                        <td>
-                                            matcode
-                                        </td>
-                                        <td>
-                                            proposal_date
-                                        </td>
+                        //                 <td>
+                        //                     ticketId
+                        //                 </td>
+                        //                 <td>
+                        //                     analyst_name
+                        //                 </td>
+                        //                 <td>
+                        //                     proposal_no
+                        //                 </td>
+                        //                 <td>
+                        //                     matcode
+                        //                 </td>
+                        //                 <td>
+                        //                     proposal_date
+                        //                 </td>
 
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        <tr>
-                                              <td>
-                                                ${ticketId}
-                                            </td>
-                                            <td>
-                                                ${analyst_name}
+                        //                 </tr>
+                        //                 </thead>
+                        //                 <tbody>
+                        //                 <tr>
+                        //                       <td>
+                        //                         ${ticketId}
+                        //                     </td>
+                        //                     <td>
+                        //                         ${analyst_name}
 
-                                            </td>
-                                            <td>
-                                                ${proposal_no}
-                                            </td>
-                                            <td>
-                                                ${sku_id}
-                                            </td>
+                        //                     </td>
+                        //                     <td>
+                        //                         ${proposal_no}
+                        //                     </td>
+                        //                     <td>
+                        //                         ${sku_id}
+                        //                     </td>
                                          
-                                            <td>
-                                                ${proposal_date}
-                                            </td>
+                        //                     <td>
+                        //                         ${proposal_date}
+                        //                     </td>
                                             
-                                        </tr>
-                                        </tbody>
-                                    </table>
-                                    <p>Your ticket has been successfully received and is currently awaiting processing. </p>
-                                    <p> <strong> Approval List: </strong></p>
-                                    <p>For additional details or to track your request, please visit your ticket in the helpdesk system.</p>
-                                    <p>Thank you </p>
-                                </div>
-                                `
-                            );
-                        }else{
-                            console.log("approver email not sent, no approver email found")
-                        }
+                        //                 </tr>
+                        //                 </tbody>
+                        //             </table>
+                        //             <p>Your ticket has been successfully received and is currently awaiting processing. </p>
+                        //             <p> <strong> Approval List: </strong></p>
+                        //             <p>For additional details or to track your request, please visit your ticket in the helpdesk system.</p>
+                        //             <p>Thank you </p>
+                        //         </div>
+                        //         `
+                        //     );
+                        // }else{
+                        //     console.log("email not sent for")
+                        // }
 
                             // Send success response
-                        } else {
-                            // Handle missing email address
-                            return res.status(400).json({ error: 'Invalid or missing email address.' });
-                        }
+                        // } else {
+                        //     // Handle missing email address
+                        //     return res.status(400).json({ error: 'Invalid or missing email address.' });
+                        // }
 
                         // Final Response
                         res.status(200).send({
