@@ -1136,114 +1136,114 @@ module.exports = {
 
         if (req.dataToken.company_id) {
 
+            //untuk menampilkan berapa week yang akan ditampilkan di user
             let getWeekLimit = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 9 AND mcn.company_id = ${req.dataToken.company_id}  AND mcn.active = 1;`))[0]
 
             //cuma 13 data week yang ditampilin untuk default.
             let weekLimit = getWeekLimit ? getWeekLimit.value : 13
 
+            //untuk menghilangkan week tertentu.
+            let getBlockingDate = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 10 AND mcn.company_id = 100  AND mcn.active = 1;`))[0]
+ 
+            //error prevention
+            let blockingDate = getBlockingDate ? getBlockingDate.value : 0
+
             let query = `
                  SELECT
-                            *
-                        FROM
-                            (
+                        *
+                    FROM
+                        (
+                        SELECT
+                            max(opcal_id) opcal_id,
+                            CAST(concat(YEAR,
+                        RIGHT(concat('00',week),
+                        2))AS UNSIGNED) AS id,
+                            YEAR,
+                            week,
+                            DATE_FORMAT(FROM_UNIXTIME(concat(min(opcal_id),
+                            '00')),
+                            '%b %d, %Y') startingDate,
+                            DATE_FORMAT(FROM_UNIXTIME(concat(max(opcal_id),
+                            '00')),
+                            '%b %d, %Y') endingDate,
+                            @min_week := (
                             SELECT
-                                max(opcal_id) opcal_id,
-                                CAST(concat(YEAR,
-                                RIGHT(concat('00',
-                                week),
-                                2))AS unsigned) AS id,
-                                YEAR,
-                                week,
-                                DATE_FORMAT(FROM_UNIXTIME(concat(min(opcal_id),
-                                '00')),
-                                '%b %d, %Y') startingDate,
-                                DATE_FORMAT(FROM_UNIXTIME(concat(max(opcal_id),
-                                '00')),
-                                '%b %d, %Y') endingDate,
-                                @min_week := (
-                                SELECT
-                                    min(week)
-                                FROM
-                                    dat_operational_calendar doc
-                                WHERE
-                                    opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE
-                                        YEAR
-                                        WHEN YEAR(now()) THEN now()
-                                        ELSE date_add(now(),
-                                        INTERVAL 1 YEAR)
-                                    END ,
-                                    '%Y-01-01')),
-                                    8)
-                                    AND opcal_id = LEFT(unix_timestamp(DATE_FORMAT(CASE
-                                        YEAR
-                                        WHEN YEAR(now()) THEN now()
-                                        ELSE date_add(now(),
-                                        INTERVAL 1 YEAR)
-                                    END ,
-                                    '%Y-%m-%d')),
-                                        8)
-                                LIMIT 1) min_week,
-                                @time_fence := CASE
-                                    WHEN COALESCE(mc.time_fence,
-                                    0) = 0 THEN st.txt
-                                    ELSE mc.time_fence
-                                END AS time_fence,
-                                @rownum := @rownum + 1 AS rownum
+                                min(week)
                             FROM
                                 dat_operational_calendar doc
-                            LEFT JOIN map_cont_for_dist mc ON
-                                    mc.company_id = 100
-                                AND mc.dist_id = ${req.dataToken.company_id}
-                            LEFT JOIN sys_text st ON
-                                    st.lang_id = 1
-                                AND st.text_id = -100,
-                                (
-                                SELECT
-                                    @min_week := 0) x,
-                                (
-                                SELECT
-                                    @time_fence := 0) y,
-                                (
-                                SELECT
-                                    @rownum := 0) r
                             WHERE
-                                opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE
-                                    YEAR
-                                    WHEN YEAR(now()) THEN now()
-                                    ELSE date_add(now(),
-                                    INTERVAL 1 YEAR)
-                                END ,
-                                '%Y-01-01')),
-                                8)
-                                AND YEAR = YEAR(DATE_FORMAT(FROM_UNIXTIME(concat(opcal_id,
-                                '00')),
-                                '%Y-%m-%d'))
-                            GROUP BY
-                                2,
-                                3,
-                                4) a
+                                opcal_id >= 
+                                LEFT(unix_timestamp(DATE_FORMAT(
+                                        CASE YEAR
+                                            WHEN YEAR(now()) 
+                                            THEN now()
+                                            ELSE date_add(now(),
+                                            INTERVAL 1 YEAR)
+                                        END,'%Y-01-01')),8)
+                                    AND opcal_id = 
+                                    LEFT(unix_timestamp(DATE_FORMAT(
+                                        CASE YEAR
+                                            WHEN YEAR(now()) THEN now()
+                                            ELSE date_add(now(),
+                                            INTERVAL 1 YEAR)
+                                        END,'%Y-%m-%d')),8)
+                            LIMIT 1) min_week,
+                            @time_fence := CASE
+                                WHEN COALESCE(mc.time_fence, 0) = 0 THEN st.txt
+                                ELSE mc.time_fence
+                            END AS time_fence,
+                            @rownum := @rownum + 1 AS rownum
+                        FROM
+                            dat_operational_calendar doc
+                        LEFT JOIN map_cont_for_dist mc ON
+                            mc.company_id = 100
+                            AND mc.dist_id = ${req.dataToken.company_id}
+                        LEFT JOIN sys_text st ON
+                            st.lang_id = 1
+                            AND st.text_id = -100,
+                            ( SELECT @min_week := 0) x,
+                            ( SELECT @time_fence := 0) y,
+                            ( SELECT @rownum := 0) r
                         WHERE
-                            a.opcal_id >= (
-                            SELECT
-                                opcal_id
-                            FROM
-                                dat_operational_calendar
-                            WHERE
-                                opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE
-                                    YEAR
-                                    WHEN YEAR(now()) THEN now()
-                                    ELSE date_add(now(),
-                                    INTERVAL 1 YEAR)
-                                END ,
-                                '%Y-01-01')),
-                                    8)
-                            ORDER BY
-                                    opcal_id ASC
-                            LIMIT 1)
-                            AND rownum >= @min_week + @time_fence
+                            opcal_id >= LEFT(
+                            unix_timestamp(DATE_FORMAT(
+                            CASE YEAR
+                                WHEN YEAR(now()) 
+                                THEN now()
+                                ELSE date_add(now(),
+                                INTERVAL 1 YEAR)
+                            END,'%Y-01-01')),
+                            8)
+                            AND YEAR = 
+                            YEAR(DATE_FORMAT(FROM_UNIXTIME(concat(opcal_id, '00')),'%Y-%m-%d'))
+                        GROUP BY
+                            2,
+                            3,
+                            4) a
+                    WHERE
+                        a.opcal_id >= (
+                        SELECT
+                            opcal_id
+                        FROM
+                            dat_operational_calendar
+                        WHERE
+                            opcal_id >= LEFT(
+                            unix_timestamp(DATE_FORMAT(
+                                CASE YEAR 
+                                    WHEN YEAR(now()) 
+                                    THEN now() 
+                                    ELSE date_add(now(), 
+                                    INTERVAL 1 YEAR) 
+                                END , '%Y-01-01')),
+                            8)
                         ORDER BY
-                            id
-                        LIMIT ${weekLimit}
+                            opcal_id ASC
+                        LIMIT 1)
+                        AND rownum >= @min_week + @time_fence
+                        AND week NOT IN (${blockingDate})
+                    ORDER BY
+                        id
+                    LIMIT ${weekLimit}
                     `
 
 
@@ -1253,6 +1253,7 @@ module.exports = {
                     console.log("|ERROR| GET STUFFINGWEEK", err)
                 } else {
                     res.status(200).send(results);
+					//console.table(results);
                     console.log(timestamp + `get Order Stuffing Week for ${req.dataToken.company_id} limit ${weekLimit} success`);
                     addSqlLogger(req.dataToken.user_id, '-- query stuffing week', '--data stuffing week', 'getStuffingWeek')
                 }
@@ -3605,7 +3606,7 @@ module.exports = {
 
 
         let order = req.body.order
-        console.log(timestamp, "order data", order)
+        // console.log(timestamp, "order data", order)
 
         //query mendapatkan order_id terakhir dari database 
         async function generate_order_id(year) {
@@ -3624,48 +3625,46 @@ module.exports = {
                                                     UNION ALL 
                                                     SELECT order_id FROM m_summary WHERE company_id  = ${req.dataToken.company_id}
                                                     ) AS all_order_id;`))[0].LATEST;
-                // let prevOrderId = (await dbQuery(`SELECT MAX(order_id) AS LATEST FROM m_order WHERE company_id = ${req.dataToken.company_id} AND delv_year = ${year};`))[0].LATEST;
 
 
                 // membuat kepala tahun order_id 
-                let yearOrderId = selectYear ? selectYear.toString() : date.getFullYear().toString();
-                let stringCuttedYear = yearOrderId.slice(2, 5);
 
-                //penciptaan order_id
-                // satu kali API call ini menghabiskan satu order_id
-                /*
+                // ini dulu. based on lemparan
+                // let yearOrderId = selectYear ? selectYear.toString() : date.getFullYear().toString();
+                let yearOrderId = ((new Date()).getFullYear()).toString();
+                
+                let stringCuttedYear = yearOrderId.slice(2, 5);
+ 
                 if (prevOrderId === null) {
-                    // if (orderIDX === 0) {
-                    // order_id = parseInt(stringCuttedYear + "00" + company_id + "00001");
-                    console.log(timestamp + "No existing order! Starting Order ID: ", prevOrderId);
-                    return (parseInt(stringCuttedYear + "00" + company_id + "00001"));
-                    // } else if (orderIDX > 0) {
-                    // order_id = parseInt(stringCuttedYear + "00" + company_id + "00001") + orderIDX;
-                    // console.log("Order ID 10: ", order_id, orderIDX);
-                    // }
-                } else if (prevOrderId !== null) {
-                    // order_id = parseInt(prevOrderId) + parseInt(orderIDX + 1);
-                    // console.log("Order ID 11: ", order_id, orderIDX + 1);
-                    console.log(timestamp + "Order ID 11: ", (prevOrderId + 1));
-                    return (parseInt(prevOrderId) + 1)
-                    // order_id = parseInt(prevOrderId) + 1
-                }
-                    */
-                if (prevOrderId === null) {
-                    // if (orderIDX === 0) {
-                    // order_id = parseInt(stringCuttedYear + "00" + company_id + "00001");
-                    // console.log(timestamp + "No existing order! Starting Order ID: ", prevOrderId);
+
                     return (parseInt(stringCuttedYear + "00" + company_id + "00000"));
-                    // } else if (orderIDX > 0) {
-                    // order_id = parseInt(stringCuttedYear + "00" + company_id + "00001") + orderIDX;
-                    // console.log("Order ID 10: ", order_id, orderIDX);
-                    // }
+
                 } else if (prevOrderId !== null) {
-                    // order_id = parseInt(prevOrderId) + parseInt(orderIDX + 1);
-                    // console.log("Order ID 11: ", order_id, orderIDX + 1);
-                    // console.log(timestamp + "Order ID 11: ", (prevOrderId));
-                    return (parseInt(prevOrderId))
-                    // order_id = parseInt(prevOrderId) + 1
+
+                    //new tuning here: 
+
+                    // baca tahun dari karakter pertama order_id
+                    let stringifyLatest_id = prevOrderId.toString()
+                    let trimLatest_id = stringifyLatest_id.slice(0, 2);
+
+                    //ambil 2 karakter tahun sekarang
+                    let latestYear = parseInt((new Date()).getFullYear());
+                    let latestYear_string = latestYear.toString()
+                    let trimLatestYear = latestYear_string.slice(2, 4);
+
+                    if (trimLatest_id == trimLatestYear) {
+
+                        //lempar id sebelumnya 
+                        return (parseInt(prevOrderId))
+
+                    } else {
+
+                        //paksa lempar id baru
+                        let new_id = trimLatestYear + "00" + company_id + "00000" 
+                        return (parseInt(new_id));
+
+                    }
+
                 }
 
             } catch (error) {

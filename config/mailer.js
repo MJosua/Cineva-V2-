@@ -136,7 +136,7 @@ module.exports = {
                     click to open file 
                 </a>`
                 :
-                `<a> no file attached </a> `;
+                `<p> no file attached </p> `;
 
             let skuData = await dbQuery(` 
             SELECT  DISTINCT 
@@ -325,7 +325,7 @@ module.exports = {
                 } catch (error) {
                     console.log(timestamp + "MAILER ERROR, Message: " + error)
                 }
-            }
+            } 
 
             //TO ANALIS
             if (!emailAnalisList) {
@@ -344,7 +344,7 @@ module.exports = {
                        <p>
                            Dear Analyst,
                            <br>
-                           This email is to confirm that your distributor order ${po_buyer} for ${company_name} has been placed and need be reviewed and confirm.
+                           This email is to confirm that your distributor order ${po_buyer} for ${company_name} has been placed and need be reviewed and confirmed.
                        </p>
                        <div> 
                            <table>  
