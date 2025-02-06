@@ -3622,7 +3622,7 @@ module.exports = {
 
 
         let order = req.body.order
-        // console.log(timestamp, "order data", order)
+        console.log(timestamp, "order data", order)
 
         //query mendapatkan order_id terakhir dari database 
         async function generate_order_id(year) {
@@ -3641,9 +3641,12 @@ module.exports = {
                                                     UNION ALL 
                                                     SELECT order_id FROM m_summary WHERE company_id  = ${req.dataToken.company_id}
                                                     ) AS all_order_id;`))[0].LATEST;
+                // let prevOrderId = (await dbQuery(`SELECT MAX(order_id) AS LATEST FROM m_order WHERE company_id = ${req.dataToken.company_id} AND delv_year = ${year};`))[0].LATEST;
 
 
                 // membuat kepala tahun order_id 
+                let yearOrderId = selectYear ? selectYear.toString() : date.getFullYear().toString();
+                let stringCuttedYear = yearOrderId.slice(2, 5);
 
                 // ini dulu. based on lemparan
                 // let yearOrderId = selectYear ? selectYear.toString() : date.getFullYear().toString();
@@ -3652,9 +3655,31 @@ module.exports = {
                 let stringCuttedYear = yearOrderId.slice(2, 5);
 
                 if (prevOrderId === null) {
-
+                    // if (orderIDX === 0) {
+                    // order_id = parseInt(stringCuttedYear + "00" + company_id + "00001");
+                    console.log(timestamp + "No existing order! Starting Order ID: ", prevOrderId);
+                    return (parseInt(stringCuttedYear + "00" + company_id + "00001"));
+                    // } else if (orderIDX > 0) {
+                    // order_id = parseInt(stringCuttedYear + "00" + company_id + "00001") + orderIDX;
+                    // console.log("Order ID 10: ", order_id, orderIDX);
+                    // }
+                } else if (prevOrderId !== null) {
+                    // order_id = parseInt(prevOrderId) + parseInt(orderIDX + 1);
+                    // console.log("Order ID 11: ", order_id, orderIDX + 1);
+                    console.log(timestamp + "Order ID 11: ", (prevOrderId + 1));
+                    return (parseInt(prevOrderId) + 1)
+                    // order_id = parseInt(prevOrderId) + 1
+                }
+                    */
+                if (prevOrderId === null) {
+                    // if (orderIDX === 0) {
+                    // order_id = parseInt(stringCuttedYear + "00" + company_id + "00001");
+                    // console.log(timestamp + "No existing order! Starting Order ID: ", prevOrderId);
                     return (parseInt(stringCuttedYear + "00" + company_id + "00000"));
-
+                    // } else if (orderIDX > 0) {
+                    // order_id = parseInt(stringCuttedYear + "00" + company_id + "00001") + orderIDX;
+                    // console.log("Order ID 10: ", order_id, orderIDX);
+                    // }
                 } else if (prevOrderId !== null) {
 
                     //new tuning here: 
