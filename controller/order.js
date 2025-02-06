@@ -803,75 +803,92 @@ module.exports = {
                 // let { company_id } = req.body 
 
                 let query = `
-                    SELECT DISTINCT
-                    det.order_id,
-                    det.company_id,
-                    mco.company_name,
-                    det.created_by,
-                    su.firstname,
-                    CASE
-                        WHEN det.cont_size = 8 THEN ms.detail_id
-                        ELSE det.detail_id
-                    END AS detail_id,
-                    mc.container_name,
-                    CASE
-                        WHEN det.cont_qty = 0 THEN 1
-                        ELSE det.cont_qty
-                    END AS cont_qty,
-                    CASE
-                        WHEN det.cont_size = 8 THEN ms.sku
-                        ELSE det.sku1
-                    END AS sku1,
-                    CASE
-                        WHEN det.cont_size = 8 THEN COALESCE(mps.product_name_no, mps.product_name)
-                        ELSE COALESCE(mp1.product_name_no, mp1.product_name)
-                    END AS product_name_1,
-                    CASE
-                        WHEN det.cont_size = 8 THEN mpls.img
-                        ELSE mpl1.img
-                    END AS url_1,
-                    CASE
-                        WHEN det.cont_size = 8 THEN ms.qty
-                        ELSE det.qty1
-                    END AS qty1,
-                    det.price1,
-                    CASE
-                        WHEN det.cont_size = 8 THEN mps.product_sku
-                        ELSE mp1.product_sku
-                    END AS prod_sku_1,
-                    det.sku2,
-                    COALESCE(mp2.product_name_no, mp2.product_name) AS product_name_2,
-                    mpl2.img AS url_2,
-                    det.qty2,
-                    det.price2,
-                    mp2.product_sku AS prod_sku_2,
-                    det.sku3,
-                    COALESCE(mp3.product_name_no, mp3.product_name) AS product_name_3,
-                    mpl3.img AS url_3,
-                    det.qty3,
-                    det.price3,
-                    mp3.product_sku AS prod_sku_3,
-                    det.remarks,
-                    det.bulk,
-                    so.so_id,
-                    mo.po_date  -- Added for ORDER BY clause
-                    FROM m_order_dtl det
-                    INNER JOIN m_order mo ON mo.order_id = det.order_id
-                    JOIN mst_company mco ON det.company_id = mco.company_id
-                    LEFT JOIN sys_user su ON su.user_id = det.created_by
-                    LEFT JOIN mst_container mc ON mc.container_id = det.cont_size
-                    LEFT JOIN mst_product mp1 ON det.sku1 = mp1.product_code
-                    LEFT JOIN mst_product mp2 ON det.sku2 = mp2.product_code
-                    LEFT JOIN mst_product mp3 ON det.sku3 = mp3.product_code
-                    LEFT JOIN m_product_link mpl1 ON det.sku1 = mpl1.product_code
-                    LEFT JOIN m_product_link mpl2 ON det.sku2 = mpl2.product_code
-                    LEFT JOIN m_product_link mpl3 ON det.sku3 = mpl3.product_code
-                    LEFT JOIN m_summary ms ON mo.order_id = ms.order_id
-                    LEFT JOIN mst_product mps ON ms.sku = mps.product_code
-                    LEFT JOIN m_product_link mpls ON ms.sku = mpls.product_code
-                    LEFT JOIN trs_sales_order so ON mo.order_id = so.e_order AND so.cancel = 0
-                    WHERE det.order_id = ?;  
-`
+                    select
+                        distinct
+                                            det.order_id,
+                        det.company_id,
+                        mco.company_name,
+                        det.created_by,
+                        su.firstname,
+                        case
+                                                when det.cont_size = 8 then ms.detail_id
+                            else det.detail_id
+                        end detail_id,
+                        mc.container_name,
+                        case
+                            when det.cont_qty = 0 then 1
+                            else det.cont_qty
+                        end cont_qty,
+                        case
+                            when det.cont_size = 8 then ms.sku
+                            else det.sku1
+                        end sku1,
+                        case
+                            when det.cont_size = 8 then coalesce(mps.product_name_no, mps.product_name)
+                            else coalesce(mp1.product_name_no, mp1.product_name)
+                        end product_name_1,
+                        case
+                            when det.cont_size = 8 then mpls.img
+                            else mpl1.img
+                        end url_1,
+                        case
+                            when det.cont_size = 8 then ms.qty
+                            else det.qty1
+                        end qty1,
+                        det.price1,
+                        case
+                            when det.cont_size = 8 then mps.product_sku
+                            else mp1.product_sku
+                        end prod_sku_1,
+                        det.sku2,
+                        coalesce(mp2.product_name_no, mp2.product_name) product_name_2,
+                        mpl2.img url_2,
+                        det.qty2,
+                        det.price2,
+                        mp2.product_sku prod_sku_2,
+                        det.sku2,
+                        coalesce(mp3.product_name_no, mp3.product_name) product_name_3,
+                        mpl3.img url_3,
+                        det.qty3,
+                        det.price3,
+                        mp3.product_sku prod_sku_3,
+                        det.remarks,
+                        det.bulk,
+                        so.so_id
+                    from
+                        m_order_dtl det
+                    inner join m_order mo on
+                        mo.order_id = det.order_id
+                    join mst_company mco on
+                        det.company_id = mco.company_id
+                    left join sys_user su on
+                        su.user_id = det.created_by
+                    left join mst_container mc on
+                        mc.container_id = det.cont_size
+                    left join mst_product mp1 on
+                        det.sku1 = mp1.product_code
+                    left join mst_product mp2 on
+                        det.sku2 = mp2.product_code
+                    left join mst_product mp3 on
+                        det.sku3 = mp3.product_code
+                    left join m_product_link mpl1 on
+                        det.sku1 = mpl1.product_code
+                    left join m_product_link mpl2 on
+                        det.sku2 = mpl2.product_code
+                    left join m_product_link mpl3 on
+                        det.sku3 = mpl3.product_code
+                    left join m_summary ms on
+                        mo.order_id = ms.order_id
+                    left join mst_product mps on
+                        ms.sku = mps.product_code
+                    left join m_product_link mpls on
+                        ms.sku = mpls.product_code
+                    left join trs_sales_order so on
+                        mo.order_id = so.e_order
+                        and 
+                        so.cancel = 0
+                    WHERE
+                        det.order_id = ?`
 
                 let parameter = [order_id]
 
@@ -1136,114 +1153,114 @@ module.exports = {
 
         if (req.dataToken.company_id) {
 
-            //untuk menampilkan berapa week yang akan ditampilkan di user
             let getWeekLimit = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 9 AND mcn.company_id = ${req.dataToken.company_id}  AND mcn.active = 1;`))[0]
 
             //cuma 13 data week yang ditampilin untuk default.
             let weekLimit = getWeekLimit ? getWeekLimit.value : 13
 
-            //untuk menghilangkan week tertentu.
-            let getBlockingDate = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 10 AND mcn.company_id = 100  AND mcn.active = 1;`))[0]
- 
-            //error prevention
-            let blockingDate = getBlockingDate ? getBlockingDate.value : 0
-
             let query = `
                  SELECT
-                        *
-                    FROM
-                        (
-                        SELECT
-                            max(opcal_id) opcal_id,
-                            CAST(concat(YEAR,
-                        RIGHT(concat('00',week),
-                        2))AS UNSIGNED) AS id,
-                            YEAR,
-                            week,
-                            DATE_FORMAT(FROM_UNIXTIME(concat(min(opcal_id),
-                            '00')),
-                            '%b %d, %Y') startingDate,
-                            DATE_FORMAT(FROM_UNIXTIME(concat(max(opcal_id),
-                            '00')),
-                            '%b %d, %Y') endingDate,
-                            @min_week := (
+                            *
+                        FROM
+                            (
                             SELECT
-                                min(week)
+                                max(opcal_id) opcal_id,
+                                CAST(concat(YEAR,
+                                RIGHT(concat('00',
+                                week),
+                                2))AS unsigned) AS id,
+                                YEAR,
+                                week,
+                                DATE_FORMAT(FROM_UNIXTIME(concat(min(opcal_id),
+                                '00')),
+                                '%b %d, %Y') startingDate,
+                                DATE_FORMAT(FROM_UNIXTIME(concat(max(opcal_id),
+                                '00')),
+                                '%b %d, %Y') endingDate,
+                                @min_week := (
+                                SELECT
+                                    min(week)
+                                FROM
+                                    dat_operational_calendar doc
+                                WHERE
+                                    opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE
+                                        YEAR
+                                        WHEN YEAR(now()) THEN now()
+                                        ELSE date_add(now(),
+                                        INTERVAL 1 YEAR)
+                                    END ,
+                                    '%Y-01-01')),
+                                    8)
+                                    AND opcal_id = LEFT(unix_timestamp(DATE_FORMAT(CASE
+                                        YEAR
+                                        WHEN YEAR(now()) THEN now()
+                                        ELSE date_add(now(),
+                                        INTERVAL 1 YEAR)
+                                    END ,
+                                    '%Y-%m-%d')),
+                                        8)
+                                LIMIT 1) min_week,
+                                @time_fence := CASE
+                                    WHEN COALESCE(mc.time_fence,
+                                    0) = 0 THEN st.txt
+                                    ELSE mc.time_fence
+                                END AS time_fence,
+                                @rownum := @rownum + 1 AS rownum
                             FROM
                                 dat_operational_calendar doc
+                            LEFT JOIN map_cont_for_dist mc ON
+                                    mc.company_id = 100
+                                AND mc.dist_id = ${req.dataToken.company_id}
+                            LEFT JOIN sys_text st ON
+                                    st.lang_id = 1
+                                AND st.text_id = -100,
+                                (
+                                SELECT
+                                    @min_week := 0) x,
+                                (
+                                SELECT
+                                    @time_fence := 0) y,
+                                (
+                                SELECT
+                                    @rownum := 0) r
                             WHERE
-                                opcal_id >= 
-                                LEFT(unix_timestamp(DATE_FORMAT(
-                                        CASE YEAR
-                                            WHEN YEAR(now()) 
-                                            THEN now()
-                                            ELSE date_add(now(),
-                                            INTERVAL 1 YEAR)
-                                        END,'%Y-01-01')),8)
-                                    AND opcal_id = 
-                                    LEFT(unix_timestamp(DATE_FORMAT(
-                                        CASE YEAR
-                                            WHEN YEAR(now()) THEN now()
-                                            ELSE date_add(now(),
-                                            INTERVAL 1 YEAR)
-                                        END,'%Y-%m-%d')),8)
-                            LIMIT 1) min_week,
-                            @time_fence := CASE
-                                WHEN COALESCE(mc.time_fence, 0) = 0 THEN st.txt
-                                ELSE mc.time_fence
-                            END AS time_fence,
-                            @rownum := @rownum + 1 AS rownum
-                        FROM
-                            dat_operational_calendar doc
-                        LEFT JOIN map_cont_for_dist mc ON
-                            mc.company_id = 100
-                            AND mc.dist_id = ${req.dataToken.company_id}
-                        LEFT JOIN sys_text st ON
-                            st.lang_id = 1
-                            AND st.text_id = -100,
-                            ( SELECT @min_week := 0) x,
-                            ( SELECT @time_fence := 0) y,
-                            ( SELECT @rownum := 0) r
+                                opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE
+                                    YEAR
+                                    WHEN YEAR(now()) THEN now()
+                                    ELSE date_add(now(),
+                                    INTERVAL 1 YEAR)
+                                END ,
+                                '%Y-01-01')),
+                                8)
+                                AND YEAR = YEAR(DATE_FORMAT(FROM_UNIXTIME(concat(opcal_id,
+                                '00')),
+                                '%Y-%m-%d'))
+                            GROUP BY
+                                2,
+                                3,
+                                4) a
                         WHERE
-                            opcal_id >= LEFT(
-                            unix_timestamp(DATE_FORMAT(
-                            CASE YEAR
-                                WHEN YEAR(now()) 
-                                THEN now()
-                                ELSE date_add(now(),
-                                INTERVAL 1 YEAR)
-                            END,'%Y-01-01')),
-                            8)
-                            AND YEAR = 
-                            YEAR(DATE_FORMAT(FROM_UNIXTIME(concat(opcal_id, '00')),'%Y-%m-%d'))
-                        GROUP BY
-                            2,
-                            3,
-                            4) a
-                    WHERE
-                        a.opcal_id >= (
-                        SELECT
-                            opcal_id
-                        FROM
-                            dat_operational_calendar
-                        WHERE
-                            opcal_id >= LEFT(
-                            unix_timestamp(DATE_FORMAT(
-                                CASE YEAR 
-                                    WHEN YEAR(now()) 
-                                    THEN now() 
-                                    ELSE date_add(now(), 
-                                    INTERVAL 1 YEAR) 
-                                END , '%Y-01-01')),
-                            8)
+                            a.opcal_id >= (
+                            SELECT
+                                opcal_id
+                            FROM
+                                dat_operational_calendar
+                            WHERE
+                                opcal_id >= LEFT(unix_timestamp(DATE_FORMAT(CASE
+                                    YEAR
+                                    WHEN YEAR(now()) THEN now()
+                                    ELSE date_add(now(),
+                                    INTERVAL 1 YEAR)
+                                END ,
+                                '%Y-01-01')),
+                                    8)
+                            ORDER BY
+                                    opcal_id ASC
+                            LIMIT 1)
+                            AND rownum >= @min_week + @time_fence
                         ORDER BY
-                            opcal_id ASC
-                        LIMIT 1)
-                        AND rownum >= @min_week + @time_fence
-                        AND week NOT IN (${blockingDate})
-                    ORDER BY
-                        id
-                    LIMIT ${weekLimit}
+                            id
+                        LIMIT ${weekLimit}
                     `
 
 
@@ -1253,7 +1270,6 @@ module.exports = {
                     console.log("|ERROR| GET STUFFINGWEEK", err)
                 } else {
                     res.status(200).send(results);
-					//console.table(results);
                     console.log(timestamp + `get Order Stuffing Week for ${req.dataToken.company_id} limit ${weekLimit} success`);
                     addSqlLogger(req.dataToken.user_id, '-- query stuffing week', '--data stuffing week', 'getStuffingWeek')
                 }
@@ -3632,9 +3648,9 @@ module.exports = {
                 // ini dulu. based on lemparan
                 // let yearOrderId = selectYear ? selectYear.toString() : date.getFullYear().toString();
                 let yearOrderId = ((new Date()).getFullYear()).toString();
-                
+
                 let stringCuttedYear = yearOrderId.slice(2, 5);
- 
+
                 if (prevOrderId === null) {
 
                     return (parseInt(stringCuttedYear + "00" + company_id + "00000"));
@@ -3660,7 +3676,7 @@ module.exports = {
                     } else {
 
                         //paksa lempar id baru
-                        let new_id = trimLatestYear + "00" + company_id + "00000" 
+                        let new_id = trimLatestYear + "00" + company_id + "00000"
                         return (parseInt(new_id));
 
                     }
@@ -3898,9 +3914,25 @@ module.exports = {
 
                         try {
                             dbConf.query(queryDetail, parameterDetail, (err) => {
+
+
                                 if (err) {
                                     console.log(timestamp, "error add detail", err);
                                     emergencyDeleteOrder(order, order_id_raw);
+                                } else {
+
+                                    let queryInsertSO = `call insert_so_single(?);`;
+                                    let paramInsertSO = [order_id]
+
+                                    dbConf.query(queryInsertSO, paramInsertSO, (err) => {
+
+                                        if (err) {
+                                            console.log(timestamp, "error Inser SO for : ", order_id, err);
+                                            emergencyDeleteOrder(order, order_id_raw);
+                                        } else {
+                                            console.log(timestamp, "Running Inser SO for : ", order_id, err);
+                                        }
+                                    })
                                 }
                             })
                             console.log(timestamp, " addDetail on addOrder", po_buyer, " detail ", detail)
