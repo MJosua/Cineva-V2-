@@ -383,25 +383,28 @@ module.exports = {
     getWinColumn2EventTw2024: async (req, res) => {
         const queryGetTicket = `
         SELECT 
-            cf1.column_1, 
-            cf1.column_2,
-            cf1.column_3,
-            cf1.column_4,
-            cf1.column_5,
-            cf1.column_6, 
-            cf1.column_7,
-            cf2.column_1 AS PrizeRank
-        FROM cstm_form cf1
-        LEFT JOIN cstm_form cf2 
-            ON cf1.column_2 = cf2.column_2 
-            AND cf2.event_id = 889
-        WHERE 
-            cf1.event_id = 1
-        AND 
-            cf2.column_1 IS NOT NULL 
-        AND 
-            cf2.column_1 <> ''
-        order BY PrizeRank
+            column_2, 
+            MIN(Prize) AS Prize, 
+            MIN(column_1) AS column_1, 
+            MIN(column_3) AS column_3, 
+            MIN(column_4) AS column_4, 
+            MIN(column_5) AS column_5, 
+            MIN(column_6) AS column_6, 
+            MIN(column_7) AS column_7
+        FROM (
+            SELECT 
+                cf1.*, 
+                cf2.column_1 AS Prize
+            FROM cstm_form cf1
+            INNER JOIN cstm_form cf2 
+                ON cf1.column_2 = cf2.column_2
+                AND cf2.event_id = 889
+            WHERE cf1.event_id = 1
+            AND cf2.column_2 IS NOT NULL
+            AND cf2.column_2 <> ''
+        ) AS inner_table
+        GROUP BY column_2;
+
         ;
 
         `;
