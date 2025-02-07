@@ -384,7 +384,7 @@ module.exports = {
         const queryGetTicket = `
         SELECT 
             column_2, 
-            MIN(Prize) AS Prize, 
+            MIN(Prize) AS PrizeRank, 
             MIN(column_1) AS column_1, 
             MIN(column_3) AS column_3, 
             MIN(column_4) AS column_4, 
