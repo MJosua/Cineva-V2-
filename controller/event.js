@@ -278,6 +278,133 @@ module.exports = {
             });
         }
 
-    }
+    },
+
+    getColumn2EventTw2024: async (req, res) => {
+        console.log(new Date().toISOString(), "Trying to get data for Event TW");
+
+        const queryGetTicket = `SELECT DISTINCT column_2 FROM cstm_form WHERE event_id = 1 AND country_id = 765 ORDER BY RAND();`;
+
+        try {
+            const tickets = await dbQuery(queryGetTicket);
+
+            console.log(new Date().toISOString(), "Query executed successfully for Event TW");
+
+            return res.status(200).send({
+                success: tickets.length > 0,
+                data: tickets,
+                message: tickets.length > 0 ? "Data retrieved successfully" : "No data found",
+            });
+        } catch (error) {
+            console.error(new Date().toISOString(), "Error fetching tickets:", error.message);
+            return res.status(500).send({
+                success: false,
+                message: "Internal server error",
+            });
+        }
+    },
+
+
+    setWinningEventTw2024: async (req, res) => {
+        let { Event_id, Country, column_1, column_2 } = req.body;
+    
+        console.log("Received Data:", req.body); // Debugging
+    
+        const queryCheckTicketRow = `
+            SELECT COUNT(*) AS rownumber FROM cstm_form WHERE country_id = ? AND event_id = ?
+        `;
+        const paramTicketCheck = [Country, Event_id];
+    
+        dbConf.query(queryCheckTicketRow, paramTicketCheck, async (err, results) => {
+            if (err) {
+                console.error("Error executing queryCheckTicketRow:", err);
+                return res.status(500).send({
+                    success: false,
+                    message: "Ticket not created",
+                });
+            }
+    
+            if (results[0].rownumber >= 312) {
+                return res.status(500).send({
+                    success: false,
+                    message: "Ticket not created - Data Full",
+                });
+            }
+    
+            let rowNumber = results[0].rownumber; // Start from existing count
+            const submitDate = new Date().toISOString().slice(0, 10); // Format as YYYY-MM-DD
+    
+            const queryform = `
+                INSERT INTO cstm_form (column_1, column_2, column_3, attachment_id, country_id, event_id, submit_date)
+                VALUES ${column_1.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(", ")}
+            `;
+    
+            const values = column_1.map((rank, index) => {
+                rowNumber++; // Increment row number for each entry
+    
+                // Generate a unique formID for each entry
+                const formID = generateID(Country, Event_id, rowNumber);
+    
+                return [
+                    rank,                // column_1 (prize ranking)
+                    column_2[index],     // column_2 (winner)
+                    rowNumber,           // column_3 (row number)
+                    formID,              // attachment_id (unique ID for each row)
+                    Country,             // country_id
+                    Event_id,            // event_id
+                    submitDate           // submit_date
+                ];
+            }).flat();
+    
+            console.log("Final Query:", queryform);
+            console.log("Values:", values);
+    
+            dbConf.query(queryform, values, (err, results) => {
+                if (err) {
+                    console.error("Error inserting form data:", err);
+                    return res.status(500).send({
+                        success: false,
+                        message: "Ticket not created",
+                    });
+                }
+    
+                res.status(200).send({
+                    success: true,
+                    message: "Ticket has been created",
+                });
+            });
+        });
+    },
+    
+
+
+
+
+    getWinColumn2EventTw2024: async (req, res) => {
+        const queryGetTicket = `
+        SELECT DISTINCT * FROM cstm_form WHERE event_id = 889 AND country_id = 765
+        `;
+
+        try {
+            // Execute the query
+            const tickets = await dbQuery(queryGetTicket);
+
+            console.log(new Date().toISOString(), "Query executed for Event TW");
+
+            return res.status(200).send({
+                success: true,
+                data: tickets,
+                message: tickets.length > 0 ? "Data retrieved successfully" : "No data found",
+            });
+        } catch (error) {
+            console.error(new Date().toISOString(), "Error fetching tickets:", error.message);
+            return res.status(500).send({
+                success: false,
+                message: "Internal server error",
+            });
+        }
+    },
+
+
 
 };
