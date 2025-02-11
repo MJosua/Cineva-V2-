@@ -805,7 +805,8 @@ where
                     qty1, qty2, qty3, 
                     price1, price2, price3, 
                     remarks, bulk, delv_week, delv_year, id_year,
-                    created_date, custom)
+                    created_date, custom
+                    )
                   VALUES
                   (?, ?, ?, ?, 
                     ?, ?,  
