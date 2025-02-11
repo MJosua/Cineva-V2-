@@ -1128,7 +1128,7 @@ WHERE
             });
             console.log(timestamp + " XXXX FAILURE Admin getCompany by : " + req.dataToken.uid + 'fail:' + err)
 
-          } else { 
+          } else {
 
             let global_parameter = { company_id: 100, company_name: 'Global Configuration' }
 
@@ -1242,5 +1242,97 @@ WHERE
       });
       console.log(timestamp + "!!!_Unauthorized_!!! Admin Get getAudit by : " + req.dataToken.uid)
     }
+  },
+
+
+  sys_textCallBlockingDate: async (req, res) => {
+
+    let date = new Date();
+    let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+    let query =
+      `
+    select
+        txt
+    from
+        sys_text
+    where
+        text_id = -100
+        and lang_id = 1
+    `
+    dbConf.query(query, (err, results) => {
+
+      if (err) {
+
+        res.status(500).send({ err });
+        console.log(timestamp + " XXXX FAILURE Admin sys_textCallBlockingDate by : " + req.dataToken.uid + 'fail:' + err)
+
+      } else {
+
+        res.status(200).send({ results });
+        console.log(timestamp + "Admin sys_textCallBlockingDate by : " + req.dataToken.uid + ' success')
+      }
+
+    })
+
+
+  },
+
+
+  sys_textEditBlockingDate: async (req, res) => {
+
+    let date = new Date();
+    let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+    let {
+      config_id, value
+    } = req.body
+
+    let query =
+      `
+    update 
+        sys_text
+    set
+        txt = ${value}
+    where
+        text_id = -100
+        and lang_id = 1;
+
+
+    UPDATE 
+        m_config_new 
+    SET 
+        conditions = 11,
+        value = ${value},
+        active = 1
+    WHERE 
+        id = ${config_id}; 
+
+
+    `
+
+    dbConf.query(query, (err, results) => {
+
+      if (err) {
+        res.status(500).send({
+          message: 'Terjadi kesalahan, tapi bukan salah kamu :(',
+          success: false,
+          results
+        });
+        console.log(timestamp + " XXXX FAILURE edit Get Config by : " + req.dataToken.uid + 'fail:' + err)
+
+      } else {
+        //success
+        res.status(200).send({
+          message: 'berhasil get data status',
+          success: true,
+          results
+        });
+        addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'editConfig')
+        console.log(timestamp + "Admin edit Config by : " + req.dataToken.uid + 'success')
+      }
+    })
+
   }
+
 };

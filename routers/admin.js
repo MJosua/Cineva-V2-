@@ -38,4 +38,8 @@ route.delete('/config/:id', readToken, adminController.deleteConfig)
 // route.put('/edit', authController.editProduct)
 // route.delete('/delete', authController.deleteProduct)
 
+route.get('/get_blocking_date_sys_text', readToken, adminController.sys_textCallBlockingDate) 
+route.post('/edit_blocking_date_sys_text', readToken, adminController.sys_textEditBlockingDate)
+
+
 module.exports = route;
