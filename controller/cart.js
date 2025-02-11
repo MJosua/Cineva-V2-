@@ -135,6 +135,7 @@ where
       if (req.dataToken.user_id) {
         let query = `
         SELECT 
+        det.custom,
         det.cart_id, det.company_id, mco.company_name, det.created_by, su.firstname,  
         det.detail_id, det.cont_size, mc.container_name, det.cont_qty, 
         det.sku1,COALESCE(mp1.product_name_no, mp1.product_name) product_name_1,
@@ -355,7 +356,8 @@ where
         bulk,
         delv_week,
         delv_year,
-        id_year
+        id_year,
+        custom
       } = req.body;
 
       let query = ` INSERT INTO m_cart_dtl
@@ -363,17 +365,20 @@ where
                       cont_size, cont_qty, 
                       sku1, sku2, sku3, qty1, qty2, qty3, price1, price2, price3, 
                       remarks, bulk, delv_week, delv_year, id_year,
-                      created_date)
+                      created_date, custom)
                     VALUES
                     (?, ?, ?, ?, ?, ?,  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                      date_format(now(),'%Y-%m-%d-%T '));
+                      date_format(now(),'%Y-%m-%d-%T ')),
+                      ?
+                      ;
                   `;
 
       let parameter = [
         cart_id, company_id, user_id, detail_id,
         cont_size, cont_qty,
         sku1, sku2, sku3, qty1, qty2, qty3,
-        price1, price2, price3, remarks, bulk, delv_week, delv_year, id_year
+        price1, price2, price3, remarks, bulk, delv_week, delv_year, id_year,
+        custom
       ]
       dbConf.query(query, parameter,
         (err, results) => {
@@ -800,7 +805,7 @@ where
                     qty1, qty2, qty3, 
                     price1, price2, price3, 
                     remarks, bulk, delv_week, delv_year, id_year,
-                    created_date)
+                    created_date, custom)
                   VALUES
                   (?, ?, ?, ?, 
                     ?, ?,  
@@ -808,7 +813,9 @@ where
                     ?, ?, ?, 
                     ?, ?, ?, 
                     ?, ?, ?, ?, ?,
-                    date_format(now(),'%Y-%m-%d-%T '));
+                    date_format(now(),'%Y-%m-%d-%T '),
+                    ?
+                    );
                 `;
                   let parameterDetail = [
                     cart_id, company_id, user_id, detail.detail_id,
@@ -816,7 +823,8 @@ where
                     (detail.Flavour[0] ? (detail.Flavour[0].sku > 1 ? detail.Flavour[0].sku : 0) : 0), (detail.Flavour[1] ? (detail.Flavour[1].sku > 1 ? detail.Flavour[1].sku : 0) : 0), (detail.Flavour[2] ? (detail.Flavour[2].sku > 1 ? detail.Flavour[2].sku : 0) : 0),
                     (detail.Flavour[0] ? (detail.Flavour[0].qty > 1 ? detail.Flavour[0].qty : 0) : 0), (detail.Flavour[1] ? (detail.Flavour[1].qty > 1 ? detail.Flavour[1].qty : 0) : 0), (detail.Flavour[2] ? (detail.Flavour[2].qty > 1 ? detail.Flavour[2].qty : 0) : 0),
                     0, 0, 0,
-                    cart_data.remarks, detail.bulk, delv_week, delv_year, id_year
+                    cart_data.remarks, detail.bulk, delv_week, delv_year, id_year,
+                    detail.custom
                   ]
 
                   console.log("parameterDetail",parameterDetail)
