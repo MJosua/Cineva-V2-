@@ -1963,15 +1963,17 @@ module.exports = {
 
             //update to activate trucing 
             let query = `
-           select
-            case
-                when day(now()) > 20 then DATE_FORMAT((DATE_ADD(now(), interval 2 month)), '%Y-%m-01')
-                else DATE_FORMAT((DATE_ADD(now(), interval 1 month)), '%Y-%m-01')
-            end min_date,
-            case
-                when day(now()) > 20 then last_day(DATE_ADD(now(), interval 2 month))
-                else last_day(DATE_ADD(now(), interval 1 month))
-            end max_date
+            SELECT
+            CASE
+                WHEN DAY(NOW()) > 20 THEN DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 2 MONTH), '%Y-%m-01')
+                ELSE DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 1 MONTH), '%Y-%m-01')
+            END AS min_date,
+            CASE
+                WHEN DAY(NOW()) > 20 THEN DATE_FORMAT(LAST_DAY(DATE_ADD(NOW(), INTERVAL 2 MONTH)), '%Y-%m-%d')
+                ELSE DATE_FORMAT(LAST_DAY(DATE_ADD(NOW(), INTERVAL 1 MONTH)), '%Y-%m-%d')
+            END AS max_date;
+
+
             `;
 
             let parameter = [limit];
@@ -3918,6 +3920,14 @@ module.exports = {
                                                     );
                                                     
                                                     `
+
+                        let customInInteger;
+                        if (detail.custom === false) {
+                            customInInteger = 0;
+                        } else {
+                            customInInteger = 1;
+                        }
+
                         let parameterDetail = [
                             order_id, company_id, user_id, detail.detail_id,
                             detail.cont_size, detail.cont_qty,
@@ -3925,7 +3935,7 @@ module.exports = {
                             (detail.Flavour[0] ? (detail.Flavour[0].qty > 1 ? detail.Flavour[0].qty : 0) : 0), (detail.Flavour[1] ? (detail.Flavour[1].qty > 1 ? detail.Flavour[1].qty : 0) : 0), (detail.Flavour[2] ? (detail.Flavour[2].qty > 1 ? detail.Flavour[2].qty : 0) : 0),
                             0, 0, 0,
                             order_data.remarks, detail.bulk, delv_week, delv_year,
-                            detail.custom
+                            customInInteger
                         ]
 
                         try {
