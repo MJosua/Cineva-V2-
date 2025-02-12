@@ -1158,10 +1158,10 @@ module.exports = {
             //cuma 13 data week yang ditampilin untuk default.
             let weekLimit = getWeekLimit ? getWeekLimit.value : 13
 
-            
+
             //untuk menghilangkan week tertentu.
             let getBlockingDate = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 10 AND mcn.company_id = 100  AND mcn.active = 1;`))[0]
- 
+
             //error prevention
             let blockingDate = getBlockingDate ? getBlockingDate.value : 0
 
@@ -1963,14 +1963,15 @@ module.exports = {
 
             //update to activate trucing 
             let query = `
-            SELECT date_format(from_unixtime(min(concat(opcal_id,'00'))),'%Y-%m-%d') min_date, date_format(from_unixtime(max(concat(opcal_id,'00'))),'%Y-%m-%d') max_date  
-            FROM dat_operational_calendar doc 
-            WHERE op_month = CASE WHEN DAY(now()) > 20 THEN MONTH(DATE_ADD(now(), INTERVAL 2 MONTH)) 
-            ELSE MONTH(DATE_ADD(now(), 
-            INTERVAL 1 MONTH)) END AND year = CASE 
-            WHEN DAY(now()) > 20 THEN YEAR(DATE_ADD(now(), INTERVAL 2 MONTH)) 
-            ELSE YEAR(DATE_ADD(now(), INTERVAL 1 MONTH)) END AND date_format(from_unixtime(concat(opcal_id,'00')),'%Y') = case
-	        when day (now()) > 20 then year(date_add(now(), interval 2 month)) else year(date_add(now(), interval 1 month)) end
+           select
+            case
+                when day(now()) > 20 then DATE_FORMAT((DATE_ADD(now(), interval 2 month)), '%Y-%m-01')
+                else DATE_FORMAT((DATE_ADD(now(), interval 1 month)), '%Y-%m-01')
+            end min_date,
+            case
+                when day(now()) > 20 then last_day(DATE_ADD(now(), interval 2 month))
+                else last_day(DATE_ADD(now(), interval 1 month))
+            end max_date
             `;
 
             let parameter = [limit];
