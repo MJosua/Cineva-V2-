@@ -3897,8 +3897,7 @@ module.exports = {
 
                     //melakukan loop sesuai dengan jumlah  data dalam detail
                     // console.log(timestamp, "order_data.detail ", order_data.detail)
-                    for (const detail of (order_data.detail)) {
-
+                    for (const detail of order_data.details) {
                         let queryDetail = `
                                             INSERT INTO m_order_dtl
                                             (order_id, company_id, created_by, detail_id, 
@@ -3939,31 +3938,39 @@ module.exports = {
                         ]
 
                         try {
-                            dbConf.query(queryDetail, parameterDetail, (err) => {
+                            // Insert order details
+                            await new Promise((resolve, reject) => {
+                                dbConf.query(queryDetail, parameterDetail, (err) => {
+                                    if (err) {
+                                        console.log(timestamp, "error add detail", err);
+                                        emergencyDeleteOrder(order, order_id_raw);
+                                        reject(err);
+                                    } else {
+                                        console.log(timestamp, " addDetail on addOrder", po_buyer, " detail ", detail);
+                                        resolve();
+                                    }
+                                });
+                            });
 
+                            // Insert SO after details are successfully added
+                            let queryInsertSO = `CALL insert_so_single(?);`;
+                            let paramInsertSO = [order_id];
 
-                                if (err) {
-                                    console.log(timestamp, "error add detail", err);
-                                    emergencyDeleteOrder(order, order_id_raw);
-                                } else {
+                            await new Promise((resolve, reject) => {
+                                dbConf.query(queryInsertSO, paramInsertSO, (err) => {
+                                    if (err) {
+                                        console.log(timestamp, "error Insert SO for : ", order_id, err);
+                                        emergencyDeleteOrder(order, order_id_raw);
+                                        reject(err);
+                                    } else {
+                                        console.log(timestamp, "Running Insert SO for : ", order_id);
+                                        resolve();
+                                    }
+                                });
+                            });
 
-                                    let queryInsertSO = `call insert_so_single(?);`;
-                                    let paramInsertSO = [order_id]
-
-                                    dbConf.query(queryInsertSO, paramInsertSO, (err) => {
-
-                                        if (err) {
-                                            console.log(timestamp, "error Inser SO for : ", order_id, err);
-                                            emergencyDeleteOrder(order, order_id_raw);
-                                        } else {
-                                            console.log(timestamp, "Running Inser SO for : ", order_id, err);
-                                        }
-                                    })
-                                }
-                            })
-                            console.log(timestamp, " addDetail on addOrder", po_buyer, " detail ", detail)
                         } catch (error) {
-                            console.log(timestamp, "Error addDetail on addOrder", error)
+                            console.log(timestamp, "Error addDetail on addOrder", error);
                         }
                         // addSqlLogger(user_id, (query.concat(parameterDetail)), `insert query`, `addOrderDetail-${order_id}-${detail.detail_id}`)
 
