@@ -3935,7 +3935,7 @@ module.exports = {
                             (detail.Flavour[0] ? (detail.Flavour[0].qty > 1 ? detail.Flavour[0].qty : 0) : 0), (detail.Flavour[1] ? (detail.Flavour[1].qty > 1 ? detail.Flavour[1].qty : 0) : 0), (detail.Flavour[2] ? (detail.Flavour[2].qty > 1 ? detail.Flavour[2].qty : 0) : 0),
                             0, 0, 0,
                             order_data.remarks, detail.bulk, delv_week, delv_year,
-                            detail.custom
+                            customInInteger
                         ]
                         try {
                             // Insert order details
