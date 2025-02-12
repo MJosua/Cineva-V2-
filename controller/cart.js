@@ -601,37 +601,37 @@ where
   },
 
   //   request bodynya jadi gini: 
-    /*
-           cart: {
-                    [
-                        {
-                            delv_week: 0,
-                            delv_week_desc: "",
-                            delv_year: 0,
-                            po_buyer: "",
-                            stuffing_date: "YYYY-MM-DD",
-                            port_shipment: 0,
-                            ship_to: 0,
-                            po_url: "",
-                            final_dest: '',
-                            tolling_id: 1,
-                            remarks: '-',
-                            detail: [{
-                                detail_id: 0,
-                                cont_size: 0,
-                                cont_qty: 0,
-                                bulk: 1,
-                                remarks: "",
-                                Flavour:
-                                    [{
-                                        sku: 0,
-                                        qty: 0,
-                                    }],
-                            }] 
-                        }
-                    ]
-                };
-    */
+  /*
+         cart: {
+                  [
+                      {
+                          delv_week: 0,
+                          delv_week_desc: "",
+                          delv_year: 0,
+                          po_buyer: "",
+                          stuffing_date: "YYYY-MM-DD",
+                          port_shipment: 0,
+                          ship_to: 0,
+                          po_url: "",
+                          final_dest: '',
+                          tolling_id: 1,
+                          remarks: '-',
+                          detail: [{
+                              detail_id: 0,
+                              cont_size: 0,
+                              cont_qty: 0,
+                              bulk: 1,
+                              remarks: "",
+                              Flavour:
+                                  [{
+                                      sku: 0,
+                                      qty: 0,
+                                  }],
+                          }] 
+                      }
+                  ]
+              };
+  */
 
   addCart: async (req, res) => {
 
@@ -642,7 +642,7 @@ where
     console.log("data", req.body)
     console.log("data_detail", req.body.cart.detail)
 
-    
+
 
     let cart = req.body.cart
 
@@ -755,7 +755,7 @@ where
 
           let id_year = parseInt(delv_year.toString() + delv_week.toString())
 
-         
+
 
           let query = ` 
           INSERT INTO m_cart 
@@ -818,6 +818,14 @@ where
                     ?
                     );
                 `;
+
+                  let customInInteger;
+                  if (detail.custom === false) {
+                    customInInteger = 0;
+                  } else {
+                    customInInteger = 1;
+                  }
+
                   let parameterDetail = [
                     cart_id, company_id, user_id, detail.detail_id,
                     detail.cont_size, detail.cont_qty,
@@ -825,10 +833,10 @@ where
                     (detail.Flavour[0] ? (detail.Flavour[0].qty > 1 ? detail.Flavour[0].qty : 0) : 0), (detail.Flavour[1] ? (detail.Flavour[1].qty > 1 ? detail.Flavour[1].qty : 0) : 0), (detail.Flavour[2] ? (detail.Flavour[2].qty > 1 ? detail.Flavour[2].qty : 0) : 0),
                     0, 0, 0,
                     cart_data.remarks, detail.bulk, delv_week, delv_year, id_year,
-                    detail.custom
+                    customInInteger
                   ]
 
-                  console.log("parameterDetail",parameterDetail)
+                  console.log("parameterDetail", parameterDetail)
 
                   dbConf.query(queryDetail, parameterDetail,
                     (err, results) => {
