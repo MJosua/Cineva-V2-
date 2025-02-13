@@ -196,7 +196,8 @@ where
       let cart_id = req.params.cart_id ? req.params.cart_id : req.query.cart_id;
       let created_date = req.query.created_date;
 
-      console.log(timestamp, "req.params", req.params);
+      console.log(timestamp, "req.params:", req.params);
+      console.log(timestamp, "req.query:", req.query);
       console.log(timestamp, "cart_id", cart_id);
 
 
@@ -249,7 +250,7 @@ where
         DELETE FROM m_cart_dtl WHERE created_date = ? AND cart_id = ?; 
         `
         let parameter = [created_date, cart_id, created_date, cart_id];
-
+        console.log("Cart info before delete", created_date, cart_id)
         dbConf.query(query, parameter,
           (err, results) => {
             if (err) {
