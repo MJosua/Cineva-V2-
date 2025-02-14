@@ -4047,30 +4047,29 @@ module.exports = {
                     // }).catch((err) => {
                     //     console.log(timestamp, "error Axios send mail",)
                     // })
-
+                    // Insert SO after details are successfully added
+                    let queryInsertSO = `CALL insert_so_single(?);`;
+                    let paramInsertSO = [order_id];
+                    try {
+                            await new Promise((resolve, reject) => {
+                            dbConf.query(queryInsertSO, paramInsertSO, (err) => {
+                                if (err) {
+                                    console.log(timestamp, "error Insert SO for : ", order_id, err);
+                                    emergencyDeleteOrder(order, order_id_raw);
+                                    reject(err);
+                                } else {
+                                    console.log(timestamp, "Running Insert SO for : ", order_id);
+                                    resolve();
+                                }
+                            });
+                        });
+                    } catch (error) {
+                        console.log(timestamp, "Error caught in queryInsertSO", error);
+                    };
 
                 };
 
                 setTimeout(() => {
-                     // Insert SO after details are successfully added
-                     let queryInsertSO = `CALL insert_so_single(?);`;
-                     let paramInsertSO = [order_id];
-                     try {
-                             new Promise((resolve, reject) => {
-                             dbConf.query(queryInsertSO, paramInsertSO, (err) => {
-                                 if (err) {
-                                     console.log(timestamp, "error Insert SO for : ", order_id, err);
-                                     emergencyDeleteOrder(order, order_id_raw);
-                                     reject(err);
-                                 } else {
-                                     console.log(timestamp, "Running Insert SO for : ", order_id);
-                                     resolve();
-                                 }
-                             });
-                         });
-                     } catch (error) {
-                         console.log(timestamp, "Error caught in queryInsertSO", error);
-                     };
                     console.log(timestamp + `==========> add Order is success`)
                     res.status(200).send({
                         success: true,
