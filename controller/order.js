@@ -3953,22 +3953,7 @@ module.exports = {
                                 });
                             });
 
-                            // Insert SO after details are successfully added
-                            let queryInsertSO = `CALL insert_so_single(?);`;
-                            let paramInsertSO = [order_id];
 
-                            await new Promise((resolve, reject) => {
-                                dbConf.query(queryInsertSO, paramInsertSO, (err) => {
-                                    if (err) {
-                                        console.log(timestamp, "error Insert SO for : ", order_id, err);
-                                        emergencyDeleteOrder(order, order_id_raw);
-                                        reject(err);
-                                    } else {
-                                        console.log(timestamp, "Running Insert SO for : ", order_id);
-                                        resolve();
-                                    }
-                                });
-                            });
 
                         } catch (error) {
                             console.log(timestamp, "Error addDetail on addOrder", error);
@@ -4005,9 +3990,9 @@ module.exports = {
                     }
 
                     // //melakukan loop sesuai dengan jumlah data dalam summary
-                    // console.log(timestamp, "order_data.summary ", order_data.summary)
+                    console.log(timestamp, "order_data.summary ", order_data.summary)
                     for (const summary of (order_data.summary)) {
-
+                        console.log("summary", summary)
                         let querySummary = `
                                 INSERT INTO m_summary
                                 (order_id, company_id, po_buyer, detail_id,
@@ -4017,18 +4002,46 @@ module.exports = {
                                 `
                         let parameterSummary = [order_id, company_id, po_buyer, summary.detail_id, summary.sku, summary.qty, order_data.remarks, stuffing_date_rev];
                         try {
-                            dbConf.query(querySummary, parameterSummary, (err) => {
-                                if (err) {
-                                    console.log(timestamp, "error add Summary", err);
-                                    emergencyDeleteOrder(order, order_id_raw);
-                                }
-                            })
-                            console.log(timestamp, " addSummary on addOrder", po_buyer, " summary ", summary)
+                            await new Promise((resolve, reject) => {
+                                dbConf.query(querySummary, parameterSummary, (err) => {
+                                    if (err) {
+                                        console.log(timestamp, "error add Summary", err);
+                                        emergencyDeleteOrder(order, order_id_raw);
+                                        reject(err);
+                                    } else {
+                                        console.log(timestamp, "Successfully added summary", parameterSummary);
+                                        resolve();
+
+
+
+                                    }
+                                });
+                            });
                         } catch (error) {
-                            console.log(timestamp, "Error addSummary on addOrder", error)
+                            console.log(timestamp, "Error caught in summary insertion", error);
                         }
                         // addSqlLogger(user_id, (querySummary.concat(parameterSummary)), `insert query results`, `addOrderDetail-${order_id}-${summary.detail_id}`)
 
+
+                        // Insert SO after details are successfully added
+                        let queryInsertSO = `CALL insert_so_single(?);`;
+                        let paramInsertSO = [order_id];
+                        try {
+                            await new Promise((resolve, reject) => {
+                                dbConf.query(queryInsertSO, paramInsertSO, (err) => {
+                                    if (err) {
+                                        console.log(timestamp, "error Insert SO for : ", order_id, err);
+                                        emergencyDeleteOrder(order, order_id_raw);
+                                        reject(err);
+                                    } else {
+                                        console.log(timestamp, "Running Insert SO for : ", order_id);
+                                        resolve();
+                                    }
+                                });
+                            });
+                        } catch (error) {
+                            console.log(timestamp, "Error caught in queryInsertSO", error);
+                        }
                     }
 
                     //idupin kalau udah production. spam aja ini.
