@@ -656,8 +656,9 @@ module.exports = {
                                 det.created_by,
                                 su.firstname,
                                 mo.delv_week,
+                                mo.po_date,
                                 CASE
-                                                        WHEN det.cont_size = 8 THEN ms.detail_id
+                                WHEN det.cont_size = 8 THEN ms.detail_id
                                     ELSE det.detail_id
                                 END detail_id,
                                 det.cont_size,
@@ -797,6 +798,11 @@ module.exports = {
 
         let order_id = req.params.order_id
 
+        //untuk menghilangkan week tertentu.
+        let getBlockingCompany = (await dbQuery(`select company_id from m_config_new mcn where conditions = 12;`))[0];
+
+        // Error prevention: Check if getBlockingCompany is not empty and has the value you expect
+        let blockingSoIdCompany = getBlockingCompany && getBlockingCompany.company_id ? getBlockingCompany.company_id : 0;
         try {
 
             if (req.dataToken.user_id) {
@@ -854,7 +860,10 @@ module.exports = {
                         mp3.product_sku prod_sku_3,
                         det.remarks,
                         det.bulk,
-                        so.so_id
+                        CASE 
+                        WHEN det.company_id NOT IN (${blockingSoIdCompany}) THEN so.so_id
+                            ELSE ''
+                        END AS so_id
                     from
                         m_order_dtl det
                     inner join m_order mo on
@@ -887,6 +896,8 @@ module.exports = {
                         mo.order_id = so.e_order
                         and 
                         so.cancel = 0
+                    left join m_config_new msc on
+                        msc.company_id = det.company_id
                     WHERE
                         det.order_id = ?`
 
@@ -901,11 +912,12 @@ module.exports = {
                         res.status(200).send(results);
                         console.log(timestamp + `get getOneOrderDetail data`);
                         addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), '--data getOneOrderDetail', `getOneOrderDetail-${order_id}`)
+                        console.log(blockingSoIdCompany);
 
                     }
                 })
             } else {
-                res.status(200).send({
+                res.status(401).send({
                     success: false,
                     message: 'unauthorized'
                 })
@@ -4023,7 +4035,7 @@ module.exports = {
                         // addSqlLogger(user_id, (querySummary.concat(parameterSummary)), `insert query results`, `addOrderDetail-${order_id}-${summary.detail_id}`)
 
 
-                       
+
                     }
 
                     //idupin kalau udah production. spam aja ini.
@@ -4051,7 +4063,7 @@ module.exports = {
                     let queryInsertSO = `CALL insert_so_single(?);`;
                     let paramInsertSO = [order_id];
                     try {
-                            await new Promise((resolve, reject) => {
+                        await new Promise((resolve, reject) => {
                             dbConf.query(queryInsertSO, paramInsertSO, (err) => {
                                 if (err) {
                                     console.log(timestamp, "error Insert SO for : ", order_id, err);
