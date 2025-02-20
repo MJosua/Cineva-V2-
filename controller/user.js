@@ -160,6 +160,63 @@ ORDER BY
             res.status(500).send(error);
         }
     },
+    ostp: async (req, res) => {
+        let date = new Date();
+        let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+
+        try {
+            if (req.dataToken.user_id) {
+                let company_id = req.dataToken.company_id;
+
+                let querynotify = `
+                    SELECT * FROM mst_company mc 
+                    WHERE company_type_id = 7 
+                    AND parent_company_id = ${company_id}
+                `;
+
+                let querybill = `
+                    SELECT * FROM mst_company mc 
+                    WHERE company_type_id = 8 
+                    AND parent_company_id = ${company_id}
+                `;
+
+                // Run both queries in parallel
+                Promise.all([
+                    new Promise((resolve, reject) => {
+                        dbConf.query(querynotify, (err, results) => {
+                            if (err) reject(err);
+                            else resolve(results);
+                        });
+                    }),
+                    new Promise((resolve, reject) => {
+                        dbConf.query(querybill, (err, results) => {
+                            if (err) reject(err);
+                            else resolve(results);
+                        });
+                    })
+                ])
+                    .then(([notifyTP, billTP]) => {
+                        res.status(200).send({ 
+                            
+                            "Notify" : notifyTP, 
+                            "BillTP" : billTP });
+
+                        console.log(timestamp + `get user shiptoparty for ${company_id} list success.`);
+                    })
+                    .catch((err) => {
+                        console.log(timestamp + "Error in ship to party queries:", err);
+                        res.status(500).send(err);
+                    });
+
+            } else {
+                res.status(401).send({ success: false, message: 'error_auth' });
+            }
+        } catch (error) {
+            console.log(timestamp + error);
+            res.status(500).send(error);
+        }
+    },
+
     profile: async (req, res) => {
 
         let date = new Date();
