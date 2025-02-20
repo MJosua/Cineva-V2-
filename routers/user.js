@@ -13,6 +13,7 @@ route.post('/email', readToken, userController.updateEmail)
 
 route.get('/port', readToken, userController.port);
 route.get('/stp', readToken, userController.stp);
+route.get('/ostp', readToken, userController.ostp);
 route.get('/profile', readToken, userController.profile)
 route.get('/feedback', readToken, userController.getFeedback)
 route.get('/banner', readToken, userController.getBanner)
