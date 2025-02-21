@@ -147,7 +147,7 @@ module.exports = {
             const rowNumber = results[0].rownumber + 1; // Increment row number
             const formID = generateID(Country, Event_id, rowNumber); // Generate unique form ID
 
-            let file_url = `/public/files/DoorPrize/event_taiwan_1/${req.files[0].filename}`;
+            let file_url = `/public/files/DoorPrize/event_Form/${req.files[0].filename}`;
             // Insert the form data into the database
             let columns = ["column_1"];
             let values = ["?"]; // Placeholder for prepared statements
@@ -249,13 +249,47 @@ module.exports = {
 
     showticket: async (req, res) => {
 
-        const queryGetTicket = `SELECT * FROM cstm_form WHERE event_id = ?;`;
-        const queryGetCount = `SELECT COUNT(*) AS total FROM cstm_form WHERE event_id = ?;`;
+        const queryGetTicket = `SELECT * FROM cstm_form WHERE event_id = ? and country_id = 753;`;
+        const queryGetCount = `SELECT COUNT(*) AS total FROM cstm_form WHERE event_id = ? country_id = 753;`;
 
         try {
             // Use dbQuery to execute both queries
             const tickets = await dbQuery(queryGetTicket, [1]);
             const count = await dbQuery(queryGetCount, [1]);
+
+            if (tickets.length > 0) {
+                console.log(new Date().toISOString(), "getTicketDetail case Event TW");
+                return res.status(200).send({
+                    success: true,
+                    data: tickets,
+                    total: count[0]?.total, // Safely access count
+                });
+            } else {
+                return res.status(404).send({
+                    success: false,
+                    message: "No data found",
+                });
+            }
+        } catch (error) {
+            console.error(new Date().toISOString(), "Error fetching tickets:", error.message);
+            return res.status(500).send({
+                success: false,
+                message: "Internal server error",
+            });
+        }
+
+    },
+
+    showticketbyid: async (req, res) => {
+        const { country_id, event_id } = req.params;
+        const queryGetTicket = `SELECT * FROM cstm_form WHERE event_id = ? AND country_id = ?;`;
+        const queryGetCount = `SELECT COUNT(*) AS total FROM cstm_form WHERE event_id = ? AND country_id = ?;`;
+
+
+        try {
+            // Use dbQuery to execute both queries
+            const tickets = await dbQuery(queryGetTicket, [event_id, country_id]);
+            const count = await dbQuery(queryGetCount, [event_id, country_id]);
 
             if (tickets.length > 0) {
                 console.log(new Date().toISOString(), "getTicketDetail case Event TW");
