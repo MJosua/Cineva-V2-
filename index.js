@@ -452,7 +452,7 @@ const { error } = require("console");
 
 trademarkMgmtAuto.runCheck();
 notification.shippingMailNotification();
-notification.callInsertSO();
+// notification.callInsertSO();
 
 
 //============================= UPDATE REGISTER =============================

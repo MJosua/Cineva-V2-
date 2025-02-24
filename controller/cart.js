@@ -82,7 +82,10 @@ module.exports = {
 	mc.port_shipment,
 	mpfd.harbour_id,
 	mc.stuffing_date,
-	mh.harbour_name
+	mh.harbour_name,
+  mc.bill_to,
+  mc.notify1,
+  mc.notify2
 from
 	m_cart mc
 join mst_company mco on
@@ -751,6 +754,14 @@ where
           let delv_week_desc = cart_data.delv_week_desc ? cart_data.delv_week_desc : `Week: ${(await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik} Date: ${cart_data.stuffing_date} `
           let tolling_id = cart_data.tolling_id ? cart_data.tolling_id : 0;
 
+          let bill_to = cart_data.bill_to ? cart_data.bill_to : 0;
+          let notify1 = cart_data.notify_to_1 ? cart_data.notify_to_1 : 0;
+          let notify2 = cart_data.notify_to_2 ? cart_data.notify_to_2 : 0;
+          console.log("cart_data",cart_data)
+          console.log(" cart_data.bill_to", cart_data.bill_to)
+          console.log(" cart_data.notify_to_1", cart_data.notify_to_1)
+          console.log(" cart_data.notify_to_2", cart_data.notify_to_2)
+
           let stuffing_date_rev = cart_data.stuffing_date ? cart_data.stuffing_date : formattedDate;
           let final_dest_check = final_dest ? final_dest : "-";
 
@@ -765,21 +776,27 @@ where
              created_date, 
              port_shipment, ship_to, po_url,created_by, 
              stuffing_date, 
-             final_dest, tolling_id )
+             final_dest, tolling_id,
+             bill_to, notify1, notify2
+             
+             )
             VALUES
             (?, ?, 
             ?, ?, ?, ?, ?, 
             date_format(now(),'%Y-%m-%d-%T '), 
             ?, ?, ?, ?,
              ?, 
-             ?, ?); 
+             ?, ?,
+             ?, ?, ?
+             ); 
         `
 
           let parameter = [
             cart_id, company_id, delv_week, delv_week_desc,
             delv_year, id_year, po_buyer,
             port_shipment, ship_to, po_url,
-            user_id, stuffing_date_rev, final_dest_check, tolling_id
+            user_id, stuffing_date_rev, final_dest_check, tolling_id,
+            bill_to, notify1, notify2
           ]
 
 
