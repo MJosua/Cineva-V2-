@@ -13,18 +13,28 @@ module.exports = {
     try {
       if (req.dataToken.user_id) {
 
+        //   let query = `
+        //   SELECT DISTINCT 
+        //   mo.delv_week, mo.delv_week_desc, mo.cart_id, date_format(mo.created_date,'%Y-%m-%d-%T ') created_date 
+        //   FROM 
+        //   m_cart mo
+        //   JOIN mst_company mco ON mo.company_id = mco.company_id  
+        //   LEFT JOIN map_port_for_dist mpfd ON mo.port_shipment = mpfd.harbour_id 
+        //   AND mo.company_id  = mpfd.distributor_id  
+        //   LEFT JOIN mst_company stp ON stp.company_id = mo.ship_to 
+        //   LEFT JOIN sys_user su ON su.user_id = mo.created_by  
+        //   WHERE mo.company_id = ${req.dataToken.company_id} ;
+        //  `;
+
         let query = `
         SELECT DISTINCT 
         mo.delv_week, mo.delv_week_desc, mo.cart_id, date_format(mo.created_date,'%Y-%m-%d-%T ') created_date 
         FROM 
         m_cart mo
-        JOIN mst_company mco ON mo.company_id = mco.company_id  
-        LEFT JOIN map_port_for_dist mpfd ON mo.port_shipment = mpfd.harbour_id 
-        AND mo.company_id  = mpfd.distributor_id  
-        LEFT JOIN mst_company stp ON stp.company_id = mo.ship_to 
-        LEFT JOIN sys_user su ON su.user_id = mo.created_by  
         WHERE mo.company_id = ${req.dataToken.company_id} ;
        `;
+
+
         dbConf.query(query, (err, results) => {
           if (err) {
             res.status(500).send(err);
@@ -61,49 +71,52 @@ module.exports = {
         dbConf.query(
           `
           select
-	distinct 
-                    mc.cart_id,
-	mc.ship_to ,
-	mco.company_name,
-	mc.delv_week,
-	mc.delv_week_desc,
-	mc.delv_year,
-	mc.id_year,
-	mc.po_buyer,
-	mc.final_dest ,
-	mc.po_buyer,
-	stp.company_name ,
-	mc.po_url,
-	su.firstname created_by,
-	mcd.cont_size,
-	mcd.cont_qty,
-	mct.container_name,
-	date_format(mc.created_date, '%Y-%m-%d-%T ') created_date,
-	mc.port_shipment,
-	mpfd.harbour_id,
-	mc.stuffing_date,
-	mh.harbour_name,
-  mc.bill_to,
-  mc.notify1,
-  mc.notify2
-from
-	m_cart mc
-join mst_company mco on
-	mc.company_id = mco.company_id
-left join map_port_for_dist mpfd on
-	mc.port_shipment = mpfd.harbour_id
-	and mc.company_id = mpfd.distributor_id
-left join mst_company stp on
-	stp.company_id = mc.ship_to
-left join sys_user su on
-	su.user_id = mc.created_by
-left join m_cart_dtl mcd on
-	mc.cart_id = mcd.cart_id
-left join mst_container mct on
-	mct.container_id = mcd.cont_size
-left join mst_harbour mh on mpfd.harbour_id = mh.harbour_id 
-where
-	mc.created_by = ${req.dataToken.user_id} ;
+	          distinct 
+            mc.cart_id,
+            mc.ship_to ,
+            mco.company_name,
+            mc.delv_week,
+            mc.delv_week_desc,
+            mc.delv_year,
+            mc.id_year,
+            mc.po_buyer,
+            mc.final_dest ,
+            mc.po_buyer,
+            stp.company_name as ship_to_name,
+            mc.po_url,
+            su.firstname created_by,
+            mcd.cont_size,
+            mcd.cont_qty,
+            mct.container_name,
+            date_format(mc.created_date, '%Y-%m-%d-%T ') created_date,
+            mc.port_shipment,
+            mpfd.harbour_id,
+            date_format(mc.stuffing_date, '%Y-%m-%d') stuffing_date,
+            mh.harbour_name,
+            mc.bill_to,
+            mc.notify1,
+            mc.notify2
+          from
+            m_cart mc
+          join mst_company mco on
+            mc.company_id = mco.company_id
+          left join map_port_for_dist mpfd on
+            mc.port_shipment = mpfd.harbour_id
+            and mc.company_id = mpfd.distributor_id
+          left join mst_company stp on
+            stp.company_id = mc.ship_to
+          left join sys_user su on
+            su.user_id = mc.created_by
+          left join m_cart_dtl mcd on
+            mc.cart_id = mcd.cart_id
+          left join mst_container mct on
+            mct.container_id = mcd.cont_size
+          left join mst_harbour mh on
+            mpfd.harbour_id = mh.harbour_id
+          left join mst_company mco_stp on
+            mc.company_id = mco.company_id
+          where
+            mc.created_by = ${req.dataToken.user_id} ;
                         `,
           (err, results) => {
             if (err) {
@@ -643,8 +656,8 @@ where
     let timestamp = magenta + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
     let { user_id, company_id } = req.dataToken;
-    console.log("data", req.body)
-    console.log("data_detail", req.body.cart.detail)
+    // console.log("data", req.body)
+    // console.log("data_detail", req.body.data.cart.detail)
 
 
 
@@ -757,10 +770,7 @@ where
           let bill_to = cart_data.bill_to ? cart_data.bill_to : 0;
           let notify1 = cart_data.notify_to_1 ? cart_data.notify_to_1 : 0;
           let notify2 = cart_data.notify_to_2 ? cart_data.notify_to_2 : 0;
-          console.log("cart_data",cart_data)
-          console.log(" cart_data.bill_to", cart_data.bill_to)
-          console.log(" cart_data.notify_to_1", cart_data.notify_to_1)
-          console.log(" cart_data.notify_to_2", cart_data.notify_to_2)
+
 
           let stuffing_date_rev = cart_data.stuffing_date ? cart_data.stuffing_date : formattedDate;
           let final_dest_check = final_dest ? final_dest : "-";
@@ -772,7 +782,8 @@ where
           let query = ` 
           INSERT INTO m_cart 
             (cart_id, company_id, 
-            delv_week, delv_week_desc, delv_year, id_year, po_buyer, 
+            delv_week, delv_week_desc, 
+            delv_year, id_year, po_buyer, 
              created_date, 
              port_shipment, ship_to, po_url,created_by, 
              stuffing_date, 
@@ -792,12 +803,15 @@ where
         `
 
           let parameter = [
-            cart_id, company_id, delv_week, delv_week_desc,
+            cart_id, company_id,
+            delv_week, delv_week_desc,
             delv_year, id_year, po_buyer,
             port_shipment, ship_to, po_url,
             user_id, stuffing_date_rev, final_dest_check, tolling_id,
             bill_to, notify1, notify2
           ]
+
+          // console.log("Cart Parameter Header", parameter)
 
 
           dbConf.query(query, parameter,
@@ -854,7 +868,7 @@ where
                     customInInteger
                   ]
 
-                  console.log("parameterDetail", parameterDetail)
+                  // console.log("parameterDetail", parameterDetail)
 
                   dbConf.query(queryDetail, parameterDetail,
                     (err, results) => {
