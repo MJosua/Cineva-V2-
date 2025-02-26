@@ -444,9 +444,9 @@ module.exports = {
             md.cont_size,
             btp.company_name as bill_to_name,
             mo.bill_to,
-            ntp1.company_name as notify1_name,
+            concat(ntp1.company_name, " - ", ntp1.company_notice) as notify1_name,
             mo.notify1,
-            ntp2.company_name as notify2_name,
+            concat(ntp2.company_name, " - ", ntp2.company_notice) as notify2_name,
             mo.notify2
         from
             m_order mo
@@ -608,9 +608,9 @@ module.exports = {
             md.cont_size,
             btp.company_name as bill_to_name,
             mo.bill_to,
-            ntp1.company_name as notify1_name,
+            concat(ntp1.company_name, "-", ntp1.company_notice) as notify1_name,
             mo.notify1,
-            ntp2.company_name as notify2_name,
+            concat(ntp2.company_name, "-", ntp2.company_notice) as notify2_name,
             mo.notify2
         from
             m_order mo
