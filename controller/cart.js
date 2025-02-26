@@ -736,6 +736,7 @@ module.exports = {
 
     }
 
+    console.log("cart", cart.length)
     if (cart) {
 
       try {
@@ -852,12 +853,11 @@ module.exports = {
                 `;
 
                   let customInInteger;
-                  if (detail.custom === false) {
+                  if (detail.custom === false || detail.custom === 0 || detail.custom === "0") {
                     customInInteger = 0;
                   } else {
                     customInInteger = 1;
                   }
-
                   let parameterDetail = [
                     cart_id, company_id, user_id, detail.detail_id,
                     detail.cont_size, detail.cont_qty,
@@ -895,13 +895,15 @@ module.exports = {
 
 
         }
-        setTimeout(() => {
-          console.log(timestamp + `==========> add Cart is success`)
-          res.status(200).send({
-            success: true,
-            message: 'All cart has been added. check Draft Orders'
-          })
-        }, 2000)
+        if (cartIndex === cart.length) {
+          setTimeout(() => {
+            console.log(timestamp + `==========> add Cart is success`)
+            res.status(200).send({
+              success: true,
+              message: 'All cart has been added. check Draft Orders'
+            })
+          }, 2000)
+        }
       } catch (error) {
         res.status(500).send({
           success: false,

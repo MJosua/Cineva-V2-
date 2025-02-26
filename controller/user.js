@@ -151,10 +151,16 @@ module.exports = {
                 (
                    SELECT 
                         b.company_id keyy, 
-                        concat ((CASE
-                            ${company_id} WHEN b.company_id THEN concat(b.company_name)
-                            ELSE b.company_name
-                        END)," - ", COALESCE(b.company_notice, '')) txt 
+                            CONCAT(
+                                CASE 
+                                    WHEN ${company_id} = b.company_id THEN b.company_name 
+                                    ELSE b.company_name
+                                END,
+                                CASE 
+                                    WHEN COALESCE(b.company_notice, '') <> '' THEN CONCAT(' - ', b.company_notice) 
+                                    ELSE ''
+                                END
+                            ) txt 
                     FROM
                         mst_company a
                     LEFT JOIN mst_company b ON

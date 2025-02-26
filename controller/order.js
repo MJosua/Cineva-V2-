@@ -83,8 +83,8 @@ module.exports = {
         JOIN mst_company mco ON
             mo.company_id = mco.company_id
         LEFT JOIN map_port_for_dist mpfd ON
-            mo.port_shipment = mpfd.harbour_id
-            AND mo.company_id = mpfd.distributor_id
+           mo.port_shipment = mpfd.id
+	        and mo.company_id = mpfd.distributor_id
         LEFT JOIN mst_company stp ON
             stp.company_id = mo.ship_to
         LEFT JOIN sys_user su ON
@@ -96,7 +96,7 @@ module.exports = {
         LEFT JOIN mst_container mct ON
             md.cont_size = mct.container_id
         LEFT JOIN mst_harbour mh ON
-            mo.port_shipment = mh.harbour_id
+            mpfd.harbour_id = mh.harbour_id
         LEFT JOIN mst_country mc ON
             mh.country_id = mc.country_name_id
         LEFT JOIN sys_text st ON
@@ -453,7 +453,7 @@ module.exports = {
         join mst_company mco on
             mo.company_id = mco.company_id
         left join map_port_for_dist mpfd on
-            mo.port_shipment = mpfd.harbour_id
+            mo.port_shipment = mpfd.id
             and mo.company_id = mpfd.distributor_id
         left join mst_company stp on
             stp.company_id = mo.ship_to
@@ -466,7 +466,7 @@ module.exports = {
         left join mst_container mct on
             md.cont_size = mct.container_id
         left join mst_harbour mh on
-            mo.port_shipment = mh.harbour_id
+            mpfd.harbour_id = mh.harbour_id
         left join mst_country mc on
             mh.country_id = mc.country_id
         left join sys_text st on
@@ -617,7 +617,7 @@ module.exports = {
         join mst_company mco on
             mo.company_id = mco.company_id
         left join map_port_for_dist mpfd on
-            mo.port_shipment = mpfd.harbour_id
+           mo.port_shipment = mpfd.id
             and mo.company_id = mpfd.distributor_id
         left join mst_company stp on
             stp.company_id = mo.ship_to
@@ -630,7 +630,7 @@ module.exports = {
         left join mst_container mct on
             md.cont_size = mct.container_id
         left join mst_harbour mh on
-            mo.port_shipment = mh.harbour_id
+            mpfd.harbour_id = mh.harbour_id
         left join mst_country mc on
             mh.country_id = mc.country_id
         left join sys_text st on
@@ -2198,7 +2198,7 @@ module.exports = {
             });
 
         } else {
-            res.status(200).send(results);
+            res.status(401).send("Unauthorized");
             console.log(timestamp + `add Order addOrderDetailTolling   UNAUTHORIZE`);
         }
     }
