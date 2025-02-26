@@ -182,25 +182,25 @@ module.exports = {
 
         });
     },
-    callInsertSO: async () => {
+    // callInsertSO: async () => {
 
-        console.log(`AUTOMATION => CALL insert_so [IS READY]`);
+    //     console.log(`AUTOMATION => CALL insert_so [IS READY]`);
 
-        // per minutes
-        cron.schedule('*/15 * * * *', async () => {
+    //     // per minutes
+    //     cron.schedule('*/15 * * * *', async () => {
 
-            let date = new Date();
-            let timestamp = colors.green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ' + colors.reset;
+    //         let date = new Date();
+    //         let timestamp = colors.green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ' + colors.reset;
 
-            try {
-                let sql = await dbQuery(`CALL insert_so`)
-                console.log(timestamp + ` */15 * * * * AUTOMATION => call insert_so [WAS DONE]:` +  JSON.stringify(sql.affectedRows));
-            } catch (error) {
-                console.log(timestamp + 'Error at callInsertSO, ' + error)
-            }
-        })
+    //         try {
+    //             let sql = await dbQuery(`CALL insert_so`)
+    //             console.log(timestamp + ` */15 * * * * AUTOMATION => call insert_so [WAS DONE]:` +  JSON.stringify(sql.affectedRows));
+    //         } catch (error) {
+    //             console.log(timestamp + 'Error at callInsertSO, ' + error)
+    //         }
+    //     })
 
 
-    }
+    // }
 
 }

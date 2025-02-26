@@ -29,7 +29,7 @@ module.exports = {
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
         let find = req.query.find || req.query.find !== '' ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%') AND mo.company_id = ${req.dataToken.company_id} ` : ''
-        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}, mo.order_id ${desc}, mo.po_buyer ${desc}` : ` ORDER BY mo.po_date ${desc} , mo.order_id ${desc}, mo.po_buyer ${desc}`;
+        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}` : ` ORDER BY mo.order_id ${desc}`;
 
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
@@ -83,8 +83,8 @@ module.exports = {
         JOIN mst_company mco ON
             mo.company_id = mco.company_id
         LEFT JOIN map_port_for_dist mpfd ON
-            mo.port_shipment = mpfd.harbour_id
-            AND mo.company_id = mpfd.distributor_id
+           mo.port_shipment = mpfd.id
+	        and mo.company_id = mpfd.distributor_id
         LEFT JOIN mst_company stp ON
             stp.company_id = mo.ship_to
         LEFT JOIN sys_user su ON
@@ -96,7 +96,7 @@ module.exports = {
         LEFT JOIN mst_container mct ON
             md.cont_size = mct.container_id
         LEFT JOIN mst_harbour mh ON
-            mo.port_shipment = mh.harbour_id
+            mpfd.harbour_id = mh.harbour_id
         LEFT JOIN mst_country mc ON
             mh.country_id = mc.country_name_id
         LEFT JOIN sys_text st ON
@@ -206,7 +206,8 @@ module.exports = {
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
         let desc = req.query.desc ? `DESC ` : ``;
-        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}, mo.order_id ${desc}, mo.po_buyer ${desc}` : ` ORDER BY mo.po_date ${desc} , mo.order_id ${desc}, mo.po_buyer ${desc}`;
+        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}` : ` ORDER BY mo.order_id ${desc}`;
+
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
@@ -386,6 +387,171 @@ module.exports = {
 
 
     }
+    , getOrderHeaderWithID: async (req, res) => {
+
+
+        let date = new Date();
+        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+        // timestamp + 
+        let order_id = req.params.order_id
+        console.log("order_id special",order_id)
+        // add feature on 20240105
+        let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
+        let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
+        let desc = req.query.desc ? ` DESC ` : ``;
+        let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
+        let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : ' 1';
+        let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : ' 99';
+        let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
+        let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%') AND mo.company_id = ${req.dataToken.company_id} ` : ''
+        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}` : ` ORDER BY mo.order_id ${desc}`;
+
+        const startIndex = (page - 1) * limit;
+        const endIndex = page * limit;
+
+        let available_week = (await dbQuery(`SELECT DISTINCT mo.delv_week, mo.delv_week_desc FROM m_order mo WHERE mo.company_id = ${req.dataToken.company_id}  `))
+
+
+        let query = ` 
+            select
+            distinct 
+            mo.order_id,
+            mco.company_name,
+            mo.delv_week,
+            mo.delv_week_desc,
+            mo.stuffing_date,
+            mo.final_dest,
+            mo.delv_year,
+            mo.po_buyer,
+            concat(mh.harbour_name, ", " , st.txt ) port_shipment,
+            mo.ship_to,
+            stp.company_name ,
+            mo.po_buyer,
+            stp.company_name ship_to,
+            mo.po_url,
+            concat(su.firstname, ' ', su.lastname ) created_by,
+            mso.status_order status_name,
+            mso.notes status_detail,
+            mso.id is_status,
+            mct.container_name,
+            case
+                when md.cont_qty = 0 then 1
+                else md.cont_qty
+            end cont_qty,
+            DATE_FORMAT(mo.po_date, '%b %d, %Y') created_date,
+            mo.po_date,
+            mo.tolling_id,
+            md.cont_size,
+            btp.company_name as bill_to_name,
+            mo.bill_to,
+            ntp1.company_name as notify1_name,
+            mo.notify1,
+            ntp2.company_name as notify2_name,
+            mo.notify2
+        from
+            m_order mo
+        join mst_company mco on
+            mo.company_id = mco.company_id
+        left join map_port_for_dist mpfd on
+            mo.port_shipment = mpfd.id
+            and mo.company_id = mpfd.distributor_id
+        left join mst_company stp on
+            stp.company_id = mo.ship_to
+        left join sys_user su on
+            su.user_id = mo.created_by
+        left join m_order_status mso on
+            mo.status = mso.id
+        left join m_order_dtl md on
+            md.order_id = mo.order_id
+        left join mst_container mct on
+            md.cont_size = mct.container_id
+        left join mst_harbour mh on
+            mpfd.harbour_id = mh.harbour_id
+        left join mst_country mc on
+            mh.country_id = mc.country_id
+        left join sys_text st on
+            mc.country_name_id = st.text_id
+            and st.lang_id = 1
+        left join mst_company btp on
+            mo.bill_to = btp.company_id
+        left join mst_company ntp1 on
+            mo.notify1 = ntp1.company_id
+            and ntp1.company_type_id = 7
+        left join mst_company ntp2 on
+            mo.notify2 = ntp2.company_id
+            and ntp2.company_type_id = 7
+        WHERE
+            mo.company_id = ${req.dataToken.company_id} 
+        and
+        mo.order_id = ${order_id}
+        `
+            +
+            status
+            +
+            find
+            +
+            range
+            +
+            order_by_week
+            +
+            `LIMIT `
+            +
+            limit
+            ;
+
+     
+        try {
+
+            if (req.dataToken.user_id) {
+
+                // let { company_id } = req.body
+
+                dbConf.query(query, (err, results) => {
+
+                    if (err) {
+                        res.status(500).send(err);
+                        console.log(timestamp + "Error getOrderHeader !", err)
+                    } else {
+
+                        if (results[0]) {
+
+                            let packet = results
+                            let totalDataLength = results.length
+                            let totalPage = Math.round(results.length / limit)
+
+                            // res.status(200).send(results);
+                            res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
+                            console.log(timestamp + `get getOrderHeader data`);
+                        } else {
+
+                            let packet = []
+                            let totalDataLength = 0
+                            let totalPage = 0
+
+                            res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
+                            console.log(timestamp + `get getOrderHeader EMPTY data`);
+                            addSqlLogger(req.dataToken.user_id, query, '--data getOrderHeader', 'getOrderHeader')
+                        }
+
+                    }
+                })
+
+            } else {
+                res.status(200).send({
+                    success: false,
+                    message: 'unauthorized'
+                })
+            }
+
+
+        } catch (error) {
+            console.log(timestamp + error);
+            res.status(500).send(error);
+        }
+
+
+
+    }
     , getOrderHeader: async (req, res) => {
 
 
@@ -396,13 +562,13 @@ module.exports = {
         // add feature on 20240105
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
-        let desc = req.query.desc ? `DESC ` : ``;
+        let desc = req.query.desc ? ` DESC ` : ``;
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
-        let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
-        let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
+        let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : ' 1';
+        let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : ' 99';
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
         let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%') AND mo.company_id = ${req.dataToken.company_id} ` : ''
-        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}, mo.order_id ${desc}, mo.po_buyer ${desc}` : ` ORDER BY mo.po_date ${desc} , mo.order_id ${desc}, mo.po_buyer ${desc}`;
+        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}` : ` ORDER BY mo.order_id ${desc}`;
 
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
@@ -411,56 +577,73 @@ module.exports = {
 
 
         let query = ` 
-    SELECT
-        DISTINCT 
-        mo.order_id,
-        mco.company_name,
-        mo.delv_week,
-        mo.delv_week_desc,
-        mo.stuffing_date,
-        mo.final_dest,
-        mo.delv_year,
-        mo.po_buyer,
-        concat(mh.harbour_name, ", " , st.txt ) port_shipment,
-        mo.ship_to,
-        stp.company_name ,
-        mo.po_buyer,
-        stp.company_name ship_to,
-        mo.po_url,
-        concat(su.firstname, ' ', su.lastname ) created_by,
-        mso.status_order status_name,
-        mso.notes status_detail,
-        mso.id is_status,
-        mct.container_name,
-        CASE WHEN md.cont_qty = 0 THEN 1 ELSE md.cont_qty END cont_qty,   
-        DATE_FORMAT(mo.po_date, '%b %d, %Y') created_date,
-        mo.po_date,
-        mo.tolling_id,
-        md.cont_size
-    FROM
-        m_order mo
-    JOIN mst_company mco ON
-        mo.company_id = mco.company_id
-    LEFT JOIN map_port_for_dist mpfd ON
-        mo.port_shipment = mpfd.harbour_id
-        AND mo.company_id = mpfd.distributor_id
-    LEFT JOIN mst_company stp ON
-        stp.company_id = mo.ship_to
-    LEFT JOIN sys_user su ON
-        su.user_id = mo.created_by
-    LEFT JOIN m_order_status mso ON
-        mo.status = mso.id
-    LEFT JOIN m_order_dtl md ON
-        md.order_id = mo.order_id
-    LEFT JOIN mst_container mct ON
-        md.cont_size = mct.container_id
-    LEFT JOIN mst_harbour mh ON
-        mo.port_shipment = mh.harbour_id
-    LEFT JOIN mst_country mc ON
-        mh.country_id = mc.country_name_id
-    LEFT JOIN sys_text st ON
-        mc.country_name_id = st.text_id
-        AND st.lang_id = 1
+            select
+            distinct 
+            mo.order_id,
+            mco.company_name,
+            mo.delv_week,
+            mo.delv_week_desc,
+            mo.stuffing_date,
+            mo.final_dest,
+            mo.delv_year,
+            mo.po_buyer,
+            concat(mh.harbour_name, ", " , st.txt ) port_shipment,
+            mo.ship_to,
+            stp.company_name ,
+            mo.po_buyer,
+            stp.company_name ship_to,
+            mo.po_url,
+            concat(su.firstname, ' ', su.lastname ) created_by,
+            mso.status_order status_name,
+            mso.notes status_detail,
+            mso.id is_status,
+            mct.container_name,
+            case
+                when md.cont_qty = 0 then 1
+                else md.cont_qty
+            end cont_qty,
+            DATE_FORMAT(mo.po_date, '%b %d, %Y') created_date,
+            mo.po_date,
+            mo.tolling_id,
+            md.cont_size,
+            btp.company_name as bill_to_name,
+            mo.bill_to,
+            ntp1.company_name as notify1_name,
+            mo.notify1,
+            ntp2.company_name as notify2_name,
+            mo.notify2
+        from
+            m_order mo
+        join mst_company mco on
+            mo.company_id = mco.company_id
+        left join map_port_for_dist mpfd on
+           mo.port_shipment = mpfd.id
+            and mo.company_id = mpfd.distributor_id
+        left join mst_company stp on
+            stp.company_id = mo.ship_to
+        left join sys_user su on
+            su.user_id = mo.created_by
+        left join m_order_status mso on
+            mo.status = mso.id
+        left join m_order_dtl md on
+            md.order_id = mo.order_id
+        left join mst_container mct on
+            md.cont_size = mct.container_id
+        left join mst_harbour mh on
+            mpfd.harbour_id = mh.harbour_id
+        left join mst_country mc on
+            mh.country_id = mc.country_id
+        left join sys_text st on
+            mc.country_name_id = st.text_id
+            and st.lang_id = 1
+        left join mst_company btp on
+            mo.bill_to = btp.company_id
+        left join mst_company ntp1 on
+            mo.notify1 = ntp1.company_id
+            and ntp1.company_type_id = 7
+        left join mst_company ntp2 on
+            mo.notify2 = ntp2.company_id
+            and ntp2.company_type_id = 7
     WHERE
         mo.company_id = ${req.dataToken.company_id} `
             +
@@ -470,7 +653,12 @@ module.exports = {
             +
             range
             +
-            order_by_week;
+            order_by_week
+            +
+            `LIMIT `
+            +
+            limit
+            ;
 
         // console.log(timestamp, "getOrderHeader",
         //     {
@@ -492,7 +680,7 @@ module.exports = {
 
                         if (results[0]) {
 
-                            let packet = results.slice(startIndex, endIndex)
+                            let packet = results
                             let totalDataLength = results.length
                             let totalPage = Math.round(results.length / limit)
 
@@ -633,7 +821,7 @@ module.exports = {
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
         let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%') AND mo.company_id = ${req.dataToken.company_id}` : ''
-        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}, mo.order_id ${desc}, mo.po_buyer ${desc}` : ` ORDER BY mo.po_date ${desc} , mo.order_id ${desc}, mo.po_buyer ${desc}`;
+        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}` : ` ORDER BY mo.order_id ${desc}`;
 
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
@@ -741,7 +929,12 @@ module.exports = {
                     +
                     range
                     +
-                    order_by_week;
+                    order_by_week
+                    +
+                    ` LIMIT `
+                    +
+                    limit
+                    ;
 
                 // console.log(timestamp, "getOrderDetail2",
                 //     {
@@ -2005,7 +2198,7 @@ module.exports = {
             });
 
         } else {
-            res.status(200).send(results);
+            res.status(401).send("Unauthorized");
             console.log(timestamp + `add Order addOrderDetailTolling   UNAUTHORIZE`);
         }
     }
@@ -3865,6 +4058,11 @@ module.exports = {
 
                     let stuffing_date_rev = order_data.stuffing_date ? order_data.stuffing_date : formattedDate;
                     let final_dest = order_data.final_dest ? order_data.final_dest : '-';
+
+                    let notify_to_1 = order_data.notify_to_2 ? order_data.notify_to_1 : '-';
+                    let notify_to_2 = order_data.notify_to_2 ? order_data.notify_to_2 : '-';
+                    let bill_to = order_data.bill_to ? order_data.bill_to : '-';
+
                     let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) container FROM m_config_new mcn WHERE mcn.conditions = 8 AND mcn.company_id = ${company_id}`);
                     let number = await dbQuery(`SELECT company_number  FROM mst_company mc WHERE company_id = ${company_id}`);
                     // let selectWeek = order_data.stuffing_date ? await (dbQuery(`CALL day2week(${order_data.stuffing_date}, @wikwik);`)) : delv_week;
@@ -3883,19 +4081,23 @@ module.exports = {
                                     (order_id, company_id, delv_week, delv_week_desc, 
                                     delv_year,  po_buyer, stuffing_date,
                                     po_date, port_shipment, ship_to, po_url,
-                                    created_by, status, tolling_id, po_buyer_pcl, final_dest)
+                                    created_by, status, tolling_id, po_buyer_pcl, final_dest, 
+                                    bill_to, notify1, notify2)
                                     VALUES
                                     (?, ?, ?, ?, 
                                     ?, ?, ?,
                                     now(), ?, ?, ?,
-                                    ?, 0, ?, ?, ?);  
+                                    ?, 0, ?, ?, ?,
+                                    ?,?,?
+                                    );  
                                     `;
 
                     let parameter = [
                         order_id, company_id, delv_week, delv_week_desc,
                         delv_year, po_buyer, stuffing_date_rev,
                         port_shipment, ship_to, po_url,
-                        user_id, tolling_id, po_buyer_pcl, final_dest
+                        user_id, tolling_id, po_buyer_pcl, final_dest,
+                        bill_to, notify_to_1, notify_to_2
                     ];
 
                     //memasukkan header

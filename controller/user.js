@@ -15,12 +15,32 @@ module.exports = {
                 let company_id = req.dataToken.company_id
 
                 let query = `
-                SELECT md.harbour_id, concat(h.harbour_name, ", " ,tp.txt, " - ", md.final_dest  )   harbour_name, harbour_code, tp.txt, md.final_dest  FROM map_port_for_dist md
-                LEFT JOIN mst_harbour h ON md.harbour_id = h.harbour_id 
-                LEFT JOIN mst_country mc on h.country_id = mc.country_id  
-                LEFT JOIN sys_text tp ON tp.text_id = mc.country_name_id  AND tp.lang_id = 1
-                WHERE md.company_id = 100 AND distributor_id = ${company_id} AND
-                now() BETWEEN md.creation_date AND COALESCE(md.finish_date, '9999-12-31') ;`
+                 select
+                    md.harbour_id,
+                    concat(h.harbour_name, ", " , tp.txt, " - ", md.final_dest , " - ", mi.incoterm_name )  
+                                harbour_name,
+                    harbour_code,
+                    tp.txt,
+                    md.final_dest,
+                    md.id as md_id
+                from
+                    map_port_for_dist md
+                left join mst_harbour h on
+                    md.harbour_id = h.harbour_id
+                left join mst_country mc on
+                    h.country_id = mc.country_id
+                left join mst_incoterm mi on
+                    md.incoterm_id = mi.id
+                left join sys_text tp on
+                    tp.text_id = mc.country_name_id
+                    and tp.lang_id = 1
+                where
+                    md.company_id = 100
+                    and distributor_id = ${company_id}
+                    and
+                                now() between md.creation_date and coalesce(md.finish_date, '9999-12-31') 
+                ;
+                `
 
                 dbConf.query(query, (err, results) => {
                     if (err) {
@@ -74,57 +94,73 @@ module.exports = {
 
                 let query = STP_DETAIL ? `
                 SELECT
-	LEFT(group_concat(KEYY),
-	3) keyy,
-	txt
-FROM 
-	(
-	SELECT 
-		b.company_id keyy, 
-		concat ((CASE
-			${company_id} WHEN b.company_id THEN concat(b.company_name)
-			ELSE b.company_name
-		END)," - ", COALESCE(b.company_notice, '')) txt 
-	FROM
-		mst_company a
-	LEFT JOIN mst_company b ON
-		trim(a.user_company_id) = trim(b.user_company_id)
-	WHERE
-		a.user_company_id <> 'default'
-		AND b.company_type_id IN (2,7) AND a.company_id = ${company_id}  
-	ORDER BY
-		a.company_name 
-	) a
-GROUP BY
-	TXT; `  : STP_PCL ? `SELECT * FROM 
-	 (SELECT
-		b.company_id keyy,
-		CASE
-			${company_id} WHEN b.company_id THEN concat(b.company_name)
-		ELSE b.company_name
-	END txt
-FROM
-		mst_company a
-LEFT JOIN mst_company b ON
-		trim(a.user_company_id) = trim(b.user_company_id)
-WHERE
-		a.user_company_id <> 'default'
-	AND b.company_type_id IN (2, 7)
-	AND a.company_id = ${company_id}
-ORDER BY
-		keyy DESC) a 
-		WHERE a.keyy <> ${company_id}` : ` SELECT
+                    LEFT(group_concat(KEYY),
+                    3) keyy,
+                    txt
+                FROM 
+                    (
+                    SELECT 
+                        b.company_id keyy, 
+                        concat ((CASE
+                            ${company_id} WHEN b.company_id THEN concat(b.company_name)
+                            ELSE b.company_name
+                        END)," - ", COALESCE(b.company_notice, '')) txt 
+                    FROM
+                        mst_company a
+                    LEFT JOIN mst_company b ON
+                        trim(a.user_company_id) = trim(b.user_company_id)
+                    WHERE
+                        a.user_company_id <> 'default'
+                        AND b.company_type_id IN (2,7) AND a.company_id = ${company_id}  
+                    ORDER BY
+                        a.company_name 
+                    ) a
+                GROUP BY
+                    TXT; `
+                    :
+
+                    STP_PCL
+
+                        ?
+                        `SELECT * FROM 
+                    SELECT 
+                        b.company_id keyy, 
+                        concat ((CASE
+                            ${company_id} WHEN b.company_id THEN concat(b.company_name)
+                            ELSE b.company_name
+                        END)," - ", COALESCE(b.company_notice, '')) txt 
+                FROM
+                        mst_company a
+                LEFT JOIN mst_company b ON
+                        trim(a.user_company_id) = trim(b.user_company_id)
+                WHERE
+                        a.user_company_id <> 'default'
+                    AND b.company_type_id IN (2, 7)
+                    AND a.company_id = ${company_id}
+                ORDER BY
+                        keyy DESC) a 
+                        WHERE a.keyy <> ${company_id}`
+
+                        :
+
+                        ` SELECT
                     LEFT(group_concat(KEYY),
                     3) keyy,
                     txt
                 FROM 
                 (
-                    SELECT
+                   SELECT 
                         b.company_id keyy, 
-                         CASE
-                            ${company_id} WHEN b.company_id THEN concat(b.company_name)
-                        ELSE b.company_name
-                        END txt 
+                            CONCAT(
+                                CASE 
+                                    WHEN ${company_id} = b.company_id THEN b.company_name 
+                                    ELSE b.company_name
+                                END,
+                                CASE 
+                                    WHEN COALESCE(b.company_notice, '') <> '' THEN CONCAT(' - ', b.company_notice) 
+                                    ELSE ''
+                                END
+                            ) txt 
                     FROM
                         mst_company a
                     LEFT JOIN mst_company b ON
@@ -196,10 +232,11 @@ ORDER BY
                     })
                 ])
                     .then(([notifyTP, billTP]) => {
-                        res.status(200).send({ 
-                            
-                            "Notify" : notifyTP, 
-                            "BillTP" : billTP });
+                        res.status(200).send({
+
+                            "Notify": notifyTP,
+                            "BillTP": billTP
+                        });
 
                         console.log(timestamp + `get user shiptoparty for ${company_id} list success.`);
                     })
