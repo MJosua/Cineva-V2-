@@ -4059,9 +4059,9 @@ module.exports = {
                     let stuffing_date_rev = order_data.stuffing_date ? order_data.stuffing_date : formattedDate;
                     let final_dest = order_data.final_dest ? order_data.final_dest : '-';
 
-                    let notify_to_1 = order_data.notify_to_2 ? order_data.notify_to_1 : '-';
-                    let notify_to_2 = order_data.notify_to_2 ? order_data.notify_to_2 : '-';
-                    let bill_to = order_data.bill_to ? order_data.bill_to : '-';
+                    let notify_to_1 = order_data.notify_to_2 ? order_data.notify_to_1 : '';
+                    let notify_to_2 = order_data.notify_to_2 ? order_data.notify_to_2 : '';
+                    let bill_to = order_data.bill_to ? order_data.bill_to : '';
 
                     let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) container FROM m_config_new mcn WHERE mcn.conditions = 8 AND mcn.company_id = ${company_id}`);
                     let number = await dbQuery(`SELECT company_number  FROM mst_company mc WHERE company_id = ${company_id}`);
