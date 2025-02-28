@@ -444,9 +444,19 @@ module.exports = {
             md.cont_size,
             btp.company_name as bill_to_name,
             mo.bill_to,
-            concat(ntp1.company_name, " - ", ntp1.company_notice) as notify1_name,
+            CASE 
+                WHEN ntp1.company_notice IS NOT NULL 
+                    AND ntp1.company_notice <> '' 
+                THEN CONCAT(ntp1.company_name, ' - ', ntp1.company_notice)
+                ELSE ntp1.company_name
+            END AS notify1_name,
             mo.notify1,
-            concat(ntp2.company_name, " - ", ntp2.company_notice) as notify2_name,
+            CASE 
+                WHEN ntp2.company_notice IS NOT NULL 
+                    AND ntp2.company_notice <> '' 
+                THEN CONCAT(ntp2.company_name, ' - ', ntp2.company_notice)
+                ELSE ntp2.company_name
+            END AS notify2_name,
             mo.notify2
         from
             m_order mo
@@ -608,9 +618,19 @@ module.exports = {
             md.cont_size,
             btp.company_name as bill_to_name,
             mo.bill_to,
-            concat(ntp1.company_name, "-", ntp1.company_notice) as notify1_name,
+            CASE 
+                WHEN ntp1.company_notice IS NOT NULL 
+                    AND ntp1.company_notice <> '' 
+                THEN CONCAT(ntp1.company_name, ' - ', ntp1.company_notice)
+                ELSE ntp1.company_name
+            END AS notify1_name,
             mo.notify1,
-            concat(ntp2.company_name, "-", ntp2.company_notice) as notify2_name,
+            CASE 
+                WHEN ntp2.company_notice IS NOT NULL 
+                    AND ntp2.company_notice <> '' 
+                THEN CONCAT(ntp2.company_name, ' - ', ntp2.company_notice)
+                ELSE ntp2.company_name
+            END AS notify2_name,
             mo.notify2
         from
             m_order mo
@@ -4059,9 +4079,9 @@ module.exports = {
                     let stuffing_date_rev = order_data.stuffing_date ? order_data.stuffing_date : formattedDate;
                     let final_dest = order_data.final_dest ? order_data.final_dest : '-';
 
-                    let notify_to_1 = order_data.notify_to_2 ? order_data.notify_to_1 : '-';
-                    let notify_to_2 = order_data.notify_to_2 ? order_data.notify_to_2 : '-';
-                    let bill_to = order_data.bill_to ? order_data.bill_to : '-';
+                    let notify_to_1 = order_data.notify_to_2 ? order_data.notify_to_1 : '';
+                    let notify_to_2 = order_data.notify_to_2 ? order_data.notify_to_2 : '';
+                    let bill_to = order_data.bill_to ? order_data.bill_to : '';
 
                     let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) container FROM m_config_new mcn WHERE mcn.conditions = 8 AND mcn.company_id = ${company_id}`);
                     let number = await dbQuery(`SELECT company_number  FROM mst_company mc WHERE company_id = ${company_id}`);

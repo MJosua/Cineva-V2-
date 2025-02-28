@@ -82,38 +82,59 @@ module.exports = {
 
 
             let headerData = (await dbQuery(` 
-                SELECT
-                    DISTINCT 
-                    ms.order_id,
+                select
+                    distinct 
+                                    ms.order_id,
                     mo.delv_week_desc,
-                    ms.delv_date, 
+                    ms.delv_date,
                     mo.po_buyer,
-                    DATE_FORMAT(mo.po_date , '%b %d, %Y') po_date,
+                    DATE_FORMAT(mo.po_date ,
+                    '%b %d, %Y') po_date,
                     mo.po_url,
-                    CONCAT(mh.harbour_name, ', ', st.txt) AS port_shipment, 
+                    CONCAT(mh.harbour_name,
+                    ', ',
+                    st.txt) as port_shipment,
                     mod2.bulk,
                     mod2.cont_size,
                     mod2.cont_qty,
                     mod2.remarks,
                     ms.remarks summary_remarks,
-                    mc2.company_name AS ship_to,
-                    COALESCE(mo.stuffing_date, 0) stuffing_date,
-                    mo.final_dest AS final_dest
-                FROM m_summary ms
-                LEFT JOIN m_order mo ON ms.order_id = mo.order_id
-                LEFT JOIN m_order_dtl mod2 ON ms.order_id = mod2.order_id
-                LEFT JOIN mst_product mp ON mp.product_code = ms.sku
-                LEFT JOIN mst_company mc2 ON mo.ship_to = mc2.company_id
-                LEFT JOIN map_port_for_dist mpfd ON mo.port_shipment = mpfd.harbour_id AND mo.company_id = mpfd.distributor_id
-                LEFT JOIN mst_harbour mh ON mpfd.harbour_id = mh.harbour_id
-                LEFT JOIN mst_country mc ON mh.country_id = mc.country_id
-                LEFT JOIN sys_text st ON st.text_id = mc.country_name_id AND st.lang_id = 1
-                LEFT JOIN map_port_for_dist mpfd_fd ON mo.final_dest = mpfd_fd.harbour_id AND mo.company_id = mpfd_fd.distributor_id
-                LEFT JOIN mst_harbour mh_fd ON mpfd_fd.harbour_id = mh_fd.harbour_id
-                LEFT JOIN mst_country mc_fd ON mh_fd.country_id = mc_fd.country_id
-                LEFT JOIN sys_text st_fd ON st_fd.text_id = mc_fd.country_name_id AND st_fd.lang_id = 1
-                WHERE
-                ms.order_id = ${order_id};`))[0];
+                    mc2.company_name as ship_to,
+                    coalesce(mo.stuffing_date,
+                    0) stuffing_date,
+                    mo.final_dest as final_dest
+                from
+                    m_summary ms
+                left join m_order mo on
+                    ms.order_id = mo.order_id
+                left join m_order_dtl mod2 on
+                    ms.order_id = mod2.order_id
+                left join mst_product mp on
+                    mp.product_code = ms.sku
+                left join mst_company mc2 on
+                    mo.ship_to = mc2.company_id
+                left join map_port_for_dist mpfd on
+                    mo.port_shipment = mpfd.id
+                    and mo.company_id = mpfd.distributor_id
+                left join mst_harbour mh on
+                    mpfd.harbour_id = mh.harbour_id
+                left join mst_country mc on
+                    mh.country_id = mc.country_id
+                left join sys_text st on
+                    st.text_id = mc.country_name_id
+                    and st.lang_id = 1
+                left join map_port_for_dist mpfd_fd on
+                    mo.final_dest = mpfd_fd.harbour_id
+                    and mo.company_id = mpfd_fd.distributor_id
+                left join mst_harbour mh_fd on
+                    mpfd_fd.harbour_id = mh_fd.harbour_id
+                left join mst_country mc_fd on
+                    mh_fd.country_id = mc_fd.country_id
+                left join sys_text st_fd on
+                    st_fd.text_id = mc_fd.country_name_id
+                    and st_fd.lang_id = 1
+                where
+                    ms.order_id = ${order_id};`))[0];
 
             let {
                 po_buyer,
@@ -325,7 +346,7 @@ module.exports = {
                 } catch (error) {
                     console.log(timestamp + "MAILER ERROR, Message: " + error)
                 }
-            } 
+            }
 
             //TO ANALIS
             if (!emailAnalisList) {
