@@ -444,9 +444,19 @@ module.exports = {
             md.cont_size,
             btp.company_name as bill_to_name,
             mo.bill_to,
-            concat(ntp1.company_name, " - ", ntp1.company_notice) as notify1_name,
+            CASE 
+                WHEN ntp1.company_notice IS NOT NULL 
+                    AND ntp1.company_notice <> '' 
+                THEN CONCAT(ntp1.company_name, ' - ', ntp1.company_notice)
+                ELSE ntp1.company_name
+            END AS notify1_name,
             mo.notify1,
-            concat(ntp2.company_name, " - ", ntp2.company_notice) as notify2_name,
+            CASE 
+                WHEN ntp2.company_notice IS NOT NULL 
+                    AND ntp2.company_notice <> '' 
+                THEN CONCAT(ntp2.company_name, ' - ', ntp2.company_notice)
+                ELSE ntp2.company_name
+            END AS notify2_name,
             mo.notify2
         from
             m_order mo
@@ -608,9 +618,19 @@ module.exports = {
             md.cont_size,
             btp.company_name as bill_to_name,
             mo.bill_to,
-            concat(ntp1.company_name, "-", ntp1.company_notice) as notify1_name,
+            CASE 
+                WHEN ntp1.company_notice IS NOT NULL 
+                    AND ntp1.company_notice <> '' 
+                THEN CONCAT(ntp1.company_name, ' - ', ntp1.company_notice)
+                ELSE ntp1.company_name
+            END AS notify1_name,
             mo.notify1,
-            concat(ntp2.company_name, "-", ntp2.company_notice) as notify2_name,
+            CASE 
+                WHEN ntp2.company_notice IS NOT NULL 
+                    AND ntp2.company_notice <> '' 
+                THEN CONCAT(ntp2.company_name, ' - ', ntp2.company_notice)
+                ELSE ntp2.company_name
+            END AS notify2_name,
             mo.notify2
         from
             m_order mo

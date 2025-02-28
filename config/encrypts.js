@@ -27,7 +27,7 @@ module.exports = {
 
         jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY, (err, decode) => {
             if (err) {
-                console.log("Invalid Token Read Token");
+                console.log("Invalid Token Read Token ");
                 return res.status(401).send({
                     message: 'ERROR IN AUTH!'
                 })
@@ -52,7 +52,7 @@ module.exports = {
 
         jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY_TM, (err, decode) => {
             if (err) {
-                console.log("Invalid Token Read Token");
+                console.log("Invalid Token Read Token readTokenTM");
                 return res.status(401).send({
                     message: 'ERROR IN AUTH!'
                 })

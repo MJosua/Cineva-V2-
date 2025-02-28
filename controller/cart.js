@@ -768,10 +768,12 @@ module.exports = {
           let delv_week_desc = cart_data.delv_week_desc ? cart_data.delv_week_desc : `Week: ${(await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik} Date: ${cart_data.stuffing_date} `
           let tolling_id = cart_data.tolling_id ? cart_data.tolling_id : 0;
 
+          console.log("cart_data",cart_data)
+
           let bill_to = cart_data.bill_to ? cart_data.bill_to : 0;
           let notify1 = cart_data.notify_to_1 ? cart_data.notify_to_1 : 0;
           let notify2 = cart_data.notify_to_2 ? cart_data.notify_to_2 : 0;
-
+          
 
           let stuffing_date_rev = cart_data.stuffing_date ? cart_data.stuffing_date : formattedDate;
           let final_dest_check = final_dest ? final_dest : "-";
@@ -811,8 +813,9 @@ module.exports = {
             user_id, stuffing_date_rev, final_dest_check, tolling_id,
             bill_to, notify1, notify2
           ]
+          console.log("Cart query Header", query)
 
-          // console.log("Cart Parameter Header", parameter)
+          console.log("Cart Parameter Header", parameter)
 
 
           dbConf.query(query, parameter,

@@ -209,27 +209,42 @@ svr.listen(PORT, () => {
 });
 
 
-io.on('connection', (socket) => {
 
+const logs = []; // Store logs globally
+const originalLog = console.log;
 
-  socket.on('disconnect', () => {
-    console.log('user disconnected');
+if (!global.consoleOverridden) {
+  global.consoleOverridden = true; // Prevent multiple overrides
+
+  console.log = function (...args) {
+    originalLog.apply(console, args);
+    const logMessage = args.join(" ");
+    logs.push(logMessage);
+
+    // Emit new log message to all connected clients
+    io.emit("new_log", logMessage);
+  };
+}
+
+io.on("connection", (socket) => {
+  // console.log(`Client connected: ${socket.id}`);
+
+  // Send the initial logs when a client connects
+  socket.emit("logs", logs);
+
+  socket.on("message", (msg) => {
+    io.emit("message", msg);
   });
 
-  socket.on('message', (msg) => {
-    io.emit('message', msg);
-  });
-
-  if (socket.recovered) {
-    console.log("Recovery was successful: socket.id, socket.rooms, and socket.data were restored");
-  } else {
-  }
-
-  socket.on('error', (err) => {
+  socket.on("error", (err) => {
     console.error(`Socket error on ${socket.id}: ${err.message}`);
   });
 
+  // socket.on("disconnect", () => {
+  //   console.log(`Client disconnected: ${socket.id}`);
+  // });
 });
+
 
 // END OF API CONFIG FOR SERVER 104 (i2i join deploy)
 
@@ -373,6 +388,8 @@ App.get("/", (req, res) => {
       "<h1>CONNECTION BLOCKED!</h2> <br> <h2> YOU ARE NOT SUPPOSE TO ACCESS THIS SITE WITH PAGE!  </h2>"
     );
 });
+
+
 //DB CONNECTION CHECK
 const {
   dbConf,
@@ -411,20 +428,20 @@ dbCardGenerator.getConnection((error, connection) => {
 dbHots.getConnection((error, connection) => {
   if (error) {
     console.log("Error DB HOTS Connection!", error.sqlMessage);
-  }else {
+  } else {
     console.log(`DB HOTS has been connected ${connection.threadId}`);
   }
- 
+
 });
 
 
 dbClick.getConnection((error, connection) => {
   if (error) {
     console.log("Error DB Click Connection!", error.sqlMessage);
-  }else {
+  } else {
     console.log(`DB Click has been connected ${connection.threadId}`);
   }
-  
+
 });
 
 

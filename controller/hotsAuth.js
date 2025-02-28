@@ -48,7 +48,7 @@ module.exports = {
                     message: err1
                 })
                 console.log(timestamp, "HOTS Auth Login : " + uid + " error message : ", err1)
-
+                logMessage(timestamp, "HOTS Auth Login : " + uid + " error message : ", err1)
             } else {
 
                 if (!results1[0]) {
@@ -121,7 +121,8 @@ module.exports = {
                                 })
 
                                 console.log(timestamp, "HOTS Auth Login : " + uid + " error message : ", err2)
-
+                                logMessage(timestamp, "HOTS Auth Login : " + uid + " error message : ", err2)
+                                
                             } else if (results2[0]) {
 
                                 let tokek = generateTokenHT(results2[0]);
@@ -151,7 +152,8 @@ module.exports = {
                                             WHERE uid =  ?`, [tokek, uid])
 
                                 console.log(timestamp, "HOTS Auth Login : " + uid + " success")
-
+                                logMessage(timestamp, "HOTS Auth Login : " + uid + " success")
+                                
                             } else {
 
                                 let incrementAttempt = dataLogin.login_attempt + 1
@@ -172,7 +174,8 @@ module.exports = {
                                 })
 
                                 console.log(timestamp, "HOTS Auth Login : " + uid + " incorrect password")
-
+                                logMessage(timestamp, "HOTS Auth Login : " + uid + " incorrect password")
+                                
                             }
 
                         })
@@ -278,8 +281,12 @@ module.exports = {
                             //     userData,
                             //     tokek
                             console.log(timestamp, `Hots_auth KeepLogin ${req.dataToken.uid} success`)
+                            logMessage(timestamp, `Hots_auth KeepLogin ${req.dataToken.uid} success`)
+                            
                         } else {
                             console.log(timestamp, "Hots_auth KeepLogin No Data")
+                            logMessage(timestamp, "Hots_auth KeepLogin No Data")
+                            
                             res.status(200).send({
                                 success: false,
                                 message: `no data`
@@ -339,6 +346,8 @@ module.exports = {
 
                                 if (err2) {
                                     console.log(timestamp, "forgotPassword", err2)
+                                    logMessage(timestamp, "forgotPassword", err2)
+                                    
                                 } else {
                                     res.status(200).send({
                                         success: true,
@@ -346,7 +355,8 @@ module.exports = {
                                         email: address
                                     });
                                     console.log(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => uid valid send to " + address)
-
+                                    logMessage(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => uid valid send to " + address)
+                                    
                                 }
                             })
 
@@ -356,10 +366,14 @@ module.exports = {
                                 message: "Cannot send email! No email Address founded!",
                             });
                             console.log(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => Cannot send email! No email Address founded!")
+                            logMessage(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => Cannot send email! No email Address founded!")
+                            
                         }
 
                     } else {
                         console.log(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => uid invalid")
+                        logMessage(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => uid invalid")
+                        
                         res.status(200).send({
                             success: false,
                             message: `UID that you enter is not found! Please enter the correct one `
@@ -418,7 +432,8 @@ module.exports = {
                         });
 
                         console.log(timestamp + `auth token verification for ${req.dataToken.email}`)
-
+                        logMessage(timestamp + `auth token verification for ${req.dataToken.email}`)
+                        
                     } else {
 
                         res.status(500).send({
@@ -427,6 +442,8 @@ module.exports = {
                         });
 
                         console.log(timestamp + `auth token verification Failed. `)
+                        logMessage(timestamp + `auth token verification Failed. `)
+                        
                     }
 
                 }
@@ -438,6 +455,8 @@ module.exports = {
 
         } catch (error) {
             console.log(timestamp, "verifyTokenForgotPassword", error);
+            logMessage(timestamp, "verifyTokenForgotPassword", error);
+            
             res.status(500).send({
                 success: false,
                 message: "error 500",
@@ -505,6 +524,8 @@ module.exports = {
                                 });
                                 // addSqlLogger(req.dataToken.employee_id, query, (JSON.stringify(sqlInject)), 'changePasswordForgotPassword');
                                 console.log(timestamp + "Auth forgot password change for email:", req.dataToken.email);
+                                logMessage(timestamp + "Auth forgot password change for email:", req.dataToken.email);
+                                
 
 
                             }
@@ -522,12 +543,16 @@ module.exports = {
                     message: "unauthorized",
                 });
                 console.log(timestamp + "Auth forgot password change for email UNANUNUNUN bodo ah");
+                logMessage(timestamp + "Auth forgot password change for email UNANUNUNUN bodo ah");
+                
             }
 
 
         } catch (error) {
 
             console.log(timestamp, "changePasswordForgotPassword", error);
+            logMessage(timestamp, "changePasswordForgotPassword", error);
+            
             res.status(500).send({
                 success: false,
                 message: "something wrong",
