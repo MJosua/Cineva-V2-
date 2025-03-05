@@ -22,21 +22,27 @@ module.exports = {
         // timestamp + 
 
         // add feature on 20240105
-        let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
-        let desc = req.query.desc ? `DESC ` : ``;
+        let page = parseInt(req.query.page, 10);
+        page = isNaN(page) || page < 1 ? 1 : page; // Ensure page is valid
+        let offset = (page - 1) * limit; // Correct offset calculation
+        let desc = req.query.desc === "1" ? `DESC ` : `ASC`;
+
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
         let find = req.query.find || req.query.find !== '' ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%') AND mo.company_id = ${req.dataToken.company_id} ` : ''
-        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}` : ` ORDER BY mo.order_id ${desc}`;
-
+        let order_by_week = req.query.order_by_week === "1" ? `ORDER BY mo.po_date ${desc}` : `  ORDER BY mo.order_id ${desc} `;
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
 
         let available_week = (await dbQuery(`SELECT DISTINCT mo.delv_week, mo.delv_week_desc FROM m_order mo WHERE mo.company_id = ${req.dataToken.company_id} limit 30  `))
 
+        let queryCount =
+            `
+            SELECT COUNT(*) AS total_orders FROM m_order;
+            `
 
         let query = ` 
         SELECT
@@ -113,7 +119,24 @@ module.exports = {
         LEFT JOIN mst_product mps ON ms.sku = mps.product_code
         LEFT JOIN m_product_link mpls ON ms.sku = mpls.product_code 
     WHERE
-        mo.company_id = ${req.dataToken.company_id} ` + status + find + range + order_by_week + ` limit ` + limit;
+        mo.company_id = ${req.dataToken.company_id} `
+            +
+            status
+            +
+            find
+            +
+            range
+            +
+            order_by_week
+            +
+            ` LIMIT `
+            +
+            limit
+            +
+            ` OFFSET `
+            +
+            offset
+            ;
 
         // console.log(timestamp, "getOrderAllIn",
         //     {
@@ -149,37 +172,50 @@ module.exports = {
 
                 // let { company_id } = req.body
 
-                dbConf.query(query,
-                    (err, results) => {
+                dbConf.query(queryCount, (err, countResults) => {
+                    if (err) {
+                        res.status(500).send(err);
+                        console.log(timestamp + " Error counting total orders!", err);
+                        return;
+                    }
+                    let totalDataLength = countResults[0]?.total_orders || 0;
+                    let totalPage = Math.ceil(totalDataLength / limit); // Use ceil to ensure correct page count
 
-                        if (err) {
-                            res.status(500).send(err);
-                            console.log(timestamp + "Error get getOrderAllIn !", err)
-                        } else {
-                            if (results[0]) {
-                                let packet = results.slice(startIndex, endIndex)
-                                let totalDataLength = results.length
-                                let totalPage = Math.round(results.length / limit)
+                    dbConf.query(query,
+                        (err, results) => {
 
-                                // res.status(200).send(results);
-                                res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                                console.log(timestamp + `get getOrderAllIn Success`);
+                            if (err) {
+                                res.status(500).send(err);
+                                console.log(timestamp + "Error get getOrderAllIn !", err)
                             } else {
+                                if (results[0]) {
+                                    let packet = results.slice(startIndex, endIndex)
 
-                                let packet = []
-                                let totalDataLength = 0
-                                let totalPage = 0
+                                    // res.status(200).send(results);
+                                    res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
+                                    console.log(timestamp + `get getOrderAllIn Success`);
+                                } else {
 
-                                res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                                console.log(timestamp + `get getOrderAllIn EMPTY data`);
-                                addSqlLogger(req.dataToken.user_id, query, ' -- data getOrderAllIn', 'getOrderAllIn')
+                                    let packet = []
+                                    let totalDataLength = 0
+                                    let totalPage = 0
+
+                                    res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
+                                    console.log(timestamp + `get getOrderAllIn EMPTY data`);
+                                    addSqlLogger(req.dataToken.user_id, query, ' -- data getOrderAllIn', 'getOrderAllIn')
+                                }
+
                             }
 
+
                         }
+                    )
 
 
-                    }
+                }
                 )
+
+
             } else {
                 res.status(200).send({
                     success: false,
@@ -206,14 +242,15 @@ module.exports = {
         // add feature on 20240105
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
-        let desc = req.query.desc ? `DESC ` : ``;
-        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}` : ` ORDER BY mo.order_id ${desc}`;
+        let desc = req.query.desc === "1" ? `DESC ` : `ASC`;
+        let order_by_week = req.query.order_by_week === "1" ? `ORDER BY mo.po_date ${desc}` : `  ORDER BY mo.order_id ${desc} `;
 
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
         let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%')` : ''
+
 
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
@@ -434,7 +471,7 @@ module.exports = {
         // add feature on 20240105
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
-        let desc = req.query.desc ? ` DESC ` : ``;
+        let desc = req.query.desc === "1" ? `DESC ` : `ASC`;
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : ' 1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : ' 99';
@@ -540,7 +577,7 @@ module.exports = {
             +
             order_by_week
             +
-            `LIMIT `
+            ` LIMIT `
             +
             limit
             ;
@@ -606,21 +643,28 @@ module.exports = {
         // timestamp + 
 
         // add feature on 20240105
-        let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
-        let desc = req.query.desc ? ` DESC ` : ``;
+        let page = parseInt(req.query.page, 10);
+        page = isNaN(page) || page < 1 ? 1 : page; // Ensure page is valid
+        let offset = (page - 1) * limit; // Correct offset calculation
+        let desc = req.query.desc === "1" ? `DESC ` : `ASC`;
+
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : ' 1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : ' 99';
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
         let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%') AND mo.company_id = ${req.dataToken.company_id} ` : ''
-        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}` : ` ORDER BY mo.order_id ${desc}`;
+        let order_by_week = req.query.order_by_week === "1" ? `ORDER BY mo.po_date ${desc}` : `  ORDER BY mo.order_id ${desc} `;
 
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
 
         let available_week = (await dbQuery(`SELECT DISTINCT mo.delv_week, mo.delv_week_desc FROM m_order mo WHERE mo.company_id = ${req.dataToken.company_id}  limit 30 `))
 
+        let queryCount =
+            `
+        SELECT COUNT(*) AS total_orders FROM m_order;
+        `
 
         let query = ` 
             select
@@ -711,9 +755,13 @@ module.exports = {
             +
             order_by_week
             +
-            `LIMIT `
+            ` LIMIT `
             +
             limit
+            +
+            ` OFFSET `
+            +
+            offset
             ;
 
         // console.log(timestamp, "getOrderHeader",
@@ -725,37 +773,49 @@ module.exports = {
 
             if (req.dataToken.user_id) {
 
-                // let { company_id } = req.body
-
-                dbConf.query(query, (err, results) => {
-
+                dbConf.query(queryCount, (err, countResults) => {
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + "Error getOrderHeader !", err)
-                    } else {
+                        console.log(timestamp + " Error counting total orders!", err);
+                        return;
+                    }
+                    let totalDataLength = countResults[0]?.total_orders || 0;
+                    let totalPage = Math.ceil(totalDataLength / limit); // Use ceil to ensure correct page count
 
-                        if (results[0]) {
 
-                            let packet = results
-                            let totalDataLength = results.length
-                            let totalPage = Math.round(results.length / limit)
 
-                            // res.status(200).send(results);
-                            res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                            console.log(timestamp + `get getOrderHeader data`);
+                    dbConf.query(query, (err, results) => {
+                        if (err) {
+                            res.status(500).send(err);
+                            console.log(timestamp + "Error getOrderHeader !", err)
                         } else {
 
-                            let packet = []
-                            let totalDataLength = 0
-                            let totalPage = 0
+                            if (results[0]) {
 
-                            res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                            console.log(timestamp + `get getOrderHeader EMPTY data`);
-                            addSqlLogger(req.dataToken.user_id, query, '--data getOrderHeader', 'getOrderHeader')
+                                let packet = results
+
+                                // res.status(200).send(results);
+                                res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
+                                console.log(timestamp + `get getOrderHeader data`);
+                            } else {
+
+                                let packet = []
+
+
+                                res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
+                                console.log(timestamp + `get getOrderHeader EMPTY data`);
+                                // addSqlLogger(req.dataToken.user_id, query, '--data getOrderHeader', 'getOrderHeader')
+                            }
+
                         }
+                    })
 
-                    }
-                })
+                }
+                )
+
+                // let { company_id } = req.body
+
+
 
             } else {
                 res.status(200).send({
@@ -868,19 +928,22 @@ module.exports = {
 
         let date = new Date();
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+        let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
 
-        let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
-        let limit = (parseInt(req.query.limit, 10) || 0) + 10;
-        let desc = req.query.desc ? `DESC ` : ``;
+        let page = parseInt(req.query.page, 10);
+        page = isNaN(page) || page < 1 ? 1 : page; // Ensure page is valid
+        let offset = (page - 1) * limit; // Correct offset calculation
+        let desc = req.query.desc === "1" ? `DESC ` : `ASC`;
+
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
         let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%') AND mo.company_id = ${req.dataToken.company_id}` : ''
-        let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}` : ` ORDER BY mo.order_id ${desc}`;
+        let order_by_week = req.query.order_by_week === "1" ? `  ORDER BY mo.po_date ${desc}  ` : `ORDER BY mo.order_id ${desc} `;
 
         const startIndex = (page - 1) * limit;
-        const endIndex = page * limit;
+        const endIndex = page * limit * 10;
 
         let available_week = (await dbQuery(`SELECT DISTINCT mo.delv_week, mo.delv_week_desc FROM m_order mo WHERE mo.company_id = ${req.dataToken.company_id} limit 30  `))
 
@@ -986,14 +1049,7 @@ module.exports = {
                     +
                     range
                     +
-                    `                             group by det.order_id`
-                    +
                     order_by_week
-                    +
-                    ` LIMIT `
-                    +
-                    limit
-
 
 
                     ;
@@ -1003,35 +1059,55 @@ module.exports = {
                 //         page, limit, order_by_week, desc, status, stuffingstart, stuffingend, range, find
                 //     }, "query: ", query)
 
-                dbConf.query(query, (err, results) => {
 
+
+                let queryCount =
+                    `
+            SELECT COUNT(*) AS total_orders FROM m_order;
+            `
+                dbConf.query(queryCount, (err, countResults) => {
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + "Error getOrderDetail 2!", err)
-                    } else {
+                        console.log(timestamp + " Error counting total orders!", err);
+                        return;
+                    }
+                    let totalDataLength = countResults[0]?.total_orders || 0;
+                    let totalPage = Math.ceil(totalDataLength / limit); // Use ceil to ensure correct page count
 
-                        if (results) {
+                    dbConf.query(query, (err, results) => {
 
-                            let packet = results.slice(startIndex, endIndex)
-                            let totalDataLength = results.length
-                            let totalPage = Math.round(results.length / limit)
-
-                            res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                            console.log(timestamp + `get getOrderDetail2 data`);
-                            console.log(query + `get getOrderDetail2 data`);
-
+                        if (err) {
+                            res.status(500).send(err);
+                            console.log(timestamp + "Error getOrderDetail 2!", err)
                         } else {
 
-                            let packet = []
-                            let totalDataLength = 0
-                            let totalPage = 0
+                            if (results) {
 
-                            res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                            console.log(timestamp + `get getOrderDetail2 EMPTY data`);
-                            addSqlLogger(req.dataToken.user_id, (query), '--data getOrderDetail2', 'getOrderDetail2')
+                                let packet = results.slice(startIndex, endIndex)
+
+                                res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
+                                console.log(timestamp + `get getOrderDetail2 data`);
+
+                            } else {
+
+                                let packet = []
+                                let totalDataLength = 0
+                                let totalPage = 0
+
+                                res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
+                                console.log(timestamp + `get getOrderDetail2 EMPTY data`);
+                                // addSqlLogger(req.dataToken.user_id, (query), '--data getOrderDetail2', 'getOrderDetail2')
+                            }
                         }
-                    }
-                })
+                    })
+
+
+                }
+
+                )
+
+
+
 
             } else {
                 res.status(200).send({
@@ -1054,7 +1130,7 @@ module.exports = {
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let order_id = req.params.order_id
-
+        console.log("detail order_id", order_id)
         //untuk menghilangkan week tertentu.
         let getBlockingCompany = (await dbQuery(`select company_id from m_config_new mcn where conditions = 12;`))[0];
 
@@ -1168,8 +1244,6 @@ module.exports = {
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get getOneOrderDetail data`);
-                        addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), '--data getOneOrderDetail', `getOneOrderDetail-${order_id}`)
-                        console.log(blockingSoIdCompany);
 
                     }
                 })
@@ -1680,7 +1754,7 @@ module.exports = {
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let order_id = req.params.order_id
-
+        console.log("order_id",order_id)
         if (req.dataToken.company_id && order_id) {
 
             let query = ` 
@@ -1727,6 +1801,7 @@ module.exports = {
 
                 if (err) {
                     res.status(500).send(err);
+
                     console.log(timestamp + "Error get Order Container Detail", err)
                 } else {
                     res.status(200).send(results);
