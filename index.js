@@ -236,6 +236,10 @@ io.on("connection", (socket) => {
     io.emit("message", msg);
   });
 
+  socket.on("broadcast", (broadcast) => {
+    io.emit("broadcast", broadcast);
+  });
+
   socket.on("error", (err) => {
     console.error(`Socket error on ${socket.id}: ${err.message}`);
   });

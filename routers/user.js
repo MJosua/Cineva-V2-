@@ -20,5 +20,12 @@ route.get('/banner', readToken, userController.getBanner)
 route.get('/top', readToken, userController.top)
 route.get('/email', readToken, userController.getEmail)
 
+route.get('/getUpdateList', userController.GetUpdateList);
+route.get('/getLatestUpdate', userController.GetLatestUpdate);
+route.get('/getUpcomingUpdate', userController.GetUpcomingUpdate);
+
+route.post('/setUpdateList', userController.setUpdateList);
+
+
 
 module.exports = route;

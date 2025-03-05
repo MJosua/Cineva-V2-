@@ -4,6 +4,7 @@ const { orderRecievedMailSender } = require('../config/mailer')
 const ejs = require('ejs');
 // const puppeteer = require('puppeteer');
 const axios = require('axios');
+const { group } = require("console");
 // const { time } = require("console");
 // const { json } = require("body-parser");
 // const { parse } = require("path");
@@ -34,7 +35,7 @@ module.exports = {
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
 
-        let available_week = (await dbQuery(`SELECT DISTINCT mo.delv_week, mo.delv_week_desc FROM m_order mo WHERE mo.company_id = ${req.dataToken.company_id} `))
+        let available_week = (await dbQuery(`SELECT DISTINCT mo.delv_week, mo.delv_week_desc FROM m_order mo WHERE mo.company_id = ${req.dataToken.company_id} limit 30  `))
 
 
         let query = ` 
@@ -112,7 +113,7 @@ module.exports = {
         LEFT JOIN mst_product mps ON ms.sku = mps.product_code
         LEFT JOIN m_product_link mpls ON ms.sku = mpls.product_code 
     WHERE
-        mo.company_id = ${req.dataToken.company_id} ` + status + find + range + order_by_week;
+        mo.company_id = ${req.dataToken.company_id} ` + status + find + range + order_by_week + ` limit ` + limit;
 
         // console.log(timestamp, "getOrderAllIn",
         //     {
@@ -221,93 +222,128 @@ module.exports = {
 
 
         let query = ` 
-    SELECT po_buyer, order_id, so_id, ship_to, port_of_discharge, stuffing_week, 
-           product_sku, product_description, realization_quantity, completion_note, 
-           po_date, submitted_by, order_status, order_remarks, container_id, 
-           stuffing_date, etd, eta 
-    FROM (
-        SELECT 
-            ms.po_buyer,
-            ms.order_id,
-            tr.so_id, 
-            stp.company_name ship_to,
-            concat(mh.harbour_name, ', ', tp.txt) port_of_discharge,
-            mo.delv_week_desc stuffing_week,
-            mp.product_sku product_sku,
-            COALESCE(mp.product_name_no, mp.product_name) product_description,
-            COALESCE(trd.qty, 0) realization_quantity,
-            concat(1 , ' X ', mc2.container_name ) completion_note,
-            DATE_FORMAT(mo.po_date, '%b %d, %Y') po_date,
-            concat(su.firstname, ' ', su.lastname ) submitted_by,
-            mos.status_order order_status,
-            mod2.remarks order_remarks,
-            tr.cont_id container_id,  
-            COALESCE(DATE_FORMAT(tr.delv_date, '%b %d, %Y'), 0) stuffing_date,
-            COALESCE(DATE_FORMAT(tr.etd, '%b %d, %Y'), 0) etd,
-            COALESCE(DATE_FORMAT(tr.eta, '%b %d, %Y'), 0) eta,
-            mo.delv_week,
-            stp.company_id
-        FROM
-            m_summary ms
-        LEFT JOIN m_order mo ON
-            mo.order_id = ms.order_id
-        LEFT JOIN (SELECT order_id, remarks, cont_size FROM m_order_dtl GROUP BY order_id) mod2 ON
-            mod2.order_id = mo.order_id
-        LEFT JOIN mst_company stp ON
-            mo.ship_to = stp.company_id
-        LEFT JOIN mst_harbour mh ON
-            mo.port_shipment = mh.harbour_id
-        LEFT JOIN mst_country mc ON
-            mh.country_id = mc.country_id
-        LEFT JOIN sys_text tp ON
-            tp.text_id = mc.country_name_id
-            AND tp.lang_id = 1
-        LEFT JOIN mst_product mp ON
-            mp.product_code = ms.sku AND mp.active = 1
-        LEFT JOIN mst_container mc2 ON
-            mc2.container_id = mod2.cont_size
-        LEFT JOIN sys_user su ON
-            su.user_id = mo.created_by
-        LEFT JOIN m_order_status mos ON
-            mos.id = mo.status
-        LEFT JOIN trs_sales_order tso ON
-            tso.e_order = mo.order_id
-        LEFT JOIN trs_realization tr ON
-            tso.so_id = tr.so_id 
-        LEFT JOIN trs_realization_detail trd ON
-            tr.so_id = trd.so_id AND tr.invoice_id = trd.invoice_id AND tr.cont_id = trd.cont_id  AND ms.sku = trd.sku 
-        WHERE
-            ms.company_id = ${req.dataToken.company_id} AND mo.status IN (3,4) 
-        GROUP BY 
-            tr.invoice_id, 
-            tr.cont_id, 
-            tr.so_id, 
-            ms.sku, 
-            ms.po_buyer, 
-            ms.order_id, 
-            stp.company_name, 
-            mh.harbour_name, 
-            tp.txt, 
-            mo.delv_week_desc, 
-            mp.product_sku, 
-            mp.product_name_no, 
-            mp.product_name, 
-            mod2.remarks,  -- Add the necessary columns here
-            mc2.container_name, 
-            mo.po_date, 
-            su.firstname, 
-            su.lastname, 
-            mos.status_order, 
-            stp.company_id, 
-            tr.delv_date, 
-            tr.etd, 
-            tr.eta, 
-            mo.delv_week
-        ORDER BY 
-            tr.invoice_id, tr.cont_id, tr.so_id
-    ) mo 
-    WHERE mo.realization_quantity > 0
-    ` + status + find + range + order_by_week;
+                select
+                po_buyer,
+                order_id,
+                so_id,
+                ship_to,
+                port_of_discharge,
+                stuffing_week,
+                product_sku,
+                product_description,
+                realization_quantity,
+                completion_note,
+                po_date,
+                submitted_by,
+                order_status,
+                order_remarks,
+                container_id,
+                stuffing_date,
+                etd,
+                eta,
+                status -- Include status here
+            from
+                (
+                select
+                    ms.po_buyer,
+                    ms.order_id,
+                    tr.so_id,
+                    stp.company_name ship_to,
+                    concat(mh.harbour_name, ', ', tp.txt) port_of_discharge,
+                    mo.delv_week_desc stuffing_week,
+                    mp.product_sku product_sku,
+                    coalesce(mp.product_name_no, mp.product_name) product_description,
+                    coalesce(trd.qty, 0) realization_quantity,
+                    concat(1 , ' X ', mc2.container_name ) completion_note,
+                    DATE_FORMAT(mo.po_date, '%b %d, %Y') po_date,
+                    concat(su.firstname, ' ', su.lastname ) submitted_by,
+                    mos.status_order order_status,
+                    mod2.remarks order_remarks,
+                    tr.cont_id container_id,
+                    coalesce(DATE_FORMAT(tr.delv_date, '%b %d, %Y'), 0) stuffing_date,
+                    coalesce(DATE_FORMAT(tr.etd, '%b %d, %Y'), 0) etd,
+                    coalesce(DATE_FORMAT(tr.eta, '%b %d, %Y'), 0) eta,
+                    mo.delv_week,
+                    stp.company_id,
+                    mo.status -- Include status here
+                from
+                    m_summary ms
+                left join m_order mo on
+                    mo.order_id = ms.order_id
+                left join (
+                    select
+                        order_id,
+                        remarks,
+                        cont_size
+                    from
+                        m_order_dtl
+                    group by
+                        order_id) mod2 on
+                    mod2.order_id = mo.order_id
+                left join mst_company stp on
+                    mo.ship_to = stp.company_id
+                left join mst_harbour mh on
+                    mo.port_shipment = mh.harbour_id
+                left join mst_country mc on
+                    mh.country_id = mc.country_id
+                left join sys_text tp on
+                    tp.text_id = mc.country_name_id
+                    and tp.lang_id = 1
+                left join mst_product mp on
+                    mp.product_code = ms.sku
+                    and mp.active = 1
+                left join mst_container mc2 on
+                    mc2.container_id = mod2.cont_size
+                left join sys_user su on
+                    su.user_id = mo.created_by
+                left join m_order_status mos on
+                    mos.id = mo.status
+                left join trs_sales_order tso on
+                    tso.e_order = mo.order_id
+                left join trs_realization tr on
+                    tso.so_id = tr.so_id
+                left join trs_realization_detail trd on
+                    tr.so_id = trd.so_id
+                    and tr.invoice_id = trd.invoice_id
+                    and tr.cont_id = trd.cont_id
+                    and ms.sku = trd.sku
+                where
+                    ms.company_id = ${req.dataToken.company_id}
+                    and mo.status in (3, 4)
+                group by
+                    tr.invoice_id,
+                    tr.cont_id,
+                    tr.so_id,
+                    ms.sku,
+                    ms.po_buyer,
+                    ms.order_id,
+                    stp.company_name,
+                    mh.harbour_name,
+                    tp.txt,
+                    mo.delv_week_desc,
+                    mp.product_sku,
+                    mp.product_name_no,
+                    mp.product_name,
+                    mod2.remarks,
+                    mc2.container_name,
+                    mo.po_date,
+                    su.firstname,
+                    su.lastname,
+                    mos.status_order,
+                    stp.company_id,
+                    tr.delv_date,
+                    tr.etd,
+                    tr.eta,
+                    mo.delv_week,
+                    mo.status -- Include status in GROUP BY
+                order by
+                    tr.invoice_id,
+                    tr.cont_id,
+                    tr.so_id
+                ) mo
+            where
+                mo.realization_quantity > 0
+    ` + status + find + range + order_by_week + ` limit ` + limit;
         // console.log(timestamp, "getRealizationAllIn",
         //     {
         //         page, limit, order_by_week, desc, status, stuffingstart, stuffingend, range, find
@@ -394,7 +430,7 @@ module.exports = {
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
         // timestamp + 
         let order_id = req.params.order_id
-        console.log("order_id special",order_id)
+        console.log("order_id special", order_id)
         // add feature on 20240105
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
@@ -509,7 +545,7 @@ module.exports = {
             limit
             ;
 
-     
+
         try {
 
             if (req.dataToken.user_id) {
@@ -583,7 +619,7 @@ module.exports = {
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
 
-        let available_week = (await dbQuery(`SELECT DISTINCT mo.delv_week, mo.delv_week_desc FROM m_order mo WHERE mo.company_id = ${req.dataToken.company_id}  `))
+        let available_week = (await dbQuery(`SELECT DISTINCT mo.delv_week, mo.delv_week_desc FROM m_order mo WHERE mo.company_id = ${req.dataToken.company_id}  limit 30 `))
 
 
         let query = ` 
@@ -834,7 +870,7 @@ module.exports = {
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
-        let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
+        let limit = (parseInt(req.query.limit, 10) || 0) + 10;
         let desc = req.query.desc ? `DESC ` : ``;
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
@@ -846,7 +882,7 @@ module.exports = {
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
 
-        let available_week = (await dbQuery(`SELECT DISTINCT mo.delv_week, mo.delv_week_desc FROM m_order mo WHERE mo.company_id = ${req.dataToken.company_id}  `))
+        let available_week = (await dbQuery(`SELECT DISTINCT mo.delv_week, mo.delv_week_desc FROM m_order mo WHERE mo.company_id = ${req.dataToken.company_id} limit 30  `))
 
 
         try {
@@ -941,7 +977,8 @@ module.exports = {
                             LEFT JOIN m_product_link mpls ON
                                 ms.sku = mpls.product_code
                             WHERE
-                                det.company_id = ${req.dataToken.company_id}`
+                                det.company_id = ${req.dataToken.company_id}
+                                `
                     +
                     status
                     +
@@ -949,11 +986,16 @@ module.exports = {
                     +
                     range
                     +
+                    `                             group by det.order_id`
+                    +
                     order_by_week
                     +
                     ` LIMIT `
                     +
                     limit
+
+
+
                     ;
 
                 // console.log(timestamp, "getOrderDetail2",
@@ -976,6 +1018,8 @@ module.exports = {
 
                             res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
                             console.log(timestamp + `get getOrderDetail2 data`);
+                            console.log(query + `get getOrderDetail2 data`);
+
                         } else {
 
                             let packet = []
@@ -4079,9 +4123,9 @@ module.exports = {
                     let stuffing_date_rev = order_data.stuffing_date ? order_data.stuffing_date : formattedDate;
                     let final_dest = order_data.final_dest ? order_data.final_dest : '-';
 
-                    let notify_to_1 = order_data.notify_to_2 ? order_data.notify_to_1 : '';
-                    let notify_to_2 = order_data.notify_to_2 ? order_data.notify_to_2 : '';
-                    let bill_to = order_data.bill_to ? order_data.bill_to : '';
+                    let notify_to_1 = order_data.notify_to_2 ? order_data.notify_to_1 : null;
+                    let notify_to_2 = order_data.notify_to_2 ? order_data.notify_to_2 : null;
+                    let bill_to = order_data.bill_to ? order_data.bill_to : null;
 
                     let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) container FROM m_config_new mcn WHERE mcn.conditions = 8 AND mcn.company_id = ${company_id}`);
                     let number = await dbQuery(`SELECT company_number  FROM mst_company mc WHERE company_id = ${company_id}`);
