@@ -77,7 +77,7 @@ const dbTM = mysql.createPool({
     host: host_config,
     user: user_config,
     password: password_config,
-    database: process.env.db_trademark
+    database: process.env.DB_NAME_TM
 });
 const dbTMQuery = util.promisify(dbTM.query).bind(dbTM);
 

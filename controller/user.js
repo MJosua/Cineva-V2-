@@ -122,24 +122,27 @@ module.exports = {
                     STP_PCL
 
                         ?
-                        `SELECT * FROM 
+                        `
                     SELECT 
-                        b.company_id keyy, 
-                        concat ((CASE
-                            ${company_id} WHEN b.company_id THEN concat(b.company_name)
-                            ELSE b.company_name
-                        END)," - ", COALESCE(b.company_notice, '')) txt 
-                FROM
-                        mst_company a
-                LEFT JOIN mst_company b ON
-                        trim(a.user_company_id) = trim(b.user_company_id)
-                WHERE
+                        b.company_id AS keyy, 
+                        CONCAT(
+                            CASE 
+                                WHEN b.company_id = ${company_id} THEN b.company_name 
+                                ELSE b.company_name 
+                            END, 
+                            " - ", 
+                            COALESCE(b.company_notice, '')
+                        ) AS txt 
+                    FROM mst_company a
+                    LEFT JOIN mst_company b 
+                        ON TRIM(a.user_company_id) = TRIM(b.user_company_id)
+                    WHERE 
                         a.user_company_id <> 'default'
-                    AND b.company_type_id IN (2, 7)
-                    AND a.company_id = ${company_id}
-                ORDER BY
-                        keyy DESC) a 
-                        WHERE a.keyy <> ${company_id}`
+                        AND b.company_type_id IN (2, 7)
+                        AND a.company_id = ${company_id}
+                        AND b.company_id <> ${company_id} -- This ensures filtering is done correctly
+                    ORDER BY keyy DESC;
+`
 
                         :
 
@@ -725,6 +728,141 @@ module.exports = {
 
     },
 
+    GetUpdateList: async (req, res) => {
+        let date = new Date();
+        let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
+        try {
+            let query = `
+                SELECT * FROM update_event WHERE update_status = 1;
+            `;
+
+            dbConf.query(query, (err, results) => {
+                if (err) {
+                    console.log(timestamp + "Error GetLatestUpdate ", err);
+                    return res.status(500).send(err);
+                }
+                console.log(timestamp + `GetLatestUpdate success`);
+                res.status(200).send(results);
+            });
+
+        } catch (error) {
+            console.log(timestamp + "Error at User => GetLatestUpdate", error);
+            res.status(500).send(error);
+        }
+    },
+
+
+    GetLatestUpdate: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+        // timestamp + 
+
+
+        try {
+
+            let employee_id = req.dataToken.employee_id
+
+            let query = `
+                SELECT
+                    *
+                FROM
+                    update_event
+
+               `
+
+            dbConf.query(query, (err, results) => {
+                if (err) {
+                    res.status(500).send(err);
+                    console.log(timestamp + "Error GetLatestUpdate ", err);
+                } else {
+                    res.status(200).send(results);
+                    console.log(timestamp + `get GetLatestUpdate  success`);
+                }
+            })
+
+
+        } catch (error) {
+            console.log(timestamp + "Error at User => GetLatestUpdate" + error);
+            res.status(500).send(error);
+        }
+
+
+
+    },
+
+    GetUpcomingUpdate: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+        // timestamp + 
+
+
+        try {
+
+            let employee_id = req.dataToken.employee_id
+
+            let query = `
+                SELECT
+                    *
+                FROM
+                    update_event
+               `
+
+            dbConf.query(query, (err, results) => {
+                if (err) {
+                    res.status(500).send(err);
+                    console.log(timestamp + "Error GetLatestUpdate ", err);
+                } else {
+                    res.status(200).send(results);
+                    console.log(timestamp + `get GetLatestUpdate  success`);
+                }
+            })
+
+
+        } catch (error) {
+            console.log(timestamp + "Error at User => GetLatestUpdate" + error);
+            res.status(500).send(error);
+        }
+
+
+
+    },
+
+    setUpdateList: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        try {
+            let { update_description, update_status, update_date } = req.body
+
+            let query = `
+            INSERT INTO 
+            update_event 
+            (description, update_status, date)
+            VALUES
+            (?, ?, ?)
+            `
+            let parameter = [update_description, update_status, update_date]
+
+            dbConf.query(query, parameter,
+                (err, results) => {
+                    if (err) {
+                        res.status(500).send(err);
+                        console.log(timestamp + "fail setUpdateList:", err);
+                    } else {
+                        res.status(200).send(results);
+                        console.log(timestamp + `user add setUpdateList success `);
+                    }
+                }
+            )
+        } catch (error) {
+            console.log(timestamp + error);
+            res.status(500).send(error);
+        }
+
+    },
 
 }
