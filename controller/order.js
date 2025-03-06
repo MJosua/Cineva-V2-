@@ -1262,6 +1262,235 @@ module.exports = {
 
 
     }
+    , getOneOrderAllNoToken: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        let order_id = req.params.order_id
+        //untuk menghilangkan week tertentu.
+        let getBlockingCompany = (await dbQuery(`select company_id from m_config_new mcn where conditions = 12;`))[0];
+
+        // Error prevention: Check if getBlockingCompany is not empty and has the value you expect
+        let blockingSoIdCompany = getBlockingCompany && getBlockingCompany.company_id ? getBlockingCompany.company_id : 0;
+        try {
+
+            let queryHeader = ` 
+                        select
+                        distinct 
+                        mo.order_id,
+                        mco.company_name,
+                        mo.delv_week,
+                        mo.delv_week_desc,
+                        DATE_FORMAT(mo.stuffing_date, '%b %d, %Y') Stuffing_date_format,
+                        mo.stuffing_date,
+                        mo.final_dest,
+                        mo.delv_year,
+                        mo.po_buyer,
+                        concat(mh.harbour_name, ", " , st.txt ) port_shipment,
+                        mo.ship_to,
+                        stp.company_name ,
+                        stpa.street,
+                        stpa.complex,
+                        stpa.city,
+                        stpc.country_desc as country,
+                        mo.po_buyer,
+                        stp.company_name ship_to,
+                        mo.po_url,
+                        concat(su.firstname, ' ', su.lastname ) created_by,
+                        mso.status_order status_name,
+                        mso.notes status_detail,
+                        mso.id is_status,
+                        mct.container_name,
+                        minc.incoterm_name,
+                        case
+                            when md.cont_qty = 0 then 1
+                            else md.cont_qty
+                        end cont_qty,
+                        DATE_FORMAT(mo.po_date, '%b %d, %Y') created_date,
+                        mo.po_date,
+                        mo.tolling_id,
+                        md.cont_size,
+                        btp.company_name as bill_to_name,
+                        btpa.street as bill_to_street,
+                        btpa.complex as bill_to_complex,
+                        btpa.city as bill_to_city,
+                        btc.country_desc as bill_to_country,
+                        mo.bill_to,
+                        CASE 
+                            WHEN ntp1.company_notice IS NOT NULL 
+                                AND ntp1.company_notice <> '' 
+                            THEN CONCAT(ntp1.company_name, ' - ', ntp1.company_notice)
+                            ELSE ntp1.company_name
+                        END AS notify1_name,
+                        mo.notify1,
+                        CASE 
+                            WHEN ntp2.company_notice IS NOT NULL 
+                                AND ntp2.company_notice <> '' 
+                            THEN CONCAT(ntp2.company_name, ' - ', ntp2.company_notice)
+                            ELSE ntp2.company_name
+                        END AS notify2_name,
+                        mo.notify2
+                    from
+                        m_order mo
+                    join mst_company mco on
+                        mo.company_id = mco.company_id
+                    left join map_port_for_dist mpfd on
+                        mo.port_shipment = mpfd.id
+                        and mo.company_id = mpfd.distributor_id
+                    left join mst_company stp on
+                        stp.company_id = mo.ship_to
+                    left join address stpa on
+                        stp.address_id = stpa.address_id      
+                    left join mst_country stpc on
+                        stpa.country = stpc.iso_code
+                    left join sys_user su on
+                        su.user_id = mo.created_by
+                    left join m_order_status mso on
+                        mo.status = mso.id
+                    left join m_order_dtl md on
+                        md.order_id = mo.order_id
+                    left join mst_container mct on
+                        md.cont_size = mct.container_id
+                    left join mst_harbour mh on
+                        mpfd.harbour_id = mh.harbour_id
+                    left join mst_incoterm minc on
+                        mpfd.incoterm_id = minc.id    
+                    left join mst_country mc on
+                        mh.country_id = mc.country_id
+                    left join sys_text st on
+                        mc.country_name_id = st.text_id
+                        and st.lang_id = 1
+                    left join mst_company btp on
+                        mo.bill_to = btp.company_id
+                    left join address btpa on
+                        btp.address_id = btpa.address_id
+                    left join mst_country btc on
+                        btpa.country = btc.iso_code    
+                    left join mst_company ntp1 on
+                        mo.notify1 = ntp1.company_id
+                        and ntp1.company_type_id = 7
+                    left join mst_company ntp2 on
+                        mo.notify2 = ntp2.company_id
+                        and ntp2.company_type_id = 7
+                     where   
+                    mo.order_id = ?   `
+
+
+            let queryDetail = `
+                    select
+                        distinct
+                                            det.order_id,
+                        det.company_id,
+                        mco.company_name,
+                        det.created_by,
+                        su.firstname,
+                        case
+                                                when det.cont_size = 8 then ms.detail_id
+                            else det.detail_id
+                        end detail_id,
+                        mc.container_name,
+                        case
+                            when det.cont_qty = 0 then 1
+                            else det.cont_qty
+                        end cont_qty,
+                        case
+                            when det.cont_size = 8 then ms.sku
+                            else det.sku1
+                        end sku1,
+                        case
+                            when det.cont_size = 8 then coalesce(mps.product_name_no, mps.product_name)
+                            else coalesce(mp1.product_name_no, mp1.product_name)
+                        end product_name_1,
+                        case
+                            when det.cont_size = 8 then mpls.img
+                            else mpl1.img
+                        end url_1,
+                        case
+                            when det.cont_size = 8 then ms.qty
+                            else det.qty1
+                        end qty1,
+                        det.price1,
+                        case
+                            when det.cont_size = 8 then mps.product_sku
+                            else mp1.product_sku
+                        end prod_sku_1,
+                        det.sku2,
+                        coalesce(mp2.product_name_no, mp2.product_name) product_name_2,
+                        mpl2.img url_2,
+                        det.qty2,
+                        det.price2,
+                        mp2.product_sku prod_sku_2,
+                        det.sku2,
+                        coalesce(mp3.product_name_no, mp3.product_name) product_name_3,
+                        mpl3.img url_3,
+                        det.qty3,
+                        det.price3,
+                        mp3.product_sku prod_sku_3,
+                        det.remarks,
+                        det.bulk,
+                        CASE 
+                        WHEN det.company_id NOT IN (${blockingSoIdCompany}) THEN so.so_id
+                            ELSE ''
+                        END AS so_id
+                    from
+                        m_order_dtl det
+                    inner join m_order mo on
+                        mo.order_id = det.order_id
+                    join mst_company mco on
+                        det.company_id = mco.company_id
+                    left join sys_user su on
+                        su.user_id = det.created_by
+                    left join mst_container mc on
+                        mc.container_id = det.cont_size
+                    left join mst_product mp1 on
+                        det.sku1 = mp1.product_code
+                    left join mst_product mp2 on
+                        det.sku2 = mp2.product_code
+                    left join mst_product mp3 on
+                        det.sku3 = mp3.product_code
+                    left join m_product_link mpl1 on
+                        det.sku1 = mpl1.product_code
+                    left join m_product_link mpl2 on
+                        det.sku2 = mpl2.product_code
+                    left join m_product_link mpl3 on
+                        det.sku3 = mpl3.product_code
+                    left join m_summary ms on
+                        mo.order_id = ms.order_id
+                    left join mst_product mps on
+                        ms.sku = mps.product_code
+                    left join m_product_link mpls on
+                        ms.sku = mpls.product_code
+                    left join trs_sales_order so on
+                        mo.order_id = so.e_order
+                        and 
+                        so.cancel = 0
+                    left join m_config_new msc on
+                        msc.company_id = det.company_id
+                    WHERE
+                        det.order_id = ?`
+
+            const [headerData, detailsData] = await Promise.all([
+                dbQuery(queryHeader, [order_id]),
+                dbQuery(queryDetail, [order_id])
+            ]);
+
+
+            res.status(200).json({
+                header: headerData[0] || {},
+                details: detailsData
+            });
+
+
+
+        } catch (error) {
+            console.log(timestamp + error);
+            res.status(500).send(error);
+        }
+
+
+
+    }
     , addOrderHeader: async (req, res) => {
 
         let date = new Date();
@@ -1754,7 +1983,7 @@ module.exports = {
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let order_id = req.params.order_id
-        console.log("order_id",order_id)
+        console.log("order_id", order_id)
         if (req.dataToken.company_id && order_id) {
 
             let query = ` 
