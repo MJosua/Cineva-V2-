@@ -1,16 +1,3 @@
-const express = require('express')
-const route = express.Router();
-const { readToken } = require('../config/encrypts')
-
-
-const { orderController } = require('../controller');
-// const { getOrderDetail } = require('../controller/order');
-const { poUploader } = require("../config/uploader")
-const uploadPO = poUploader('poFile', 'poFile-').array('file', 1)
-// const order = require('../controller/order');
-
-//GET
-route.get('/get_id', readToken, orderController.getOrder_id)
 /**
  * @swagger
  * /order/get_id:
@@ -39,10 +26,26 @@ route.get('/get_id', readToken, orderController.getOrder_id)
  *                   description: The shortened version of the URL
  *                   example: https://short.ly/abc123
  */
+
+const express = require('express')
+const route = express.Router();
+const { readToken } = require('../config/encrypts')
+
+
+const { orderController } = require('../controller');
+// const { getOrderDetail } = require('../controller/order');
+const { poUploader } = require("../config/uploader")
+const uploadPO = poUploader('poFile', 'poFile-').array('file', 1)
+// const order = require('../controller/order');
+
+//GET
+route.get('/get_id', readToken, orderController.getOrder_id)
+
 route.get('/container', readToken, orderController.getContainer)
 route.get('/stuffingweek', readToken, orderController.stuffingWeek)
 route.get('/get_header', readToken, orderController.getOrderHeader)
 route.get('/get_header_special/:order_id', readToken, orderController.getOrderHeaderWithID)
+route.get('/get_header_noToken/:order_id', orderController.getOneOrderAllNoToken)
 route.get('/get_detail', readToken, orderController.getOrderDetail) 
 route.get('/get_detail_2', readToken, orderController.getOrderDetail2) 
 route.get('/get_po', readToken, orderController.getExistPo)
