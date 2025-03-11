@@ -41,7 +41,10 @@ module.exports = {
 
         let queryCount =
             `
-            SELECT COUNT(*) AS total_orders FROM m_order;
+            SELECT COUNT(*) AS total_orders FROM m_order
+            where
+            company_id = ${req.dataToken.company_id}
+            ;
             `
 
         let query = ` 
@@ -54,6 +57,7 @@ module.exports = {
         mo.final_dest,
         mo.delv_year,
         mo.po_buyer,
+        mo.po_date,
         concat(mh.harbour_name, ", " , st.txt ) port_shipment,
         mo.ship_to,
         stp.company_name ,
@@ -189,7 +193,7 @@ module.exports = {
                                 console.log(timestamp + "Error get getOrderAllIn !", err)
                             } else {
                                 if (results[0]) {
-                                    let packet = results.slice(startIndex, endIndex)
+                                    let packet = results
 
                                     // res.status(200).send(results);
                                     res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
@@ -242,6 +246,8 @@ module.exports = {
         // add feature on 20240105
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
+        let offset = (page - 1) * limit; // Correct offset calculation
+
         let desc = req.query.desc === "1" ? `DESC ` : `ASC`;
         let order_by_week = req.query.order_by_week === "1" ? `ORDER BY mo.po_date ${desc}` : `  ORDER BY mo.order_id ${desc} `;
 
@@ -251,6 +257,9 @@ module.exports = {
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
         let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%')` : ''
 
+        console.log("limit real", limit)
+        console.log("limit offset", offset)
+        console.log(" page", page)
 
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
@@ -319,8 +328,11 @@ module.exports = {
                     mod2.order_id = mo.order_id
                 left join mst_company stp on
                     mo.ship_to = stp.company_id
+                LEFT JOIN map_port_for_dist mpfd ON
+                    mo.port_shipment = mpfd.id
+                        and mo.company_id = mpfd.distributor_id    
                 left join mst_harbour mh on
-                    mo.port_shipment = mh.harbour_id
+                    mpfd.harbour_id = mh.harbour_id            
                 left join mst_country mc on
                     mh.country_id = mc.country_id
                 left join sys_text tp on
@@ -380,7 +392,13 @@ module.exports = {
                 ) mo
             where
                 mo.realization_quantity > 0
-    ` + status + find + range + order_by_week + ` limit ` + limit;
+    ` + status + find + range + order_by_week + ` limit ` + limit
+            +
+            ` OFFSET `
+            +
+            offset
+            ;
+
         // console.log(timestamp, "getRealizationAllIn",
         //     {
         //         page, limit, order_by_week, desc, status, stuffingstart, stuffingend, range, find
@@ -411,45 +429,79 @@ module.exports = {
 
             if (req.dataToken.user_id) {
 
-                // let { company_id } = req.body
+                let queryCount =
+                    `
+             select
+                COUNT(*) as total_orders
+            from
+                trs_realization tr
+            left join 
+            trs_sales_order tso on
+                tso.so_id = tr.so_id 
+            left join 
+            m_order mo on
+                mo.order_id = tso.e_order 
+            where
+                mo.company_id = ${req.dataToken.company_id}
+            ;
+            `
 
-                dbConf.query(query, (err, results) => {
-
+                dbConf.query(queryCount, (err, countResults) => {
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + "Error getRealizationAllIn !", err)
-                    } else {
+                        console.log(timestamp + " Error counting total orders!", err);
+                        return;
+                    }
+                    let totalDataLength = countResults[0]?.total_orders || 0;
+                    let totalPage = Math.ceil(totalDataLength / limit); // Use ceil to ensure correct page count
 
-                        if (results[0]) {
-                            let packet = results.slice(startIndex, endIndex)
-                            let totalDataLength = results.length
-                            let totalPage = Math.round(results.length / limit)
+                    console.log("query real",query)
+                    // let { company_id } = req.body
 
-                            // res.status(200).send(results);
-                            res.status(200).send({ find, packet, available_week, totalPage, totalDataLength, page });
+                    dbConf.query(query, (err, results) => {
 
-                            console.log(timestamp + `get getRealizationAllIn success data`);
+                        if (err) {
+                            res.status(500).send(err);
+                            console.log(timestamp + "Error getRealizationAllIn !", err)
                         } else {
 
-                            let packet = []
-                            let totalDataLength = 0
-                            let totalPage = 0
+                            if (results[0]) {
+                                let packet = results
+                                // res.status(200).send(results);
+                                res.status(200).send({ 
+                                    find, packet, available_week, totalPage, 
+                                    totalDataLength, page 
+                                });
 
-                            res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                            console.log(timestamp + `get getRealizationAllIn EMPTY data`);
-                            addSqlLogger(req.dataToken.user_id, (query), `-- data getRealizationAllIn-${req.dataToken.uid}`, `getRealizationAllIn-${req.dataToken.uid}`)
+                                console.log(timestamp + `get getRealizationAllIn success data`);
+                            } else {
+
+                                let packet = []
+                                let totalDataLength = 0
+                                let totalPage = 0
+
+                                res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
+                                console.log(timestamp + `get getRealizationAllIn EMPTY data`);
+                                addSqlLogger(req.dataToken.user_id, (query), `-- data getRealizationAllIn-${req.dataToken.uid}`, `getRealizationAllIn-${req.dataToken.uid}`)
+                            }
+
                         }
+                    })
 
-                    }
+                }
+                )
+
+                // let { company_id } = req.body
 
 
-                })
+
             } else {
                 res.status(200).send({
                     success: false,
                     message: 'unauthorized'
                 })
             }
+
 
 
         } catch (error) {
@@ -478,7 +530,9 @@ module.exports = {
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
         let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%') AND mo.company_id = ${req.dataToken.company_id} ` : ''
         let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}` : ` ORDER BY mo.order_id ${desc}`;
+        let offset = (page - 1) * limit; // Correct offset calculation
 
+        
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
 
@@ -580,6 +634,11 @@ module.exports = {
             ` LIMIT `
             +
             limit
+            +
+            ` OFFSET `
+            +
+            offset
+
             ;
 
 
@@ -663,7 +722,10 @@ module.exports = {
 
         let queryCount =
             `
-        SELECT COUNT(*) AS total_orders FROM m_order;
+        SELECT COUNT(*) AS total_orders FROM m_order
+        where
+            company_id = ${req.dataToken.company_id}
+        ;
         `
 
         let query = ` 
@@ -957,6 +1019,7 @@ module.exports = {
                             SELECT
                                 DISTINCT
                                 det.order_id,
+                                mo.order_id as morder_id,
                                 det.company_id,
                                 mo.final_dest, 
                                 mco.company_name,
@@ -1063,7 +1126,10 @@ module.exports = {
 
                 let queryCount =
                     `
-            SELECT COUNT(*) AS total_orders FROM m_order;
+            SELECT COUNT(*) AS total_orders FROM m_order
+            where
+            company_id = ${req.dataToken.company_id}
+            ;
             `
                 dbConf.query(queryCount, (err, countResults) => {
                     if (err) {
@@ -1083,7 +1149,7 @@ module.exports = {
 
                             if (results) {
 
-                                let packet = results.slice(startIndex, endIndex)
+                                let packet = results
 
                                 res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
                                 console.log(timestamp + `get getOrderDetail2 data`);
@@ -1268,6 +1334,8 @@ module.exports = {
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let order_id = req.params.order_id
+
+        console.log("order_id", order_id)
         //untuk menghilangkan week tertentu.
         let getBlockingCompany = (await dbQuery(`select company_id from m_config_new mcn where conditions = 12;`))[0];
 
@@ -1343,7 +1411,7 @@ module.exports = {
                     left join address stpa on
                         stp.address_id = stpa.address_id      
                     left join mst_country stpc on
-                        stpa.country = stpc.iso_code
+                        stpa.country = stpc.iso_code collate utf8mb4_general_ci
                     left join sys_user su on
                         su.user_id = mo.created_by
                     left join m_order_status mso on
@@ -1366,7 +1434,7 @@ module.exports = {
                     left join address btpa on
                         btp.address_id = btpa.address_id
                     left join mst_country btc on
-                        btpa.country = btc.iso_code    
+                        btpa.country = btc.iso_code     collate utf8mb4_general_ci
                     left join mst_company ntp1 on
                         mo.notify1 = ntp1.company_id
                         and ntp1.company_type_id = 7
@@ -4201,7 +4269,21 @@ module.exports = {
 
 
         let order = req.body.order
-        console.log(timestamp, "order data", order)
+        console.log(timestamp, "order data",
+            `
+            delv_week : ${order.delv_week}
+            delv_week_desc : ${order.delv_week_desc}
+            delv_year : ${order.delv_year}
+            po_buyer : ${order.po_buyer}
+            stuffing_date : ${order.stuffing_date}
+            port_shipment : ${order.port_shipment}
+            ship_to : ${order.ship_to}
+            po_url : ${order.po_url}
+            final_dest : ${order.final_dest}
+            tolling_id : ${order.tolling_id}
+            remarks : ${order.remarks}
+            `
+        )
 
         //query mendapatkan order_id terakhir dari database 
         async function generate_order_id(year) {

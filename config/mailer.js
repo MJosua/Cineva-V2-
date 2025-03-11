@@ -152,12 +152,14 @@ module.exports = {
                 summary_remarks
             } = headerData;
 
-            let po_link = po_url ?
+            let po_link = po_url && (po_url.trim() !== "" || po_url !== " " ) ?
                 `<a href='${process.env.BE_URL + po_url}'> 
                     click to open file 
                 </a>`
                 :
-                `<p> no file attached </p> `;
+                `<a href='https://www.indofoodinternational.com/e-order/indofoodpo/${po_buyer}'> 
+                    click to open file 
+                </a> `;
 
             let skuData = await dbQuery(` 
             SELECT  DISTINCT 
