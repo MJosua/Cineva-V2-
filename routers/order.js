@@ -60,7 +60,7 @@ route.get('/get_order_detail/:order_id', readToken, orderController.getOneOrderD
 route.get("/track_container", readToken, orderController.containerTracking); 
 
 
-route.post('/order_container_detail/:order_id', readToken, orderController.getOrderContainerDetail)
+route.get('/order_container_detail/:order_id', readToken, orderController.getOrderContainerDetail)
 
 // get order tolling {order_id} https://anp.indofoodinternational.com:2864/order/tolling/
 // add order tolling { order_id, company_id, po_buyer, detail_id, sku, qty, remarks } https://anp.indofoodinternational.com:2864/order/add_detail_tolling/
