@@ -279,7 +279,8 @@ const {
   hotsSettings,
   eventRouter,
   shortener,
-  hotsTps
+  hotsTps,
+  srtsRouter
 } = require("./routers");
 
 // Auth: 
@@ -301,7 +302,11 @@ App.use("/product", productRouter);
 App.use("/order", orderRouter);
 
 //additional  Indofood international
+App.use("/searates", srtsRouter);
+
+//additional  Indofood international
 App.use("/event", eventRouter);
+
 
 //admin: 
 App.use("/admin", adminRouter);

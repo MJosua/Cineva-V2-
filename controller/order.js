@@ -41,11 +41,17 @@ module.exports = {
 
         let queryCount =
             `
-            SELECT COUNT(*) AS total_orders FROM m_order
+            SELECT COUNT(*) AS total_orders FROM m_order mo
             where
             company_id = ${req.dataToken.company_id}
-            ;
             `
+            +
+            status
+            +
+            find
+            +
+            range
+       ;
 
         let query = ` 
         SELECT
@@ -109,7 +115,7 @@ module.exports = {
         LEFT JOIN mst_harbour mh ON
             mpfd.harbour_id = mh.harbour_id
         LEFT JOIN mst_country mc ON
-            mh.country_id = mc.country_name_id
+            mh.country_id = mc.country_id
         LEFT JOIN sys_text st ON
             mc.country_name_id = st.text_id
             AND st.lang_id = 1  
@@ -440,8 +446,14 @@ module.exports = {
                 mo.order_id = tso.e_order 
             where
                 mo.company_id = ${req.dataToken.company_id}
-            ;
-            `
+            
+            `+
+            status
+            +
+            find
+            +
+            range
+           ;
 
                 dbConf.query(queryCount, (err, countResults) => {
                     if (err) {
@@ -718,11 +730,17 @@ module.exports = {
 
         let queryCount =
             `
-        SELECT COUNT(*) AS total_orders FROM m_order
+        SELECT COUNT(*) AS total_orders FROM m_order mo
         where
             company_id = ${req.dataToken.company_id}
-        ;
         `
+        +
+            status
+            +
+            find
+            +
+            range
+           ;
 
         let query = ` 
             select
@@ -986,13 +1004,13 @@ module.exports = {
 
         let date = new Date();
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
 
-        let page = parseInt(req.query.page, 10);
-        page = isNaN(page) || page < 1 ? 1 : page; // Ensure page is valid
+        let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
+        let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) * 20 : 9999;
         let offset = (page - 1) * limit; // Correct offset calculation
         let desc = req.query.desc === "1" ? `DESC ` : `ASC`;
 
+       
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
@@ -1101,14 +1119,12 @@ module.exports = {
                             WHERE
                                 det.company_id = ${req.dataToken.company_id}
                                 `
-                    +
-                    status
-                    +
-                    find
-                    +
-                    range
-                    +
-                    order_by_week
+                                + status + find + range + order_by_week + ` limit ` + limit
+                                +
+                                ` OFFSET `
+                                +
+                                offset
+                                ;
 
 
                     ;
@@ -1119,14 +1135,21 @@ module.exports = {
                 //     }, "query: ", query)
 
 
-                console.log("query",query)
                 let queryCount =
                     `
-            SELECT COUNT(*) AS total_orders FROM m_order
+            SELECT COUNT(*) AS total_orders FROM m_order mo
             where
             company_id = ${req.dataToken.company_id}
-            ;
+            
             `
+            +
+            status
+            +
+            find
+            +
+            range
+           ;
+
                 dbConf.query(queryCount, (err, countResults) => {
                     if (err) {
                         res.status(500).send(err);
@@ -1367,6 +1390,7 @@ module.exports = {
                         mo.po_buyer,
                         stp.company_name ship_to,
                         mo.po_url,
+                        mo.created_by as creator_id,
                         concat(su.firstname, ' ', su.lastname ) created_by,
                         mso.status_order status_name,
                         mso.notes status_detail,

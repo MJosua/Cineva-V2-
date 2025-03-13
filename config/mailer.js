@@ -138,6 +138,7 @@ module.exports = {
 
             let {
                 po_buyer,
+                order_id,
                 po_date,
                 delv_week_desc,
                 delv_date,
@@ -157,7 +158,7 @@ module.exports = {
                     click to open file 
                 </a>`
                 :
-                `<a href='https://www.indofoodinternational.com/e-order/indofoodpo/${po_buyer}'> 
+                `<a href='https://www.indofoodinternational.com/e-order/indofoodpo/${order_id}'> 
                     click to open file 
                 </a> `;
 
