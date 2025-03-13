@@ -32,7 +32,7 @@ module.exports = {
 
 
 
-    orderRecievedMailSender: async (user_id, employee_id, order_id) => {
+    orderRecievedMailSender: async (user_id, employee_id, order_id_awal) => {
 
         let date = new Date();
         let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
@@ -134,7 +134,7 @@ module.exports = {
                     st_fd.text_id = mc_fd.country_name_id
                     and st_fd.lang_id = 1
                 where
-                    ms.order_id = ${order_id};`))[0];
+                    ms.order_id = ${order_id_awal};`))[0];
 
             let {
                 po_buyer,

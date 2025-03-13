@@ -4,6 +4,6 @@ const { readToken } = require("../config/encrypts");
 const { srtsController } = require('../controller');
 
 
-route.get('/searatesTrack/:id/:type', readToken, srtsController.GetSeaRatesTrack)
+route.get('/searatesTrack/:so_id/:number', readToken, srtsController.GetSeaRatesTrackUser)
 
 module.exports = route;

@@ -56,7 +56,7 @@ const db_trademark = production() ? process.env.DB_NAME_TM : process.env.DEV_DB_
 
 console.log("@db - host_config", host_config)
 console.log("@db - user_config", user_config)
-console.log("@db - password_config", password_config) 
+console.log("@db - password_config", password_config)
 
 
 // for default online order
@@ -125,6 +125,17 @@ const dbClick = mysql.createPool({
 });
 const dbQueryClick = util.promisify(dbClick.query).bind(dbClick);
 
+//for SeaRates 
+const dbSR = mysql.createPool({
+    // connectionLimit : 20, 
+    multipleStatements: true,
+    host: host_config,
+    user: user_config,
+    password: password_config,
+    database: process.env.DB_NAME_SR
+});
+const dbQuerySR = util.promisify(dbSR.query).bind(dbSR);
+
 // for event logger
 /**
  * 
@@ -163,6 +174,7 @@ module.exports = {
     dbIndomieku, dbQueryIndomieku,
     dbCardGenerator, dbQueryCardGenerator,
     dbHots, dbClick, dbQueryHots, dbQueryClick,
+    dbSR, dbQuerySR,
     addSqlLogger
 
 }
