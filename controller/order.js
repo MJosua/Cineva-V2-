@@ -2082,6 +2082,7 @@ module.exports = {
             let query = ` 
             SELECT
                 mo.order_id,
+                tso.so_id,
                 DATE_FORMAT(trd.delv_date, '%Y-%m-%d') delv_date,
                 tr.ship_name vessel_name,
                 tr.ship_line shipping_line,
