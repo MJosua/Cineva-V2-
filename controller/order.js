@@ -41,11 +41,17 @@ module.exports = {
 
         let queryCount =
             `
-            SELECT COUNT(*) AS total_orders FROM m_order
+            SELECT COUNT(*) AS total_orders FROM m_order mo
             where
             company_id = ${req.dataToken.company_id}
-            ;
             `
+            +
+            status
+            +
+            find
+            +
+            range
+       ;
 
         let query = ` 
         SELECT
@@ -109,7 +115,7 @@ module.exports = {
         LEFT JOIN mst_harbour mh ON
             mpfd.harbour_id = mh.harbour_id
         LEFT JOIN mst_country mc ON
-            mh.country_id = mc.country_name_id
+            mh.country_id = mc.country_id
         LEFT JOIN sys_text st ON
             mc.country_name_id = st.text_id
             AND st.lang_id = 1  
@@ -257,9 +263,6 @@ module.exports = {
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
         let find = req.query.find ? ` AND (mo.po_buyer LIKE '%${req.query.find}%' OR mo.order_id LIKE '%${req.query.find}%')` : ''
 
-        console.log("limit real", limit)
-        console.log("limit offset", offset)
-        console.log(" page", page)
 
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
@@ -443,8 +446,14 @@ module.exports = {
                 mo.order_id = tso.e_order 
             where
                 mo.company_id = ${req.dataToken.company_id}
-            ;
-            `
+            
+            `+
+            status
+            +
+            find
+            +
+            range
+           ;
 
                 dbConf.query(queryCount, (err, countResults) => {
                     if (err) {
@@ -455,7 +464,6 @@ module.exports = {
                     let totalDataLength = countResults[0]?.total_orders || 0;
                     let totalPage = Math.ceil(totalDataLength / limit); // Use ceil to ensure correct page count
 
-                    console.log("query real",query)
                     // let { company_id } = req.body
 
                     dbConf.query(query, (err, results) => {
@@ -468,9 +476,9 @@ module.exports = {
                             if (results[0]) {
                                 let packet = results
                                 // res.status(200).send(results);
-                                res.status(200).send({ 
-                                    find, packet, available_week, totalPage, 
-                                    totalDataLength, page 
+                                res.status(200).send({
+                                    find, packet, available_week, totalPage,
+                                    totalDataLength, page
                                 });
 
                                 console.log(timestamp + `get getRealizationAllIn success data`);
@@ -532,7 +540,7 @@ module.exports = {
         let order_by_week = req.query.order_by_week ? ` ORDER BY mo.delv_week ${desc}` : ` ORDER BY mo.order_id ${desc}`;
         let offset = (page - 1) * limit; // Correct offset calculation
 
-        
+
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
 
@@ -722,11 +730,17 @@ module.exports = {
 
         let queryCount =
             `
-        SELECT COUNT(*) AS total_orders FROM m_order
+        SELECT COUNT(*) AS total_orders FROM m_order mo
         where
             company_id = ${req.dataToken.company_id}
-        ;
         `
+        +
+            status
+            +
+            find
+            +
+            range
+           ;
 
         let query = ` 
             select
@@ -990,13 +1004,13 @@ module.exports = {
 
         let date = new Date();
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
 
-        let page = parseInt(req.query.page, 10);
-        page = isNaN(page) || page < 1 ? 1 : page; // Ensure page is valid
+        let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
+        let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) * 20 : 9999;
         let offset = (page - 1) * limit; // Correct offset calculation
         let desc = req.query.desc === "1" ? `DESC ` : `ASC`;
 
+       
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
@@ -1105,14 +1119,12 @@ module.exports = {
                             WHERE
                                 det.company_id = ${req.dataToken.company_id}
                                 `
-                    +
-                    status
-                    +
-                    find
-                    +
-                    range
-                    +
-                    order_by_week
+                                + status + find + range + order_by_week + ` limit ` + limit
+                                +
+                                ` OFFSET `
+                                +
+                                offset
+                                ;
 
 
                     ;
@@ -1123,14 +1135,21 @@ module.exports = {
                 //     }, "query: ", query)
 
 
-
                 let queryCount =
                     `
-            SELECT COUNT(*) AS total_orders FROM m_order
+            SELECT COUNT(*) AS total_orders FROM m_order mo
             where
             company_id = ${req.dataToken.company_id}
-            ;
+            
             `
+            +
+            status
+            +
+            find
+            +
+            range
+           ;
+
                 dbConf.query(queryCount, (err, countResults) => {
                     if (err) {
                         res.status(500).send(err);
@@ -1209,14 +1228,12 @@ module.exports = {
 
                 let query = `
                     select
-                        distinct
-                                            det.order_id,
-                        det.company_id,
+                        distinct det.order_id,	det.company_id,
                         mco.company_name,
                         det.created_by,
                         su.firstname,
                         case
-                                                when det.cont_size = 8 then ms.detail_id
+                            when det.cont_size = 8 then ms.detail_id
                             else det.detail_id
                         end detail_id,
                         mc.container_name,
@@ -1259,10 +1276,11 @@ module.exports = {
                         mp3.product_sku prod_sku_3,
                         det.remarks,
                         det.bulk,
-                        CASE 
-                        WHEN det.company_id NOT IN (${blockingSoIdCompany}) THEN so.so_id
-                            ELSE ''
-                        END AS so_id
+                        case
+                            when det.company_id not in (${blockingSoIdCompany})
+                            and tae.appr_date is not null then so.so_id
+                            else ''
+                        end as so_id
                     from
                         m_order_dtl det
                     inner join m_order mo on
@@ -1297,8 +1315,15 @@ module.exports = {
                         so.cancel = 0
                     left join m_config_new msc on
                         msc.company_id = det.company_id
-                    WHERE
-                        det.order_id = ?`
+                    left join trs_approval ta on
+                        so.so_id = ta.key
+                        and ta.company_id = so.company_id
+                    left join trs_approval_event tae on
+                        ta.id = tae.appr_id
+                        and tae.company_id = ta.company_id
+                        and tae.id = 4
+                        where
+                    det.order_id = ?`
 
                 let parameter = [order_id]
 
@@ -1365,6 +1390,7 @@ module.exports = {
                         mo.po_buyer,
                         stp.company_name ship_to,
                         mo.po_url,
+                        mo.created_by as creator_id,
                         concat(su.firstname, ' ', su.lastname ) created_by,
                         mso.status_order status_name,
                         mso.notes status_detail,
@@ -2051,8 +2077,7 @@ module.exports = {
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let order_id = req.params.order_id
-        console.log("order_id", order_id)
-        if (req.dataToken.company_id && order_id) {
+        if ( req.dataToken.company_id && order_id) {
 
             let query = ` 
             SELECT
@@ -2081,6 +2106,8 @@ module.exports = {
                 mo.order_id = tso.e_order
             LEFT JOIN trs_realization tr ON
                 tso.so_id = tr.so_id
+            LEFT JOIN trs_invoice tri on
+                tr.invoice_id = tri.invoice_id    
             LEFT JOIN trs_realization_detail trd ON
                 tr.cont_id = trd.cont_id
                 AND tr.so_id = trd.so_id
@@ -2092,7 +2119,7 @@ module.exports = {
             GROUP BY
                 1,2,3,4,10; `
 
-            let parameter = [req.body.order_id];
+            let parameter = [ order_id ];
 
             dbConf.query(query, parameter, (err, results) => {
 
