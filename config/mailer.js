@@ -1,5 +1,6 @@
 const nodemailer = require("nodemailer");
 const { dbConf, dbQuery, dbTMQuery } = require("../config/db");
+const { formatDate } = require("../Utility/DateFormat");
 // const { notification } = require("../automation");
 
 
@@ -153,7 +154,7 @@ module.exports = {
                 summary_remarks
             } = headerData;
 
-            let po_link = po_url && (po_url.trim() !== "" || po_url !== " " ) ?
+            let po_link = po_url && (po_url.trim() !== "" || po_url !== " ") ?
                 `<a href='${process.env.BE_URL + po_url}'> 
                     click to open file 
                 </a>`
@@ -211,7 +212,7 @@ module.exports = {
             const printDelv_method = () => {
 
                 if (cont_size == 8) {
-                    return ` <td>Est. Delivery Date</td> <td>: ${delv_date} </td> `
+                    return ` <td>Est. Delivery Date</td> <td>: ${formatDate(delv_date)} </td> `
                 } else {
                     return ` <td>Est. Delivery Week</td> <td>: ${delv_week_desc} </td> `
                 }
@@ -333,12 +334,25 @@ module.exports = {
                         
                         <br>
                         <br>
-                        Sincerely, 
-            
-                        <span style="font-weight: bold;"> 
-                            <br>
-                            Indofood International Division
+                        Best Regards,
+                        <br>
+                        <span style="font-weight: bold;">
+                        International Operations Division
                         </span>
+                        <br>
+                        <span style="font-weight: bold;">
+                        PT Indofood CBP Sukses Makmur, Tbk.
+                        </span>
+                        <br>
+                        Indofood Tower, 23rd Floor, Jakarta, Indonesia
+                        <br><br>
+                        For any inquiries or assistance, please contact our support team.
+                        <br>
+                        <a href="www.indofoodinternational.com ">www.indofoodinternational.com </a>
+                        <br>
+                        <a href="">
+                        Order Terms & Conditions
+                        </a>
                         <br>
                     </p>
                 </div>

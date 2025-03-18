@@ -10,6 +10,7 @@ const { group } = require("console");
 // const { parse } = require("path");
 
 let green = "\x1b[32m"
+let white = "\x1b[37m";
 
 module.exports = {
 
@@ -51,7 +52,7 @@ module.exports = {
             find
             +
             range
-       ;
+            ;
 
         let query = ` 
         SELECT
@@ -448,12 +449,12 @@ module.exports = {
                 mo.company_id = ${req.dataToken.company_id}
             
             `+
-            status
-            +
-            find
-            +
-            range
-           ;
+                    status
+                    +
+                    find
+                    +
+                    range
+                    ;
 
                 dbConf.query(queryCount, (err, countResults) => {
                     if (err) {
@@ -734,13 +735,13 @@ module.exports = {
         where
             company_id = ${req.dataToken.company_id}
         `
-        +
+            +
             status
             +
             find
             +
             range
-           ;
+            ;
 
         let query = ` 
             select
@@ -1010,7 +1011,7 @@ module.exports = {
         let offset = (page - 1) * limit; // Correct offset calculation
         let desc = req.query.desc === "1" ? `DESC ` : `ASC`;
 
-       
+
         let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
@@ -1119,15 +1120,15 @@ module.exports = {
                             WHERE
                                 det.company_id = ${req.dataToken.company_id}
                                 `
-                                + status + find + range + order_by_week + ` limit ` + limit
-                                +
-                                ` OFFSET `
-                                +
-                                offset
-                                ;
-
-
+                    + status + find + range + order_by_week + ` limit ` + limit
+                    +
+                    ` OFFSET `
+                    +
+                    offset
                     ;
+
+
+                ;
 
                 // console.log(timestamp, "getOrderDetail2",
                 //     {
@@ -1142,13 +1143,13 @@ module.exports = {
             company_id = ${req.dataToken.company_id}
             
             `
-            +
-            status
-            +
-            find
-            +
-            range
-           ;
+                    +
+                    status
+                    +
+                    find
+                    +
+                    range
+                    ;
 
                 dbConf.query(queryCount, (err, countResults) => {
                     if (err) {
@@ -2077,7 +2078,7 @@ module.exports = {
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let order_id = req.params.order_id
-        if ( req.dataToken.company_id && order_id) {
+        if (req.dataToken.company_id && order_id) {
 
             let query = ` 
             SELECT
@@ -2120,7 +2121,7 @@ module.exports = {
             GROUP BY
                 1,2,3,4,10; `
 
-            let parameter = [ order_id ];
+            let parameter = [order_id];
 
             dbConf.query(query, parameter, (err, results) => {
 
@@ -4249,218 +4250,63 @@ module.exports = {
 
 
         let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
-        let { user_id, company_id } = req.dataToken;
+        let { user_id, company_id, active } = req.dataToken;
+        let order = req.body.order;
 
-        //   request bodynya jadi gini: 
-        /*
-                order: {
-                    [
-                        {
-                            delv_week: 0,
-                            delv_week_desc: "",
-                            delv_year: 0,
-                            po_buyer: "",
-                            stuffing_date: "YYYY-MM-DD",
-                            port_shipment: 0,
-                            ship_to: 0,
-                            po_url: "",
-                            final_dest: 0,
-                            tolling_id: 1,
-                            remarks: '-',
-                            detail: [{
-                                detail_id: 0,
-                                custom:false,
-                                cont_size: 0,
-                                cont_qty: 0,
-                                bulk: 1,
-                                remarks: "",
-                                Flavour:
-                                    [{
-                                        sku: 0,
-                                        qty: 0,
-                                    }],
-                            }],
-                            summary: [
-                                {
-                                    detail_id: 0,
-                                    sku: 0,
-                                    qty: 0
-                                }
-                            ]
-                        }
-                    ]
-                };
- 
-        */
+        if (!order || order.length === 0) {
+            return res.status(400).json({ success: false, message: "Invalid request data." });
+        }
 
+        console.log(timestamp, "Received Orders:", order);
 
-        let order = req.body.order
-        console.log(timestamp, "order data",
-            `
-            delv_week : ${order.delv_week}
-            delv_week_desc : ${order.delv_week_desc}
-            delv_year : ${order.delv_year}
-            po_buyer : ${order.po_buyer}
-            stuffing_date : ${order.stuffing_date}
-            port_shipment : ${order.port_shipment}
-            ship_to : ${order.ship_to}
-            po_url : ${order.po_url}
-            final_dest : ${order.final_dest}
-            tolling_id : ${order.tolling_id}
-            remarks : ${order.remarks}
-            `
-        )
+        let orderList = []
 
         //query mendapatkan order_id terakhir dari database 
-        async function generate_order_id(year) {
+        const generateOrderId = async (year) => {
+            let currentYear = year || new Date().getFullYear();
+            let yearPrefix = String(currentYear).slice(2, 4);
 
-            let selectYear = year ? year : parseInt((new Date()).getFullYear())
+            let latestOrder = await dbQuery(`
+                SELECT MAX(order_id) AS latest FROM (
+                    SELECT order_id FROM m_order WHERE company_id = ${company_id} AND delv_year = ${currentYear}
+                    UNION ALL  
+                    SELECT order_id FROM m_order_dtl WHERE company_id = ${company_id} AND delv_year = ${currentYear}
+                    UNION ALL 
+                    SELECT order_id FROM m_summary WHERE company_id = ${company_id}
+                ) AS all_orders;
+            `);
 
+            let latestId = latestOrder[0]?.latest || null;
 
-            try {
-
-                let prevOrderId = (await dbQuery(`SELECT
-                                                    MAX(order_id) AS LATEST
-                                                    FROM (
-                                                    SELECT order_id FROM m_order mo WHERE company_id  = ${req.dataToken.company_id} AND delv_year = ${selectYear}
-                                                    UNION ALL  
-                                                    SELECT order_id  FROM m_order_dtl WHERE company_id  = ${req.dataToken.company_id} AND delv_year = ${selectYear}
-                                                    UNION ALL 
-                                                    SELECT order_id FROM m_summary WHERE company_id  = ${req.dataToken.company_id}
-                                                    ) AS all_order_id;`))[0].LATEST;
-                // let prevOrderId = (await dbQuery(`SELECT MAX(order_id) AS LATEST FROM m_order WHERE company_id = ${req.dataToken.company_id} AND delv_year = ${year};`))[0].LATEST;
-
-
-                // membuat kepala tahun order_id 
-                // let stringCuttedYear = yearOrderId.slice(2, 5);
-
-                // ini dulu. based on lemparan
-                // let yearOrderId = selectYear ? selectYear.toString() : date.getFullYear().toString();
-                let yearOrderId = ((new Date()).getFullYear()).toString();
-
-                let stringCuttedYear = yearOrderId.slice(2, 5);
-
-                if (prevOrderId === null) {
-                    // if (orderIDX === 0) {
-                    // order_id = parseInt(stringCuttedYear + "00" + company_id + "00001");
-                    // console.log(timestamp + "No existing order! Starting Order ID: ", prevOrderId);
-                    return (parseInt(stringCuttedYear + "00" + company_id + "00000"));
-                    // } else if (orderIDX > 0) {
-                    // order_id = parseInt(stringCuttedYear + "00" + company_id + "00001") + orderIDX;
-                    // console.log("Order ID 10: ", order_id, orderIDX);
-                    // }
-                } else if (prevOrderId !== null) {
-
-                    //new tuning here: 
-
-                    // baca tahun dari karakter pertama order_id
-                    let stringifyLatest_id = prevOrderId.toString()
-                    let trimLatest_id = stringifyLatest_id.slice(0, 2);
-
-                    //ambil 2 karakter tahun sekarang
-                    let latestYear = parseInt((new Date()).getFullYear());
-                    let latestYear_string = latestYear.toString()
-                    let trimLatestYear = latestYear_string.slice(2, 4);
-
-                    if (trimLatest_id == trimLatestYear) {
-
-                        //lempar id sebelumnya 
-                        return (parseInt(prevOrderId))
-
-                    } else {
-
-                        //paksa lempar id baru
-                        let new_id = trimLatestYear + "00" + company_id + "00000"
-                        return (parseInt(new_id));
-
-                    }
-
-                }
-
-            } catch (error) {
-                console.log(timestamp + "error get order_id: " + error)
-            }
-
-        }
+            return latestId ? parseInt(latestId) : parseInt(`${yearPrefix}00${company_id}00000`);
+        };
 
         async function emergencyDeleteOrder(order, last_order_id) {
-
-            // const queryGetOrder_id = ' SELECT mo.order_id FROM m_order mo WHERE mo.po_buyer = ?';
-            // const queryEmergencyDeleteOrder = 'CALL delete_po_order(?, ?, ?);';
             const queryEmergencyDeleteOrder = 'CALL delete_order(?);';
+            console.log(timestamp, "order_id delete list", orderList);
 
+            await Promise.all(orderList.map(order_id =>
+                new Promise((resolve) => {
+                    setTimeout(() => {
+                        let parameterEmergencyDeleteOrder = [order_id];
 
-            let order_index = 0
+                        dbConf.query(queryEmergencyDeleteOrder, parameterEmergencyDeleteOrder, async (err, results) => {
+                            if (err) {
+                                console.log(timestamp + " Cannot delete order for order_id " + order_id);
+                            } else {
+                                addSqlLogger(req.dataToken.user_id, `${queryEmergencyDeleteOrder} + ${order_id}`, results, `DELETE error order_id-${order_id}`);
+                                console.log(timestamp + " just ran emergency delete order for order_id " + order_id);
+                            }
+                            resolve();
+                        });
 
-
-            for (const data of order) {
-
-                order_index++
-
-                let order_id = last_order_id + order_index
-
-                console.log(timestamp, "order_id delete", order_id);
-
-                setTimeout(async () => {
-
-                    // let parameterEmergencyDeleteOrder = [data.po_buyer, company_id, data.delv_year];
-                    let parameterEmergencyDeleteOrder = [order_id];
-
-
-                    //jalankan query mendapatkan order_id dari po_buyer
-                    dbConf.query(queryEmergencyDeleteOrder, parameterEmergencyDeleteOrder, async (err, results) => {
-
-
-                        if (err) {
-
-                            console.log(timestamp + " Cannot  order  for PO_BUYER" + (order_id))
-
-                        } else {
-
-                            // setTimeout(async () => {
-                            //     let delete_order_id = results ? results : 0
-
-                            //     if (order) {
-                            //         for (const id of delete_order_id) {
-                            //             dbConf.query(queryGetOrder_id, [id.order_id], async (err2, results2) => {
-
-                            //                 if (err2) {
-                            //                     console.log(timestamp, "ERROR! cannot delete order_id", id)
-                            //                 } else {
-
-                            //                     addSqlLogger(req.dataToken.user_id, ` ${queryEmergencyDeleteOrder} + ${id.order_id}`, results2, `DELETE error order-${id.order_id}`);
-                            //                     console.log(timestamp + " just run emergency delete order for PO_BUYER and ORDER_ID " + (data.po_buyer) + ' and ' + (id.order_id))
-
-
-
-                            //                 }
-
-                            //             });
-
-                            //         }
-
-                            //     } else {
-                            //         console.log(timestamp + " cannot delete order order ID is not found. po_buyer:" + data.po_buyer)
-
-                            //     }
-
-                            // }, 2000);
-                            addSqlLogger(req.dataToken.user_id, ` ${queryEmergencyDeleteOrder} + ${order_id}`, results, `DELETE error order_id-${order_id}`);
-                            // console.log(timestamp + " just run emergency delete order for PO_BUYER and ORDER_ID " + (data.po_buyer) + ' and ' + (id.order_id))
-                            console.log(timestamp + " just run emergency delete order for PO_BUYER" + (order_id))
-
-
-                        }
-
-                    });
-
-                }, 3000);
-
-            }
-
+                    }, 3000);
+                })
+            ));
         }
+
 
         /**
          * 
@@ -4496,7 +4342,7 @@ module.exports = {
 
             try {
 
-                let order_id_raw = await generate_order_id(order[0].delv_year);
+                let order_id_raw = await generateOrderId(order[0].delv_year);
 
                 let orderIndex = 0
 
@@ -4505,10 +4351,14 @@ module.exports = {
                     //order_data adalah alias untuk tiap2 object yang ada dalam array 
 
                     orderIndex++
+
                     // let order_id = await generate_order_id()
                     let order_id = order_id_raw + orderIndex;
+                    orderList.push(order_id);
+                    console.log(white + "==================NEW=ORDER======================")
 
                     console.log(timestamp, "orderIndex ke ", orderIndex)
+                    console.log(timestamp, "order_id ", order_id)
 
                     //object destructuring karena akan dideclare secara global
                     let {
@@ -4521,6 +4371,8 @@ module.exports = {
                         port_shipment, ship_to, po_url
 
                     } = order_data;
+
+                    console.log(timestamp, "Po_Buyer ", po_buyer)
 
 
                     const year = date.getFullYear();
@@ -4545,7 +4397,6 @@ module.exports = {
                     let number = await dbQuery(`SELECT company_number  FROM mst_company mc WHERE company_id = ${company_id}`);
                     // let selectWeek = order_data.stuffing_date ? await (dbQuery(`CALL day2week(${order_data.stuffing_date}, @wikwik);`)) : delv_week;
 
-                    console.log(timestamp, "order_data.final_dest", order_data.final_dest)
                     console.log(timestamp, "final_dest", final_dest)
 
                     let checkCondition = specialCondition[0] ? specialCondition[0].container : '';
@@ -4578,19 +4429,10 @@ module.exports = {
                         bill_to, notify_to_1, notify_to_2
                     ];
 
-                    //memasukkan header
-                    dbConf.query(query, parameter, (err) => {
-                        if (err) {
-                            console.log(timestamp, "error add header", err);
-                            emergencyDeleteOrder(order, order_id_raw);
-                        }
-                    });
-                    // addSqlLogger(user_id, (query.concat(parameter)), `insert query`, `addOrderHeader-${po_buyer}`);
+                    await dbQuery(query, parameter);
 
-                    //melakukan loop sesuai dengan jumlah  data dalam detail
                     // console.log(timestamp, "order_data.detail ", order_data.detail)
                     for (const detail of (order_data.detail)) {
-
                         let queryDetail = `
                                             INSERT INTO m_order_dtl
                                             (order_id, company_id, created_by, detail_id, 
@@ -4629,60 +4471,11 @@ module.exports = {
                             order_data.remarks, detail.bulk, delv_week, delv_year,
                             customInInteger
                         ]
-                        try {
-                            // Insert order details
-                            await new Promise((resolve, reject) => {
-                                dbConf.query(queryDetail, parameterDetail, (err) => {
-                                    if (err) {
-                                        console.log(timestamp, "error add detail", err);
-                                        emergencyDeleteOrder(order, order_id_raw);
 
-                                        reject(err);
-                                    } else {
-                                        console.log(timestamp, " addDetail on addOrder", po_buyer, " detail ", detail);
-                                        resolve();
-                                    }
-                                });
-                            });
-
-
-
-                        } catch (error) {
-                            console.log(timestamp, "Error addDetail on addOrder", error);
-                        }
-                        // try {
-                        //     dbConf.query(queryDetail, parameterDetail, (err) => {
-
-
-                        //         if (err) {
-                        //             console.log(timestamp, "error add detail", err);
-                        //             emergencyDeleteOrder(order, order_id_raw);
-                        //         } else {
-
-                        //             let queryInsertSO = `call insert_so_single(?);`;
-                        //             let paramInsertSO = [order_id]
-
-                        //             dbConf.query(queryInsertSO, paramInsertSO, (err) => {
-
-                        //                 if (err) {
-                        //                     console.log(timestamp, "error Inser SO for : ", order_id, err);
-                        //                     emergencyDeleteOrder(order, order_id_raw);
-                        //                 } else {
-                        //                     console.log(timestamp, "Running Inser SO for : ", order_id, err);
-                        //                 }
-                        //             })
-                        //         }
-                        //     })
-                        //     console.log(timestamp, " addDetail on addOrder", po_buyer, " detail ", detail)
-                        // } catch (error) {
-                        //     console.log(timestamp, "Error addDetail on addOrder", error)
-                        // }
-                        // addSqlLogger(user_id, (query.concat(parameterDetail)), `insert query`, `addOrderDetail-${order_id}-${detail.detail_id}`)
+                        await dbQuery(queryDetail, parameterDetail);
 
                     }
-
                     // //melakukan loop sesuai dengan jumlah data dalam summary
-                    console.log(timestamp, "order_data.summary ", order_data.summary)
                     for (const summary of (order_data.summary)) {
                         console.log("summary", summary)
                         let querySummary = `
@@ -4693,91 +4486,42 @@ module.exports = {
                                 (?, ?, ?, ?, ?, ?, ?, ?); 
                                 `
                         let parameterSummary = [order_id, company_id, po_buyer, summary.detail_id, summary.sku, summary.qty, order_data.remarks, stuffing_date_rev];
-                        try {
-                            await new Promise((resolve, reject) => {
-                                dbConf.query(querySummary, parameterSummary, (err) => {
-                                    if (err) {
-                                        console.log(timestamp, "error add Summary", err);
-                                        emergencyDeleteOrder(order, order_id_raw);
-                                        reject(err);
-                                    } else {
-                                        console.log(timestamp, "Successfully added summary", parameterSummary);
-                                        resolve();
 
-
-
-                                    }
-                                });
-                            });
-                        } catch (error) {
-                            console.log(timestamp, "Error caught in summary insertion", error);
-                        }
                         // addSqlLogger(user_id, (querySummary.concat(parameterSummary)), `insert query results`, `addOrderDetail-${order_id}-${summary.detail_id}`)
-
+                        await dbQuery(querySummary, parameterSummary);
 
 
                     }
-
-                    //idupin kalau udah production. spam aja ini.
-                    orderRecievedMailSender(user_id, req.dataToken.employee_id, order_id)
-
-
-                    // atau ini
-                    // axios.post(process.env.LOCAL_MAILER_API + `/order/send_email_order/${order_id}`, {
-                    //     headers: {
-                    //         'Authorization': `Bearer ${req.token}`
-                    //     }
-                    // })
-
-                    // axios.post(`https://anp.indofoodinternational.com:2864/order/send_email_order/${order_id}/${req.dataToken.employee_id}/${user_id}`, {
-                    //     headers: {
-                    //         'Authorization': `Bearer ` + req.token
-                    //     }
-                    // }).then((res) => {
-                    //     console.log(timestamp, "Axios mailer success")
-
-                    // }).catch((err) => {
-                    //     console.log(timestamp, "error Axios send mail",)
-                    // })
                     // Insert SO after details are successfully added
                     let queryInsertSO = `CALL insert_so_single(?);`;
                     let paramInsertSO = [order_id];
-                    try {
-                        await new Promise((resolve, reject) => {
-                            dbConf.query(queryInsertSO, paramInsertSO, (err) => {
-                                if (err) {
-                                    console.log(timestamp, "error Insert SO for : ", order_id, err);
-                                    emergencyDeleteOrder(order, order_id_raw);
-                                    reject(err);
-                                } else {
-                                    console.log(timestamp, "Running Insert SO for : ", order_id);
-                                    resolve();
-                                }
-                            });
-                        });
-                    } catch (error) {
-                        console.log(timestamp, "Error caught in queryInsertSO", error);
-                    };
+                    await dbQuery(queryInsertSO, [order_id]);
 
                 };
 
-                setTimeout(() => {
-                    console.log(timestamp + `==========> add Order is success`)
-                    res.status(200).send({
-                        success: true,
-                        message: 'All order has been added. check transaction list'
-                    })
-                }, 2000)
+                console.log(timestamp + `==========> add Order is success`)
 
-            } catch (error) {
-                emergencyDeleteOrder(order, order_id_raw);
-                console.log(timestamp + "error at add order" + error)
+                orderList.forEach((order_id) => {
+                    orderRecievedMailSender(user_id, req.dataToken.employee_id, order_id);
+                });
+
+                res.status(200).send({
+                    success: true,
+                    message: 'All order has been added. check transaction list'
+                })
+            }
+            catch (error) {
+                emergencyDeleteOrder(order);
+                console.log(timestamp + " error at add order, " + error)
                 // addSqlLogger(user_id, `no query`, `insert query results`, `FAILED addOrderDetail-${order}`)
                 res.status(500).send({
                     success: false,
-                    message: 'add order failed'
+                    message: error
                 })
                 next(error);
+
+            } finally {
+                console.log( white + "================================================")
 
             }
 
