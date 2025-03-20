@@ -106,7 +106,7 @@ module.exports = {
 
             } else {
 
-              
+
               let userData = results;
 
               //berhasil login
@@ -133,11 +133,13 @@ module.exports = {
 
 
                 // UPDATE TOKEN yang disimpan di sys_user untuk proses kalibrasi validasi token existing
-                let sqlUpdateToken = dbQuery(`
-                   UPDATE sys_user 
-                   SET registration_nr = '${token}',
-                   last_login_date = now()
-                   WHERE uid = ${dbConf.escape(userID)};`);
+                const sqlUpdateToken = await dbQuery(
+                  `UPDATE sys_user 
+                   SET registration_nr = ?, last_login_date = now()
+                   WHERE uid = ?`,
+                  [token, userID]
+              );
+                console.log("sqlUpdateToken",sqlUpdateToken)
 
                 //reset percobaan login 
                 let sqlInject = await dbQuery(
@@ -283,23 +285,28 @@ module.exports = {
     let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
     try {
-      let validateToken = await dbQuery(
-        `SELECT su.user_id FROM sys_user su WHERE su.user_id=${dbConf.escape(
-          req.dataToken.user_id
-        )} AND registration_nr = ${dbConf.escape(req.token)}`
+      const validateToken = await dbQuery(
+        `SELECT su.user_id FROM sys_user su WHERE su.user_id = ? AND registration_nr = ?`,
+        [req.dataToken.user_id, req.token]
       );
 
+      // console.log("req.dataToken.user_id", req.dataToken.user_id)
+      // console.log("req.dataToken", req.token)
+      // console.log("validateToken[0]", validateToken[0])
       if (validateToken[0]) {
         console.log(timestamp + "=>> Auth Keep login for : " + req.dataToken.uid);
-        // console.log("Auth Keep login for : " + req.dataToken.user_id + " & token validation: " + JSON.stringify(validateToken[0].user_id));
+        // console.log("--------------------------")
+        // console.log("Auth Keep login for : " + req.dataToken.user_id)
+        // console.log("--------------------------")
         // console.log("Token : ", req.token);
-        // console.log("validateToken", validateToken);
+        // console.log("--------------------------")
+        console.log("validateToken", validateToken);
 
         let userID = await dbQuery(
           `
           SELECT
           su.uid,
-          su. user_id,
+          su.user_id,
           su.lang_id,
           su.employee_id,
           mc.country_id,
@@ -347,12 +354,10 @@ module.exports = {
               `
         );
 
-
         if (userID[0].active === 2) {
           let userID = []
           let token = []
           res.status(200).send([...userID, token]);
-
         } else {
 
           // optimized dengan mengirim data token lebih sedikiiiiit
@@ -383,19 +388,24 @@ module.exports = {
           SET registration_nr = '${token}'
           WHERE user_id = ${dbConf.escape(req.dataToken.user_id)};`);
 
+
           // UPDATE data kapan kali terakhir aktif login. 
           let sqlUpdateLoginLog = await dbQuery(`
-          UPDATE sys_user SET last_login_date = now() WHERE uid = '${userID}'; `);
+          UPDATE sys_user SET last_login_date = now() WHERE uid = '${req.dataToken.uid}'; `);
 
+        
         }
 
       } else {
-        res.status(500).send([]);
+
+        res.status(401).send([]);
+        console.log(timestamp + "! Error query SQL :", res.data);
+
       }
 
     } catch (error) {
-      console.log(timestamp + "! Error query SQL :", error);
-      res.status(500).send(error);
+      console.log(timestamp + "! Error query SQL :", error.message);
+      res.status(500).send(error.message);
     }
   },
   changePassword: async (req, res) => {
