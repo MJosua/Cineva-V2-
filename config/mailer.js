@@ -348,9 +348,9 @@ module.exports = {
                         <br><br>
                         For any inquiries or assistance, please contact our support team.
                         <br>
-                        <a href="www.indofoodinternational.com ">www.indofoodinternational.com </a>
+                        <a href="https://www.indofoodinternational.com/">www.indofoodinternational.com </a>
                         <br>
-                        <a href="">
+                        <a href="https://www.indofoodinternational.com/e-order/termsncondition">
                         Order Terms & Conditions
                         </a>
                         <br>
@@ -436,17 +436,35 @@ module.exports = {
                          </table> 
                        </div>
                        <p>
-                             
-                           <br>
-                           <br>
-                           Sincerely, 
-               
-                           <span style="font-weight: bold;"> 
-                               <br>
-                               Indofood International
-                           </span>
-                           <br>
-                       </p>
+                        If you have any questions or concerns, please do not hesitate to contact us via these contact:
+                        <br>
+                        ${emailAnalisList}
+                        <br>
+                        Thank you for your order!
+                        
+                        <br>
+                        <br>
+                        Best Regards,
+                        <br>
+                        <span style="font-weight: bold;">
+                        International Operations Division
+                        </span>
+                        <br>
+                        <span style="font-weight: bold;">
+                        PT Indofood CBP Sukses Makmur, Tbk.
+                        </span>
+                        <br>
+                        Indofood Tower, 23rd Floor, Jakarta, Indonesia
+                        <br><br>
+                        For any inquiries or assistance, please contact our support team.
+                        <br>
+                        <a href="https://www.indofoodinternational.com/">www.indofoodinternational.com </a>
+                        <br>
+                        <a href="https://www.indofoodinternational.com/e-order/termsncondition">
+                        Order Terms & Conditions
+                        </a>
+                        <br>
+                    </p>
                    </div>
                        `,
                     });
@@ -969,12 +987,34 @@ module.exports = {
                     </p>
 
                     <p>
-                        Thank you.
+                        If you have any questions or concerns, please do not hesitate to contact us via these contact:
+                        <br>
+                        ${emailAnalisList}
+                        <br>
+                        Thank you for your order!
+                        
                         <br>
                         <br>
-                        Sincerely,
+                        Best Regards,
                         <br>
-                        Indofood International
+                        <span style="font-weight: bold;">
+                        International Operations Division
+                        </span>
+                        <br>
+                        <span style="font-weight: bold;">
+                        PT Indofood CBP Sukses Makmur, Tbk.
+                        </span>
+                        <br>
+                        Indofood Tower, 23rd Floor, Jakarta, Indonesia
+                        <br><br>
+                        For any inquiries or assistance, please contact our support team.
+                        <br>
+                        <a href="https://www.indofoodinternational.com/">www.indofoodinternational.com </a>
+                        <br>
+                        <a href="https://www.indofoodinternational.com/e-order/termsncondition">
+                        Order Terms & Conditions
+                        </a>
+                        <br>
                     </p>
                 </div>`),
             });

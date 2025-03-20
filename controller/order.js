@@ -528,7 +528,6 @@ module.exports = {
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
         // timestamp + 
         let order_id = req.params.order_id
-        console.log("order_id special", order_id)
         // add feature on 20240105
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
@@ -1216,7 +1215,6 @@ module.exports = {
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let order_id = req.params.order_id
-        console.log("detail order_id", order_id)
         //untuk menghilangkan week tertentu.
         let getBlockingCompany = (await dbQuery(`select company_id from m_config_new mcn where conditions = 12;`))[0];
 
@@ -4433,6 +4431,17 @@ module.exports = {
 
                     // console.log(timestamp, "order_data.detail ", order_data.detail)
                     for (const detail of (order_data.detail)) {
+                        console.log(`Detail",
+                           SKU : ${(detail.Flavour[0] ? (detail.Flavour[0].sku > 1 ? detail.Flavour[0].sku : 0) : 0)}, 
+                           Qty : ${(detail.Flavour[0] ? (detail.Flavour[0].qty > 1 ? detail.Flavour[0].qty : 0) : 0)},
+
+                           SKU : ${(detail.Flavour[1] ? (detail.Flavour[1].sku > 1 ? detail.Flavour[1].sku : 0) : 0)}, 
+                           Qty :  ${(detail.Flavour[1] ? (detail.Flavour[1].qty > 1 ? detail.Flavour[1].qty : 0) : 0)},
+
+                           SKU :  ${(detail.Flavour[2] ? (detail.Flavour[2].qty > 1 ? detail.Flavour[2].qty : 0) : 0)},
+                           Qty : ${(detail.Flavour[2] ? (detail.Flavour[2].sku > 1 ? detail.Flavour[2].sku : 0) : 0)},
+                             
+                        `)
                         let queryDetail = `
                                             INSERT INTO m_order_dtl
                                             (order_id, company_id, created_by, detail_id, 
@@ -4521,7 +4530,7 @@ module.exports = {
                 next(error);
 
             } finally {
-                console.log( white + "================================================")
+                console.log(white + "================================================")
 
             }
 

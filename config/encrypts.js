@@ -23,6 +23,7 @@ module.exports = {
             expiresIn
         });
     },
+
     readToken: (req, res, next) => {
 
         jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY, (err, decode) => {
