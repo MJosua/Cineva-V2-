@@ -936,13 +936,13 @@ module.exports = {
 
             let trackingDetailQuery = await dbQuery(`
             SELECT
-                DATE_FORMAT(trd.delv_date, '%Y-%m-%d') delv_date,
+                DATE_FORMAT(trd.delv_date, '%b %d, %Y') delv_date,
                 mo.order_id,
                 tr.ship_name vessel_name,
                 tr.ship_line shipping_line,
                 tr.cont_id,
-                DATE_FORMAT(tr.etd, '%Y-%m-%d') etd,
-                DATE_FORMAT(tr.eta, '%Y-%m-%d') eta,
+                DATE_FORMAT(tr.etd, '%b %d, %Y') etd,
+                DATE_FORMAT(tr.eta, '%b %d, %Y') eta,
                 mos.status_order,
                 mos.notes status_detail,
                 COALESCE(mp.product_name_no, mp.product_name) product_name,
@@ -976,12 +976,12 @@ module.exports = {
                 return trackingDetailQuery.map((val) => {
                     return (
                         `<tr>
-                            <th style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.delv_date ? val.delv_date : '-'}</th>
-                            <th style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.cont_id ? val.cont_id : '-'}</th>
-                            <th style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.product_name ? val.product_name : '-'}</th>
-                            <th style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.qty ? (val.qty).toLocaleString() : '-'}</th>
-                            <th style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.etd ? val.etd : '-'}</th>
-                            <th style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.eta ? val.eta : '-'}</th>
+                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.delv_date ? val.delv_date : '-'}</td>
+                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.cont_id ? val.cont_id : '-'}</td>
+                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.product_name ? val.product_name : '-'}</td>
+                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.qty ? (val.qty).toLocaleString() : '-'}</td>
+                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.etd ? val.etd : '-'}</td>
+                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.eta ? val.eta : '-'}</td>
                         </tr>`
                     );
                 }).join('');
