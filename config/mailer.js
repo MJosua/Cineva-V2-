@@ -48,18 +48,42 @@ module.exports = {
         */
 
         let userData = (await dbQuery(`
-		SELECT su.company_id, su.employee_id, me.email dist_mail, mc.company_name  , group_concat(d.email) iod_mail 
-		FROM  sys_user su 
-         LEFT JOIN mst_employee me ON su.employee_id = me.employee_id
-         LEFT JOIN mst_company mc ON su.company_id = mc.company_id 
-         LEFT JOIN map_resp_for_dist a ON a.distributor_id  = su.company_id AND now() BETWEEN a.creation_date AND COALESCE(a.finish_date, '9999-12-31')
-         LEFT JOIN mst_team b ON a.team_id = b.team_id AND a.company_id = b.company_id AND b.active = 1 
-         LEFT JOIN mst_team_member c ON b.team_id = c.team_id AND b.company_id = c.company_id 
-         LEFT JOIN mst_employee d ON a.company_id = d.company_id AND c.employee_id = d.employee_id 
-		WHERE su.user_id = ${dbConf.escape(user_id)} AND b.team_category = 6;`))[0];
+		select
+            su.company_id,
+            su.employee_id as dist_employeeid,
+            me.email as dist_mail,
+            mc.company_name,
+            GROUP_CONCAT(distinct d.email order by d.email separator ', ') as iod_mail
+        from
+            sys_user su
+        left join mst_employee me on
+            su.employee_id = me.employee_id
+        left join mst_company mc on
+            su.company_id = mc.company_id
+        left join map_resp_for_dist a on
+            a.distributor_id = su.company_id
+            and NOW() between a.creation_date and coalesce(a.finish_date, '9999-12-31')
+        left join mst_team b on
+            a.team_id = b.team_id
+            and a.company_id = b.company_id
+            and b.active = 1
+        left join mst_team_member c on
+            b.team_id = c.team_id
+            and b.company_id = c.company_id
+        left join mst_employee d on
+            a.company_id = d.company_id
+            and c.employee_id = d.employee_id
+        where
+            su.company_id = ${dbConf.escape(company_id)}
+            and b.team_category = 6
+            and me.email is not null
+        group by
+            su.company_id,
+            me.email
+        ;`))[0];
 
         // // IF YOU ALREADY SURE, THIS MUST BE PRODUCTION 
-        let { dist_mail, company_name, iod_mail, company_id } = userData;
+        let { dist_mail, dist_employeeid, company_name, iod_mail, company_id } = userData;
 
         let carbonCopyQuery = await dbQuery(`SELECT COALESCE(p.person_notice, '') person_notice FROM person p WHERE p.person_id = ${employee_id}`)
         let carbonCopy = carbonCopyQuery[0] ? carbonCopyQuery[0].person_notice.split(', ') : []
@@ -75,9 +99,30 @@ module.exports = {
          let dist_mail = 'frztmr.webdev@gmail.com'
          let { company_name, iod_mail } = userData;
         */
-        let emailAnalis = iod_mail.split(',');
+        let distMailList = dist_mail ? dist_mail.split(',') : [];
+        let distMailEmployeeIds = dist_employeeid ? dist_employeeid.split(',') : [];
 
-        let emailAnalisList = emailAnalis.join(', ')
+        // Find the email associated with the given employee_id
+        let distSenderIndex = distMailEmployeeIds.indexOf(String(employee_id)); // Convert to string for comparison
+        let distSender = distSenderIndex !== -1 ? distMailList[distSenderIndex] : null;
+        // Remove `distSender` from `distMailList`
+        if (distSenderIndex !== -1) {
+            distMailList.splice(distSenderIndex, 1);
+        }
+        // Convert email arrays back to strings for readability
+        distMailList = distMailList.join(', ');
+
+        let emailAnalis = iod_mail ? iod_mail.split(',') : [];
+        let emailAnalisList = emailAnalis.join(', ');
+
+        let combinedEmailSet = new Set([
+            ...emailAnalisList.split(', '),
+            ...distMailList.split(', '),
+            ...carbonCopy
+        ]);
+
+        // Convert back to a single comma-separated string
+        let finalMergedEmailList = Array.from(combinedEmailSet).join(', ');
 
         setTimeout(async () => {
 
@@ -257,8 +302,8 @@ module.exports = {
                 try {
                     await transporter.sendMail({
                         from: 'no-reply@indofoodinternational.com',
-                        to: dist_mail,
-                        cc: carbonCopy,
+                        to: distSender,
+                        cc: finalMergedEmailList,
                         subject: `[E-Order] Order Submission ${po_buyer} is Successful!`,
                         html: ` <div>
                     <p>
