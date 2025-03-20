@@ -138,8 +138,7 @@ module.exports = {
                    SET registration_nr = ?, last_login_date = now()
                    WHERE uid = ?`,
                   [token, userID]
-              );
-                console.log("sqlUpdateToken",sqlUpdateToken)
+                );
 
                 //reset percobaan login 
                 let sqlInject = await dbQuery(
@@ -285,14 +284,22 @@ module.exports = {
     let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
     try {
-      const validateToken = await dbQuery(
-        `SELECT su.user_id FROM sys_user su WHERE su.user_id = ? AND registration_nr = ?`,
-        [req.dataToken.user_id, req.token]
-      );
+      const MAX_RETRIES = 3; // Retry up to 3 times
+      let attempt = 0;
+      let validateToken;
 
-      // console.log("req.dataToken.user_id", req.dataToken.user_id)
-      // console.log("req.dataToken", req.token)
-      // console.log("validateToken[0]", validateToken[0])
+      while (attempt < MAX_RETRIES) {
+        validateToken = await dbQuery(
+          `SELECT su.user_id FROM sys_user su WHERE su.user_id = ? AND registration_nr = ?`,
+          [req.dataToken.user_id, req.token]
+        );
+
+        if (validateToken.length > 0 && validateToken[0]) break; // Success, exit loop
+
+        console.log(`Retry attempt ${attempt + 1} failed. Retrying...`);
+        await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 500ms before retrying
+        attempt++;
+      }
       if (validateToken[0]) {
         console.log(timestamp + "=>> Auth Keep login for : " + req.dataToken.uid);
         // console.log("--------------------------")
@@ -300,7 +307,6 @@ module.exports = {
         // console.log("--------------------------")
         // console.log("Token : ", req.token);
         // console.log("--------------------------")
-        console.log("validateToken", validateToken);
 
         let userID = await dbQuery(
           `
@@ -376,7 +382,7 @@ module.exports = {
 
 
           //pisahkan data yang diencrypt dan dikirim 
-          let token = createToken(dataToken);
+          let token = createToken(dataToken, "5s");
 
           //old token
           // let token = createToken(...userID);
@@ -393,7 +399,7 @@ module.exports = {
           let sqlUpdateLoginLog = await dbQuery(`
           UPDATE sys_user SET last_login_date = now() WHERE uid = '${req.dataToken.uid}'; `);
 
-        
+
         }
 
       } else {
