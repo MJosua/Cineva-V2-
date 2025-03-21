@@ -18,7 +18,7 @@ module.exports = {
         return Crypto.createHmac(
             process.env.SECURITY_HASH_TYPE, process.env.SECURITY_HASH_KEY).update(pass).digest("hex");
     },
-    createToken: (payload, expiresIn = '5s') => {
+    createToken: (payload, expiresIn = '30m') => {
         return jwt.sign(payload, process.env.SECURITY_TOKEN_KEY, {
             expiresIn
         });

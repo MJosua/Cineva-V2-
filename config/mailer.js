@@ -33,7 +33,7 @@ module.exports = {
 
 
 
-    orderRecievedMailSender: async (user_id, employee_id, order_id_awal) => {
+    orderRecievedMailSender: async (user_id, employee_id, order_id_awal,company_id) => {
 
         let date = new Date();
         let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
@@ -47,6 +47,7 @@ module.exports = {
         yang signifikan
         */
 
+        
         let userData = (await dbQuery(`
 		select
             su.company_id,
@@ -83,7 +84,7 @@ module.exports = {
         ;`))[0];
 
         // // IF YOU ALREADY SURE, THIS MUST BE PRODUCTION 
-        let { dist_mail, dist_employeeid, company_name, iod_mail, company_id } = userData;
+        let { dist_mail, dist_employeeid, company_name, iod_mail } = userData;
 
         let carbonCopyQuery = await dbQuery(`SELECT COALESCE(p.person_notice, '') person_notice FROM person p WHERE p.person_id = ${employee_id}`)
         let carbonCopy = carbonCopyQuery[0] ? carbonCopyQuery[0].person_notice.split(', ') : []
@@ -100,8 +101,10 @@ module.exports = {
          let { company_name, iod_mail } = userData;
         */
         let distMailList = dist_mail ? dist_mail.split(',') : [];
-        let distMailEmployeeIds = dist_employeeid ? dist_employeeid.split(',') : [];
-
+        let distMailEmployeeIds = Array.isArray(dist_employeeid) 
+        ? dist_employeeid 
+        : String(dist_employeeid).split(',');
+        
         // Find the email associated with the given employee_id
         let distSenderIndex = distMailEmployeeIds.indexOf(String(employee_id)); // Convert to string for comparison
         let distSender = distSenderIndex !== -1 ? distMailList[distSenderIndex] : null;
