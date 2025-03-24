@@ -5,6 +5,7 @@ const ejs = require('ejs');
 // const puppeteer = require('puppeteer');
 const axios = require('axios');
 const { group } = require("console");
+const { NULL } = require("mysql/lib/protocol/constants/types");
 // const { time } = require("console");
 // const { json } = require("body-parser");
 // const { parse } = require("path");
@@ -1657,7 +1658,7 @@ module.exports = {
                     res.status(200).send(results);
 
                     //MAILER
-                    orderRecievedMailSender(user_id, req.dataToken.employee_id, order_id)
+                    orderRecievedMailSender(user_id, req.dataToken.employee_id, order_id, company_id)
                     // axios.post(`https://anp.indofoodinternational.com:2864/order/send_email_order/${order_id}/${req.dataToken.employee_id}/${user_id}`, {
                     //     headers: {
                     //         'Authorization': `Bearer ` + req.token
@@ -4511,7 +4512,7 @@ module.exports = {
                 console.log(timestamp + `==========> add Order is success`)
 
                 orderList.forEach((order_id) => {
-                    orderRecievedMailSender(user_id, req.dataToken.employee_id, order_id);
+                    orderRecievedMailSender(user_id, req.dataToken.employee_id, order_id, company_id);
                 });
 
                 res.status(200).send({
@@ -4553,9 +4554,9 @@ module.exports = {
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let { order_id, user_id, employee_id } = req.params
-        console.log({ order_id, user_id, employee_id })
+        console.log({ order_id, user_id, employee_id, company_id })
         if (order_id) {
-            orderRecievedMailSender(user_id, employee_id, order_id);
+            orderRecievedMailSender(user_id, employee_id, order_id, company_id);
             res.status(400).send({
                 success: true,
                 message: 'email has been sent'
