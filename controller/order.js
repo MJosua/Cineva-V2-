@@ -1334,7 +1334,6 @@ module.exports = {
                         console.log(timestamp + "Error getOneOrderDetail!", err)
                     } else {
                         res.status(200).send(results);
-                        console.log(timestamp + `get getOneOrderDetail data`);
 
                     }
                 })
@@ -1833,7 +1832,7 @@ module.exports = {
 
 
             let query = `
-                 SELECT
+                SELECT
                                                    *
                     FROM
                         (
@@ -1871,6 +1870,9 @@ module.exports = {
                                             ELSE date_add(now(),
                                             INTERVAL 1 YEAR)
                                         END,'%Y-%m-%d')),8)
+                                   	AND factory_id = 1
+                            		AND product_type_id = 256
+                            		AND doc.company_id = 100
                             LIMIT 1) min_week,
                             @time_fence := CASE
                                 WHEN COALESCE(mc.time_fence, 0) = 0 THEN st.txt
@@ -1900,6 +1902,9 @@ module.exports = {
                             8)
                             AND YEAR = 
                             YEAR(DATE_FORMAT(FROM_UNIXTIME(concat(opcal_id, '00')),'%Y-%m-%d'))
+                            AND doc.factory_id = 1
+                            AND doc.product_type_id = 256
+                            AND doc.company_id = 100
                         GROUP BY
                             2,
                             3,
@@ -1920,6 +1925,9 @@ module.exports = {
                                     INTERVAL 1 YEAR) 
                                 END , '%Y-01-01')),
                             8)
+                            AND factory_id = 1
+                            AND product_type_id = 256
+                            AND company_id = 100
                         ORDER BY
                             opcal_id ASC
                         LIMIT 1)
@@ -1928,7 +1936,6 @@ module.exports = {
                     ORDER BY
                         id
                     LIMIT ${weekLimit}
-
                     `
 
 
@@ -2006,7 +2013,7 @@ module.exports = {
 
         try {
             if (req.dataToken.company_id) {
-                let query = `SELECT po_buyer FROM m_order WHERE company_id = ${req.dataToken.company_id} AND status = 0 OR status = 1 OR status = 2 OR status = 3 ;`;
+                let query = `SELECT po_buyer FROM m_order WHERE company_id = ${req.dataToken.company_id} AND status IN (0, 1, 2, 3); ;`;
 
                 dbConf.query(query, (err, results) => {
 
@@ -2021,6 +2028,7 @@ module.exports = {
                 }
                 )
             } else {
+
                 res.status(200).send({
                     success: false,
                     message: 'unauthorized'
@@ -2037,7 +2045,6 @@ module.exports = {
         // TIMESTAMP GENERATOR
         let date = new Date();
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-
         try {
 
             if (req.dataToken.company_id) {
