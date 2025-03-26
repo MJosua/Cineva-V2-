@@ -207,7 +207,6 @@ module.exports = {
                 });
 
                 const responseData = Object.values(shipmentData);
-                console.log("🛠️ Final Response Data:", JSON.stringify(responseData, null, 2));
                 return res.status(200).send(responseData);
 
             });

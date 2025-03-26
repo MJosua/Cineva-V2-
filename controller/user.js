@@ -184,7 +184,7 @@ module.exports = {
                         console.log(timestamp + "Error get company on ship to party", err);
                     } else {
                         res.status(200).send(results);
-                        console.log(timestamp + `get user shiptoparty for ${company_id} list success.`)
+                        console.log("results",results)
                         addSqlLogger(req.dataToken.user_id, (query), '--data getShipToParty', `getShipToParty`)
                     }
                 })
