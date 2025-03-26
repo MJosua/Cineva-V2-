@@ -302,7 +302,7 @@ ORDER BY
                 // add query AND mp.division_id = mpc.division_id 
 
                 let query = `
-                SELECT DISTINCT UPPER(CONCAT(COALESCE(mp.product_name_no, mp.product_name), " - ",mp.product_sku )) product_name_complete ,tc.txt country_name,mpc.product_type_name cat_name , mc.company_name, mp.product_code, UPPER(mp.product_sku) product_sku, UPPER(COALESCE(mp.product_name_no, mp.product_name)) product_name, mp.ctn_height, mp.ctn_length, mp.ctn_width, mp.ctn_thick, mp.cont20, mp.cont40, mp.cont40hc,COALESCE(mi.moq, 0) moq ,
+                SELECT DISTINCT UPPER(CONCAT(COALESCE(mp.product_name_no, mp.product_name), " - ",mp.product_sku )) product_name_complete ,tc.txt country_name,mpc.product_type_name cat_name , mc.company_name, mp.product_code, UPPER(mp.product_sku) product_sku, UPPER(COALESCE(mp.product_name_no, mp.product_name)) product_name, mp.ctn_height, mp.ctn_length, mp.ctn_width, mp.ctn_thick, mp.cont20, mp.cont40, mp.cont40hc,COALESCE(mi.moq, 0) moq ,COALESCE(mi.moq20, 0) moq20,
                 (SELECT rate_unit FROM trs_so_detail WHERE client_id = mi.distributor_id AND company_id = mp.company_id AND sku_id = mp.product_code ORDER BY so_id DESC, version DESC LIMIT 1) rate_unit, 
                 (SELECT value FROM trs_so_detail WHERE client_id = mi.distributor_id AND company_id = mp.company_id AND sku_id = mp.product_code ORDER BY so_id DESC, version DESC LIMIT 1) price, 
                 link.img, link.order , mb.brand_name, mp.net_weight, mp.per_carton , mf.flavour_desc flavour_name, mp.tolling_id
