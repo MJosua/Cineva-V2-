@@ -30,7 +30,6 @@ module.exports = {
                     } else {
 
                         res.status(200).send(results);
-                        console.log(timestamp + `get coordinate success`);
 
                     }
 
@@ -51,7 +50,6 @@ module.exports = {
                     }
 
                     res.status(200).send(results);
-                    console.log(timestamp + `get coordinate success`);
 
                 })
         }

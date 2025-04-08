@@ -218,7 +218,9 @@ if (!global.consoleOverridden) {
 
   console.log = function (...args) {
     originalLog.apply(console, args);
-    const logMessage = args.join(" ");
+    const logMessage = args.map(arg =>
+      typeof arg === "object" ? JSON.stringify(arg) : arg
+    ).join(" ");
     logs.push(logMessage);
 
     // Emit new log message to all connected clients
