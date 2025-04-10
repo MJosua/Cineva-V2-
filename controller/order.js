@@ -160,7 +160,7 @@ module.exports = {
                     mo.order_id, mco.company_name, mo.delv_week, mo.delv_week_desc, mpfd.final_dest, mo.delv_year,
                     mo.po_buyer, concat(mh.harbour_name, ", " ,st.txt ) port_shipment, mo.ship_to, stp.company_name ,mo.po_buyer, stp.company_name ship_to, 
                     mo.po_url, concat(su.firstname, ' ', su.lastname ) created_by, mso.status_order status_name, mso.notes status_detail, mso.id is_status,
-                    mct.container_name, md.cont_qty, DATE_FORMAT(mo.po_date,'%Y-%m-%d %T ') created_date, mo.tolling_id, md.cont_size
+                    mct.container_name, md.cont_qty, DATE_FORMAT(mo.po_date,'%d-%b-%Y %T ') created_date, mo.tolling_id, md.cont_size
                     FROM 
                     m_order mo
                     JOIN mst_company mco ON mo.company_id = mco.company_id  
@@ -413,7 +413,7 @@ module.exports = {
                     mo.order_id, mco.company_name, mo.delv_week, mo.delv_week_desc, mpfd.final_dest, mo.delv_year,
                     mo.po_buyer, concat(mh.harbour_name, ", " ,st.txt ) port_shipment, mo.ship_to, stp.company_name ,mo.po_buyer, stp.company_name ship_to, 
                     mo.po_url, concat(su.firstname, ' ', su.lastname ) created_by, mso.status_order status_name, mso.notes status_detail, mso.id is_status,
-                    mct.container_name, md.cont_qty, DATE_FORMAT(mo.po_date,'%Y-%m-%d %T ') created_date, mo.tolling_id, md.cont_size
+                    mct.container_name, md.cont_qty, DATE_FORMAT(mo.po_date,'%d-%b-%Y %T ') created_date, mo.tolling_id, md.cont_size
                     FROM 
                     m_order mo
                     JOIN mst_company mco ON mo.company_id = mco.company_id  
@@ -1869,7 +1869,7 @@ module.exports = {
                                             WHEN YEAR(now()) THEN now()
                                             ELSE date_add(now(),
                                             INTERVAL 1 YEAR)
-                                        END,'%Y-%m-%d')),8)
+                                        END,'%d-%b-%Y')),8)
                                    	AND factory_id = 1
                             		AND product_type_id = 256
                             		AND doc.company_id = 100
@@ -1901,7 +1901,7 @@ module.exports = {
                             END,'%Y-01-01')),
                             8)
                             AND YEAR = 
-                            YEAR(DATE_FORMAT(FROM_UNIXTIME(concat(opcal_id, '00')),'%Y-%m-%d'))
+                            YEAR(DATE_FORMAT(FROM_UNIXTIME(concat(opcal_id, '00')),'%d-%b-%Y'))
                             AND doc.factory_id = 1
                             AND doc.product_type_id = 256
                             AND doc.company_id = 100
@@ -2090,12 +2090,12 @@ module.exports = {
             SELECT
                 mo.order_id,
                 tso.so_id,
-                DATE_FORMAT(trd.delv_date, '%Y-%m-%d') delv_date,
+                DATE_FORMAT(trd.delv_date, '%d-%b-%Y') delv_date,
                 tr.ship_name vessel_name,
                 tr.ship_line shipping_line,
                 tr.cont_id,
-                DATE_FORMAT(tr.etd, '%Y-%m-%d') etd,
-                DATE_FORMAT(tr.eta, '%Y-%m-%d') eta,
+                DATE_FORMAT(tr.etd, '%d-%b-%Y') etd,
+                DATE_FORMAT(tr.eta, '%d-%b-%Y') eta,
                 mos.status_order,
                 mos.notes status_detail,
                 COALESCE(mp.product_name_no, mp.product_name) product_name,
@@ -2641,12 +2641,12 @@ module.exports = {
             let query = `
             SELECT
             CASE
-                WHEN DAY(NOW()) > 20 THEN DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 2 MONTH), '%Y-%m-01')
-                ELSE DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 1 MONTH), '%Y-%m-01')
+                WHEN DAY(NOW()) > 20 THEN DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 2 MONTH), '%Y-%b-01')
+                ELSE DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 1 MONTH), '%Y-%b-01')
             END AS min_date,
             CASE
-                WHEN DAY(NOW()) > 20 THEN DATE_FORMAT(LAST_DAY(DATE_ADD(NOW(), INTERVAL 2 MONTH)), '%Y-%m-%d')
-                ELSE DATE_FORMAT(LAST_DAY(DATE_ADD(NOW(), INTERVAL 1 MONTH)), '%Y-%m-%d')
+                WHEN DAY(NOW()) > 20 THEN DATE_FORMAT(LAST_DAY(DATE_ADD(NOW(), INTERVAL 2 MONTH)), '%d-%b-%Y')
+                ELSE DATE_FORMAT(LAST_DAY(DATE_ADD(NOW(), INTERVAL 1 MONTH)), '%d-%b-%Y')
             END AS max_date;
 
 
