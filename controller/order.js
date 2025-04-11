@@ -1831,112 +1831,119 @@ module.exports = {
             let blockingDate = getBlockingDate ? getBlockingDate.value : 0
 
 
-            let query = `
-                SELECT
-                                                   *
-                    FROM
-                        (
-                        SELECT
-                            max(opcal_id) opcal_id,
-                            CAST(concat(YEAR,
-                        RIGHT(concat('00',week),
-                        2))AS UNSIGNED) AS id,
-                            YEAR,
-                            week,
-                            DATE_FORMAT(FROM_UNIXTIME(concat(min(opcal_id),
-                            '00')),
-                            '%b %d, %Y') startingDate,
-                            DATE_FORMAT(FROM_UNIXTIME(concat(max(opcal_id),
-                            '00')),
-                            '%b %d, %Y') endingDate,
-                            @min_week := (
-                            SELECT
-                                min(week)
-                            FROM
+            let query = `select
+                            *
+                        from
+                            (
+                            select
+                                max(opcal_id) opcal_id,
+                                cast(concat(year,
+                                                right(concat('00', week),
+                                                2))as unsigned) as id,
+                                year,
+                                week,
+                                DATE_FORMAT(FROM_UNIXTIME(concat(min(opcal_id),
+                                                    '00')),
+                                                    '%b %d, %Y') startingDate,
+                                DATE_FORMAT(FROM_UNIXTIME(concat(max(opcal_id),
+                                                    '00')),
+                                                    '%b %d, %Y') endingDate,
+                                @min_week := (
+                                select
+                                    min(week)
+                                from
+                                    dat_operational_calendar doc
+                                where
+                                    opcal_id >= 
+                                                        left(unix_timestamp(DATE_FORMAT(
+                                                                case year
+                                                                    when year(now()) 
+                                                                    then now()
+                                                                    else date_add(now(),
+                                                                    interval 1 year)
+                                                                end, '%Y-01-01')),
+                                    8)
+                                    and opcal_id = 
+                                                            left(unix_timestamp(DATE_FORMAT(
+                                                                case year
+                                                                    when year(now()) then now()
+                                                                    else date_add(now(),
+                                                                    interval 1 year)
+                                                                end, '%Y-%m-%d')),
+                                    8)
+                                    and factory_id = 1
+                                    and product_type_id = 256
+                                    and doc.company_id = 100
+                                limit 1) min_week,
+                                @time_fence := case
+                                    when coalesce(mc.time_fence, 0) = 0 then st.txt
+                                    else mc.time_fence
+                                end as time_fence,
+                                @rownum := @rownum + 1 as rownum
+                            from
                                 dat_operational_calendar doc
-                            WHERE
-                                opcal_id >= 
-                                LEFT(unix_timestamp(DATE_FORMAT(
-                                        CASE YEAR
-                                            WHEN YEAR(now()) 
-                                            THEN now()
-                                            ELSE date_add(now(),
-                                            INTERVAL 1 YEAR)
-                                        END,'%Y-01-01')),8)
-                                    AND opcal_id = 
-                                    LEFT(unix_timestamp(DATE_FORMAT(
-                                        CASE YEAR
-                                            WHEN YEAR(now()) THEN now()
-                                            ELSE date_add(now(),
-                                            INTERVAL 1 YEAR)
-                                        END,'%d-%b-%Y')),8)
-                                   	AND factory_id = 1
-                            		AND product_type_id = 256
-                            		AND doc.company_id = 100
-                            LIMIT 1) min_week,
-                            @time_fence := CASE
-                                WHEN COALESCE(mc.time_fence, 0) = 0 THEN st.txt
-                                ELSE mc.time_fence
-                            END AS time_fence,
-                            @rownum := @rownum + 1 AS rownum
-                        FROM
-                            dat_operational_calendar doc
-                        LEFT JOIN map_cont_for_dist mc ON
-                            mc.company_id = 100
-                            AND mc.dist_id = ${req.dataToken.company_id}
-                        LEFT JOIN sys_text st ON
-                            st.lang_id = 1
-                            AND st.text_id = -100,
-                            ( SELECT @min_week := 0) x,
-                            ( SELECT @time_fence := 0) y,
-                            ( SELECT @rownum := 0) r
-                        WHERE
-                            opcal_id >= LEFT(
-                            unix_timestamp(DATE_FORMAT(
-                            CASE YEAR
-                                WHEN YEAR(now()) 
-                                THEN now()
-                                ELSE date_add(now(),
-                                INTERVAL 1 YEAR)
-                            END,'%Y-01-01')),
-                            8)
-                            AND YEAR = 
-                            YEAR(DATE_FORMAT(FROM_UNIXTIME(concat(opcal_id, '00')),'%d-%b-%Y'))
-                            AND doc.factory_id = 1
-                            AND doc.product_type_id = 256
-                            AND doc.company_id = 100
-                        GROUP BY
-                            2,
-                            3,
-                            4) a
-                    WHERE
-                        a.opcal_id >= (
-                        SELECT
-                            opcal_id
-                        FROM
-                            dat_operational_calendar
-                        WHERE
-                            opcal_id >= LEFT(
-                            unix_timestamp(DATE_FORMAT(
-                                CASE YEAR 
-                                    WHEN YEAR(now()) 
-                                    THEN now() 
-                                    ELSE date_add(now(), 
-                                    INTERVAL 1 YEAR) 
-                                END , '%Y-01-01')),
-                            8)
-                            AND factory_id = 1
-                            AND product_type_id = 256
-                            AND company_id = 100
-                        ORDER BY
-                            opcal_id ASC
-                        LIMIT 1)
-                        AND rownum >= @min_week + @time_fence
-                        AND week NOT IN (${blockingDate})
-                    ORDER BY
-                        id
-                    LIMIT ${weekLimit}
-                    `
+                            left join map_cont_for_dist mc on
+                                mc.company_id = 100
+                                and mc.dist_id = ${req.dataToken.company_id}
+                            left join sys_text st on
+                                st.lang_id = 1
+                                and st.text_id = -100,
+                                (
+                                select
+                                    @min_week := 0) x,
+                                (
+                                select
+                                    @time_fence := 0) y,
+                                (
+                                select
+                                    @rownum := 0) r
+                            where
+                                opcal_id >= left(
+                                                    unix_timestamp(DATE_FORMAT(
+                                                    case year
+                                                        when year(now()) 
+                                                        then now()
+                                                        else date_add(now(),
+                                                        interval 1 year)
+                                                    end, '%Y-01-01')),
+                                8)
+                                and year = 
+                                                    year(DATE_FORMAT(FROM_UNIXTIME(concat(opcal_id, '00')), '%Y-%m-%d'))
+                                and doc.factory_id = 1
+                                and doc.product_type_id = 256
+                                and doc.company_id = 100
+                            group by
+                                2,
+                                3,
+                                4) a
+                        where
+                            a.opcal_id >= (
+                            select
+                                opcal_id
+                            from
+                                dat_operational_calendar
+                            where
+                                opcal_id >= left(
+                                                    unix_timestamp(DATE_FORMAT(
+                                                        case year 
+                                                            when year(now()) 
+                                                            then now() 
+                                                            else date_add(now(), 
+                                                            interval 1 year) 
+                                                        end , '%Y-01-01')),
+                                8)
+                                    and factory_id = 1
+                                    and product_type_id = 256
+                                    and company_id = 100
+                                order by
+                                    opcal_id asc
+                                limit 1)
+                            and rownum >= @min_week + @time_fence
+                            and week not in (${blockingDate})
+                        order by
+                            id
+                        limit ${weekLimit}
+                        `
 
 
             dbConf.query(query, (err, results) => {
