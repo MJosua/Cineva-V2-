@@ -2648,12 +2648,12 @@ module.exports = {
             let query = `
             SELECT
             CASE
-                WHEN DAY(NOW()) > 20 THEN DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 2 MONTH), '%Y-%b-01')
-                ELSE DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 1 MONTH), '%Y-%b-01')
+                WHEN DAY(NOW()) > 20 THEN DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 2 MONTH), '%Y-%m-01')
+                ELSE DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 1 MONTH), '%Y-%m-01')
             END AS min_date,
             CASE
-                WHEN DAY(NOW()) > 20 THEN DATE_FORMAT(LAST_DAY(DATE_ADD(NOW(), INTERVAL 2 MONTH)), '%d-%b-%Y')
-                ELSE DATE_FORMAT(LAST_DAY(DATE_ADD(NOW(), INTERVAL 1 MONTH)), '%d-%b-%Y')
+                WHEN DAY(NOW()) > 20 THEN DATE_FORMAT(LAST_DAY(DATE_ADD(NOW(), INTERVAL 2 MONTH)), '%Y-%m-%d')
+                ELSE DATE_FORMAT(LAST_DAY(DATE_ADD(NOW(), INTERVAL 1 MONTH)), '%Y-%m-%d')
             END AS max_date;
 
 
