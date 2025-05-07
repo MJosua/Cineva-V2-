@@ -12,7 +12,7 @@ const { NULL } = require("mysql/lib/protocol/constants/types");
 
 let green = "\x1b[32m"
 let white = "\x1b[37m";
-
+ 
 module.exports = {
 
 
@@ -2655,8 +2655,6 @@ module.exports = {
                 WHEN DAY(NOW()) > 20 THEN DATE_FORMAT(LAST_DAY(DATE_ADD(NOW(), INTERVAL 2 MONTH)), '%Y-%m-%d')
                 ELSE DATE_FORMAT(LAST_DAY(DATE_ADD(NOW(), INTERVAL 1 MONTH)), '%Y-%m-%d')
             END AS max_date;
-
-
             `;
 
             let parameter = [limit];
