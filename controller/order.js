@@ -4400,7 +4400,7 @@ module.exports = {
                     let stuffing_date_rev = order_data.stuffing_date ? order_data.stuffing_date : formattedDate;
                     let final_dest = order_data.final_dest ? order_data.final_dest : '-';
 
-                    let notify_to_1 = order_data.notify_to_2 ? order_data.notify_to_1 : null;
+                    let notify_to_1 = order_data.notify_to_1 ? order_data.notify_to_1 : null;
                     let notify_to_2 = order_data.notify_to_2 ? order_data.notify_to_2 : null;
                     let bill_to = order_data.bill_to ? order_data.bill_to : null;
 
