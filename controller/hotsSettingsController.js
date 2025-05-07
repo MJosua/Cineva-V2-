@@ -148,6 +148,43 @@ module.exports = {
         });
     },
 
+    getserviceCategory: (req, res) => {
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+
+        // Tidak perlu user_id kalau tidak digunakan
+        // let user_id = req.dataToken.user_id;
+
+        let queryGetMenu = `
+            SELECT *
+            FROM m_service_category
+        `;
+
+        dbHots.execute(queryGetMenu, (err2, results2) => {
+            if (err2) {
+                console.log(timestamp, "HOTS Menu Fetch Error: ", err2);
+                return res.status(502).send({
+                    success: false,
+                    message: err2
+                });
+            }
+
+            if (!results2.length) {
+                return res.status(404).send({
+                    success: false,
+                    message: 'Service category not found!'
+                });
+            }
+
+            console.log(timestamp, "GET SERVICE CATEGORY SUCCESS");
+            return res.status(200).send({
+                success: true,
+                message: "GET SERVICE CATEGORY SUCCESS",
+                data: results2
+            });
+        });
+    },
+
     getmember: (req, res) => {
         const date = new Date();
         const timestamp = date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ';
