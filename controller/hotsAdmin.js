@@ -426,7 +426,7 @@ module.exports = {
 
         if (req.dataToken.role_id = 4) {
 
-            queryGetDepartment = `SELECT * FROM m_department d `
+            queryGetDepartment = `SELECT * FROM m_department d`
 
             dbHots.query(queryGetDepartment, (err, results) => {
                 if (err) {
@@ -439,7 +439,60 @@ module.exports = {
                     res.status(200).send({
                         success: true,
                         message: "successfuly get department",
-                        results
+                        data: results
+                    });
+                    console.log(timestamp, " HOTS admin-get departmenet ", err);
+                }
+            })
+
+        } else {
+            res.status(401).send({
+                success: false,
+                message: "Unauthorized. ADMIN ONLY"
+            });
+            console.log(timestamp, " HOTS admin-get departmenet UNAUTHORIZED");
+        }
+    }
+    , getTeam: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        if (req.dataToken.role_id = 4) {
+
+            queryGetDepartment = `
+                            SELECT 
+                            t.*,
+                            tm.*,
+                            u.firstname,
+                            u.lastname 
+                            FROM 
+                                m_team t
+                            LEFT JOIN
+                                m_team_member tm
+                            ON
+                                t.team_id = tm.team_id
+                            LEFT JOIN
+                                user u
+                            ON
+                                tm.user_id = u.user_id
+                            WHERE 
+                                tm.user_id IS NOT NULL 
+
+            `
+
+            dbHots.query(queryGetDepartment, (err, results) => {
+                if (err) {
+                    res.status(500).send({
+                        success: false,
+                        message: err
+                    });
+                    console.log(timestamp, " HOTS admin-get departmenet ", err);
+                } else {
+                    res.status(200).send({
+                        success: true,
+                        message: "successfuly get department",
+                        data: results
                     });
                     console.log(timestamp, " HOTS admin-get departmenet ", err);
                 }
@@ -489,7 +542,7 @@ module.exports = {
                 ts.status_id = t.status_id
             LEFT JOIN m_team tm ON
                 t.assigned_team = tm.team_id `;
-                // + desc + find;
+            // + desc + find;
 
             dbHots.execute(queryGetAccount, (err, results) => {
 
@@ -531,4 +584,66 @@ module.exports = {
 
 
     }
+
+    , getAllWorkFlow: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+
+        if (req.dataToken.role_id = 4) {
+
+            let getAllWorkFlow = ` 
+            SELECT
+               *
+            FROM
+                user u
+            LEFT JOIN m_workflow w ON
+                u.user_id = w.user_id
+            `;
+            // + desc + find;
+
+            dbHots.execute(getAllWorkFlow, (err, results) => {
+
+                if (err) {
+
+                    res.status(500).send({ success: false, message: err });
+                    console.log(timestamp + "Error getAllWorkFlow !", err)
+
+                } else {
+                    if (results[0]) {
+
+                        let packet = results.slice(startIndex, endIndex)
+                        let totalDataLength = results.length
+                        let totalPage = Math.round(results.length / limit)
+
+                        res.status(200).send({ packet, totalPage, totalDataLength, page });
+                        console.log(timestamp + " getAllWorkFlow success !")
+
+                    } else {
+
+                        let packet = []
+                        let totalDataLength = 0
+                        let totalPage = 0
+
+                        res.status(200).send({ packet, totalPage, totalDataLength, page });
+                        console.log(timestamp + " getAllWorkFlow success no data!")
+                    }
+                }
+
+            })
+
+        } else {
+            res.status(401).send({
+                success: false,
+                message: "getAllTicket UNATHORIZED ADMIN ONLY"
+            })
+            console.log(timestamp, "getAllTicket UNATHORIZED ADMIN ONLY")
+        }
+
+
+    }
+
+
+
 }
