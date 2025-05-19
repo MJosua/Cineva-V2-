@@ -7,7 +7,10 @@ const { hotsAdmin } = require('../controller')
 route.get("/account", decodeTokenHT, hotsAdmin.getAccount);
 route.get("/role", decodeTokenHT, hotsAdmin.getRole);
 route.get("/department", decodeTokenHT, hotsAdmin.getDepartment);
+route.get("/team", decodeTokenHT, hotsAdmin.getTeam);
 route.get("/tickets", decodeTokenHT, hotsAdmin.getAllTicket);
+//Get Workflow
+route.get("/allworkflow", decodeTokenHT, hotsAdmin.getAllWorkFlow);
 
 //buat akun
 route.post("/account", decodeTokenHT, hotsAdmin.createAccount);
@@ -20,6 +23,11 @@ route.put("/active/:user_id", decodeTokenHT, hotsAdmin.changeActive);
 
 //delete account
 route.delete("/account/:user_id", decodeTokenHT, hotsAdmin.deleteAccount);
+
+
+
+
+
 
 
 module.exports = route;
