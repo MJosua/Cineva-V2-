@@ -8,7 +8,6 @@ let blue = "\x1b[36m";
 const key = process.env.SECURITY_API_SEARATES_KEY;
 module.exports = {
 
-
     GetSeaRatesTrackUser: async (req, res) => {
         let date = new Date();
         let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
@@ -225,6 +224,8 @@ module.exports = {
     },
 
     GetSeaRatesTrackNumber: async (req, res) => {
+        console.log("key", key)
+
         let date = new Date();
         let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
