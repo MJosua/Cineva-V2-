@@ -8,7 +8,6 @@ let blue = "\x1b[36m";
 const key = process.env.SECURITY_API_SEARATES_KEY;
 module.exports = {
 
-
     GetSeaRatesTrackUser: async (req, res) => {
         let date = new Date();
         let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
@@ -162,8 +161,9 @@ module.exports = {
                         );
                         if (!existingPin) {
                             shipmentData[shipmentId].pin_location.push({
+                                latitude: row.pin_lat,
                                 longitude: row.pin_long,
-                                latitude: row.pin_lat
+
                             });
                         }
                     }
@@ -225,69 +225,71 @@ module.exports = {
     },
 
     GetSeaRatesTrackNumber: async (req, res) => {
+
         let date = new Date();
         let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
-        const number = req.params.number;
+        const number = req.params.number.toLocaleString();
 
 
 
         try {
             let query = `
-                SELECT
-                    e.*,
-                    l.name AS location_name,
-                    max(l.location_id) AS location_list_id,
-                    l.lat AS location_lat,
-                    l.lng AS location_lang,
-                    r.long AS pin_long,
-                    r.lat AS pin_lat,
-                    pod.location_id AS pod_id,
-                    DATE_FORMAT(pod.date , '%Y-%m-%d')pod_date,
-                    pol.location_id AS pol_id,
-                    DATE_FORMAT(pol.date , '%Y-%m-%d')pol_date,
-                    DATE_FORMAT(e.date , '%Y-%m-%d')e_date,
-                    v.vessel_id AS vessel_vesid,
-                    e.vessel_id AS event_vessel,
-                    s.number,
-                    s.so_id,
-                    s.status
-
-                FROM
-                    sea_rates.shipments s
-                LEFT JOIN sea_rates.containers c ON
-                    s.shipment_id = c.shipment_id
-                LEFT JOIN sea_rates.events e ON
-                    s.shipment_id = e.shipment_id
-                LEFT JOIN sea_rates.locations l ON
-                    e.shipment_id = l.shipment_id AND e.location_id = l.location_id 
-                LEFT JOIN sea_rates.route r ON
-                    s.shipment_id = r.shipment_id
-                LEFT JOIN sea_rates.vessel v ON
-                    s.shipment_id = v.shipment_id
-                LEFT JOIN sea_rates.pod pod ON
-                    s.shipment_id = pod.shipment_id
-                LEFT JOIN sea_rates.pol pol ON
-                    s.shipment_id = pol.shipment_id
-                WHERE
-                    s.number = ?
-                    AND s.shipment_id = (
-                    SELECT
-                        shipment_id
-                    FROM
-                        sea_rates.shipments
-                    WHERE
-                        NUMBER = ?
-                    ORDER BY
-                        last_updated_date DESC
-                    LIMIT 1 )
-                    GROUP BY e.event_id 
-                ORDER BY e.date desc
-
+                    select
+                        e.*,
+                        l.name as location_name,
+                        max(l.location_id) as location_list_id,
+                        l.lat as location_lat,
+                        l.lng as location_lang,
+                        r.long as pin_long,
+                        r.lat as pin_lat,
+                        pod.location_id as pod_id,
+                        DATE_FORMAT(pod.date , '%Y-%m-%d')pod_date,
+                        pol.location_id as pol_id,
+                        DATE_FORMAT(pol.date , '%Y-%m-%d')pol_date,
+                        DATE_FORMAT(e.date , '%Y-%m-%d')e_date,
+                        v.vessel_id as vessel_vesid,
+                        e.vessel_id as event_vessel,
+                        s.number,
+                        s.so_id,
+                        s.status
+                    from
+                        sea_rates.shipments s
+                    left join sea_rates.containers c on
+                        s.shipment_id = c.shipment_id
+                    left join sea_rates.events e on
+                        s.shipment_id = e.shipment_id
+                    left join sea_rates.locations l on
+                        e.shipment_id = l.shipment_id
+                        and e.location_id = l.location_id
+                    left join sea_rates.route r on
+                        s.shipment_id = r.shipment_id
+                    left join sea_rates.vessel v on
+                        s.shipment_id = v.shipment_id
+                    left join sea_rates.pod pod on
+                        s.shipment_id = pod.shipment_id
+                    left join sea_rates.pol pol on
+                        s.shipment_id = pol.shipment_id
+                    where
+                        s.number = ?
+                        and s.shipment_id = (
+                        select
+                            shipment_id
+                        from
+                            sea_rates.shipments
+                        where
+                            NUMBER = ?
+                        order by
+                            last_updated_date desc
+                        limit 1 )
+                    group by
+                        e.event_id
+                    order by
+                        e.date desc
             `
                 ;
             const results = await dbQuerySR(query, [number, number]);
-
+            console.log("results", results)
             if (results.length < 1) {
                 try {
                     const url = `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=auto&force_update=false&route=true&ais=false`;
@@ -404,8 +406,8 @@ module.exports = {
 
                         if (!isDuplicate) {
                             pins.push({
-                                longitude: parseFloat(row.pin_long),
                                 latitude: parseFloat(row.pin_lat),
+                                longitude: parseFloat(row.pin_long),
                             });
                         }
                     }
