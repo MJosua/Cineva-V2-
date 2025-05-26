@@ -5,6 +5,8 @@ const fs = require('fs')
 const { default: axios } = require("axios");
 
 let blue = "\x1b[36m";
+const redcolor = "\x1b[31m";
+
 const key = process.env.SECURITY_API_SEARATES_KEY;
 module.exports = {
 
@@ -252,6 +254,7 @@ module.exports = {
                         e.vessel_id as event_vessel,
                         s.number,
                         s.so_id,
+                        s.sealine_name,
                         s.status
                     from
                         sea_rates.shipments s
@@ -317,6 +320,7 @@ module.exports = {
                             // Include container data
                             container: {
                                 container_id: row.container_id,
+                                sealine_name: row.sealine_name,
                                 shipment_id: shipmentId,
                                 so_id: row.so_id,
                                 number: row.number,
