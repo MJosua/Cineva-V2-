@@ -12,7 +12,7 @@ const { NULL } = require("mysql/lib/protocol/constants/types");
 
 let green = "\x1b[32m"
 let white = "\x1b[37m";
- 
+
 module.exports = {
 
 
@@ -2159,6 +2159,7 @@ module.exports = {
 
     }
     , cancelOrder: async (req, res) => {
+        const redcolor = "\x1b[31m";
 
         let date = new Date();
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
@@ -2197,13 +2198,14 @@ module.exports = {
                         });
                         console.log(timestamp + `cancel order  ${req.body.order_id} error ${err}`);
                     } else {
+                        console.log( redcolor + timestamp + `cancel order  ${req.body.order_id} success`);
+
                         res.status(200).send(
                             {
                                 success: true,
                                 message: 'Your cancel request has been sent!'
                             }
                         );
-                        console.log(timestamp + `cancel order  ${req.body.order_id} success`);
                         addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), 'addCancelOrder')
 
                     }
