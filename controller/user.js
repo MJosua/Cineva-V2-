@@ -22,7 +22,8 @@ module.exports = {
                     harbour_code,
                     tp.txt,
                     md.final_dest,
-                    md.id as md_id
+                    md.id as md_id,
+                    md.distributor_id
                 from
                     map_port_for_dist md
                 left join mst_harbour h on
@@ -184,7 +185,7 @@ module.exports = {
                         console.log(timestamp + "Error get company on ship to party", err);
                     } else {
                         res.status(200).send(results);
-                        console.log("results",results)
+                        console.log("results", results)
                         addSqlLogger(req.dataToken.user_id, (query), '--data getShipToParty', `getShipToParty`)
                     }
                 })
@@ -207,6 +208,14 @@ module.exports = {
             if (req.dataToken.user_id) {
                 let company_id = req.dataToken.company_id;
 
+
+
+                let checkcompanyname = `
+                        SELECT company_name FROM mst_company mcn 
+                        WHERE company_id = ${company_id}
+                    `;
+
+
                 let querynotify = `
                     SELECT * FROM mst_company mc 
                     WHERE company_type_id = 7 
@@ -218,6 +227,16 @@ module.exports = {
                     WHERE company_type_id = 8 
                     AND parent_company_id = ${company_id}
                 `;
+
+
+                let checkbtpspecialcondition = `
+                SELECT active FROM m_config_new mspc 
+                WHERE company_id = ${company_id}
+                and
+                conditions = 14
+                and
+                active = 1
+            `;
 
                 // Run both queries in parallel
                 Promise.all([
@@ -232,13 +251,40 @@ module.exports = {
                             if (err) reject(err);
                             else resolve(results);
                         });
-                    })
+                    }),
+                    new Promise((resolve, reject) => {
+                        dbConf.query(checkcompanyname, (err, results) => {
+                            if (err) reject(err);
+                            else resolve(results);
+                        });
+                    }),
+                    new Promise((resolve, reject) => {
+                        dbConf.query(checkbtpspecialcondition, (err, results) => {
+                            if (err) reject(err);
+                            else resolve(results);
+                        });
+                    }),
+
                 ])
-                    .then(([notifyTP, billTP]) => {
+                    .then(([notifyTP, billTP, checkcompanyname, spc]) => {
+
+
+                        const defaultEntry = {
+                            company_id,
+                            company_name: checkcompanyname[0].company_name
+                        };
+
+                        // Combine the default with the first real entry (optional merging)
+
+
+                        // Rest of the entries, skipping the first
+                        const restEntries = billTP;
+
+
                         res.status(200).send({
 
                             "Notify": notifyTP,
-                            "BillTP": billTP
+                            "BillTP":  spc.length > 0 ? billTP : [defaultEntry, ...restEntries]
                         });
 
                         console.log(timestamp + `get user shiptoparty for ${company_id} list success.`);

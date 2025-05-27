@@ -5,7 +5,6 @@ const fs = require('fs')
 const { default: axios } = require("axios");
 
 let blue = "\x1b[36m";
-const redcolor = "\x1b[31m";
 
 const key = process.env.SECURITY_API_SEARATES_KEY;
 module.exports = {
