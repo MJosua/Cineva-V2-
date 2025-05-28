@@ -23,7 +23,8 @@ module.exports = {
                     tp.txt,
                     md.final_dest,
                     md.id as md_id,
-                    md.distributor_id
+                    md.distributor_id,
+                    md.port_link
                 from
                     map_port_for_dist md
                 left join mst_harbour h on
@@ -37,9 +38,10 @@ module.exports = {
                     and tp.lang_id = 1
                 where
                     md.company_id = 100
-                    and distributor_id = ${company_id}
+                    and 
+                    distributor_id = ${company_id}
                     and
-                                now() between md.creation_date and coalesce(md.finish_date, '9999-12-31') 
+                    now() between md.creation_date and coalesce(md.finish_date, '9999-12-31') 
                 ;
                 `
 
