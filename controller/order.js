@@ -1220,7 +1220,9 @@ module.exports = {
         let getBlockingCompany = (await dbQuery(`select company_id from m_config_new mcn where conditions = 12;`))[0];
 
         // Error prevention: Check if getBlockingCompany is not empty and has the value you expect
-        let blockingSoIdCompany = getBlockingCompany && getBlockingCompany.company_id ? getBlockingCompany.company_id : 0;
+        let blockingSoIdCompany = getBlockingCompany.length
+            ? getBlockingCompany.map(row => row.company_id).join(',')
+            : '0';
         try {
 
             if (req.dataToken.user_id) {
@@ -2090,7 +2092,13 @@ module.exports = {
         let date = new Date();
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
+
+
         let order_id = req.params.order_id
+        let getBlockingCompany = (await dbQuery(`select company_id from m_config_new mcn where conditions = 12;`))[0];
+
+        let blockingSoIdCompany = getBlockingCompany && getBlockingCompany.company_id ? getBlockingCompany.company_id : 0;
+
         if (req.dataToken.company_id && order_id) {
 
             let query = ` 
@@ -2198,7 +2206,7 @@ module.exports = {
                         });
                         console.log(timestamp + `cancel order  ${req.body.order_id} error ${err}`);
                     } else {
-                        console.log( redcolor + timestamp + `cancel order  ${req.body.order_id} success`);
+                        console.log(redcolor + timestamp + `cancel order  ${req.body.order_id} success`);
 
                         res.status(200).send(
                             {
