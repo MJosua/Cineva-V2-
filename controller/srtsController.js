@@ -250,6 +250,8 @@ module.exports = {
                         DATE_FORMAT(pol.date , '%Y-%m-%d')pol_date,
                         DATE_FORMAT(e.date , '%Y-%m-%d')e_date,
                         v.vessel_id as vessel_vesid,
+                        v.name,
+                        v.imo as vimo,
                         e.vessel_id as event_vessel,
                         s.number,
                         s.so_id,
@@ -268,6 +270,7 @@ module.exports = {
                         s.shipment_id = r.shipment_id
                     left join sea_rates.vessel v on
                         s.shipment_id = v.shipment_id
+                        and e.vessel_id = v.vessel_id
                     left join sea_rates.pod pod on
                         s.shipment_id = pod.shipment_id
                     left join sea_rates.pol pol on
@@ -291,7 +294,6 @@ module.exports = {
             `
                 ;
             const results = await dbQuerySR(query, [number, number]);
-            console.log("results", results)
             if (results.length < 1) {
                 try {
                     const url = `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=auto&force_update=false&route=true&ais=false`;
@@ -310,9 +312,10 @@ module.exports = {
 
                 const shipmentData = {};
                 console.log("Call Searates Success for SO ID : ", results[0].so_id)
+
                 results.forEach(row => {
                     const shipmentId = row.shipments_id;
-
+                    console.log("row", row)
                     if (!shipmentData[shipmentId]) {
                         shipmentData[shipmentId] = {
 
@@ -417,14 +420,17 @@ module.exports = {
 
                     // Check for duplicate vessels before adding
                     if (row.vessel_id) {
-                        const existingVessel = shipmentData[shipmentId].vessels.find(v => v.imo === row.imo);
+                        const existingVessel = shipmentData[shipmentId].vessels.find(v => v.vessel_id === row.vessel_id);
+
                         if (!existingVessel) {
+
                             shipmentData[shipmentId].vessels.push({
-                                imo: row.imo,
+                                imo: row.vimo,
                                 name: row.name,
                                 vessel_id: row.vessel_vesid
                             });
                         }
+                        console.log("  shipmentData[shipmentId].vessels", shipmentData[shipmentId].vessels)
                     }
 
                     if (!shipmentData[shipmentId].dataRoute || shipmentData[shipmentId].dataRoute.length === 0) {

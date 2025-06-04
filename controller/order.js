@@ -1211,18 +1211,20 @@ module.exports = {
 
     }
     , getOneOrderDetail: async (req, res) => {
+        console.log("blockingSoIdCompany")
 
         let date = new Date();
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let order_id = req.params.order_id
         //untuk menghilangkan week tertentu.
-        let getBlockingCompany = (await dbQuery(`select company_id from m_config_new mcn where conditions = 12;`))[0];
-
+        let getBlockingCompany = (await dbQuery(`select company_id from m_config_new mcn where conditions = 12;`));
         // Error prevention: Check if getBlockingCompany is not empty and has the value you expect
         let blockingSoIdCompany = getBlockingCompany.length
-            ? getBlockingCompany.map(row => row.company_id).join(',')
+            ? getBlockingCompany.map(row => row.company_id).join(', ')
             : '0';
+        console.log("blockingSoIdCompany",blockingSoIdCompany)
+
         try {
 
             if (req.dataToken.user_id) {
@@ -1335,6 +1337,7 @@ module.exports = {
                         res.status(500).send(err);
                         console.log(timestamp + "Error getOneOrderDetail!", err)
                     } else {
+                        console.log("so_id",results[0].so_id )
                         res.status(200).send(results);
 
                     }

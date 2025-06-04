@@ -34,6 +34,7 @@ const hotsSettings = require('./hotsSettings')
 const shortener = require('./shortener')
 const hotsTps = require('./hotsTps')
 const srtsRouter = require('./srtsRouter')
+const projectmngr = require('./project_manager/project_manager')
 
 module.exports = {
     authRouter,
@@ -55,5 +56,6 @@ module.exports = {
     eventRouter,
     shortener,
     hotsTps,
-    srtsRouter
+    srtsRouter,
+    projectmngr
 } 

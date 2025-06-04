@@ -19,6 +19,9 @@ const shortenerController = require('./shortenerController')
 const hotsTps = require('./hotsTps')
 const srtsController = require('./srtsController')
 
+const projectmngr_task = require('./project_manager_controller/task')
+const projectmngr_project = require('./project_manager_controller/project')
+
 module.exports = {
     authController,
     authTmController,
@@ -39,6 +42,8 @@ module.exports = {
     hotsSettingsController,
     shortenerController,
     hotsTps,
-    srtsController
+    srtsController,
+    projectmngr_task,
+    projectmngr_project
 
 };
