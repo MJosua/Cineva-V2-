@@ -282,11 +282,16 @@ const {
   eventRouter,
   shortener,
   hotsTps,
-  srtsRouter
+  srtsRouter,
+  projectmngr
 } = require("./routers");
 
 // Auth: 
 App.use("/auth", authRouter);
+
+// Project_manager: 
+App.use("/prjct_mngr", projectmngr);
+
 
 // Auth TM: 
 //App.use("/auth_tm", authTmRouter);
