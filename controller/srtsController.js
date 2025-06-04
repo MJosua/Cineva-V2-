@@ -6,6 +6,14 @@ const { default: axios } = require("axios");
 
 let blue = "\x1b[36m";
 
+function formatDate(date) {
+    return new Date(date).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+    });
+}
+
 const key = process.env.SECURITY_API_SEARATES_KEY;
 module.exports = {
 
@@ -146,7 +154,7 @@ module.exports = {
                                 event_type: row.event_type,
                                 vessel_id: row.event_vessel,
                                 event_code: row.event_code,
-                                date: row.e_date,
+                                date: formatDate(row.e_date),
                                 actual: row.actual,
                                 voyage: row.voyage,
                                 container_id: row.container_id,
@@ -191,7 +199,7 @@ module.exports = {
                         if (!existingPod) {
                             shipmentData[shipmentId].dataRoute[0].pod.push({
                                 location: row.pod_id,
-                                date: row.pod_date
+                                date: formatDate(row.pod_date)
                             });
                         }
                     }
@@ -201,7 +209,7 @@ module.exports = {
                         if (!existingPol) {
                             shipmentData[shipmentId].dataRoute[0].pol.push({
                                 location: row.pol_id,
-                                date: row.pol_date
+                                date: formatDate(row.pol_date)
                             });
                         }
                     }
@@ -384,7 +392,7 @@ module.exports = {
                                 event_type: row.event_type,
                                 vessel_id: row.event_vessel,
                                 event_code: row.event_code,
-                                date: row.e_date,
+                                date: formatDate(row.e_date),
                                 actual: row.actual,
                                 voyage: row.voyage,
                                 container_id: row.container_id,
@@ -443,7 +451,7 @@ module.exports = {
                         if (!existingPod) {
                             shipmentData[shipmentId].dataRoute[0].pod.push({
                                 location: row.pod_id,
-                                date: row.pod_date
+                                date: formatDate(row.pod_date)
                             });
                         }
                     }
@@ -453,7 +461,7 @@ module.exports = {
                         if (!existingPol) {
                             shipmentData[shipmentId].dataRoute[0].pol.push({
                                 location: row.pol_id,
-                                date: row.pol_date
+                                date: formatDate(row.pol_date)
                             });
                         }
                     }
