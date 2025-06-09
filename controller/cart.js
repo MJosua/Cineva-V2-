@@ -654,8 +654,7 @@ module.exports = {
     const timestamp = `${magenta}${new Date().toLocaleString('id')} : `;
     const { user_id, company_id } = req.dataToken;
     const cart = req.body.cart;
-
-    let stuffing_date = (new Date()).toISOString().slice(0, 10);
+    let formattedDate = (new Date()).toISOString().slice(0, 10);
 
 
 
@@ -696,18 +695,22 @@ module.exports = {
         cartIndex++;
         const {
           po_buyer, port_shipment, ship_to, po_url, final_dest = '-',
-          delv_year = 0, tolling_id = 0,  bill_to: raw_bill_to = '',
+          delv_year = 0, tolling_id = 0, bill_to: raw_bill_to = '',
           notify_to_1: nt1, notify_to_2: nt2,
           remarks = '', detail = []
         } = cart_data;
+        let stuffing_date_rev = cart_data.stuffing_date ? cart_data.stuffing_date : formattedDate;
 
         const notify_to_1 = nt1 && nt1 !== '' ? nt1 : 0;
         const notify_to_2 = nt2 && nt2 !== '' ? nt2 : 0;
 
         const bill_to = raw_bill_to !== '' ? parseInt(raw_bill_to) : 0;
 
-        const delv_week = cart_data.delv_week || (await dbQuery(`SELECT day2week('${stuffing_date}') AS week`))[0].week;
-        const delv_week_desc = cart_data.delv_week_desc || `Week: ${delv_week} Date: ${stuffing_date}`;
+        const delv_week = cart_data.delv_week ? cart_data.delv_week : (await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik;
+        const delv_week_desc = cart_data.delv_week_desc ? cart_data.delv_week_desc : `Week: ${(await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik} Date: ${cart_data.stuffing_date} `
+
+        console.log("delv_week", delv_week)
+
         const id_year = parseInt(`${delv_year}${delv_week}`);
 
         const cart_id_raw = await generateCartId(delv_year);
@@ -724,7 +727,7 @@ module.exports = {
                     `;
         const headerParams = [
           cart_id, company_id, delv_week, delv_week_desc, delv_year, id_year, po_buyer,
-          port_shipment, ship_to, po_url, user_id, stuffing_date, final_dest,
+          port_shipment, ship_to, po_url, user_id, stuffing_date_rev, final_dest,
           tolling_id, bill_to, notify_to_1, notify_to_2
         ];
 
