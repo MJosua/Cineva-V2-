@@ -1211,7 +1211,6 @@ module.exports = {
 
     }
     , getOneOrderDetail: async (req, res) => {
-        console.log("blockingSoIdCompany")
 
         let date = new Date();
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
@@ -1223,7 +1222,6 @@ module.exports = {
         let blockingSoIdCompany = getBlockingCompany.length
             ? getBlockingCompany.map(row => row.company_id).join(', ')
             : '0';
-        console.log("blockingSoIdCompany",blockingSoIdCompany)
 
         try {
 
@@ -1337,7 +1335,6 @@ module.exports = {
                         res.status(500).send(err);
                         console.log(timestamp + "Error getOneOrderDetail!", err)
                     } else {
-                        console.log("so_id",results[0].so_id )
                         res.status(200).send(results);
 
                     }
