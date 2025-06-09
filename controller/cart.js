@@ -696,13 +696,15 @@ module.exports = {
         cartIndex++;
         const {
           po_buyer, port_shipment, ship_to, po_url, final_dest = '-',
-          delv_year = 0, tolling_id = 0, bill_to = 0,
+          delv_year = 0, tolling_id = 0,  bill_to: raw_bill_to = '',
           notify_to_1: nt1, notify_to_2: nt2,
           remarks = '', detail = []
         } = cart_data;
 
         const notify_to_1 = nt1 && nt1 !== '' ? nt1 : 0;
         const notify_to_2 = nt2 && nt2 !== '' ? nt2 : 0;
+
+        const bill_to = raw_bill_to !== '' ? parseInt(raw_bill_to) : 0;
 
         const delv_week = cart_data.delv_week || (await dbQuery(`SELECT day2week('${stuffing_date}') AS week`))[0].week;
         const delv_week_desc = cart_data.delv_week_desc || `Week: ${delv_week} Date: ${stuffing_date}`;
@@ -761,6 +763,8 @@ module.exports = {
                 0, 0, 0, remarks, dtl.bulk, delv_week, delv_year, id_year, custom
               ];
 
+
+
               dbConf.query(detailQuery, detailParams, (err, results) => {
                 if (err) {
                   emergencyDeleteCart(cart_id);
@@ -782,6 +786,7 @@ module.exports = {
 
     } catch (err) {
       console.log(timestamp + `Final error in addCart: ${err}`);
+
       res.status(500).send({ success: false, message: err.message || "Unexpected error occurred." });
     }
   }
