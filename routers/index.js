@@ -27,14 +27,25 @@ const trademarkRouter = require('./trademark')
 const authRouterTest = require('./auth_test')
 const productRouterTest = require('./product_test')
 const cardGenerator = require('./cardGenerator')
-const hotsAuth = require('./hotsAuth')
-const hotsAdmin = require('./hotsAdmin')
-const hotsTicket = require('./hotsTicket')
-const hotsSettings = require('./hotsSettings')
+const hotsAuth = require('./hots/hotsAuth')
+const hotsAdmin = require('./hots/hotsAdmin')
+const hotsTicket = require('./hots/hotsTicket')
+const hotsSettings = require('./hots/hotsSettings')
 const shortener = require('./shortener')
-const hotsTps = require('./hotsTps')
+const hotsTps = require('./hots/hotsTps')
 const srtsRouter = require('./srtsRouter')
-const projectmngr = require('./project_manager/project_manager')
+
+const hotscustomfunction = require('./hots/hotscustomfunction')
+const user = require('../controller/user')
+
+// Project Manager routes
+const projectmngr = require('./project_manager/project_routes')
+const taskmngr = require('./project_manager/task_routes')
+const ganttmngr = require('./project_manager/gantt_routes')
+const kanbanmngr = require('./project_manager/kanban_routes')
+const approvalmngr = require('./project_manager/approval_routes')
+const departmentmngr = require('./project_manager/department_routes')
+const teammngr = require('./project_manager/team_routes')
 
 module.exports = {
     authRouter,
@@ -56,6 +67,15 @@ module.exports = {
     eventRouter,
     shortener,
     hotsTps,
+    hotscustomfunction,
     srtsRouter,
-    projectmngr
+
+    // Project Manager modules
+    projectmngr,
+    taskmngr,
+    ganttmngr,
+    kanbanmngr,
+    approvalmngr,
+    departmentmngr,
+    teammngr,
 } 

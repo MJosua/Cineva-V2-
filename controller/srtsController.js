@@ -295,6 +295,8 @@ module.exports = {
                         order by
                             last_updated_date desc
                         limit 1 )
+                        OR
+                        s.so_id = ?
                     group by
                         e.event_id
                     order by
