@@ -2,19 +2,61 @@ const nodemailer = require("nodemailer");
 const { dbConf, dbQuery, dbTMQuery } = require("../config/db");
 const { formatDate } = require("../Utility/DateFormat");
 // const { notification } = require("../automation");
+const os = require('os');
 
 
-// PERHATIAN: INI CUMA BISA BERJALAN JIKA DI SERVER PRODUCTION
+// PERHATIAN: INI CUMA BISA BERJALAN JIKA DI SERVER PRODUCTION\
+
+function production() {
+
+    function getLocalIp() {
+        const networkInterfaces = os.networkInterfaces();
+        for (const interfaceName in networkInterfaces) {
+            const addresses = networkInterfaces[interfaceName];
+            for (const address of addresses) {
+                if (address.family === 'IPv4' && !address.internal) {
+                    return address.address; // Return the local IP address
+                }
+            }
+        }
+    }
+
+    if (getLocalIp() == "10.126.106.105") {
+        // return "production"
+        console.log("production")
+        return true;
+    } else {
+        console.log("development")
+        // return "development"
+        return false;
+    }
+
+
+}
+const mailsmtp = !production ? process.env.MAIL_SMTP_HOST : process.env.MAIL_SMTP_LOCAL_HOST;
+const mailPORT = !parseInt(production ? process.env.MAIL_SMTP_PORT : process.env.MAIL_SMTP_LOCAL_PORT, 10);
+const mailUser = !production ? process.env.MAIL_USERNAME : process.env.MAIL_LOCAL_USERNAME;
+const mailPassword = !production ? process.env.MAIL_PASSWORD : process.env.MAIL_LOCAL_PASSWORD;
+
+
+const mailaccount = !production ? 'no-reply@indofoodinternational.com' : 'admin@stieprofesionalindonesia.ac.id';
+
+
+console.log("mailsmtp:", mailsmtp)
+console.log("mailPORT:", mailPORT)
+
+
 const transporter = nodemailer.createTransport({
-    host: process.env.MAIL_SMTP_HOST,
-    port: process.env.MAIL_SMTP_PORT,
-    secure: false,
+    host: mailsmtp,
+    port: mailPORT,
+    secure: mailPORT === 465, // true for SSL
     auth: {
-        // TODO: replace `user` and `pass` values from <https://forwardemail.net>
-        user: process.env.MAIL_USERNAME,
-        pass: process.env.MAIL_PASSWORD,
-
+        user: mailUser,
+        pass: mailPassword,
     },
+    tls: {
+        rejectUnauthorized: false, // use with caution, only for self-signed certs
+    }
 });
 
 //
@@ -1114,5 +1156,37 @@ module.exports = {
 
 
     }
+    , hotsForgotPasswordMailer: async (address, token) => {
+        let date = new Date();
+        let timestamp =
+            date.toLocaleDateString("id") + " " + date.toLocaleTimeString("id") + " : ";
+
+        try {
+            const info = await transporter.sendMail({
+                from: mailaccount,
+                to: address,
+                subject: "Reset Password",
+                html: `
+              <div>
+                <h3>To reset your password, copy this URL into an incognito browser tab or click the link below:</h3>
+                <br>
+                <a href="${process.env.FE_URL_HOTS}/forgot-password/${token}">
+                  ${process.env.FE_URL_HOTS}/forgot-password/${token}
+                </a>
+                <br><br>
+                <h4>Please do not share this link with anyone.</h4>
+              </div>
+            `,
+            });
+
+            console.log(`${timestamp} ✅ Email sent to ${address}`);
+            console.log(`Message ID: ${info.messageId}`);
+            console.log(`Response: ${info.response}`);
+        } catch (error) {
+            console.error(`${timestamp} ❌ ERROR sending mail to ${address}`);
+            console.error(error);
+        }
+    }
+
 
 }

@@ -175,7 +175,6 @@ App.use(
 
 App.use(cors({
   origin: '*', // Specify Ionic app's origin
-  credentials: true
 }));
 
 App.use((req, res, next) => {
@@ -283,15 +282,27 @@ const {
   shortener,
   hotsTps,
   srtsRouter,
-  projectmngr
+  hotscustomfunction,
+  kanbanmngr,
+  projectmngr,
+  taskmngr,
+  ganttmngr,
+  approvalmngr,
+  departmentmngr,
+  teammngr,
 } = require("./routers");
 
 // Auth: 
 App.use("/auth", authRouter);
 
 // Project_manager: 
-App.use("/prjct_mngr", projectmngr);
-
+App.use("/prjct_mngr/project", projectmngr);
+App.use("/prjct_mngr/kanban", kanbanmngr);
+App.use("/prjct_mngr/gantt", ganttmngr);
+App.use("/prjct_mngr/approval", approvalmngr);
+App.use("/prjct_mngr/department", departmentmngr);
+App.use("/prjct_mngr/team", teammngr);
+App.use("/prjct_mngr/task", taskmngr);
 
 // Auth TM: 
 //App.use("/auth_tm", authTmRouter);
@@ -345,11 +356,17 @@ App.use("/shortener", shortener);
 //hots pricing structure
 App.use("/hots_Tps", hotsTps);
 
+//hots custom function
+App.use("/hots_customfunction", hotscustomfunction);
+
 App.use('/public', express.static(path.join(__dirname, 'public')));
+
+
 App.use(express.static(path.join(__dirname, 'public')));
 
 
 App.use('/public/files/hots/it_support', express.static(path.join(__dirname, 'public', 'files', 'hots', 'it_support')));
+
 
 App.get('/public/files/hots/it_support/:imageId', (req, res) => {
   const imageId = req.params.imageId;
@@ -369,6 +386,39 @@ App.get('/public/files/hots/it_support/:imageId', (req, res) => {
     }
   });
 });
+
+App.use('/public/hots/generateddocuments', express.static(path.join(__dirname, 'public', 'hots', 'generateddocuments')));
+
+App.get('/public/hots/generateddocuments/:fileName', (req, res) => {
+  const fileName = req.params.fileName;
+  const filePath = path.join(__dirname, 'public', 'hots', 'generateddocuments', fileName);
+
+  // Set appropriate headers for PDF
+  res.set({
+    'Content-Type': 'application/pdf',
+    'Cross-Origin-Resource-Policy': 'cross-origin', // Optional: needed if iframe loads cross-origin
+    'Content-Disposition': 'inline', // or use 'attachment' to force download
+    'Content-Type': 'application/pdf',
+    'Cross-Origin-Resource-Policy': 'cross-origin',
+    'Cross-Origin-Embedder-Policy': 'require-corp',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Disposition': 'inline'
+  });
+
+  // Send the PDF file
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error('Error serving PDF:', err);
+      res.status(404).send('PDF not found');
+    }
+  });
+});
+
+App.use('*', (req, res) => {
+  res.status(404).send('Not Found');
+});
+
 
 // ========= for Documentation ============
 
@@ -478,13 +528,15 @@ dbIndomieku.getConnection((error, connection) => {
 */
 const {
   trademarkMgmtAuto,
-  notification
+  notification,
+  cleanup
 
 } = require('./automation');
 const { error } = require("console");
 
 trademarkMgmtAuto.runCheck();
 notification.shippingMailNotification();
+cleanup.cleanupOrphan();
 // notification.callInsertSO();
 
 

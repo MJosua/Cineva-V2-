@@ -1321,7 +1321,7 @@ module.exports = {
                         so.so_id = ta.key
                         and ta.company_id = so.company_id
                     left join trs_approval_event tae on
-                        ta.id = tae.appr_id
+                         so.approval_id = tae.appr_id
                         and tae.company_id = ta.company_id
                         and tae.id = 4
                         where
