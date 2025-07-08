@@ -55,7 +55,7 @@ module.exports = {
 
       // Create workflow
       const [workflowResult] = await dbPMS.promise().execute(`
-        INSERT INTO prjct_mngr.t_approval_workflows 
+        INSERT INTO PM.t_approval_workflows 
         (entity_type, entity_id, submitted_by, approval_type_id, status)
         VALUES ('task', ?, ?, ?, 'pending')
       `, [task_id, userId, approval_type || 1]);
@@ -64,13 +64,13 @@ module.exports = {
 
       // Get approval hierarchy
       const [hierarchy] = await dbPMS.promise().execute(`
-        SELECT * FROM prjct_mngr.get_approval_hierarchy(?)
+        SELECT * FROM PM.get_approval_hierarchy(?)
       `, [userId]);
 
       // Create approval records for each level
       for (let i = 0; i < hierarchy.length; i++) {
         await dbPMS.promise().execute(`
-          INSERT INTO prjct_mngr.t_task_approvals 
+          INSERT INTO PM.t_task_approvals 
           (workflow_id, task_id, level, approver_id, comments)
           VALUES (?, ?, ?, ?, ?)
         `, [workflowId, task_id, hierarchy[i].level, hierarchy[i].approver_id, comments]);
@@ -78,7 +78,7 @@ module.exports = {
 
       // Update task status
       await dbPMS.promise().execute(`
-        UPDATE prjct_mngr.t_tasks SET status = 'pending_approval' WHERE task_id = ?
+        UPDATE PM.t_tasks SET status = 'pending_approval' WHERE task_id = ?
       `, [task_id]);
 
       console.log(timestamp + 'Task approval submitted:', task_id);
@@ -105,7 +105,7 @@ module.exports = {
 
       // Create workflow
       const [workflowResult] = await dbPMS.promise().execute(`
-        INSERT INTO prjct_mngr.t_approval_workflows 
+        INSERT INTO PM.t_approval_workflows 
         (entity_type, entity_id, submitted_by, approval_type_id, status)
         VALUES ('project', ?, ?, ?, 'pending')
       `, [project_id, userId, approval_type || 1]);
@@ -114,13 +114,13 @@ module.exports = {
 
       // Get approval hierarchy
       const [hierarchy] = await dbPMS.promise().execute(`
-        SELECT * FROM prjct_mngr.get_approval_hierarchy(?)
+        SELECT * FROM PM.get_approval_hierarchy(?)
       `, [userId]);
 
       // Create approval records for each level
       for (let i = 0; i < hierarchy.length; i++) {
         await dbPMS.promise().execute(`
-          INSERT INTO prjct_mngr.t_project_approvals 
+          INSERT INTO PM.t_project_approvals 
           (workflow_id, project_id, level, approver_id, comments, budget_approved)
           VALUES (?, ?, ?, ?, ?, ?)
         `, [workflowId, project_id, hierarchy[i].level, hierarchy[i].approver_id, comments, budget_requested]);
@@ -128,7 +128,7 @@ module.exports = {
 
       // Update project status
       await dbPMS.promise().execute(`
-        UPDATE prjct_mngr.t_project SET status = 'pending_approval' WHERE project_id = ?
+        UPDATE PM.t_project SET status = 'pending_approval' WHERE project_id = ?
       `, [project_id]);
 
       console.log(timestamp + 'Project approval submitted:', project_id);
@@ -155,7 +155,7 @@ module.exports = {
 
       // Update approval record
       await dbPMS.promise().execute(`
-        UPDATE prjct_mngr.t_task_approvals 
+        UPDATE PM.t_task_approvals 
         SET status = ?, approved_date = NOW(), comments = ?
         WHERE approval_id = ? AND approver_id = ?
       `, [action === 'approve' ? 'approved' : 'rejected', comments, approval_id, userId]);
@@ -163,8 +163,8 @@ module.exports = {
       // Check if this completes the workflow
       const [approvalInfo] = await dbPMS.promise().execute(`
         SELECT ta.*, tw.workflow_id, tw.entity_id as task_id
-        FROM prjct_mngr.t_task_approvals ta
-        JOIN prjct_mngr.t_approval_workflows tw ON ta.workflow_id = tw.workflow_id
+        FROM PM.t_task_approvals ta
+        JOIN PM.t_approval_workflows tw ON ta.workflow_id = tw.workflow_id
         WHERE ta.approval_id = ?
       `, [approval_id]);
 
@@ -175,32 +175,32 @@ module.exports = {
         if (action === 'reject') {
           // Rejection - update workflow and task
           await dbPMS.promise().execute(`
-            UPDATE prjct_mngr.t_approval_workflows 
+            UPDATE PM.t_approval_workflows 
             SET status = 'rejected', completed_date = NOW()
             WHERE workflow_id = ?
           `, [workflowId]);
 
           await dbPMS.promise().execute(`
-            UPDATE prjct_mngr.t_tasks SET status = 'rejected' WHERE task_id = ?
+            UPDATE PM.t_tasks SET status = 'rejected' WHERE task_id = ?
           `, [taskId]);
         } else {
           // Check if all approvals are complete
             const [pendingApprovals] = await dbPMS.promise().execute(`
             SELECT COUNT(*) as pending_count
-            FROM prjct_mngr.t_task_approvals 
+            FROM PM.t_task_approvals 
             WHERE workflow_id = ? AND status = 'pending'
           `, [workflowId]);
 
           if (pendingApprovals[0].pending_count === 0) {
             // All approved - complete workflow
             await dbPMS.promise().execute(`
-              UPDATE prjct_mngr.t_approval_workflows 
+              UPDATE PM.t_approval_workflows 
               SET status = 'approved', completed_date = NOW()
               WHERE workflow_id = ?
             `, [workflowId]);
 
             await dbPMS.promise().execute(`
-              UPDATE prjct_mngr.t_tasks SET status = 'approved' WHERE task_id = ?
+              UPDATE PM.t_tasks SET status = 'approved' WHERE task_id = ?
             `, [taskId]);
           }
         }
@@ -233,10 +233,10 @@ module.exports = {
           p.name as project_name,
           CONCAT(u.firstname, ' ', u.lastname) as submitted_by_name,
           tw.submitted_date
-        FROM prjct_mngr.t_task_approvals ta
-        JOIN prjct_mngr.t_tasks t ON ta.task_id = t.task_id
-        JOIN prjct_mngr.t_project p ON t.project_id = p.project_id
-        JOIN prjct_mngr.t_approval_workflows tw ON ta.workflow_id = tw.workflow_id
+        FROM PM.t_task_approvals ta
+        JOIN PM.t_tasks t ON ta.task_id = t.task_id
+        JOIN PM.t_project p ON t.project_id = p.project_id
+        JOIN PM.t_approval_workflows tw ON ta.workflow_id = tw.workflow_id
         JOIN hots.user u ON tw.submitted_by = u.user_id
         WHERE ta.approver_id = ? AND ta.status = 'pending'
         ORDER BY tw.submitted_date DESC
@@ -249,9 +249,9 @@ module.exports = {
           p.name as project_name,
           CONCAT(u.firstname, ' ', u.lastname) as submitted_by_name,
           tw.submitted_date
-        FROM prjct_mngr.t_project_approvals pa
-        JOIN prjct_mngr.t_project p ON pa.project_id = p.project_id
-        JOIN prjct_mngr.t_approval_workflows tw ON pa.workflow_id = tw.workflow_id
+        FROM PM.t_project_approvals pa
+        JOIN PM.t_project p ON pa.project_id = p.project_id
+        JOIN PM.t_approval_workflows tw ON pa.workflow_id = tw.workflow_id
         JOIN hots.user u ON tw.submitted_by = u.user_id
         WHERE pa.approver_id = ? AND pa.status = 'pending'
         ORDER BY tw.submitted_date DESC
