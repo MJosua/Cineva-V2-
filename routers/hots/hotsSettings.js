@@ -110,6 +110,9 @@ route.delete("/delete/service/:service_id", decodeTokenHT, hotsSettingsControlle
 
 
 
+//meetingroom
+route.get('/get/meetingroom', decodeTokenHT, hotsSettingsController.getmeetingroom)
+route.get('/get/meetingroom_static', decodeTokenHT, hotsSettingsController.getmeetingroom_static)
 
 
 

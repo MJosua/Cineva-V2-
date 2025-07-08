@@ -697,11 +697,12 @@ module.exports = {
     },
 
     generateDocument: async (template, ticketData, params) => {
-        const fileName = `document_${ticketData.ticket_id || ticketData[0]?.ticket_id}_${Date.now()}.pdf`;
+        const fileName = `document_${template.template_name || ticketData[0]?.ticket_id}_${Date.now()}.pdf`;
         const filePath = path.join('public', 'hots', 'generateddocuments', fileName);
       
         console.log("ticketData", ticketData);
         console.log("params", params);
+        console.log("template", template);
       
         const dirPath = path.dirname(filePath);
         if (!fs.existsSync(dirPath)) {

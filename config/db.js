@@ -114,6 +114,19 @@ const dbHots = mysql.createPool({
 });
 const dbQueryHots = util.promisify(dbHots.query).bind(dbHots);
 
+
+const dbPMS = mysql.createPool({
+    // connectionLimit : 20, 
+    multipleStatements: true,
+    host: host_config,
+    user: user_config,
+    password: password_config,
+    database: process.env.DB_NAME_PMS
+});
+const dbQueryPMS = util.promisify(dbPMS.query).bind(dbPMS);
+
+
+
 //for click shorten
 const dbClick = mysql.createPool({
     // connectionLimit : 20, 
@@ -175,6 +188,7 @@ module.exports = {
     dbCardGenerator, dbQueryCardGenerator,
     dbHots, dbClick, dbQueryHots, dbQueryClick,
     dbSR, dbQuerySR,
+    dbPMS,dbQueryPMS,
     addSqlLogger
 
 }

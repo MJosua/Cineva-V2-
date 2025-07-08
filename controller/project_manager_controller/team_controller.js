@@ -12,15 +12,20 @@ module.exports = {
 
       let query = `
         SELECT 
-          t.*,
-          CONCAT(u.firstname, ' ', u.lastname) AS team_leader_name,
-          d.department_name,
-          COUNT(DISTINCT usr.user_id) as member_count
-        FROM hots.t_team t
-        LEFT JOIN hots.user u ON t.team_leader_id = u.user_id
-        LEFT JOIN hots.m_department d ON t.department_id = d.department_id
-        LEFT JOIN hots.user usr ON t.team_id = usr.team_id
-        WHERE 1=1
+        t.*,
+        d.department_name,
+        (
+          SELECT CONCAT(u2.firstname, ' ', u2.lastname)
+          FROM hots.m_team_member tm2
+          JOIN hots.user u2 ON tm2.user_id = u2.user_id
+          WHERE tm2.team_id = t.team_id AND tm2.team_leader = 1
+          LIMIT 1
+        ) AS team_leader_name,
+        COUNT(DISTINCT tm.user_id) AS member_count
+      FROM hots.m_team t
+      LEFT JOIN hots.m_department d ON t.department_id = d.department_id
+      LEFT JOIN hots.m_team_member tm ON t.team_id = tm.team_id
+      WHERE 1 = 1
       `;
       const params = [];
 
@@ -56,13 +61,18 @@ module.exports = {
 
       const [teams] = await dbPMS.promise().execute(`
         SELECT 
-          t.*,
-          CONCAT(u.firstname, ' ', u.lastname) AS team_leader_name,
-          d.department_name
-        FROM hots.t_team t
-        LEFT JOIN hots.user u ON t.team_leader_id = u.user_id
-        LEFT JOIN hots.m_department d ON t.department_id = d.department_id
-        WHERE t.team_id = ?
+            t.*,
+            d.department_name,
+            (
+              SELECT CONCAT(u.firstname, ' ', u.lastname)
+              FROM hots.m_team_member tm
+              JOIN hots.user u ON tm.user_id = u.user_id
+              WHERE tm.team_id = t.team_id AND tm.team_leader = 1
+              LIMIT 1
+            ) AS team_leader_name
+          FROM hots.m_team t
+          LEFT JOIN hots.m_department d ON t.department_id = d.department_id
+          WHERE t.team_id = ?
       `, [id]);
 
       if (teams.length === 0) {
@@ -72,7 +82,7 @@ module.exports = {
       // Get team members
       const [members] = await dbPMS.promise().execute(`
         SELECT 
-          user_id, uid, firstname, lastname, email, role_name, job_title, is_active
+          user_id, uid, firstname, lastname, email, role_id, jobtitle_id, active
         FROM hots.user
         WHERE team_id = ?
         ORDER BY lastname, firstname
@@ -97,15 +107,14 @@ module.exports = {
       const data = req.body;
 
       const [result] = await dbPMS.promise().execute(`
-        INSERT INTO hots.t_team 
-        (team_id, team_name, description, department_id, team_leader_id, created_date, updated_date)
+        INSERT INTO hots.m_team 
+        (team_id, team_name, description, department_id, created_date, updated_date)
         VALUES (?, ?, ?, ?, ?, NOW(), NOW())
       `, [
         data.team_id,
         data.team_name,
         data.description,
-        data.department_id,
-        data.team_leader_id
+        data.department_id
       ]);
 
       const [newTeam] = await dbPMS.promise().execute(
@@ -130,15 +139,14 @@ module.exports = {
       const data = req.body;
 
       await dbPMS.promise().execute(`
-        UPDATE hots.t_team 
+        UPDATE hots.m_team 
         SET team_name = ?, description = ?, department_id = ?, 
-            team_leader_id = ?, updated_date = NOW()
+           updated_date = NOW()
         WHERE team_id = ?
       `, [
         data.team_name,
         data.description,
         data.department_id,
-        data.team_leader_id,
         id
       ]);
 

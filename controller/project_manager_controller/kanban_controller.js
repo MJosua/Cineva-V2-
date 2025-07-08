@@ -23,7 +23,7 @@ module.exports = {
       const [groups] = await dbPMS.promise().execute(`
         SELECT * FROM t_task_groups 
         WHERE project_id = ? 
-        ORDER BY group_order ASC
+        ORDER BY sort_order ASC
       `, [project_id]);
 
       // If no custom groups, use default statuses

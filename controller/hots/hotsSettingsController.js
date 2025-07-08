@@ -1787,12 +1787,9 @@ module.exports = {
         let user_id = req.dataToken.user_id;
         const status = parseInt(req.params.status || req.body.status);
         const service_id = parseInt(req.params.service_id || req.body.service_id);
-        console.log(service_id)
-        console.log(status)
 
 
         const new_status = status === 1 ? 0 : 1;
-        console.log(new_status)
         try {
             const [result] = await dbHots.promise().query(`
             UPDATE hots.m_service 
@@ -2378,6 +2375,111 @@ module.exports = {
 
 
 
+    getmeetingroom: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+
+        let user_id = req.dataToken.user_id;
+
+
+        try {
+            const [room] = await dbHots.promise().query(`
+               SELECT
+                t.ticket_id,
+                MAX(CASE WHEN d.lbl_col = 'Meeting Room' THEN d.cstm_col END) AS room,
+                MAX(CASE WHEN d.lbl_col = 'Time Start' THEN d.cstm_col END) AS start_time,
+                MAX(CASE WHEN d.lbl_col = 'Time End' THEN d.cstm_col END) AS end_time,
+                dpt.department_name AS booked_by,
+                MAX(CASE WHEN d.lbl_col = 'partisipan' THEN d.cstm_col END) AS attendees,
+                MAX(CASE WHEN d.lbl_col = 'date' THEN d.cstm_col END) AS date
+                FROM t_ticket t
+                LEFT JOIN t_ticket_detail d ON d.ticket_id = t.ticket_id
+                left join user u on u.user_id = t.created_by
+                left join m_department dpt on u.department_id = dpt.department_id
+                WHERE t.service_id = 13
+                GROUP BY t.ticket_id
+                HAVING 
+                STR_TO_DATE(MAX(CASE WHEN d.lbl_col = 'date' THEN d.cstm_col END), '%Y-%m-%d') BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 5 DAY)
+                AND DAYOFWEEK(STR_TO_DATE(MAX(CASE WHEN d.lbl_col = 'date' THEN d.cstm_col END), '%Y-%m-%d')) NOT IN (1, 7)
+                ORDER BY t.ticket_id DESC;
+
+            `);
+
+            console.log(`Room Widget API retrieved successfully by ${user_id} at ${timestamp}`);
+
+            res.status(200).json({
+                success: true,
+                data: room,
+                message: "Teams retrieved successfully"
+            });
+        } catch (err) {
+            console.error(`Error getting teams by department: ${err.message} at ${timestamp}`);
+            res.status(500).json({
+                success: false,
+                message: err.message
+            });
+        }
+
+
+
+    },
+
+    getmeetingroom_static: async (req, res) => {
+        const currentDate = new Date();
+        const timestamp = yellowTerminal + currentDate.toLocaleDateString('id') + ' ' + currentDate.toLocaleTimeString('id') + ' : ';
+        const user_id = req.dataToken.user_id;
+        let { date, room } = req.query;
+    
+        if (!date) {
+            return res.status(400).json({
+                success: false,
+                message: "Tanggal (date) harus disediakan dalam format YYYY-MM-DD"
+            });
+        }
+    
+        try {
+            const query = `
+                SELECT
+                    t.ticket_id,
+                    MAX(CASE WHEN d.lbl_col = 'Meeting Room' THEN d.cstm_col END) AS room,
+                    MAX(CASE WHEN d.lbl_col = 'Time Start' THEN d.cstm_col END) AS start_time,
+                    MAX(CASE WHEN d.lbl_col = 'Time End' THEN d.cstm_col END) AS end_time,
+                    dpt.department_name AS booked_by,
+                    MAX(CASE WHEN d.lbl_col = 'partisipan' THEN d.cstm_col END) AS attendees,
+                    MAX(CASE WHEN d.lbl_col = 'date' THEN d.cstm_col END) AS date
+                FROM t_ticket t
+                LEFT JOIN t_ticket_detail d ON d.ticket_id = t.ticket_id
+                LEFT JOIN user u ON u.user_id = t.created_by
+                LEFT JOIN m_department dpt ON u.department_id = dpt.department_id
+                WHERE t.service_id = 13
+                GROUP BY t.ticket_id
+                HAVING
+                    MAX(CASE WHEN d.lbl_col = 'date' THEN d.cstm_col END) = ?
+                    ${room ? "AND MAX(CASE WHEN d.lbl_col = 'Meeting Room' THEN d.cstm_col END) = ?" : ""}
+                ORDER BY t.ticket_id DESC
+            `;
+    
+            const params = [date];
+            if (room) params.push(room);
+    
+            const [roomResult] = await dbHots.promise().query(query, params);
+    
+            console.log(`Room Widget API accessed by ${user_id} at ${timestamp}`);
+    
+            res.status(200).json({
+                success: true,
+                data: roomResult,
+                message: "Meeting room bookings retrieved successfully"
+            });
+        } catch (err) {
+            console.error(`Error in getmeetingroom_static: ${err.message} at ${timestamp}`);
+            res.status(500).json({
+                success: false,
+                message: "Terjadi kesalahan saat mengambil data meeting room"
+            });
+        }
+    },
 
 
 
