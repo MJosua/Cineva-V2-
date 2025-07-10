@@ -33,13 +33,13 @@ function production() {
 
 
 }
-const mailsmtp = !production ? process.env.MAIL_SMTP_HOST : process.env.MAIL_SMTP_LOCAL_HOST;
-const mailPORT = !parseInt(production ? process.env.MAIL_SMTP_PORT : process.env.MAIL_SMTP_LOCAL_PORT, 10);
-const mailUser = !production ? process.env.MAIL_USERNAME : process.env.MAIL_LOCAL_USERNAME;
-const mailPassword = !production ? process.env.MAIL_PASSWORD : process.env.MAIL_LOCAL_PASSWORD;
+const isProd = production();
 
-
-const mailaccount = !production ? 'no-reply@indofoodinternational.com' : 'admin@stieprofesionalindonesia.ac.id';
+const mailsmtp = isProd ? process.env.MAIL_SMTP_HOST : process.env.MAIL_SMTP_LOCAL_HOST;
+const mailPORT = parseInt(isProd ? process.env.MAIL_SMTP_PORT : process.env.MAIL_SMTP_LOCAL_PORT, 10);
+const mailUser = isProd ? process.env.MAIL_USERNAME : process.env.MAIL_LOCAL_USERNAME;
+const mailPassword = isProd ? process.env.MAIL_PASSWORD : process.env.MAIL_LOCAL_PASSWORD;
+const mailaccount = isProd ? 'no-reply@indofoodinternational.com' : 'admin@stieprofesionalindonesia.ac.id';
 
 
 console.log("mailsmtp:", mailsmtp)
