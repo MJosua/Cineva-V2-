@@ -1,6 +1,8 @@
 const {
     dbHots,
     dbQueryHots,
+    dbQuery,
+    dbConf,
     // addSqlLogger
 } = require("../../config/db"); // Adjust path as needed
 const XLSX = require('xlsx');
@@ -699,68 +701,172 @@ module.exports = {
     generateDocument: async (template, ticketData, params) => {
         const fileName = `document_${template.template_name || ticketData[0]?.ticket_id}_${Date.now()}.pdf`;
         const filePath = path.join('public', 'hots', 'generateddocuments', fileName);
-      
-        console.log("ticketData", ticketData);
-        console.log("params", params);
-        console.log("template", template);
-      
+
+
         const dirPath = path.dirname(filePath);
         if (!fs.existsSync(dirPath)) {
-          fs.mkdirSync(dirPath, { recursive: true });
+            fs.mkdirSync(dirPath, { recursive: true });
         }
-      
+
         const data = !Array.isArray(ticketData) ? { ...ticketData, ...params } : { ...params };
         const detailRows = Array.isArray(params.detail_rows) ? params.detail_rows : Array.isArray(ticketData) ? ticketData : [];
-      
+
+        console.log("data", data)
+
+
+
         let itemRowsHtml = '';
         let totalPcs = 0;
         let totalCtn = 0;
-      
+
         const cleanValue = (value) => {
-          try {
-            const parsed = JSON.parse(value);
-            return Array.isArray(parsed) ? parsed.join(', ') : parsed;
-          } catch {
-            return value;
-          }
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed.join(', ') : parsed;
+            } catch {
+                return value;
+            }
         };
-      
+
         const getByLabel = (labelKeyword) => {
-          const row = detailRows.find(r =>
-            r.lbl_col?.toLowerCase().includes(labelKeyword.toLowerCase())
-          );
-          return cleanValue(row?.cstm_col || '');
+            const row = detailRows.find(r =>
+                r.lbl_col?.toLowerCase().includes(labelKeyword.toLowerCase())
+            );
+            return cleanValue(row?.cstm_col || '');
         };
-      
+
+        const getteamleaderEmail = async (teamId) => {
+            try {
+                const query = `
+                    SELECT
+                        u.email AS team_leader_email,
+                        CONCAT(u.firstname, ' ', u.lastname) AS team_leader_name
+                    FROM
+                        m_team_member mtm
+                    JOIN user u ON mtm.user_id = u.user_id
+                    WHERE
+                        mtm.team_leader = "1"
+                        AND mtm.team_id = ${teamId}
+                    LIMIT 1
+                `;
+                const result = await dbQueryHots(query);
+                return result[0] || { team_leader_name: 'Unknown', team_leader_email: '-' };
+            } catch (error) {
+                console.error('Error fetching team leader:', error);
+                return { team_leader_name: 'Unknown', team_leader_email: '-' };
+            }
+        };
+
+        const getFactoryPPIC = async (factory) => {
+            try {
+                const query = `
+                    SELECT pic_name, flag FROM iod.map_factory_pic WHERE LOWER(remarks) LIKE '%${factory}%'
+                    order by flag
+                `;
+                const result = await dbQuery(query);
+                console.log("result", result)
+                console.log("factory", factory)
+                return (result && result.length > 0) ? result : [{ pic_name: '', flag: '1' }];
+            } catch (error) {
+                console.error('Error fetching team leader:', error);
+                return { team_leader_name: 'Unknown', team_leader_email: '-' };
+            }
+        };
+
+        const getApproval = async (dataticket_id) => {
+            try {
+                const query = `
+                  SELECT t.approval_order,t.approve_date, t.approver_id, CONCAT(u.firstname, ' ', u.lastname) AS fullname  from t_approval_event t 
+                    left join user u 
+                    on t.approver_id = u.user_id
+                    where t.approval_id = ${dataticket_id}
+                    and
+                    t.approver_leader = "1"
+
+                `;
+                const result = await dbQueryHots(query);
+                return (result && result.length > 0) ? result : [{ approval_order: "", approve_date: "", approver_id: "", fullname: "" }];
+            } catch (error) {
+                console.error('Error fetching team leader:', error);
+                return { team_leader_name: 'Unknown', team_leader_email: '-' };
+            }
+        };
+
+        const monthToRoman = (month) => {
+            const romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+            return romans[month - 1];
+        };
+
+        const getSRFNumber = async (factory, categoryName) => {
+            const currentDate = new Date();
+            const year = currentDate.getFullYear();
+            const month = monthToRoman(currentDate.getMonth() + 1);
+            const currentMonth = currentDate.getMonth() + 1;
+
+            // Step 1: Get category shortname
+            const categoryQuery = await dbQueryHots(`
+                SELECT samplecat_shortname 
+                FROM m_sample_category 
+                WHERE samplecat_name LIKE ${dbHots.escape('%' + categoryName + '%')}
+            `);
+            const category = categoryQuery[0]?.samplecat_shortname;
+
+            if (!category || category === "NICI") return "-";
+
+            const factoryPart = category === "FS" ? "" : `/${factory}`;
+
+            // Step 2: Get current count
+            const runQuery = await dbQueryHots(`
+                SELECT COUNT(ticket_id) AS total
+                FROM t_ticket
+                WHERE MONTH(creation_date) = ${currentMonth}
+                AND YEAR(creation_date) = ${year}
+            `);
+
+            const nextNumber = String((runQuery[0]?.total || 0) + 1).padStart(3, '0');
+
+            const srfNumber = `${nextNumber}/SRF${factoryPart}/${category}/${month}/${year}`;
+            return srfNumber;
+        };
+
+
+        const teamLeader = await getteamleaderEmail(17);
+        const factoryPIC = await getFactoryPPIC(getByLabel('factory'));
+        const approvallist = await getApproval(data?.ticket_id);
+        const factory = getByLabel('factory');
+        const sample = getByLabel('sample');
+        const generatesrf = await getSRFNumber(factory, sample);
+
+
         const itemRows = detailRows.filter(row =>
-          row.lbl_col?.toLowerCase().includes('item')
+            row.lbl_col?.toLowerCase().includes('item')
         );
-      
+
         itemRows.forEach((row, i) => {
-          const itemName = row.cstm_col || '';
-      
-          // Attempt to find the related quantity row by order_col or index
-          const qtyRow = detailRows.find(
-            r => r.lbl_col?.toLowerCase().includes('quantity') &&
-              r.order_col === row.order_col + 1
-          ) || detailRows[i + 1];
-      
-          const qty = qtyRow?.cstm_col || '';
-          let pcs = '', ctn = '';
-      
-          if (qty.toLowerCase().includes('pcs')) {
-            pcs = qty;
-            const val = parseInt(qty);
-            if (!isNaN(val)) totalPcs += val;
-          }
-      
-          if (qty.toLowerCase().includes('ctn')) {
-            ctn = qty;
-            const val = parseInt(qty);
-            if (!isNaN(val)) totalCtn += val;
-          }
-      
-          itemRowsHtml += `
+            const itemName = row.cstm_col || '';
+
+            // Attempt to find the related quantity row by order_col or index
+            const qtyRow = detailRows.find(
+                r => r.lbl_col?.toLowerCase().includes('quantity') &&
+                    r.order_col === row.order_col + 1
+            ) || detailRows[i + 1];
+
+            const qty = qtyRow?.cstm_col || '';
+            let pcs = '', ctn = '';
+
+            if (qty.toLowerCase().includes('pcs')) {
+                pcs = qty;
+                const val = parseInt(qty);
+                if (!isNaN(val)) totalPcs += val;
+            }
+
+            if (qty.toLowerCase().includes('ctn')) {
+                ctn = qty;
+                const val = parseInt(qty);
+                if (!isNaN(val)) totalCtn += val;
+            }
+
+            itemRowsHtml += `
             <tr>
               <td>${i + 1}</td>
               <td>${itemName}</td>
@@ -768,7 +874,7 @@ module.exports = {
               <td>${ctn}</td>
             </tr>`;
         });
-      
+        console.log("data.approval_section", data.approval_section)
         const html = `
           <html>
             <head>
@@ -792,18 +898,18 @@ module.exports = {
             <table class="no-border">
               <tr>
                 <td><strong>PT. INDOFOOD CBP SUKSES MAKMUR</strong></td>
-                <td style="text-align:right;">To&nbsp;: ${getByLabel('emailto')}</td>
+                <td style="text-align:right;">To&nbsp;: <em>${factoryPIC[0].pic_name} </em> </td>
               </tr>
               <tr>
                 <td><strong>Division</strong>&nbsp;: IOD </td>
-                <td style="text-align:right;">From&nbsp;: Anindia Alfia Putri</td>
+                <td style="text-align:right;">From&nbsp;: <em>${teamLeader?.team_leader_name || 'Unknown'} </em></td>
               </tr>
               <tr>
                 <td><strong>Location</strong>&nbsp;: INDOFOOD TOWER LT.23</td>
                 <td></td>
               </tr>
               <tr>
-                <td><strong>SRF NO</strong>&nbsp;: SRF/${data.ticket_id || ticketData[0]?.ticket_id}</td>
+                <td><strong>SRF NO</strong>&nbsp;: ${generatesrf}</td>
                 <td></td>
               </tr>
             </table>
@@ -812,16 +918,22 @@ module.exports = {
       
             <table class="no-border">
               <tr>
-                <td>To</td><td>: ${getByLabel('to')}</td>
-                <td>Name/Title</td><td>: ${getByLabel('name')}</td>
+                <td valign="top">To</td><td>: ${factoryPIC[0].pic_name}</td>
+                <td valign="top">Name/Title</td><td>: ${getByLabel('name')}</td>
               </tr>
               <tr>
-                <td>Cc</td><td>: ${getByLabel('emailcc')}</td>
-                <td>Purposes</td><td>: ${getByLabel('purpose')}</td>
+                <td valign="top">Cc</td>
+                    <td valign="top">:
+                
+                        ${factoryPIC.slice(1).filter(Boolean).map(p => p.pic_name).join(',')}
+                   
+                    </td>
+                <td valign="top">Purposes</td><td valign="top">: ${getByLabel('purpose')}</td>
               </tr>
               <tr>
-                <td></td><td></td>
-                <td>Deliver to</td><td>: ${getByLabel('deliver')}</td>
+                <td valign="top">Deliver to</td><td valign="top">: ${getByLabel('deliver')}</td>
+                <td valign="top"> Sample Category </td><td valign="top">: ${getByLabel('sample')} </td>
+                
               </tr>
             </table>
       
@@ -835,9 +947,10 @@ module.exports = {
                 </tr>
               </thead>
               <tbody>
+
                 ${itemRowsHtml}
                 <tr>
-                  <td colspan="2" class="bold">TOTAL</td>
+                  <td colspan="2" class="bold" style="text-align: right;">TOTAL</td>
                   <td class="bold">${totalPcs} PCS</td>
                   <td class="bold">${totalCtn} CTN</td>
                 </tr>
@@ -845,36 +958,40 @@ module.exports = {
             </table>
       
             <div class="note">
-              <strong>Note:</strong>
-              <p>${getByLabel('note')}</p>
-              Thank you
+                <strong>Note:</strong>
+                ${getByLabel('PO_Number') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${getByLabel('PO_Number')}</p>` : ''}
+                ${getByLabel('Week Delivery') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>` : ''}
+                <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('Declare') === 1 ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
+                ${getByLabel('notes') ? `<p>${getByLabel('notes')}</p>` : ''}
+
+              <strong>Thank you</strong>
             </div>
       
             <table class="approval-table">
               <tr class="bold">
-                <td>Request by,</td>
-                <td>Approved by,</td>
-                <td>Approved by,</td>
+                <td>Request by</td>
+                <td>Approved by</td>
+                <td>Approved by</td>
               </tr>
               <tr>
-                <td>${data.approval_section?.request_by || ''}<br /><span class="small">${data.business_analyst || 'Business Analyst'}</span></td>
-                <td>${data.approval_section?.approved_by || ''}<br /><span class="small">Logistics Manager</span></td>
-                <td>${data.approval_section?.accounting_manager || ''}<br /><span class="small">Accounting Manager</span></td>
+                <td>${data?.requester_name || ''}<br /><span class="small">${data.business_analyst || 'Business Analyst'}</span></td>
+                <td>${approvallist.find(a => a.approval_order === 2)?.fullname || ''}<br /><span class="small">Logistics Manager</span></td>
+                <td>${approvallist.find(a => a.approval_order === 3)?.fullname || ''}<br /><span class="small">Accounting Manager</span></td>
               </tr>
             </table>
       
             </body>
           </html>
         `;
-      
+
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: 'networkidle0' });
         await page.pdf({ path: filePath, format: 'A4' });
         await browser.close();
-      
+
         return filePath;
-      },
+    },
 
 
     executeDocumentGeneration: async (func, ticketId, params) => {
