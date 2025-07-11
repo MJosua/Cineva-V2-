@@ -49,15 +49,15 @@ console.log("mailPORT:", mailPORT)
 const transporter = nodemailer.createTransport({
     host: mailsmtp,
     port: mailPORT,
-    secure: mailPORT === 465, // true for SSL
+    secure: mailPORT === 465,
     auth: {
-        user: mailUser,
-        pass: mailPassword,
+      user: mailUser,
+      pass: mailPassword,
     },
     tls: {
-        rejectUnauthorized: false, // use with caution, only for self-signed certs
-    }
-});
+      rejectUnauthorized: false,
+    },
+  });
 
 //
 const gmailTransporter = nodemailer.createTransport({

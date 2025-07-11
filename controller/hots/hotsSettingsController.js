@@ -827,12 +827,28 @@ module.exports = {
         try {
             const [result] = await dbHots.promise().query(`
             select
-                    *,
+                     u.user_id,
+                    u.uid,
+                    u.firstname,
+                    u.lastname,
+                    u.department_id,
+                    u.uid,
+                    u.email,
+                    u.role_id,
+                    mr.role_name,
+                    u.jobtitle_id,
+                    mjt.job_title,
+                    u.superior_id,
+                    u.finished_date,
+                    u.active,
+                    CASE WHEN u.finished_date IS NOT NULL THEN 1 ELSE 0 END AS is_deleted,
+                    mt.department_name,
+                    mt.department_shortname,
                     CASE WHEN u.finished_date IS NOT NULL THEN 1 ELSE 0 END as is_deleted
                 from
                     hots.user u
                     left join
-                    hots.m_team mt on 
+                    hots.m_department mt on 
                     u.department_id = mt.department_id 
                     left join 
                     hots.m_role mr on
@@ -1331,6 +1347,7 @@ module.exports = {
                 department_id = ?, jobtitle_id = ?, superior_id = ?
             WHERE user_id = ? AND finished_date IS NULL
         `, [firstname, lastname, uid, email, role_id, department_id, jobtitle_id, superior_id, id]);
+            console.log(`firstname${firstname}, lastname${lastname}, uid${uid}, email${email}, role_id${role_id}, department_id${department_id}, jobtitle_id${jobtitle_id}, superior_id${superior_id}, id${id}`);
 
             console.log(`User updated successfully by ${user_id} at ${timestamp}`);
 
@@ -1339,6 +1356,9 @@ module.exports = {
                 message: "User updated successfully"
             });
         } catch (err) {
+            console.log(`User updated error by ${user_id} at ${timestamp}`);
+            console.log(`error : ${err} ${err.message}`);
+
             res.status(500).json({
                 success: false,
                 message: err.message
@@ -2430,14 +2450,14 @@ module.exports = {
         const timestamp = yellowTerminal + currentDate.toLocaleDateString('id') + ' ' + currentDate.toLocaleTimeString('id') + ' : ';
         const user_id = req.dataToken.user_id;
         let { date, room } = req.query;
-    
+
         if (!date) {
             return res.status(400).json({
                 success: false,
                 message: "Tanggal (date) harus disediakan dalam format YYYY-MM-DD"
             });
         }
-    
+
         try {
             const query = `
                 SELECT
@@ -2459,14 +2479,14 @@ module.exports = {
                     ${room ? "AND MAX(CASE WHEN d.lbl_col = 'Meeting Room' THEN d.cstm_col END) = ?" : ""}
                 ORDER BY t.ticket_id DESC
             `;
-    
+
             const params = [date];
             if (room) params.push(room);
-    
+
             const [roomResult] = await dbHots.promise().query(query, params);
-    
+
             console.log(`Room Widget API accessed by ${user_id} at ${timestamp}`);
-    
+
             res.status(200).json({
                 success: true,
                 data: roomResult,
