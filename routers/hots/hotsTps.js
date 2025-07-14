@@ -10,8 +10,7 @@ const { hotsPS } = require('../../config/uploader')
 const uploadFilePS = hotsPS('pricing_structure', 'files').array('file', 10);
 
 route.get('/region/:country_id', decodeTokenHT, hotsTps.getRegion);
-route.get('/country/:employee_id', decodeTokenHT, hotsTps.getCountrybyemployee);
-route.get('/country', decodeTokenHT, hotsTps.getCountry);
+route.get('/country/:employee_id', decodeTokenHT, hotsTps.getCountry);
 route.get('/analyst', decodeTokenHT, hotsTps.getAnaliyst);
 route.get('/distributor/:country_id', decodeTokenHT, hotsTps.getDistributor);
 route.get('/port/:company_id', decodeTokenHT, hotsTps.getPort);

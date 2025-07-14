@@ -78,44 +78,34 @@ module.exports = {
 
                         let queryMatchUidPswd = `
                                             select
-                                                u.user_id,
-                                                u.firstname,
-                                                u.lastname,
-                                                u.uid,
-                                                u.active,
-                                                r.role_id,
-                                                r.role_name,
-                                                d.department_name,
-                                                d.department_id,
-                                                CONCAT(u.firstname, ' ', u.lastname) as user_name,
-                                                u.superior_id,
-                                                u.nik,
-                                                (
-                                                select
-                                                    distinct 
-                                                                                            JSON_ARRAYAGG(u2.superior_id)
-                                                from
-                                                    user u2
-                                                where
-                                                    superior_id is not null 
-                                                                                        ) as team_leader_user_id,
-                                                (
-                                                select
-                                                    distinct 
-                                                                                            JSON_ARRAYAGG(tm.team_id)
-                                                from
-                                                    m_team_member tm 
-                                                where
-                                                    tm.user_id = u.user_id 
-                                                                                        ) as team_id_linked
+                                            u.user_id,
+                                            u.firstname,
+                                            u.lastname,
+                                            u.uid,
+                                            u.active,
+                                            r.role_id,
+                                            r.role_name,
+                                            d.department_name,
+                                            d.department_id,
+                                            CONCAT(u.firstname, ' ', u.lastname) as user_name,
+                                            u.superior_id,
+                                            u.nik,
+                                            (
+                                            select distinct 
+                                                JSON_ARRAYAGG(u2.superior_id)
                                             from
-                                                user u
-                                            left join 
-                                                                                                m_role r on
-                                                u.role_id = r.role_id
-                                            left join 
-                                                                                                m_department d on
-                                                u.department_id = d.department_id
+                                                user u2
+                                            where 
+                                            superior_id is not null 
+                                            ) as team_leader_user_id
+                                                from
+                                                    user u
+                                                left join 
+                                                    m_role r on
+                                                    u.role_id = r.role_id
+                                                left join 
+                                                    m_department d on
+                                                    u.department_id = d.department_id
                                                 WHERE
                                                     LOWER(uid) = LOWER(?)
                                                     AND pswd = ?
@@ -250,16 +240,7 @@ module.exports = {
                                                         from m_team_member tm
                                                         where tm.team_leader = 1
                                                     ) AS combined
-                                                ) as team_leader_user_id,
-                                                (
-                                                select
-                                                    distinct 
-                                                                                            JSON_ARRAYAGG(tm.team_id)
-                                                from
-                                                    m_team_member tm 
-                                                where
-                                                    tm.user_id = u.user_id 
-                                                                                        ) as team_id_linked
+                                                ) as team_leader_user_id
                                             FROM
                                                 user u
                                             LEFT JOIN m_role r ON
@@ -721,16 +702,7 @@ module.exports = {
                                                 user u2
                                             where 
                                             superior_id is not null 
-                                            ) as team_leader_user_id,
-                                                (
-                                                select
-                                                    distinct 
-                                                                                            JSON_ARRAYAGG(tm.team_id)
-                                                from
-                                                    m_team_member tm 
-                                                where
-                                                    tm.user_id = u.user_id 
-                                                                                        ) as team_id_linked
+                                            ) as team_leader_user_id
                                                 from
                                                     user u
                                                 left join 
@@ -847,23 +819,23 @@ module.exports = {
         let user_id = req.dataToken.user_id;
 
         try {
-            const [users] = await dbHots.promise().query(`
+            const [user] = await dbHots.promise().query(`
             SELECT u.*, r.role_name, d.department_name, jt.job_title as title_name
-            FROM m_users u
+            FROM m_user u
             LEFT JOIN m_role r ON u.role_id = r.role_id
             LEFT JOIN m_department d ON u.department_id = d.department_id
             LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
             WHERE u.user_id = ? AND u.active = 1
         `, [user_id]);
 
-            if (users.length === 0) {
+            if (user.length === 0) {
                 return res.status(401).json({
                     success: false,
                     message: "User not found"
                 });
             }
 
-            const user = users[0];
+            const userselect = user[0];
             console.log(timestamp, `Keep login successful for user: ${user_id}`);
 
             res.status(200).json({
@@ -871,13 +843,13 @@ module.exports = {
                 message: "Token valid",
                 data: {
                     user: {
-                        user_id: user.user_id,
-                        email: user.email,
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        role_name: user.role_name,
-                        department_name: user.department_name,
-                        title_name: user.title_name
+                        user_id: userselect.user_id,
+                        email: userselect.email,
+                        first_name: userselect.first_name,
+                        last_name: userselect.last_name,
+                        role_name: userselect.role_name,
+                        department_name: userselect.department_name,
+                        title_name: userselect.title_name
                     }
                 }
             });
@@ -897,7 +869,7 @@ module.exports = {
             const hashedPassword = await bcrypt.hash(password, 10);
 
             await dbPM.promise().query(`
-                INSERT INTO pm_users 
+                INSERT INTO user 
                 (firstname, lastname, uid, email, password, role_id, department_id, team_id, jobtitle_id, is_active, created_date)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
             `, [firstname, lastname, uid, email, hashedPassword, role_id, department_id, team_id, jobtitle_id]);
@@ -925,11 +897,11 @@ module.exports = {
         try {
             const [result] = await dbPM.promise().query(`
                 SELECT u.*, r.role_name, d.department_name, t.team_name, j.job_title
-                FROM pm_users u
-                LEFT JOIN pm_role r ON u.role_id = r.role_id
-                LEFT JOIN pm_department d ON u.department_id = d.department_id
-                LEFT JOIN pm_team t ON u.team_id = t.team_id
-                LEFT JOIN pm_job_title j ON u.jobtitle_id = j.jobtitle_id
+                FROM user u
+                LEFT JOIN m_role r ON u.role_id = r.role_id
+                LEFT JOIN m_department d ON u.department_id = d.department_id
+                LEFT JOIN m_team t ON u.team_id = t.team_id
+                LEFT JOIN m_job_title j ON u.jobtitle_id = j.jobtitle_id
                 WHERE u.user_id = ? AND u.is_deleted = 0
             `, [user_id]);
 
@@ -956,7 +928,7 @@ module.exports = {
 
         try {
             await dbPM.promise().query(`
-                UPDATE pm_users 
+                UPDATE user 
                 SET firstname = ?, lastname = ?, email = ?, phone = ?, profile_picture = ?, updated_date = NOW()
                 WHERE user_id = ?
             `, [firstname, lastname, email, phone, profile_picture, user_id]);
@@ -983,7 +955,7 @@ module.exports = {
 
         try {
             const [user] = await dbPM.promise().query(`
-                SELECT user_id, email, firstname, lastname FROM pm_users 
+                SELECT user_id, email, firstname, lastname FROM user 
                 WHERE email = ? AND is_active = 1 AND is_deleted = 0
             `, [email]);
 
@@ -998,7 +970,7 @@ module.exports = {
             const resetExpiry = new Date(Date.now() + 3600000); // 1 hour
 
             await dbPM.promise().query(`
-                UPDATE pm_users SET reset_token = ?, reset_token_expiry = ? WHERE user_id = ?
+                UPDATE user SET reset_token = ?, reset_token_expiry = ? WHERE user_id = ?
             `, [resetToken, resetExpiry, user[0].user_id]);
 
             console.log(`${timestamp}Password reset token generated for ${email}`);
@@ -1024,7 +996,7 @@ module.exports = {
 
         try {
             const [user] = await dbPM.promise().query(`
-                SELECT user_id FROM pm_users 
+                SELECT user_id FROM user 
                 WHERE reset_token = ? AND reset_token_expiry > NOW() AND is_deleted = 0
             `, [reset_token]);
 
@@ -1038,7 +1010,7 @@ module.exports = {
             const hashedPassword = await bcrypt.hash(new_password, 10);
 
             await dbPM.promise().query(`
-                UPDATE pm_users 
+                UPDATE user 
                 SET password = ?, reset_token = NULL, reset_token_expiry = NULL, updated_date = NOW()
                 WHERE user_id = ?
             `, [hashedPassword, user[0].user_id]);

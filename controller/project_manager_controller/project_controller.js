@@ -1,229 +1,384 @@
-
 const { dbPMS } = require('../../config/db');
 let yellowTerminal = "\x1b[33m";
 
 module.exports = {
   getAllProjects: async (req, res) => {
-    let date = new Date();
-    let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+    try {
+      const query = `
+        SELECT 
+          p.project_id,
+          p.name,
+          p.description,
+          p.start_date,
+          p.end_date,
+          p.status,
+          p.priority,
+          p.budget,
+          p.department_id,
+          p.allow_join,
+          p.created_date,
+          d.department_name,
+          u.firstname as manager_firstname,
+          u.lastname as manager_lastname,
+          CONCAT(u.firstname, ' ', u.lastname) as manager_name,
+          (SELECT COUNT(*) from t_project_members pm WHERE pm.project_id = p.project_id) as member_count
+        from t_project p
+        LEFT join hots.m_department d ON p.department_id = d.department_id
+        LEFT join hots.user u ON p.manager_id = u.user_id
+        ORDER BY p.created_date DESC
+      `;
+      const [projects] = await dbPMS.promise().execute(query);
+      res.status(200).json({
+        success: true,
+        data: projects,
+        message: 'Projects retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error getting all projects:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve projects',
+        error: error.message
+      });
+    }
+  },
 
+  getMyProjects: async (req, res) => {
+    try {
+      const userId = req.user.user_id;
+      const query = `
+        SELECT 
+          p.project_id,
+          p.name,
+          p.description,
+          p.start_date,
+          p.end_date,
+          p.status,
+          p.priority,
+          p.budget,
+          p.department_id,
+          p.allow_join,
+          p.created_date,
+          d.department_name,
+          u.firstname as manager_firstname,
+          u.lastname as manager_lastname,
+          CONCAT(u.firstname, ' ', u.lastname) as manager_name,
+          (SELECT COUNT(*) from t_project_members pm WHERE pm.project_id = p.project_id) as member_count
+        from t_project p
+        LEFT join hots.m_department d ON p.department_id = d.department_id
+        LEFT join hots.user u ON p.manager_id = u.user_id
+        WHERE p.project_id IN (SELECT project_id from t_project_members WHERE user_id = ?)
+        ORDER BY p.created_date DESC
+      `;
+      const [projects] = await dbPMS.promise().execute(query, [userId]);
+      res.status(200).json({
+        success: true,
+        data: projects,
+        message: 'User projects retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error getting user projects:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve user projects',
+        error: error.message
+      });
+    }
+  },
+
+  getAvailableProjectsToJoin: async (req, res) => {
+    try {
+      const userId = req.dataToken.user_id;
+      const userDepartmentId = req.dataToken.department_id;
+
+      const query = `
+      SELECT DISTINCT 
+        p.project_id,
+        p.name,
+        p.description,
+        p.start_date,
+        p.end_date,
+        p.status,
+        p.priority,
+        p.budget,
+        p.department_id,
+        p.allow_join,
+        p.created_date,
+        d.department_name,
+        u.firstname as manager_firstname,
+        u.lastname as manager_lastname,
+        CONCAT(u.firstname, ' ', u.lastname) as manager_name,
+        (SELECT COUNT(*) FROM t_project_members pm WHERE pm.project_id = p.project_id) AS member_count
+      FROM t_project p
+      LEFT JOIN hots.m_department d ON p.department_id = d.department_id
+      LEFT JOIN hots.user u ON p.manager_id = u.user_id
+      WHERE p.allow_join = true
+        AND p.status IN ('planning', 'active')
+        AND (p.department_id = ? OR p.is_cross_departmental = true)
+        AND p.project_id NOT IN (
+          SELECT pm.project_id 
+          FROM t_project_members pm 
+          WHERE pm.user_id = ?
+        )
+      ORDER BY p.created_date DESC
+    `;
+
+      const [projects] = await dbPMS.promise().execute(query, [userDepartmentId, userId]);
+
+      res.status(200).json({
+        success: true,
+        data: projects,
+        message: 'Available projects retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error getting available projects to join:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve available projects',
+        error: error.message
+      });
+    }
+  },
+
+  createProject: async (req, res) => {
     try {
       const {
+        name,
+        description,
+        start_date,
+        end_date,
         status,
         priority,
-        manager_id,
         department_id,
         allow_join,
-        page = 1,
-        limit = 10
-      } = req.query;
+        created_by,
+        is_cross_departmental
+      } = req.body;
+      console.log(" req.body",req.body )
 
-      let query = `
+      const query = `
+        INSERT INTO projects (
+          name,
+          description,
+          start_date,
+          end_date,
+          status,
+          priority,
+          department_id,
+          allow_join,
+          manager_id,
+          is_cross_departmental
+        ) VALUES (?, ?, ?, ?, ?, ?,  ?, ?, ?, ?)
+      `;
+
+      const result = await dbPMS.promise().execute(query, [
+        name,
+        description,
+        start_date,
+        end_date,
+        status,
+        priority,
+        department_id,
+        allow_join,
+        created_by,
+        is_cross_departmental
+      ]);
+      const project_id = result.insertId;
+
+      // Add the project creator as a member
+      const userId = req.user.user_id;
+      const addMemberQuery = 'INSERT INTO project_members (project_id, user_id, role) VALUES (?, ?, ?)';
+      await dbPMS.promise().execute(addMemberQuery, [project_id, userId, 'owner']);
+
+      res.status(201).json({
+        success: true,
+        data: { project_id, ...req.body },
+        message: 'Project created successfully'
+      });
+    } catch (error) {
+      console.error('Error creating project:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create project',
+        error: error.message
+      });
+    }
+  },
+
+  getUserProjects: async (req, res) => {
+    try {
+      const { userId } = req.query;
+      
+      if (!userId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'userId parameter is required' 
+        });
+      }
+
+      const query = `
         SELECT 
           p.*,
-          CONCAT(u.firstname, ' ', u.lastname) AS manager_name,
-          d.department_name
+          CONCAT(manager.firstname, ' ', manager.lastname) AS manager_name,
+          d.department_name,
+          pm.role as user_role,
+          pm.joined_date,
+          -- Calculate project progress based on task completion
+          CASE 
+            WHEN task_stats.total_tasks > 0 
+            THEN ROUND((task_stats.completed_tasks * 100.0) / task_stats.total_tasks)
+            ELSE 0 
+          END AS calculated_progress
         FROM PM.t_project p
-        LEFT JOIN hots.user u ON p.manager_id = u.user_id
+        INNER JOIN PM.t_project_members pm ON p.project_id = pm.project_id
+        LEFT JOIN hots.user manager ON p.manager_id = manager.user_id
         LEFT JOIN hots.m_department d ON p.department_id = d.department_id
-        WHERE 1=1
+        LEFT JOIN (
+          SELECT 
+            project_id,
+            COUNT(*) as total_tasks,
+            SUM(CASE WHEN status IN ('done', 'completed') THEN 1 ELSE 0 END) as completed_tasks
+          FROM PM.t_tasks 
+          GROUP BY project_id
+        ) task_stats ON p.project_id = task_stats.project_id
+        WHERE pm.user_id = ? AND pm.left_date IS NULL
+        ORDER BY p.updated_date DESC
       `;
-      const params = [];
 
-      if (status) {
-        query += ' AND p.status = ?';
-        params.push(status);
-      }
-      if (priority) {
-        query += ' AND p.priority = ?';
-        params.push(priority);
-      }
-      if (manager_id) {
-        query += ' AND p.manager_id = ?';
-        params.push(manager_id);
-      }
-      if (department_id) {
-        query += ' AND p.department_id = ?';
-        params.push(department_id);
-      }
-      if (allow_join) {
-        query += ' AND p.allow_join = ?';
-        params.push(allow_join === 'true');
-      }
-
-      query += ' ORDER BY p.created_date DESC';
-      
-      if (limit !== 'all') {
-        const offset = (page - 1) * limit;
-        query += ` LIMIT ${limit} OFFSET ${offset}`;
-      }
-
-      const [projects] = await dbPMS.promise().execute(query, params);
+      const [projects] = await dbPMS.promise().execute(query, [userId]);
 
       res.status(200).json({
         success: true,
         data: projects
       });
     } catch (error) {
-      console.error('Error fetching projects:', error);
-      res.status(500).json({ success: false, error: 'Failed to fetch projects' });
+      console.error('Error fetching user projects:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch user projects' 
+      });
     }
   },
 
-  getProjectDetail: async (req, res) => {
+  getProjectById: async (req, res) => {
     try {
       const { id } = req.params;
-
-      // Get project with manager and department info
-      const [projects] = await dbPMS.promise().execute(`
+      const query = `
         SELECT 
-          p.*, 
-          CONCAT(u.firstname, ' ', u.lastname) AS manager_name,
-          d.department_name
-        FROM PM.t_project p
-        LEFT JOIN hots.user u ON p.manager_id = u.user_id
-        LEFT JOIN hots.m_department d ON p.department_id = d.department_id
+          p.project_id,
+          p.name,
+          p.description,
+          p.start_date,
+          p.end_date,
+          p.status,
+          p.priority,
+          p.budget,
+          p.department_id,
+          p.allow_join,
+          p.created_date,
+          d.department_name,
+          u.firstname as manager_firstname,
+          u.lastname as manager_lastname,
+          CONCAT(u.firstname, ' ', u.lastname) as manager_name,
+          (SELECT COUNT(*) from t_project_members pm WHERE pm.project_id = p.project_id) as member_count
+        from t_project p
+        LEFT join hots.m_department d ON p.department_id = d.department_id
+        LEFT join hots.user u ON p.manager_id = u.user_id
         WHERE p.project_id = ?
-      `, [id]);
+      `;
+      const [project] = await dbPMS.promise().execute(query, [id]);
 
-      if (projects.length === 0) {
-        return res.status(404).json({ success: false, error: 'Project not found' });
+      if (project.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Project not found'
+        });
       }
 
-      // Get project tasks
-      const [tasks] = await dbPMS.promise().execute(`
-        SELECT 
-          t.*,
-          CONCAT(u_assigned.firstname, ' ', u_assigned.lastname) AS assigned_to_name,
-          CONCAT(u_created.firstname, ' ', u_created.lastname) AS created_by_name,
-          tg.name AS group_name
-        FROM PM.t_tasks t
-        LEFT JOIN hots.user u_assigned ON t.assigned_to = u_assigned.user_id
-        LEFT JOIN hots.user u_created ON t.created_by = u_created.user_id
-        LEFT JOIN PM.t_task_groups tg ON t.group_id = tg.group_id
-        WHERE t.project_id = ?
-        ORDER BY t.created_date DESC
-      `, [id]);
-
-      // Get project members
-      const [members] = await dbPMS.promise().execute(`
-        SELECT 
-          pm.*,
-          CONCAT(u.firstname, ' ', u.lastname) AS user_name,
-          u.email
-        FROM PM.t_project_members pm
-        LEFT JOIN hots.user u ON pm.user_id = u.user_id
-        WHERE pm.project_id = ? AND pm.is_active = 1
-        ORDER BY pm.role DESC, u.firstname
-      `, [id]);
-
-      const project = projects[0];
-      project.tasks = tasks;
-      project.members = members;
-
-      res.status(200).json({ success: true, data: project });
+      res.status(200).json({
+        success: true,
+        data: project[0],
+        message: 'Project retrieved successfully'
+      });
     } catch (error) {
-      console.error('Error fetching project detail:', error);
-      res.status(500).json({ success: false, error: 'Failed to fetch project detail' });
-    }
-  },
-
-  createProject: async (req, res) => {
-    try {
-      const data = req.body;
-      const userId = req.dataToken.user_id;
-
-      const [result] = await dbPMS.promise().execute(`
-        INSERT INTO PM.t_project 
-        (name, description, status, priority, manager_id, department_id, budget, start_date, end_date, estimated_hours, allow_join, created_date, updated_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-      `, [
-        data.name,
-        data.description,
-        data.status || 'planning',
-        data.priority || 'medium',
-        data.manager_id || userId,
-        data.department_id,
-        data.budget,
-        data.start_date,
-        data.end_date,
-        data.estimated_hours,
-        data.allow_join || false
-      ]);
-
-      // Add project manager as member
-      await dbPMS.promise().execute(`
-        INSERT INTO PM.t_project_members (project_id, user_id, role, added_by)
-        VALUES (?, ?, 'manager', ?)
-      `, [result.insertId, data.manager_id || userId, userId]);
-
-      // Create default task groups for Kanban
-      const defaultGroups = [
-        { name: 'To Do', status_mapping: 'todo', sort_order: 1 },
-        { name: 'In Progress', status_mapping: 'in-progress', sort_order: 2 },
-        { name: 'Review', status_mapping: 'review', sort_order: 3 },
-        { name: 'Done', status_mapping: 'completed', sort_order: 4 }
-      ];
-
-      for (const group of defaultGroups) {
-        await dbPMS.promise().execute(`
-          INSERT INTO PM.t_task_groups (project_id, name, status_mapping, sort_order)
-          VALUES (?, ?, ?, ?)
-        `, [result.insertId, group.name, group.status_mapping, group.sort_order]);
-      }
-
-      const [newProject] = await dbPMS.promise().execute(
-        'SELECT * FROM PM.t_project WHERE project_id = ?',
-        [result.insertId]
-      );
-
-      res.status(200).json({ success: true, data: newProject[0] });
-    } catch (error) {
-      console.error('Error creating project:', error);
-      res.status(500).json({ success: false, error: 'Failed to create project' });
+      console.error('Error getting project by ID:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve project',
+        error: error.message
+      });
     }
   },
 
   updateProject: async (req, res) => {
     try {
       const { id } = req.params;
-      const data = req.body;
+      const {
+        name,
+        description,
+        start_date,
+        end_date,
+        status,
+        priority,
+        budget,
+        department_id,
+        allow_join,
+        manager_id,
+        is_cross_departmental
+      } = req.body;
 
-      await dbPMS.promise().execute(`
-        UPDATE PM.t_project 
-        SET name = ?, description = ?, status = ?, priority = ?, budget = ?, 
-            start_date = ?, end_date = ?, estimated_hours = ?, allow_join = ?, updated_date = NOW()
+      const query = `
+        UPDATE projects 
+        SET 
+          name = ?,
+          description = ?,
+          start_date = ?,
+          end_date = ?,
+          status = ?,
+          priority = ?,
+          budget = ?,
+          department_id = ?,
+          allow_join = ?,
+          manager_id = ?,
+          is_cross_departmental = ?
         WHERE project_id = ?
-      `, [
-        data.name,
-        data.description,
-        data.status,
-        data.priority,
-        data.budget,
-        data.start_date,
-        data.end_date,
-        data.estimated_hours,
-        data.allow_join || false,
+      `;
+
+      await dbPMS.promise().execute(query, [
+        name,
+        description,
+        start_date,
+        end_date,
+        status,
+        priority,
+        budget,
+        department_id,
+        allow_join,
+        manager_id,
+        is_cross_departmental,
         id
       ]);
 
-      const [updatedProject] = await dbPMS.promise().execute(
-        'SELECT * FROM PM.t_project WHERE project_id = ?',
-        [id]
-      );
-
-      res.status(200).json({ success: true, data: updatedProject[0] });
+      res.status(200).json({
+        success: true,
+        data: { project_id: id, ...req.body },
+        message: 'Project updated successfully'
+      });
     } catch (error) {
       console.error('Error updating project:', error);
-      res.status(500).json({ success: false, error: 'Failed to update project' });
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update project',
+        error: error.message
+      });
     }
   },
 
   deleteProject: async (req, res) => {
     try {
       const { id } = req.params;
-
-      await dbPMS.promise().execute('DELETE FROM PM.t_project WHERE project_id = ?', [id]);
+      const query = 'DELETE from t_project WHERE project_id = ?';
+      await dbPMS.promise().execute(query, [id]);
 
       res.status(200).json({
         success: true,
@@ -231,109 +386,227 @@ module.exports = {
       });
     } catch (error) {
       console.error('Error deleting project:', error);
-      res.status(500).json({ success: false, error: 'Failed to delete project' });
+      res.status(500).json({
+        success: false,
+        message: 'Failed to delete project',
+        error: error.message
+      });
     }
   },
 
-  // Join project request
-  requestProjectJoin: async (req, res) => {
+  getProjectMembers: async (req, res) => {
     try {
       const { id } = req.params;
-      const userId = req.dataToken.user_id;
-      const { message, requested_role } = req.body;
-
-      // Check if project allows joining
-      const [project] = await dbPMS.promise().execute(
-        'SELECT allow_join FROM PM.t_project WHERE project_id = ?',
-        [id]
-      );
-
-      if (project.length === 0) {
-        return res.status(404).json({ success: false, error: 'Project not found' });
-      }
-
-      if (!project[0].allow_join) {
-        return res.status(403).json({ success: false, error: 'Project does not allow join requests' });
-      }
-
-      // Check if already a member
-      const [existingMember] = await dbPMS.promise().execute(
-        'SELECT * FROM PM.t_project_members WHERE project_id = ? AND user_id = ? AND is_active = 1',
-        [id, userId]
-      );
-
-      if (existingMember.length > 0) {
-        return res.status(400).json({ success: false, error: 'Already a member of this project' });
-      }
-
-      // Create join request
-      await dbPMS.promise().execute(`
-        INSERT INTO PM.t_project_join_requests (project_id, user_id, message, requested_role)
-        VALUES (?, ?, ?, ?)
-      `, [id, userId, message, requested_role || 'member']);
+      const query = `
+        SELECT 
+          pm.user_id,
+          pm.role,
+          u.firstname,
+          u.lastname,
+          u.email,
+          u.username,
+          u.department_id,
+          d.department_name
+        from t_project_members pm
+        LEFT join hots.user u ON pm.user_id = u.user_id
+        LEFT join hots.m_department d ON u.department_id = d.department_id
+        WHERE pm.project_id = ?
+      `;
+      const [members] = await dbPMS.promise().execute(query, [id]);
 
       res.status(200).json({
         success: true,
-        message: 'Join request submitted successfully'
+        data: members,
+        message: 'Project members retrieved successfully'
       });
     } catch (error) {
-      console.error('Error submitting join request:', error);
-      res.status(500).json({ success: false, error: 'Failed to submit join request' });
+      console.error('Error getting project members:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve project members',
+        error: error.message
+      });
     }
   },
 
-  // Process join request
-  processJoinRequest: async (req, res) => {
+  addProjectMember: async (req, res) => {
     try {
-      const { requestId } = req.params;
-      const { action, comments } = req.body;
-      const userId = req.dataToken.user_id;
+      const { id } = req.params;
+      const { user_id, role } = req.body;
 
-      if (!['approve', 'reject'].includes(action)) {
-        return res.status(400).json({ success: false, error: 'Invalid action' });
-      }
+      const query = 'INSERT INTO project_members (project_id, user_id, role) VALUES (?, ?, ?)';
+      await dbPMS.promise().execute(query, [id, user_id, role]);
 
-      // Get join request details
-      const [request] = await dbPMS.promise().execute(`
-        SELECT jr.*, p.manager_id 
-        FROM PM.t_project_join_requests jr
-        JOIN PM.t_project p ON jr.project_id = p.project_id
-        WHERE jr.request_id = ?
-      `, [requestId]);
+      res.status(201).json({
+        success: true,
+        data: { project_id: id, user_id, role },
+        message: 'Project member added successfully'
+      });
+    } catch (error) {
+      console.error('Error adding project member:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to add project member',
+        error: error.message
+      });
+    }
+  },
 
-      if (request.length === 0) {
-        return res.status(404).json({ success: false, error: 'Join request not found' });
-      }
-
-      const joinRequest = request[0];
-
-      // Check if user has permission to process (project manager or admin)
-      if (joinRequest.manager_id !== userId) {
-        return res.status(403).json({ success: false, error: 'Not authorized to process this request' });
-      }
-
-      // Update request status
-      await dbPMS.promise().execute(`
-        UPDATE PM.t_project_join_requests 
-        SET status = ?, processed_by = ?, processed_date = NOW(), comments = ?
-        WHERE request_id = ?
-      `, [action === 'approve' ? 'approved' : 'rejected', userId, comments, requestId]);
-
-      // If approved, add to project members
-      if (action === 'approve') {
-        await dbPMS.promise().execute(`
-          INSERT INTO PM.t_project_members (project_id, user_id, role, added_by)
-          VALUES (?, ?, ?, ?)
-        `, [joinRequest.project_id, joinRequest.user_id, joinRequest.requested_role, userId]);
-      }
+  removeProjectMember: async (req, res) => {
+    try {
+      const { id, userId } = req.params;
+      const query = 'DELETE from t_project_members WHERE project_id = ? AND user_id = ?';
+      await dbPMS.promise().execute(query, [id, userId]);
 
       res.status(200).json({
         success: true,
-        message: `Join request ${action}d successfully`
+        message: 'Project member removed successfully'
       });
     } catch (error) {
-      console.error('Error processing join request:', error);
-      res.status(500).json({ success: false, error: 'Failed to process join request' });
+      console.error('Error removing project member:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to remove project member',
+        error: error.message
+      });
+    }
+  },
+
+  requestToJoinProject: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.user_id;
+
+      // Check if the user is already a member or has a pending request
+      const existingMemberQuery = 'SELECT * from t_project_members WHERE project_id = ? AND user_id = ?';
+      const existingRequestQuery = 'SELECT * FROM project_join_requests WHERE project_id = ? AND user_id = ? AND status = ?';
+
+      const [existingMember] = await dbPMS.promise().execute(existingMemberQuery, [id, userId]);
+      const [existingRequest] = await dbPMS.promise().execute(existingRequestQuery, [id, userId, 'pending']);
+
+      if (existingMember.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'You are already a member of this project'
+        });
+      }
+
+      if (existingRequest.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'You have already requested to join this project'
+        });
+      }
+
+      const query = 'INSERT INTO project_join_requests (project_id, user_id, request_date, status) VALUES (?, ?, NOW(), ?)';
+      await dbPMS.promise().execute(query, [id, userId, 'pending']);
+
+      res.status(201).json({
+        success: true,
+        message: 'Request to join project submitted successfully'
+      });
+    } catch (error) {
+      console.error('Error requesting to join project:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to request to join project',
+        error: error.message
+      });
+    }
+  },
+
+  getJoinRequests: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const query = `
+        SELECT 
+          pjr.request_id,
+          pjr.user_id,
+          pjr.request_date,
+          pjr.status,
+          u.firstname,
+          u.lastname,
+          u.email,
+          u.username
+        FROM project_join_requests pjr
+        LEFT join hots.user u ON pjr.user_id = u.user_id
+        WHERE pjr.project_id = ?
+      `;
+      const [requests] = await dbPMS.promise().execute(query, [id]);
+
+      res.status(200).json({
+        success: true,
+        data: requests,
+        message: 'Join requests retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error getting join requests:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve join requests',
+        error: error.message
+      });
+    }
+  },
+
+  approveJoinRequest: async (req, res) => {
+    try {
+      const { requestId } = req.params;
+
+      // Get the join request details
+      const requestQuery = 'SELECT project_id, user_id FROM project_join_requests WHERE request_id = ?';
+      const [request] = await dbPMS.promise().execute(requestQuery, [requestId]);
+
+      if (!request.length) {
+        return res.status(404).json({
+          success: false,
+          message: 'Join request not found'
+        });
+      }
+
+      const { project_id, user_id } = request[0];
+
+      // Add the user to the project members
+      const addMemberQuery = 'INSERT INTO project_members (project_id, user_id, role) VALUES (?, ?, ?)';
+      await dbPMS.promise().execute(addMemberQuery, [project_id, user_id, 'member']);
+
+      // Update the join request status to 'approved'
+      const updateRequestQuery = 'UPDATE project_join_requests SET status = ? WHERE request_id = ?';
+      await dbPMS.promise().execute(updateRequestQuery, ['approved', requestId]);
+
+      res.status(200).json({
+        success: true,
+        message: 'Join request approved successfully'
+      });
+    } catch (error) {
+      console.error('Error approving join request:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to approve join request',
+        error: error.message
+      });
+    }
+  },
+
+  rejectJoinRequest: async (req, res) => {
+    try {
+      const { requestId } = req.params;
+
+      // Update the join request status to 'rejected'
+      const query = 'UPDATE project_join_requests SET status = ? WHERE request_id = ?';
+      await dbPMS.promise().execute(query, ['rejected', requestId]);
+
+      res.status(200).json({
+        success: true,
+        message: 'Join request rejected successfully'
+      });
+    } catch (error) {
+      console.error('Error rejecting join request:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to reject join request',
+        error: error.message
+      });
     }
   }
 };

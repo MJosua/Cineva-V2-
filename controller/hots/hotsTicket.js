@@ -3974,7 +3974,7 @@ module.exports = {
     // Create New Ticket - Updated with superior assignment logic
     createTicket: async (req, res) => {
         let date = new Date();
-        let timestamp = "\x1b[33m" + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
         let user_id = req.dataToken.user_id;
         let service_id = req.params.service_id;
@@ -3987,162 +3987,308 @@ module.exports = {
             });
         }
 
-        try {
-            // Get service details
-            const [serviceResult] = await dbHots.promise().execute(`
-                SELECT s.*, wg.id
-                FROM m_service s
-                LEFT JOIN m_workflow_groups wg ON wg.id = s.m_workflow_groups
-                WHERE s.service_id = ?
-            `, [service_id]);
+        // Get service details and workflow
+        let serviceQuery = `
+            SELECT s.*, wg.id
+            FROM m_service s
+            LEFT JOIN m_workflow_groups wg ON wg.id = s.m_workflow_groups
+            WHERE s.service_id = ?
+        `;
 
-            if (!serviceResult.length) {
-                console.log(timestamp, "GET SERVICE ERROR: Not found");
-                return res.status(502).send({ success: false, message: "Service not found" });
+        dbHots.execute(serviceQuery, [service_id], (err, serviceResult) => {
+            if (err || !serviceResult.length) {
+                console.log(timestamp, "GET SERVICE ERROR: ", err);
+                return res.status(502).send({
+                    success: false,
+                    message: "Service not found"
+                });
             }
 
-            const service = serviceResult[0];
+            let service = serviceResult[0];
+
             const assigned_team = service?.team_id || null;
 
-            // Get workflow steps
-            const [workflowSteps] = await dbHots.promise().execute(`
+
+            // Get workflow steps if workflow exists
+            let workflowQuery = `
                 SELECT ws.step_order, ws.step_type, ws.assigned_value
                 FROM t_workflow_step ws
-                WHERE ws.workflow_group_id = ? AND ws.is_active = 1
+                WHERE ws.workflow_group_id = ?
+                AND ws.is_active = 1
                 ORDER BY ws.step_order
-            `, [service.m_workflow_groups]);
+            `;
 
-            // Insert ticket
-            let assigned_to = null;
-            let current_step = workflowSteps.length > 0 ? 1 : 0;
-            if (workflowSteps.length === 0) {
-                assigned_to = user_id;
-            } else if (!assigned_team) {
-                assigned_to = user_id;
-            }
+            dbHots.execute(workflowQuery, [service.m_workflow_groups], (err2, workflowSteps) => {
+                if (err2) {
+                    console.log(timestamp, "GET WORKFLOW ERROR: ", err2);
+                    return res.status(502).send({
+                        success: false,
+                        message: err2
+                    });
+                }
 
-            const [ticketResult] = await dbHots.promise().execute(`
-                INSERT INTO t_ticket (
-                    service_id, status_id, created_by, assigned_team, assigned_to,
-                    creation_date, last_update, current_step
-                ) VALUES (?, 1, ?, ?, ?, NOW(), NOW(), ?)
-            `, [service_id, user_id, assigned_team, assigned_to, current_step]);
+                // Create main ticket - for workflow tickets, set assigned_to/assigned_team to NULL
+                let insertTicketQuery = `
+                    INSERT INTO t_ticket (
+                        service_id, status_id, created_by, assigned_team, assigned_to,
+                        creation_date, last_update,  current_step
+                    ) VALUES (?, 1, ?, ?, ?, NOW(), NOW(),  ?)
+                `;
 
-            const ticket_id = ticketResult.insertId;
+                // For workflow tickets, use NULL assignments, for direct tickets use first step
+                let assigned_to = null;
+                let current_step = 1;
 
-            // Insert ticket detail
-            const detailInsertPromises = [];
-            for (let i = 1; i <= 16; i++) {
-                const cstmColValue = formData[`cstm_col${i}`] || '';
-                const lblColValue = formData[`lbl_col${i}`] || '';
-                if (cstmColValue || lblColValue) {
-                    detailInsertPromises.push(dbHots.promise().execute(`
+                if (workflowSteps.length === 0) {
+                    // No workflow - direct assignment (legacy behavior)
+                    assigned_to = user_id; // or some default assignment
+                    current_step = 0;
+                }
+
+                dbHots.execute(insertTicketQuery, [
+                    service_id, user_id, assigned_team, assigned_to, current_step
+                ], (err3, ticketResult) => {
+
+                    if (err3) {
+                        console.log(timestamp, "CREATE TICKET ERROR: ", err3);
+                        return res.status(502).send({
+                            success: false,
+                            message: err3
+                        });
+                    }
+
+                    let ticket_id = ticketResult.insertId;
+
+                    // Create ticket details from form data
+                    let detailColumns = [];
+                    let detailValues = [ticket_id];
+                    let detailPlaceholders = ['?'];
+
+                    for (let i = 1; i <= 16; i++) {
+                        let cstmCol = `cstm_col${i}`;
+                        let lblCol = `lbl_col${i}`;
+
+                        detailColumns.push(cstmCol, lblCol);
+                        detailValues.push(formData[cstmCol] || '', formData[lblCol] || '');
+                        detailPlaceholders.push('?', '?');
+                    }
+
+                    let insertDetailQuery = `
                         INSERT INTO t_ticket_detail (
-                            ticket_id, cstm_col, lbl_col, order_col
-                        ) VALUES (?, ?, ?, ?)
-                    `, [ticket_id, cstmColValue, lblColValue, i]));
-                }
-            }
-            await Promise.all(detailInsertPromises);
+                            ticket_id, ${detailColumns.join(', ')}
+                        ) VALUES (${detailPlaceholders.join(', ')})
+                    `;
 
+                    dbHots.execute(insertDetailQuery, detailValues, (err4) => {
+                        if (err4) {
+                            console.log(timestamp, "CREATE TICKET DETAIL ERROR: ", err4);
+                        }
+                        console.log("workflowSteps", workflowSteps)
+                        // Create approval events for ALL workflow steps
+                        if (workflowSteps.length > 0) {
 
-            // Approval events
-            let approvalPromises = [];
-            console.log("workflowSteps", workflowSteps)
-            for (const step of workflowSteps) {
-                if (step.step_type === 'user' || step.step_type === 'specific_user') {
-                    approvalPromises.push(dbHots.promise().execute(`
-                        INSERT INTO t_approval_event (
-                            approval_id, approver_id, approval_order, approval_status,
-                            step_type, assigned_value
-                        ) VALUES (?, ?, ?, 0, 'user', ?)
-                    `, [ticket_id, step.assigned_value, step.step_order, step.assigned_value]));
+                            console.log("workflow length", workflowSteps.length)
+                            let approvalPromises = workflowSteps.map((step, idx) => {
+                                return new Promise((resolve, reject) => {
+                                    if (step.step_type === 'specific_user' || step.step_type === 'user') {
+                                        // Direct user assignment
+                                        let insertApprovalQuery = `
+                                            INSERT INTO t_approval_event (
+                                                approval_id, approver_id, approval_order, approval_status,
+                                                step_type, assigned_value
+                                            ) VALUES (?, ?, ?, 0, 'user', ?)
+                                        `;
+                                        console.log(`masuk sudah ${idx + 1} kali`)
+                                        dbHots.execute(insertApprovalQuery, [
+                                            ticket_id, step.assigned_value, step.step_order, step.assigned_value
+                                        ], (err) => {
+                                            if (err) reject(err);
+                                            else resolve();
+                                        });
 
-                } else if (step.step_type === 'team') {
-                    const [teamMembers] = await dbHots.promise().execute(
-                        `SELECT user_id, team_leader FROM m_team_member WHERE team_id = ?`,
-                        [step.assigned_value]
-                    );
+                                    } else if (step.step_type === 'team') {
+                                        // Get team members
+                                        let teamQuery = `
+                                            SELECT user_id FROM m_team_member WHERE team_id = ?
+                                        `;
+                                        dbHots.execute(teamQuery, [step.assigned_value], (err, teamMembers) => {
+                                            if (err) {
+                                                reject(err);
+                                                return;
+                                            }
 
-                    for (const member of teamMembers) {
-                        approvalPromises.push(dbHots.promise().execute(`
-                            INSERT INTO t_approval_event (
-                                approval_id, approver_id, approval_order, approval_status,
-                                step_type, assigned_value, approver_leader
-                            ) VALUES (?, ?, ?, 0, 'team', ?, ?)
-                        `, [ticket_id, member.user_id, step.step_order, step.assigned_value, member.team_leader]));
-                    }
+                                            let teamPromises = teamMembers.map(member => {
+                                                return new Promise((resolve2, reject2) => {
+                                                    let insertApprovalQuery = `
+                                                        INSERT INTO t_approval_event (
+                                                            approval_id, approver_id, approval_order, approval_status,
+                                                            step_type, assigned_value
+                                                        ) VALUES (?, ?, ?, 0, 'team', ?)
+                                                    `;
+                                                    dbHots.execute(insertApprovalQuery, [
+                                                        ticket_id, member.user_id, step.step_order, step.assigned_value
+                                                    ], (err2) => {
+                                                        if (err2) reject2(err2);
+                                                        else resolve2();
+                                                    });
+                                                });
+                                            });
 
-                } else if (step.step_type === 'role') {
-                    const [roleUsers] = await dbHots.promise().execute(
-                        `SELECT user_id FROM user WHERE user_role = ? AND is_active = 1`,
-                        [step.assigned_value]
-                    );
+                                            Promise.all(teamPromises).then(() => resolve()).catch(reject);
+                                        });
 
-                    for (const user of roleUsers) {
-                        approvalPromises.push(dbHots.promise().execute(`
-                            INSERT INTO t_approval_event (
-                                approval_id, approver_id, approval_order, approval_status,
-                                step_type, assigned_value
-                            ) VALUES (?, ?, ?, 0, 'role', ?)
-                        `, [ticket_id, user.user_id, step.step_order, step.assigned_value]));
-                    }
+                                    } else if (step.step_type === 'role') {
+                                        // Get users with this role
+                                        let roleQuery = `
+                                            SELECT user_id FROM user WHERE user_role = ? AND is_active = 1
+                                        `;
+                                        dbHots.execute(roleQuery, [step.assigned_value], (err, roleUsers) => {
+                                            if (err) {
+                                                reject(err);
+                                                return;
+                                            }
 
-                } else if (step.step_type === 'superior') {
-                    const [[{ superior_id } = {}]] = await dbHots.promise().execute(
-                        `SELECT superior_id FROM user WHERE user_id = ?`,
-                        [user_id]
-                    );
+                                            let rolePromises = roleUsers.map(user => {
+                                                return new Promise((resolve2, reject2) => {
+                                                    let insertApprovalQuery = `
+                                                        INSERT INTO t_approval_event (
+                                                            approval_id, approver_id, approval_order, approval_status,
+                                                            step_type, assigned_value
+                                                        ) VALUES (?, ?, ?, 0, 'role', ?)
+                                                    `;
+                                                    dbHots.execute(insertApprovalQuery, [
+                                                        ticket_id, user.user_id, step.step_order, step.assigned_value
+                                                    ], (err2) => {
+                                                        if (err2) reject2(err2);
+                                                        else resolve2();
+                                                    });
+                                                });
+                                            });
 
-                    let approverId = superior_id;
-                    if (!approverId) {
-                        const [[admin] = {}] = await dbHots.promise().execute(
-                            `SELECT user_id FROM user WHERE user_role = 1 AND is_active = 1 LIMIT 1`
-                        );
-                        approverId = admin?.user_id || null;
-                    }
+                                            Promise.all(rolePromises).then(() => resolve()).catch(reject);
+                                        });
 
-                    if (approverId) {
-                        approvalPromises.push(dbHots.promise().execute(`
-                            INSERT INTO t_approval_event (
-                                approval_id, approver_id, approval_order, approval_status,
-                                step_type, assigned_value
-                            ) VALUES (?, ?, ?, 0, 'superior', ?)
-                        `, [ticket_id, approverId, step.step_order, approverId]));
-                    }
-                }
-            }
+                                    } else if (step.step_type === 'superior') {
+                                        // Get user's superior
+                                        let superiorQuery = `
+                                            SELECT superior_id FROM user WHERE user_id = ?
+                                        `;
+                                        dbHots.execute(superiorQuery, [user_id], (err, superiorResult) => {
+                                            if (err) {
+                                                reject(err);
+                                                return;
+                                            }
 
-            await Promise.all(approvalPromises);
-            console.log("approvalPromises", approvalPromises)
-            // Handle file uploads
-            if (upload_ids && upload_ids.length > 0) {
-                await dbHots.promise().execute(`
-                    UPDATE t_temp_upload 
-                    SET is_used = TRUE, ticket_id = ? 
-                    WHERE upload_id IN (${upload_ids.map(() => '?').join(',')})
-                `, [ticket_id, ...upload_ids]);
-            }
+                                            let superior_id = superiorResult[0]?.superior_id;
 
-            // Custom functions
-            await module.exports.callexecuteCustomFunctions(service_id, ticket_id);
+                                            if (!superior_id) {
+                                                // Fallback to admin role
+                                                let adminQuery = `
+                                                    SELECT user_id FROM user WHERE user_role = 1 AND is_active = 1 LIMIT 1
+                                                `;
+                                                dbHots.execute(adminQuery, [], (err2, adminResult) => {
+                                                    if (err2 || !adminResult.length) {
+                                                        reject(new Error('No superior or admin found'));
+                                                        return;
+                                                    }
 
-            return res.status(200).send({
-                success: true,
-                message: "CREATE TICKET SUCCESS",
-                ticket_id
+                                                    let insertApprovalQuery = `
+                                                        INSERT INTO t_approval_event (
+                                                            approval_id, approver_id, approval_order, approval_status,
+                                                            step_type, assigned_value
+                                                        ) VALUES (?, ?, ?, 0, 'superior', ?)
+                                                    `;
+                                                    dbHots.execute(insertApprovalQuery, [
+                                                        ticket_id, adminResult[0].user_id, step.step_order, null
+                                                    ], (err3) => {
+                                                        if (err3) reject(err3);
+                                                        else resolve();
+                                                    });
+                                                });
+                                            } else {
+                                                let insertApprovalQuery = `
+                                                    INSERT INTO t_approval_event (
+                                                        approval_id, approver_id, approval_order, approval_status,
+                                                        step_type, assigned_value
+                                                    ) VALUES (?, ?, ?, 0, 'superior', ?)
+                                                `;
+                                                dbHots.execute(insertApprovalQuery, [
+                                                    ticket_id, superior_id, step.step_order, superior_id
+                                                ], (err2) => {
+                                                    if (err2) reject(err2);
+                                                    else resolve();
+                                                });
+                                            }
+                                        });
+                                    } else {
+                                        resolve(); // Unknown step type, skip
+                                    }
+                                });
+                            });
+                            console.log("approvalPromises", approvalPromises)
+
+                            Promise.all(approvalPromises)
+                                .then(() => {
+                                    // Handle file uploads if any
+                                    if (upload_ids && upload_ids.length > 0) {
+                                        let updateUploadQuery = `
+                                            UPDATE t_temp_upload 
+                                            SET is_used = TRUE, ticket_id = ? 
+                                            WHERE upload_id IN (${upload_ids.map(() => '?').join(',')})
+                                        `;
+                                        dbHots.execute(updateUploadQuery, [ticket_id, ...upload_ids], (err5) => {
+                                            if (err5) {
+                                                console.log(timestamp, "UPDATE UPLOAD ERROR: ", err5);
+                                            }
+                                        });
+                                    }
+
+                                    module.exports.callexecuteCustomFunctions(service_id, ticket_id)
+                                        .then(() => {
+                                            console.log(timestamp, "EXECUTE CUSTOM FUNCTIONS SUCCESS");
+                                        })
+                                        .catch((funcError) => {
+                                            console.log(timestamp, "EXECUTE CUSTOM FUNCTIONS ERROR: ", funcError);
+                                        })
+                                        .finally(() => {
+                                            return res.status(200).send({
+                                                success: true,
+                                                message: "CREATE TICKET SUCCESS A",
+                                                ticket_id: ticket_id
+                                            });
+                                        });
+                                })
+                                .catch(err6 => {
+                                    console.log(timestamp, "CREATE APPROVAL EVENTS ERROR: ", err6);
+                                    return res.status(502).send({
+                                        success: false,
+                                        message: "Failed to create approval events: " + err6.message
+                                    });
+                                });
+                        } else {
+                            console.log(timestamp, "CREATE TICKET SUCCESS (NO WORKFLOW)");
+
+                            // ✅ Use a regular function inside the callback
+                            module.exports.callexecuteCustomFunctions(service_id, ticket_id)
+                                .then(() => {
+                                    console.log(timestamp, "EXECUTE CUSTOM FUNCTIONS SUCCESS");
+                                })
+                                .catch((funcError) => {
+                                    console.log(timestamp, "EXECUTE CUSTOM FUNCTIONS ERROR: ", funcError);
+                                })
+                                .finally(() => {
+                                    return res.status(200).send({
+                                        success: true,
+                                        message: "CREATE TICKET SUCCESS A",
+                                        ticket_id: ticket_id
+                                    });
+                                });
+                        }
+                    });
+                });
             });
-
-        } catch (err) {
-            console.log(timestamp, "CREATE TICKET FAILED", err);
-            return res.status(500).send({
-                success: false,
-                message: "CREATE TICKET FAILED",
-                error: err.message
-            });
-        }
+        });
     },
-
 
 
 
@@ -4276,10 +4422,10 @@ module.exports = {
                     LEFT JOIN m_team tm ON tm.team_id = t.assigned_team
                     WHERE t.created_by = ?
                     ORDER BY t.creation_date DESC
-                    LIMIT ? OFFSET ?
+                    LIMIT ${limit} OFFSET ${offset}
                 `;
 
-            dbHots.execute(queryGetMyTickets, [user_id, limit, offset], (err2, results2) => {
+            dbHots.execute(queryGetMyTickets, [user_id], (err2, results2) => {
                 if (err2) {
                     console.log(timestamp, "GET MY TICKETS ERROR: ", err2);
                     return res.status(502).send({
@@ -4305,9 +4451,12 @@ module.exports = {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
-        let page = parseInt(req.query.page) || 1;
-        let limit = 10;
-        let offset = (page - 1) * limit;
+        const page = Number.isInteger(Number(req.query.page)) && Number(req.query.page) > 0
+            ? Number(req.query.page)
+            : 1;
+
+        const limit = 10;
+        const offset = (page - 1) * limit;
 
         // Count total tickets
         let countQuery = `SELECT COUNT(*) as total FROM t_ticket`;
@@ -4372,11 +4521,12 @@ module.exports = {
                     LEFT JOIN m_team tm ON tm.team_id = t.assigned_team
                     LEFT JOIN user u ON u.user_id = t.created_by
                     ORDER BY t.creation_date DESC
-                    LIMIT ? OFFSET ?
+                    LIMIT ${limit} OFFSET ${offset}
                 `;
 
-            dbHots.execute(queryGetAllTickets, [limit, offset], (err2, results2) => {
+            dbHots.execute(queryGetAllTickets, (err2, results2) => {
                 if (err2) {
+                    console.log("limit, offset", limit, offset)
                     console.log(timestamp, "GET ALL TICKETS ERROR: ", err2);
                     return res.status(502).send({
                         success: false,
@@ -4546,14 +4696,12 @@ module.exports = {
                 t.assigned_team IN (
                     SELECT tm.team_id FROM m_team_member tm WHERE tm.user_id = ?
                 ) OR
-                t.assigned_to = ?
-                or
                 (ae.approver_id = ? AND ae.approval_status = 0 AND ae.approval_order = t.current_step)
             )
-            AND t.status_id IN (1, 2, 3)
+            AND t.status_id IN (1, 2)
         `;
 
-        dbHots.execute(countQuery, [user_id, user_id, user_id, user_id], (err, countResult) => {
+        dbHots.execute(countQuery, [user_id, user_id, user_id], (err, countResult) => {
             if (err) {
                 console.log(timestamp, "GET TASK COUNT ERROR: ", err);
                 return res.status(502).send({
@@ -4620,22 +4768,6 @@ module.exports = {
                 ) as current_approver_name,
                 
                 (
-                SELECT JSON_ARRAYAGG(
-                    JSON_OBJECT(
-                    'order_col', td_sub.order_col,
-                    'cstm_col', td_sub.cstm_col,
-                    'lbl_col', td_sub.lbl_col
-                    )
-                )
-                FROM (
-                    SELECT td.order_col, td.cstm_col, td.lbl_col
-                    FROM t_ticket_detail td
-                    WHERE td.ticket_id = ?
-                    ORDER BY td.order_col
-                ) AS td_sub
-                ) AS detail_rows,
-
-                (
                     SELECT ae3.approver_id
                     FROM t_approval_event ae3
                     WHERE ae3.approval_id = t.ticket_id 
@@ -4673,8 +4805,7 @@ module.exports = {
                             'approval_order', ae.approval_order,
                             'approval_status', ae.approval_status,
                             'approval_date', DATE_FORMAT(ae.approve_date, '%Y-%m-%d %H:%i:%s'),
-                            'rejection_remark', ae.rejection_remark,
-                            'approver_leader', ae.approver_leader
+                            'rejection_remark', ae.rejection_remark
                         )
                     )
                     FROM t_approval_event ae
@@ -4699,7 +4830,7 @@ module.exports = {
             WHERE t.ticket_id = ?
         `;
 
-        dbHots.execute(queryGetTicketDetail, [ticket_id, ticket_id], (err, results) => {
+        dbHots.execute(queryGetTicketDetail, [ticket_id], (err, results) => {
             if (err) {
                 console.log(timestamp, "GET TICKET DETAIL ERROR: ", err);
                 return res.status(502).send({
@@ -4723,53 +4854,6 @@ module.exports = {
             });
         });
     },
-
-
-    putTicketDetail: async (req, res) => {
-        const ticket_id = req.params.ticket_id;
-        const { detailFields } = req.body; // Expecting an array of { cstm_col, lbl_col, order_col }
-
-        if (!ticket_id || !Array.isArray(detailFields)) {
-            return res.status(400).send({
-                success: false,
-                message: "ticket_id and detailFields[] are required"
-            });
-        }
-
-        try {
-            const updatePromises = detailFields.map((field) => {
-                const { cstm_col = '', lbl_col = '', order_col } = field;
-
-                if (!order_col) return null; // skip if order_col is missing
-
-                return dbHots.promise().execute(
-                    `
-                    INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, order_col)
-                    VALUES (?, ?, ?, ?)
-                    ON DUPLICATE KEY UPDATE 
-                        cstm_col = VALUES(cstm_col),
-                        lbl_col = VALUES(lbl_col)
-                    `,
-                    [ticket_id, cstm_col, lbl_col, order_col]
-                );
-            }).filter(Boolean);
-
-            await Promise.all(updatePromises);
-
-            return res.status(200).send({
-                success: true,
-                message: "Ticket detail updated successfully"
-            });
-        } catch (err) {
-            console.error("PUT TICKET DETAIL FAILED", err);
-            return res.status(500).send({
-                success: false,
-                message: "Failed to update ticket detail",
-                error: err.message
-            });
-        }
-    },
-
 
     // 9. Reject Ticket
     rejectTicket: (req, res) => {
@@ -4973,11 +5057,7 @@ module.exports = {
             }
 
             const ticket = ticketRows[0];
-            const { current_step, service_id } = ticket;
-            console.log("ticket============================================")
-            console.log("ticket", ticket)
-            console.log("step_order", current_step)
-            console.log("ticket_id", ticket_id)
+            const { step_order, service_id } = ticket;
 
             // Approve current approver
             await conn.query(`
@@ -4992,13 +5072,13 @@ module.exports = {
             LEFT JOIN t_workflow_step ws ON ws.step_id = ae.step_id
             SET ae.approval_status = 1, ae.approve_date = NOW()
             WHERE ae.approval_id = ? AND ae.approval_order = ? AND ae.approval_status = 0
-          `, [ticket_id, current_step]);
+          `, [ticket_id, step_order]);
 
-            console.log(timestamp, `Step ${current_step} approved for ticket ${ticket_id}`);
+            console.log(timestamp, `Step ${step_order} approved for ticket ${ticket_id}`);
 
             // Custom hook per step
             await module.exports.executeCustomFunctionsByTrigger(service_id, ticket_id, 'on_step_approved', {
-                current_step,
+                step_order,
                 approver_id: user_id
             });
 
@@ -5032,7 +5112,7 @@ module.exports = {
 
                 await module.exports.executeCustomFunctionsByTrigger(service_id, ticket_id, 'on_final_approved', {
                     final_approver_id: user_id,
-                    total_steps: current_step
+                    total_steps: step_order
                 });
 
                 await module.exports.executeCustomFunctionsByTrigger(service_id, ticket_id, 'on_approved', {
@@ -5074,33 +5154,36 @@ module.exports = {
             date: new Date().toISOString().split('T')[0]
         };
 
-        // Use detail_rows if available
-        if (ticketDetail?.detail_rows && Array.isArray(ticketDetail.detail_rows)) {
-            for (const row of ticketDetail.detail_rows) {
-                const label = row.lbl_col?.toLowerCase().trim();
-                const value = row.cstm_col;
+        // Map custom form fields to specific variables based on labels
+        if (ticketDetail) {
+            for (let i = 1; i <= 16; i++) {
+                const label = ticketDetail[`lbl_col${i}`];
+                const value = ticketDetail[`cstm_col${i}`];
 
                 if (label && value) {
-                    if (label.includes('purpose') || label.includes('reason')) {
+                    const normalizedLabel = label.toLowerCase().trim();
+
+                    // Map based on common field labels
+                    if (normalizedLabel.includes('purpose') || normalizedLabel.includes('reason')) {
                         variables.request_purpose = value;
-                    } else if (label.includes('delivery') || label.includes('schedule')) {
+                    } else if (normalizedLabel.includes('delivery') || normalizedLabel.includes('schedule')) {
                         variables.delivery_schedule = value;
-                    } else if (label.includes('manager') && label.includes('approval')) {
+                    } else if (normalizedLabel.includes('manager') && normalizedLabel.includes('approval')) {
                         variables.approval_manager = value;
-                    } else if (label.includes('business') && label.includes('analyst')) {
+                    } else if (normalizedLabel.includes('business') && normalizedLabel.includes('analyst')) {
                         variables.business_analyst = value;
-                    } else if (label.includes('product') && label.includes('manager')) {
+                    } else if (normalizedLabel.includes('product') && normalizedLabel.includes('manager')) {
                         variables.product_manager = value;
-                    } else if (label.includes('accounting') && label.includes('manager')) {
+                    } else if (normalizedLabel.includes('accounting') && normalizedLabel.includes('manager')) {
                         variables.accounting_manager = value;
-                    } else if (label.includes('item') || label.includes('list')) {
+                    } else if (normalizedLabel.includes('item') || normalizedLabel.includes('list')) {
                         variables.item_list = value;
                     }
                 }
             }
         }
 
-        // Set defaults
+        // Set default values for missing variables
         variables.request_purpose = variables.request_purpose || 'Sample Request';
         variables.delivery_schedule = variables.delivery_schedule || 'ASAP';
         variables.approval_manager = variables.approval_manager || 'Manager';
@@ -5111,7 +5194,6 @@ module.exports = {
 
         return variables;
     },
-
 
 
     // Add this method to ticketService.js

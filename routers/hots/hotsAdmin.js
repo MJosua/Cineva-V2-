@@ -5,9 +5,11 @@ const { hotsAdmin } = require('../../controller')
 
 //get data
 route.get("/account", decodeTokenHT, hotsAdmin.getAccount);
+route.get("/account/:department_id", decodeTokenHT, hotsAdmin.getAccountbydepartment);
 route.get("/role", decodeTokenHT, hotsAdmin.getRole);
 route.get("/department", decodeTokenHT, hotsAdmin.getDepartment);
 route.get("/team", decodeTokenHT, hotsAdmin.getTeam);
+route.get("/team/:department_id", decodeTokenHT, hotsAdmin.getTeambydepartment);
 route.get("/tickets", decodeTokenHT, hotsAdmin.getAllTicket);
 //Get Workflow
 route.get("/allworkflow", decodeTokenHT, hotsAdmin.getAllWorkFlow);

@@ -71,7 +71,7 @@ module.exports = {
                             `
 
 
-            dbConf.execute(query,  (err, results) => {
+            dbConf.execute(query, (err, results) => {
 
                 if (err) {
 
@@ -105,6 +105,58 @@ module.exports = {
 
 
     },
+
+    getPurpose: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+        if (req.dataToken.user_id) {
+
+
+
+            let query = ` 	
+                            SELECT *
+                            FROM hots.m_srf_purpose
+                            WHERE active=1;
+                            `
+
+
+            dbConf.execute(query, (err, results) => {
+
+                if (err) {
+
+                    res.status(500).send({
+                        success: false,
+                        message: `INTERNAL SERVER ERROR`
+                    });
+                    console.log(timestamp, "Error at getSRF_Purpose, message:", err);
+
+                } else {
+                    console.log(timestamp, "successfully getSRF_Purpose!");
+                    res.status(200).send({
+                        success: true,
+                        message: "Successfully fetched getSRF_Purpose data",
+                        results,
+                    });
+                }
+
+            })
+
+
+
+
+        } else {
+            res.status(401).send({
+                success: false,
+                message: `Unauthorized`
+            });
+            console.log(timestamp, "getSKU is Unauthorized");
+        }
+
+
+    },
+
+
 
 
 

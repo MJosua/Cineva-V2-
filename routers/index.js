@@ -46,6 +46,7 @@ const kanbanmngr = require('./project_manager/kanban_routes')
 const approvalmngr = require('./project_manager/approval_routes')
 const departmentmngr = require('./project_manager/department_routes')
 const teammngr = require('./project_manager/team_routes')
+const taskstepsmngr = require('./project_manager/task_steps_routes')
 
 module.exports = {
     authRouter,
@@ -78,4 +79,5 @@ module.exports = {
     approvalmngr,
     departmentmngr,
     teammngr,
+    taskstepsmngr
 } 
