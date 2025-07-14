@@ -2,6 +2,7 @@ const express = require("express");
 const route = express.Router();
 const { generateTokenHT, decodeTokenHT } = require('../../config/encrypts')
 const { hotsSettingsController, hotsSRFController } = require('../../controller');
+const teamJoinRequestController = require('../../controller/project_manager_controller/teamJoinRequestController');
 
 
 route.get('/get_menu', decodeTokenHT, hotsSettingsController.getmenu)
@@ -31,6 +32,11 @@ route.post('/post/team_member', decodeTokenHT, hotsSettingsController.addTeamMem
 route.put('/update/team_leader/:id', decodeTokenHT, hotsSettingsController.updateTeamLeader)
 route.delete('/delete/team_member/:team_id/:user_id', decodeTokenHT, hotsSettingsController.removeTeamMember);
 
+// Team join request routes (added for frontend compatibility)
+route.post('/team_join_request', decodeTokenHT, teamJoinRequestController.createJoinRequest);
+route.get('/team_join_requests', decodeTokenHT, teamJoinRequestController.getJoinRequests);
+route.get('/my_team_join_requests', decodeTokenHT, teamJoinRequestController.getUserJoinRequests);
+route.put('/team_join_request/:requestId', decodeTokenHT, teamJoinRequestController.updateJoinRequest);
 
 // Department CRUD
 route.get('/get/departments', decodeTokenHT, hotsSettingsController.getAllDepartments)
@@ -97,6 +103,7 @@ route.get('/get_srf_plant', decodeTokenHT, hotsSettingsController.getSRFPlant)
 route.get('/get_srf_sampleCategory', decodeTokenHT, hotsSettingsController.getSRFSampleCategory)
 route.get('/get_srf_deliverTo', decodeTokenHT, hotsSettingsController.getSRFDeliverTo)
 route.get('/get_srf_sku', decodeTokenHT, hotsSRFController.getSKUNoFilter)
+route.get('/get_srf_purpose', decodeTokenHT, hotsSRFController.getPurpose)
 
 
 //Data Update
@@ -108,32 +115,4 @@ route.get('/get_ps_ticket_row', decodeTokenHT, hotsSettingsController.getpricing
 route.post('/insertupdate/service_catalog', decodeTokenHT, hotsSettingsController.insertupdateServiceCatalog)
 route.delete("/delete/service/:service_id", decodeTokenHT, hotsSettingsController.deleteServiceCatalog)
 
-
-
-//meetingroom
-route.get('/get/meetingroom', decodeTokenHT, hotsSettingsController.getmeetingroom)
-route.get('/get/meetingroom_static', decodeTokenHT, hotsSettingsController.getmeetingroom_static)
-
-
-
-
-
-
-
-
 module.exports = route
-
-/*
-
-POST /hots_ticket/pc_request => auth bearer token, req.body.{ job_desc, reason, laptop_spec_id, old_device, date_acquisition, old_device_spec }
-POST /hots_ticket/it_support_ticket => auth bearer token, req.body.{ assigned_to, type, issue_desc, attachment } //attachment berisi array yg didalamnya ada object [{url:http://blablabla},{url:http://blablabla},]
-POST /hots_ticket/upload_file => untuk upload file
-
-GET /hots_ticket/laptop_specs 
-GET /hots_ticket/my_tiket 
-GET /hots_ticket/detail/${service_id}/${ticket_id} 
-
-semua wajib bawa token
-
-
-*/

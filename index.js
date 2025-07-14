@@ -282,27 +282,30 @@ const {
   shortener,
   hotsTps,
   srtsRouter,
-  hotscustomfunction,
-  kanbanmngr,
   projectmngr,
   taskmngr,
+  hotscustomfunction,
+  kanbanmngr,
   ganttmngr,
   approvalmngr,
   departmentmngr,
   teammngr,
+  taskstepsmngr,
 } = require("./routers");
 
 // Auth: 
 App.use("/auth", authRouter);
 
+
 // Project_manager: 
-App.use("/PM/project", projectmngr);
-App.use("/PM/kanban", kanbanmngr);
-App.use("/PM/gantt", ganttmngr);
-App.use("/PM/approval", approvalmngr);
-App.use("/PM/department", departmentmngr);
-App.use("/PM/team", teammngr);
-App.use("/PM/task", taskmngr);
+App.use("/pm/project", projectmngr);
+App.use("/pm/kanban", kanbanmngr);
+App.use("/pm/gantt", ganttmngr);
+App.use("/pm/approval", approvalmngr);
+App.use("/pm/department", departmentmngr);
+App.use("/pm/team", teammngr);
+App.use("/pm/task", taskmngr); // This is the critical route
+App.use("/pm/task-steps", taskstepsmngr);
 
 // Auth TM: 
 //App.use("/auth_tm", authTmRouter);

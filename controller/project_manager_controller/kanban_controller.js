@@ -12,7 +12,7 @@ module.exports = {
 
       // Get project details
       const [projectData] = await dbPMS.promise().execute(`
-        SELECT * FROM t_project WHERE project_id = ?
+        SELECT * FROM pm.t_project WHERE project_id = ?
       `, [project_id]);
 
       if (projectData.length === 0) {
@@ -21,7 +21,7 @@ module.exports = {
 
       // Get task groups/columns
       const [groups] = await dbPMS.promise().execute(`
-        SELECT * FROM t_task_groups 
+        SELECT * FROM PM.t_task_groups  
         WHERE project_id = ? 
         ORDER BY sort_order ASC
       `, [project_id]);
