@@ -221,7 +221,10 @@ module.exports = {
      * Execute a custom function
      */
     executeCustomFunction: async (reqOrTicketId, functionDataOrFunctionId, variablesOrParams, mode = 'auto') => {
+
         try {
+            const mode = reqOrTicketId.body.mode === 'manual' ? 'manual' : 'auto';
+
             const isManual = mode === 'manual';
 
             const ticket_id = isManual ? reqOrTicketId.body.ticket_id : reqOrTicketId;
@@ -249,11 +252,9 @@ module.exports = {
             }
 
             const func = functionDetails[0];
-
             let result = {};
             let status = 'success';
             let errorMessage = null;
-
             try {
                 // Execute function based on type
                 switch (func.type) {
@@ -696,159 +697,185 @@ module.exports = {
     },
 
     generateDocument: async (template, ticketData, params) => {
-        const fileName = `document_${ticketData.ticket_id}_${Date.now()}.pdf`;
+        const fileName = `document_${template.template_name || ticketData[0]?.ticket_id}_${Date.now()}.pdf`;
         const filePath = path.join('public', 'hots', 'generateddocuments', fileName);
-
+      
+        console.log("ticketData", ticketData);
+        console.log("params", params);
+        console.log("template", template);
+      
         const dirPath = path.dirname(filePath);
         if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });
+          fs.mkdirSync(dirPath, { recursive: true });
         }
-
-        // Combine ticketData and params for full rendering context
-        const data = { ...ticketData, ...params };
-        console.log("data", data)
-
+      
+        const data = !Array.isArray(ticketData) ? { ...ticketData, ...params } : { ...params };
+        const detailRows = Array.isArray(params.detail_rows) ? params.detail_rows : Array.isArray(ticketData) ? ticketData : [];
+      
         let itemRowsHtml = '';
         let totalPcs = 0;
         let totalCtn = 0;
-
-        for (let i = 7, no = 1; i <= 16; i += 2, no++) {
-            const itemName = data[`cstm_col${i}`];
-            const quantity = data[`cstm_col${i + 1}`];
-
-            if (!itemName && !quantity) continue;
-
-            let pcs = '', ctn = '';
-
-            if (quantity?.toLowerCase().includes('pcs')) {
-                pcs = quantity;
-                const val = parseInt(quantity);
-                if (!isNaN(val)) totalPcs += val;
-            }
-
-            if (quantity?.toLowerCase().includes('ctn')) {
-                ctn = quantity;
-                const val = parseInt(quantity);
-                if (!isNaN(val)) totalCtn += val;
-            }
-            itemRowsHtml += `
-                <tr>
-                <td>${no}</td>
-                <td>${itemName || ''}</td>
-                <td>${pcs}</td>
-                <td>${ctn}</td>
-                </tr>`;
-        }
+      
+        const cleanValue = (value) => {
+          try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed.join(', ') : parsed;
+          } catch {
+            return value;
+          }
+        };
+      
+        const getByLabel = (labelKeyword) => {
+          const row = detailRows.find(r =>
+            r.lbl_col?.toLowerCase().includes(labelKeyword.toLowerCase())
+          );
+          return cleanValue(row?.cstm_col || '');
+        };
+      
+        const itemRows = detailRows.filter(row =>
+          row.lbl_col?.toLowerCase().includes('item')
+        );
+      
+        itemRows.forEach((row, i) => {
+          const itemName = row.cstm_col || '';
+      
+          // Attempt to find the related quantity row by order_col or index
+          const qtyRow = detailRows.find(
+            r => r.lbl_col?.toLowerCase().includes('quantity') &&
+              r.order_col === row.order_col + 1
+          ) || detailRows[i + 1];
+      
+          const qty = qtyRow?.cstm_col || '';
+          let pcs = '', ctn = '';
+      
+          if (qty.toLowerCase().includes('pcs')) {
+            pcs = qty;
+            const val = parseInt(qty);
+            if (!isNaN(val)) totalPcs += val;
+          }
+      
+          if (qty.toLowerCase().includes('ctn')) {
+            ctn = qty;
+            const val = parseInt(qty);
+            if (!isNaN(val)) totalCtn += val;
+          }
+      
+          itemRowsHtml += `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${itemName}</td>
+              <td>${pcs}</td>
+              <td>${ctn}</td>
+            </tr>`;
+        });
+      
         const html = `
-            <html>
-                <head>
-                <meta charset="utf-8" />
-                <title>SAMPLE REQUEST FORM</title>
-                <style>
-                    body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                    th, td { border: 1px solid #000; padding: 5px; text-align: left; }
-                    .no-border td { border: none; }
-                    .center { text-align: center; }
-                    .bold { font-weight: bold; }
-                    .section-title { margin-top: 20px; font-weight: bold; font-size: 16px; text-align: center; }
-                    .note { border: 1px solid #000; padding: 10px; margin-top: 10px; }
-                    .approval-table td { height: 60px; vertical-align: bottom; text-align: center; }
-                    .small { font-size: 10px; }
-                </style>
-                </head>
-                <body>
-
-                <table class="no-border">
-                    <tr>
-                    <td><strong>PT. INDOFOOD CBP SUKSES MAKMUR</strong></td>
-                    <td style="text-align:right;">To&nbsp;: ${data.cstm_col2}</td>
-                    </tr>
-                    <tr>
-                    <td><strong>Division</strong>&nbsp;: IOD </td>
-                    <td style="text-align:right;">From&nbsp;: Anindia Alfia Putri</td>
-                    </tr>
-                    <tr>
-                    <td><strong>Location</strong>&nbsp;: INDOFOOD TOWER LT.23</td>
-                    <td></td>
-                    </tr>
-                    <tr>
-                    <td><strong>SRF NO</strong>&nbsp;: SRF/${data.ticket_id}</td>
-                    <td></td>
-                    </tr>
-                </table>
-
-                <div class="section-title">SAMPLE REQUEST FORM</div>
-
-                <table class="no-border">
-                    <tr>
-                    <td>To</td><td>: ${data.cstm_col2}</td>
-                    <td>Name/Title</td><td>: ${data.cstm_col1}</td>
-                    </tr>
-                    <tr>
-                    <td>Cc</td><td>: ${data.cstm_col3}</td>
-                    <td>Purposes</td><td>: ${data.cstm_col4}</td>
-                    </tr>
-                    <tr>
-                    <td></td><td></td>
-                    <td>Deliver to</td><td>: ${data.cstm_col5}</td>
-                    </tr>
-                </table>
-
-                <table>
-                    <thead>
-                    <tr>
-                        <th>NO</th>
-                        <th>DESCRIPTION</th>
-                        <th>QUANTITY IN PCS</th>
-                        <th>QUANTITY IN CTN</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {{#items}}
-                    ${itemRowsHtml}
-                    {{/items}}
-                    <tr>
-                        <td colspan="2" class="bold">TOTAL</td>
-                        <td class="bold">${totalPcs} PCS</td>
-                        <td class="bold">${totalCtn} CTN</td>
-                    </tr>
-                    </tbody>
-                </table>
-
-                <div class="note">
-                    <strong>Note:</strong>
-                    <p>
-                    ${data.cstm_col6}
-                    </p>
-                    Thank you
-                </div>
-
-                <table class="approval-table">
-                    <tr class="bold">
-                    <td>Request by,</td>
-                    <td>Approved by,</td>
-                    <td>Approved by,</td>
-                    </tr>
-                    <tr>
-                    <td>{{approval_section.request_by}}<br /><span class="small">{{business_analyst}}</span></td>
-                    <td>{{approval_section.approved_by}}<br /><span class="small">Logistics Manager</span></td>
-                    <td>{{approval_section.accounting_manager}}<br /><span class="small">Accounting Manager</span></td>
-                    </tr>
-                </table>
-
-                </body>
-                </html>
+          <html>
+            <head>
+              <meta charset="utf-8" />
+              <title>SAMPLE REQUEST FORM</title>
+              <style>
+                body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th, td { border: 1px solid #000; padding: 5px; text-align: left; }
+                .no-border td { border: none; }
+                .center { text-align: center; }
+                .bold { font-weight: bold; }
+                .section-title { margin-top: 20px; font-weight: bold; font-size: 16px; text-align: center; }
+                .note { border: 1px solid #000; padding: 10px; margin-top: 10px; }
+                .approval-table td { height: 60px; vertical-align: bottom; text-align: center; }
+                .small { font-size: 10px; }
+              </style>
+            </head>
+            <body>
+      
+            <table class="no-border">
+              <tr>
+                <td><strong>PT. INDOFOOD CBP SUKSES MAKMUR</strong></td>
+                <td style="text-align:right;">To&nbsp;: ${getByLabel('emailto')}</td>
+              </tr>
+              <tr>
+                <td><strong>Division</strong>&nbsp;: IOD </td>
+                <td style="text-align:right;">From&nbsp;: Anindia Alfia Putri</td>
+              </tr>
+              <tr>
+                <td><strong>Location</strong>&nbsp;: INDOFOOD TOWER LT.23</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td><strong>SRF NO</strong>&nbsp;: SRF/${data.ticket_id || ticketData[0]?.ticket_id}</td>
+                <td></td>
+              </tr>
+            </table>
+      
+            <div class="section-title">SAMPLE REQUEST FORM</div>
+      
+            <table class="no-border">
+              <tr>
+                <td>To</td><td>: ${getByLabel('to')}</td>
+                <td>Name/Title</td><td>: ${getByLabel('name')}</td>
+              </tr>
+              <tr>
+                <td>Cc</td><td>: ${getByLabel('emailcc')}</td>
+                <td>Purposes</td><td>: ${getByLabel('purpose')}</td>
+              </tr>
+              <tr>
+                <td></td><td></td>
+                <td>Deliver to</td><td>: ${getByLabel('deliver')}</td>
+              </tr>
+            </table>
+      
+            <table>
+              <thead>
+                <tr>
+                  <th>NO</th>
+                  <th>DESCRIPTION</th>
+                  <th>QUANTITY IN PCS</th>
+                  <th>QUANTITY IN CTN</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemRowsHtml}
+                <tr>
+                  <td colspan="2" class="bold">TOTAL</td>
+                  <td class="bold">${totalPcs} PCS</td>
+                  <td class="bold">${totalCtn} CTN</td>
+                </tr>
+              </tbody>
+            </table>
+      
+            <div class="note">
+              <strong>Note:</strong>
+              <p>${getByLabel('note')}</p>
+              Thank you
+            </div>
+      
+            <table class="approval-table">
+              <tr class="bold">
+                <td>Request by,</td>
+                <td>Approved by,</td>
+                <td>Approved by,</td>
+              </tr>
+              <tr>
+                <td>${data.approval_section?.request_by || ''}<br /><span class="small">${data.business_analyst || 'Business Analyst'}</span></td>
+                <td>${data.approval_section?.approved_by || ''}<br /><span class="small">Logistics Manager</span></td>
+                <td>${data.approval_section?.accounting_manager || ''}<br /><span class="small">Accounting Manager</span></td>
+              </tr>
+            </table>
+      
+            </body>
+          </html>
         `;
-
+      
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
-        await page.setContent(html);
+        await page.setContent(html, { waitUntil: 'networkidle0' });
         await page.pdf({ path: filePath, format: 'A4' });
         await browser.close();
-
+      
         return filePath;
-    },
+      },
+
 
     executeDocumentGeneration: async (func, ticketId, params) => {
         try {
@@ -869,7 +896,7 @@ module.exports = {
 
 
             // Generate document
-            const documentPath = await module.exports.generateDocument(config, ticketData[0], params);
+            const documentPath = await module.exports.generateDocument(config, ticketData, params);
 
             // Save generated document info
             await dbHots.promise().query(`
