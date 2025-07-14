@@ -65,7 +65,7 @@ module.exports = {
                         let totalDataLength = results.length
                         let totalPage = Math.round(results.length / limit)
 
-                        res.status(200).send({ success: true, packet, totalPage, totalDataLength, page });
+                        res.status(200).send({ packet, totalPage, totalDataLength, page });
                         console.log(timestamp + " getAccount success !")
 
                     } else {
@@ -74,7 +74,7 @@ module.exports = {
                         let totalDataLength = 0
                         let totalPage = 0
 
-                        res.status(200).send({ success: true, packet, totalPage, totalDataLength, page });
+                        res.status(200).send({ packet, totalPage, totalDataLength, page });
                         console.log(timestamp + " getAccount success no data!")
                     }
                 }
@@ -89,94 +89,8 @@ module.exports = {
         }
 
 
-    },
-
-    getAccountbydepartment: async (req, res) => {
-
-        let date = new Date();
-        let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-
-        //untuk pagination
-        let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
-        let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
-        let desc = req.query.desc ? `order by u.uid ASC ` : `order by u.uid DESC`;
-        let find = req.query.find ? ` AND u.uid LIKE '%${req.query.find}%'   ` : ''
-
-        let paramGetAccountData = [req.params.department_id]
-
-
-        const startIndex = (page - 1) * limit;
-        const endIndex = page * limit;
-
-        if (req.dataToken.role_id = 4) {
-
-            let queryGetAccount = ` 
-            SELECT
-                u.user_id, 
-                u.firstname,
-                u.lastname,
-                u.uid,
-                u.last_pswd_changed,
-                u.active,
-                u.email,
-                u.nik,
-                u.phone,
-                u.grade_id,
-                r.role_name,
-                d.department_name,  
-                u.superior_id 
-            FROM
-                user u
-            LEFT JOIN m_role r ON
-                u.role_id = r.role_id 
-            LEFT JOIN m_department d ON 
-                u.department_id = d.department_id
-            WHERE r.role_id IN (1,2,4) 
-            and
-            d.department_id = ${paramGetAccountData}           
-            `+ desc + find;
-
-            dbHots.execute(queryGetAccount, (err, results) => {
-
-                if (err) {
-
-                    res.status(500).send({ success: false, message: err });
-                    console.log(timestamp + "Error getAccount !", err)
-
-                } else {
-                    if (results[0]) {
-
-                        let packet = results.slice(startIndex, endIndex)
-                        let totalDataLength = results.length
-                        let totalPage = Math.round(results.length / limit)
-
-                        res.status(200).send({ success: true, packet, totalPage, totalDataLength, page });
-                        console.log(timestamp + " getAccount success !")
-
-                    } else {
-
-                        let packet = []
-                        let totalDataLength = 0
-                        let totalPage = 0
-
-                        res.status(200).send({ success: true, packet, totalPage, totalDataLength, page });
-                        console.log(timestamp + " getAccount success no data!")
-                    }
-                }
-
-            })
-
-        } else {
-            res.status(401).send({
-                success: false,
-                message: "UNATHORIZED ADMIN ONLY"
-            })
-        }
-
-
-    },
-
-    createAccount: async (req, res) => {
+    }
+    , createAccount: async (req, res) => {
 
         let date = new Date();
         let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
@@ -547,72 +461,6 @@ module.exports = {
         if (req.dataToken.role_id = 4) {
 
             queryGetDepartment = `
-                            SELECT
-                                t.team_id,
-                                t.team_name,
-                                t.department_id,
-                                t.description,
-                                t.created_date,
-                                t.finished_date,
-                                t.updated_date,
-                                t.icon,
-                                t.color_code,
-                                t.allow_join_requests,
-                                JSON_ARRAYAGG(
-                                    JSON_OBJECT(
-                                    'member_id', tm.member_id,
-                                    'user_id', tm.user_id,
-                                    'firstname', u.firstname,
-                                    'lastname', u.lastname,
-                                    'member_desc', tm.member_desc,
-                                    'creation_date', tm.creation_date,
-                                    'finished_date', tm.finished_date,
-                                    'team_leader', tm.team_leader,
-                                    'updated_date', tm.updated_date,
-                                    'finished_marker', tm.finished_marker
-                                    )
-                                ) AS members
-                                FROM m_team t
-                                LEFT JOIN m_team_member tm ON t.team_id = tm.team_id
-                                LEFT JOIN user u ON tm.user_id = u.user_id
-                                GROUP BY t.team_id
-                                ORDER BY t.team_id;
-            `
-
-            dbHots.query(queryGetDepartment, (err, results) => {
-                if (err) {
-                    res.status(500).send({
-                        success: false,
-                        message: err
-                    });
-                    console.log(timestamp, " HOTS admin-get Team  500", err);
-                } else {
-                    res.status(200).send({
-                        success: true,
-                        message: "successfuly get department",
-                        data: results
-                    });
-                    console.log(timestamp, " HOTS admin-get Team  Success");
-                }
-            })
-
-        } else {
-            res.status(401).send({
-                success: false,
-                message: "Unauthorized. ADMIN ONLY"
-            });
-            console.log(timestamp, " HOTS admin-get Team UNAUTHORIZED");
-        }
-    }
-    , getTeambydepartment: async (req, res) => {
-
-        let date = new Date();
-        let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        let paramGetAccountData = [req.params.department_id]
-
-        if (req.dataToken.role_id = 4) {
-
-            queryGetDepartment = `
                             SELECT 
                             t.*,
                             tm.*,
@@ -628,14 +476,9 @@ module.exports = {
                                 user u
                             ON
                                 tm.user_id = u.user_id
-                                left join
-                                m_department d
-                                on
-                                t.department_id = d.department_id
                             WHERE 
                                 tm.user_id IS NOT NULL 
-                            and
-                            d.department_id = ${paramGetAccountData}
+
             `
 
             dbHots.query(queryGetDepartment, (err, results) => {
@@ -644,14 +487,14 @@ module.exports = {
                         success: false,
                         message: err
                     });
-                    console.log(timestamp, " HOTS admin-get Team ", err);
+                    console.log(timestamp, " HOTS admin-get departmenet ", err);
                 } else {
                     res.status(200).send({
                         success: true,
                         message: "successfuly get department",
                         data: results
                     });
-                    console.log(timestamp, " HOTS admin-get Team ", paramGetAccountData );
+                    console.log(timestamp, " HOTS admin-get departmenet ", err);
                 }
             })
 
@@ -660,10 +503,9 @@ module.exports = {
                 success: false,
                 message: "Unauthorized. ADMIN ONLY"
             });
-            console.log(timestamp, " HOTS admin-get Team UNAUTHORIZED");
+            console.log(timestamp, " HOTS admin-get departmenet UNAUTHORIZED");
         }
     }
-
     , getAllTicket: async (req, res) => {
 
         let date = new Date();
@@ -801,6 +643,149 @@ module.exports = {
 
 
     }
+    , getTeambydepartment: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+        let paramGetAccountData = [req.params.department_id]
+
+        if (req.dataToken.role_id = 4) {
+
+            queryGetDepartment = `
+                            SELECT 
+                            t.*,
+                            tm.*,
+                            u.firstname,
+                            u.lastname 
+                            FROM 
+                                m_team t
+                            LEFT JOIN
+                                m_team_member tm
+                            ON
+                                t.team_id = tm.team_id
+                            LEFT JOIN
+                                user u
+                            ON
+                                tm.user_id = u.user_id
+                                left join
+                                m_department d
+                                on
+                                t.department_id = d.department_id
+                            WHERE 
+                                tm.user_id IS NOT NULL 
+                            and
+                            d.department_id = ${paramGetAccountData}
+            `
+
+            dbHots.query(queryGetDepartment, (err, results) => {
+                if (err) {
+                    res.status(500).send({
+                        success: false,
+                        message: err
+                    });
+                    console.log(timestamp, " HOTS admin-get Team ", err);
+                } else {
+                    res.status(200).send({
+                        success: true,
+                        message: "successfuly get department",
+                        data: results
+                    });
+                    console.log(timestamp, " HOTS admin-get Team ", paramGetAccountData );
+                }
+            })
+
+        } else {
+            res.status(401).send({
+                success: false,
+                message: "Unauthorized. ADMIN ONLY"
+            });
+            console.log(timestamp, " HOTS admin-get Team UNAUTHORIZED");
+        }
+    },
+    getAccountbydepartment: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        //untuk pagination
+        let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
+        let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
+        let desc = req.query.desc ? `order by u.uid ASC ` : `order by u.uid DESC`;
+        let find = req.query.find ? ` AND u.uid LIKE '%${req.query.find}%'   ` : ''
+
+        let paramGetAccountData = [req.params.department_id]
+
+
+        const startIndex = (page - 1) * limit;
+        const endIndex = page * limit;
+
+        if (req.dataToken.role_id = 4) {
+
+            let queryGetAccount = ` 
+            SELECT
+                u.user_id, 
+                u.firstname,
+                u.lastname,
+                u.uid,
+                u.last_pswd_changed,
+                u.active,
+                u.email,
+                u.nik,
+                u.phone,
+                u.grade_id,
+                r.role_name,
+                d.department_name,  
+                u.superior_id 
+            FROM
+                user u
+            LEFT JOIN m_role r ON
+                u.role_id = r.role_id 
+            LEFT JOIN m_department d ON 
+                u.department_id = d.department_id
+            WHERE r.role_id IN (1,2,4) 
+            and
+            d.department_id = ${paramGetAccountData}           
+            `+ desc + find;
+
+            dbHots.execute(queryGetAccount, (err, results) => {
+
+                if (err) {
+
+                    res.status(500).send({ success: false, message: err });
+                    console.log(timestamp + "Error getAccount !", err)
+
+                } else {
+                    if (results[0]) {
+
+                        let packet = results.slice(startIndex, endIndex)
+                        let totalDataLength = results.length
+                        let totalPage = Math.round(results.length / limit)
+
+                        res.status(200).send({ success: true, packet, totalPage, totalDataLength, page });
+                        console.log(timestamp + " getAccount success !")
+
+                    } else {
+
+                        let packet = []
+                        let totalDataLength = 0
+                        let totalPage = 0
+
+                        res.status(200).send({ success: true, packet, totalPage, totalDataLength, page });
+                        console.log(timestamp + " getAccount success no data!")
+                    }
+                }
+
+            })
+
+        } else {
+            res.status(401).send({
+                success: false,
+                message: "UNATHORIZED ADMIN ONLY"
+            })
+        }
+
+
+    },
 
 
 

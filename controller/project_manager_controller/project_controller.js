@@ -152,12 +152,43 @@ module.exports = {
         department_id,
         allow_join,
         created_by,
-        is_cross_departmental
+        is_cross_departmental,
+        selected_teams = []
       } = req.body;
-      console.log(" req.body",req.body )
+
+      console.log(`${yellowTerminal}[PROJECT CREATE] Request body:`, req.body);
+      console.log(`${yellowTerminal}[PROJECT CREATE] User from token:`, req.dataToken);
+
+      // Validate required fields
+      if (!name) {
+        return res.status(400).json({
+          success: false,
+          message: 'Project name is required'
+        });
+      }
+
+      // Get user from token and set default values
+      const userId = req.dataToken.user_id;
+      const userDepartmentId = req.dataToken.department_id;
+
+      // Set default values for undefined parameters
+      const projectData = {
+        name: name,
+        description: description || '',
+        start_date: start_date || null,
+        end_date: end_date || null,
+        status: status || 'planning',
+        priority: priority || 'medium',
+        department_id: department_id || userDepartmentId,
+        allow_join: allow_join !== undefined ? (allow_join ? 1 : 0) : 0,
+        manager_id: created_by || userId,
+        is_cross_departmental: is_cross_departmental !== undefined ? (is_cross_departmental ? 1 : 0) : 0
+      };
+
+      console.log(`${yellowTerminal}[PROJECT CREATE] Processed data:`, projectData);
 
       const query = `
-        INSERT INTO projects (
+        INSERT INTO t_project (
           name,
           description,
           start_date,
@@ -167,36 +198,83 @@ module.exports = {
           department_id,
           allow_join,
           manager_id,
-          is_cross_departmental
-        ) VALUES (?, ?, ?, ?, ?, ?,  ?, ?, ?, ?)
+          is_cross_departmental,
+          created_date,
+          updated_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
       `;
 
-      const result = await dbPMS.promise().execute(query, [
-        name,
-        description,
-        start_date,
-        end_date,
-        status,
-        priority,
-        department_id,
-        allow_join,
-        created_by,
-        is_cross_departmental
+      const [result] = await dbPMS.promise().execute(query, [
+        projectData.name,
+        projectData.description,
+        projectData.start_date,
+        projectData.end_date,
+        projectData.status,
+        projectData.priority,
+        projectData.department_id,
+        projectData.allow_join,
+        projectData.manager_id,
+        projectData.is_cross_departmental
       ]);
+
+      console.log(`${yellowTerminal}[PROJECT CREATE] Insert result:`, result);
+
       const project_id = result.insertId;
+      console.log(`${yellowTerminal}[PROJECT CREATE] Created project ID:`, project_id);
 
       // Add the project creator as a member
-      const userId = req.user.user_id;
-      const addMemberQuery = 'INSERT INTO project_members (project_id, user_id, role) VALUES (?, ?, ?)';
+      const addMemberQuery = 'INSERT INTO t_project_members (project_id, user_id, role, joined_date) VALUES (?, ?, ?, NOW())';
       await dbPMS.promise().execute(addMemberQuery, [project_id, userId, 'owner']);
+      
+      console.log(`${yellowTerminal}[PROJECT CREATE] Added creator as member:`, userId);
+
+      // Assign teams to project if selected
+      if (selected_teams && selected_teams.length > 0) {
+        console.log(`${yellowTerminal}[PROJECT CREATE] Assigning teams:`, selected_teams);
+        
+        const teamAssignQuery = 'INSERT INTO t_project_team_assignments (project_id, team_id, assigned_date) VALUES (?, ?, NOW())';
+        for (const teamId of selected_teams) {
+          try {
+            await dbPMS.promise().execute(teamAssignQuery, [project_id, teamId]);
+            console.log(`${yellowTerminal}[PROJECT CREATE] Assigned team ${teamId} to project`);
+            
+            // Add team members to project
+            const teamMembersQuery = `
+              SELECT tm.user_id 
+              FROM t_team_members tm 
+              WHERE tm.team_id = ? AND tm.user_id != ?
+            `;
+            const [teamMembers] = await dbPMS.promise().execute(teamMembersQuery, [teamId, userId]);
+            
+            for (const member of teamMembers) {
+              const memberInsertQuery = 'INSERT IGNORE INTO t_project_members (project_id, user_id, role, joined_date) VALUES (?, ?, ?, NOW())';
+              await dbPMS.promise().execute(memberInsertQuery, [project_id, member.user_id, 'member']);
+              console.log(`${yellowTerminal}[PROJECT CREATE] Added team member ${member.user_id} to project`);
+            }
+          } catch (teamError) {
+            console.error(`${yellowTerminal}[PROJECT CREATE] Error assigning team ${teamId}:`, teamError);
+          }
+        }
+      }
 
       res.status(201).json({
         success: true,
-        data: { project_id, ...req.body },
+        data: { 
+          project_id, 
+          ...projectData,
+          selected_teams 
+        },
+        packet: { 
+          project_id, 
+          ...projectData,
+          selected_teams 
+        },
         message: 'Project created successfully'
       });
+      
+      console.log(`${yellowTerminal}[PROJECT CREATE] Success response sent`);
     } catch (error) {
-      console.error('Error creating project:', error);
+      console.error(`${yellowTerminal}[PROJECT CREATE] Error:`, error);
       res.status(500).json({
         success: false,
         message: 'Failed to create project',

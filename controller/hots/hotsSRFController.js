@@ -71,7 +71,7 @@ module.exports = {
                             `
 
 
-            dbConf.execute(query, (err, results) => {
+            dbConf.execute(query,  (err, results) => {
 
                 if (err) {
 
@@ -155,9 +155,5 @@ module.exports = {
 
 
     },
-
-
-
-
 
 }
