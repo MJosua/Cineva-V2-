@@ -549,7 +549,7 @@ module.exports = {
 
 
         // Define the default directory
-        let defaultDir = './public/files/pricing_structure/';
+        let defaultDir = './public/files/hots/';
 
         // Multer storage configuration
         const storageUploader = multer.diskStorage({
@@ -561,7 +561,7 @@ module.exports = {
                 console.log(timestamp, "UPLOADER fileIsExist:", fileIsExist);
 
                 // Define the path where the files will be stored
-                const pathDir = defaultDir;
+                const pathDir = directory ? defaultDir + directory : defaultDir;
 
                 // Check if the directory exists, if not create it
                 if (fs.existsSync(pathDir)) {
@@ -589,11 +589,6 @@ module.exports = {
                     }
                     return decode;
                 });
-                let time = new Date();
-
-                // Format the current year using the 'sv-SE' locale
-                let timestamp = time.toLocaleDateString('sv-SE') + '-' + Date.now()
-
 
                 // console.log(timestamp, " UPLOADER userData:", userData);
 
@@ -601,10 +596,12 @@ module.exports = {
                 let ext = file.originalname.split('.');
 
                 // Generate a timestamp for the file name
+                let time = new Date();
+                let timestamp = time.toLocaleDateString('sv-SE') + '-' + Date.now();
 
                 // Generate the new filename with the user ID and timestamp
                 let user_id = `${userData.user_id}-`;
-                let newName = `ps-${timestamp}.${ext[ext.length - 1]}`;
+                let newName = user_id + timestamp + '.' + ext[ext.length - 1];
 
                 cb(null, newName);  // Pass the new filename to multer
 
