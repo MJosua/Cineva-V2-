@@ -555,6 +555,7 @@ module.exports = {
             *
         FROM 
             m_sample_category
+        
         `;
 
         dbHots.execute(queryGetData, (err1, results1) => {
@@ -585,7 +586,7 @@ module.exports = {
         let user_id = req.dataToken.user_id
 
         const queryGetData = `
-        SELECT mc.company_id company_id, upper(mc.company_name) company_name FROM iod.map_resp_for_dist md LEFT JOIN iod.mst_team mt ON md.team_id = mt.team_id AND md.company_id = mt.company_id  
+        SELECT distinct mc.company_id company_id, upper(mc.company_name) company_name FROM iod.map_resp_for_dist md LEFT JOIN iod.mst_team mt ON md.team_id = mt.team_id AND md.company_id = mt.company_id  
         LEFT JOIN iod.mst_team_member mtm ON mtm.team_id = mt.team_id AND mtm.company_id = mt.company_id LEFT JOIN iod.mst_employee me ON mtm.employee_id = me.employee_id
         LEFT JOIN user u ON me.employee_id = u.employee_id 
         LEFT JOIN iod.mst_company mc ON md.distributor_id = mc.company_id 
@@ -2430,14 +2431,15 @@ module.exports = {
         const timestamp = yellowTerminal + currentDate.toLocaleDateString('id') + ' ' + currentDate.toLocaleTimeString('id') + ' : ';
         const user_id = req.dataToken.user_id;
         let { date, room } = req.query;
-    
+
         if (!date) {
+            comsole.log("jalan tp ga ada date");
+
             return res.status(400).json({
                 success: false,
                 message: "Tanggal (date) harus disediakan dalam format YYYY-MM-DD"
             });
         }
-    
         try {
             const query = `
                 SELECT
@@ -2459,14 +2461,14 @@ module.exports = {
                     ${room ? "AND MAX(CASE WHEN d.lbl_col = 'Meeting Room' THEN d.cstm_col END) = ?" : ""}
                 ORDER BY t.ticket_id DESC
             `;
-    
+
             const params = [date];
             if (room) params.push(room);
-    
+
             const [roomResult] = await dbHots.promise().query(query, params);
-    
+
             console.log(`Room Widget API accessed by ${user_id} at ${timestamp}`);
-    
+
             res.status(200).json({
                 success: true,
                 data: roomResult,

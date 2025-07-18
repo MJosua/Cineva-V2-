@@ -115,4 +115,14 @@ route.get('/get_ps_ticket_row', decodeTokenHT, hotsSettingsController.getpricing
 route.post('/insertupdate/service_catalog', decodeTokenHT, hotsSettingsController.insertupdateServiceCatalog)
 route.delete("/delete/service/:service_id", decodeTokenHT, hotsSettingsController.deleteServiceCatalog)
 
+//meetingroom
+route.get('/get/meetingroom', decodeTokenHT, hotsSettingsController.getmeetingroom)
+route.get('/get/meetingroom_static', decodeTokenHT, hotsSettingsController.getmeetingroom_static)
+
+
+
 module.exports = route
+
+
+
+

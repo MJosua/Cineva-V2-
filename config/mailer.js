@@ -587,7 +587,7 @@ module.exports = {
                 html: `<div>
                 <h3> To reset password,copy to your browser in incognito page or you can click this link </h3>
                 <br> </br>
-                <a href='${process.env.FE_URL}e-order/forgot-password/${token}'> 
+                <a href='${process.env.FE_URL}/e-order/forgot-password/${token}'> 
                 ${process.env.FE_URL}e-order/forgot-password/${token} 
                 </a>
                 <br> </br>
