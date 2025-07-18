@@ -2022,7 +2022,7 @@ module.exports = {
 
         try {
             if (req.dataToken.company_id) {
-                let query = `SELECT po_buyer FROM m_order WHERE company_id = ${req.dataToken.company_id} AND status IN (0, 1, 2, 3, 66); `;
+                let query = `SELECT po_buyer FROM m_order WHERE company_id = ${req.dataToken.company_id} AND status IN (0, 1, 2, 3); ;`;
 
                 dbConf.query(query, (err, results) => {
 
