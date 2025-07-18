@@ -41,7 +41,7 @@ module.exports = {
           SELECT 
             task_id,
             COUNT(*) as total_steps,
-            SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed_steps
+            SUM(CASE WHEN is_completed = 1 THEN 1 ELSE 0 END) as completed_steps
           FROM PM.t_task_steps 
           GROUP BY task_id
         ) step_stats ON t.task_id = step_stats.task_id
@@ -135,7 +135,7 @@ module.exports = {
           SELECT 
             task_id,
             COUNT(*) as total_steps,
-            SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed_steps
+            SUM(CASE WHEN is_completed = 1 THEN 1 ELSE 0 END) as completed_steps
           FROM PM.t_task_steps 
           GROUP BY task_id
         ) step_stats ON t.task_id = step_stats.task_id
@@ -181,6 +181,7 @@ module.exports = {
   getTaskById: async (req, res) => {
     try {
       const { id } = req.params;
+      console.log('getTaskById called for task ID:', id);
 
       // 1. Get main task data with relations
       const [taskResult] = await dbPMS.promise().execute(`
@@ -205,7 +206,7 @@ module.exports = {
           SELECT 
             task_id,
             COUNT(*) as total_steps,
-            SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed_steps
+            SUM(CASE WHEN is_completed = 1 THEN 1 ELSE 0 END) as completed_steps
           FROM PM.t_task_steps 
           GROUP BY task_id
         ) step_stats ON t.task_id = step_stats.task_id
@@ -213,109 +214,96 @@ module.exports = {
       `, [id]);
 
       if (taskResult.length === 0) {
-        return res.status(404).json({ success: false, error: 'Task not found' });
+        console.log('Task not found for ID:', id);
+        return res.status(404).json({ 
+          success: false, 
+          error: 'Task not found',
+          data: null,
+          packet: null
+        });
       }
 
       const task = taskResult[0];
+      console.log('Found task:', { task_id: task.task_id, name: task.name, status: task.status });
 
-      // 2. Get task steps with reports
+      // 2. Get task steps with proper column mapping
       const [stepsResult] = await dbPMS.promise().execute(`
         SELECT 
-          ts.*,
-          CONCAT(u_assigned.firstname, ' ', u_assigned.lastname) AS assigned_to_name,
-          CONCAT(u_created.firstname, ' ', u_created.lastname) AS created_by_name,
-          CONCAT(u_completed.firstname, ' ', u_completed.lastname) AS completed_by_name,
-          tsr.report_id,
-          tsr.report_sections,
-          tsr.custom_attributes as report_custom_attributes,
-          tsr.submitted_date as report_submitted_date,
-          tsr.is_approved as report_is_approved,
-          tsr.approved_by as report_approved_by,
-          tsr.approved_date as report_approved_date
+          ts.step_id,
+          ts.task_id,
+          ts.name,
+          ts.description,
+          ts.step_order,
+          ts.status,
+          ts.priority,
+          ts.estimated_hours,
+          ts.actual_hours,
+          ts.start_datetime,
+          ts.end_datetime,
+          ts.is_completed,
+          ts.completion_date,
+          ts.approval_status,
+          ts.approved_by,
+          ts.approved_date,
+          ts.rejection_reason,
+          ts.created_by,
+          ts.created_date,
+          ts.updated_date,
+          CONCAT(u_approved.firstname, ' ', u_approved.lastname) AS approved_by_name,
+          CONCAT(u_created.firstname, ' ', u_created.lastname) AS created_by_name
         FROM PM.t_task_steps ts
-        LEFT JOIN hots.user u_assigned ON ts.assigned_to = u_assigned.user_id
+        LEFT JOIN hots.user u_approved ON ts.approved_by = u_approved.user_id
         LEFT JOIN hots.user u_created ON ts.created_by = u_created.user_id
-        LEFT JOIN hots.user u_completed ON ts.completed_by = u_completed.user_id
-        LEFT JOIN PM.t_task_step_reports tsr ON ts.step_id = tsr.task_step_id
         WHERE ts.task_id = ?
         ORDER BY ts.step_order ASC, ts.created_date ASC
       `, [id]);
 
-      // 3. Get team assignments
-      const [teamsResult] = await dbPMS.promise().execute(`
+      // 3. Get task step journals if they exist
+      const [journalsResult] = await dbPMS.promise().execute(`
         SELECT 
-          tt.task_id,
-          tt.team_id,
-          mt.team_name,
-          tt.assigned_date,
-          tt.assigned_by,
-          CONCAT(u_assigned_by.firstname, ' ', u_assigned_by.lastname) AS assigned_by_name
-        FROM PM.t_task_teams tt
-        LEFT JOIN hots.m_team mt ON tt.team_id = mt.team_id
-        LEFT JOIN hots.user u_assigned_by ON tt.assigned_by = u_assigned_by.user_id
-        WHERE tt.task_id = ?
-      `, [id]);
+          j.journal_id,
+          j.step_id,
+          j.user_id,
+          CONCAT(u.firstname, ' ', u.lastname) AS user_name,
+          j.content,
+          j.image_urls,
+          j.created_date,
+          j.updated_date
+        FROM PM.t_task_step_journals j
+        LEFT JOIN hots.user u ON j.user_id = u.user_id
+        WHERE j.step_id IN (
+          SELECT step_id FROM PM.t_task_steps WHERE task_id = ?
+        )
+        ORDER BY j.created_date ASC
+      `, [id]).catch(() => [[]]);
 
-      // 4. Get custom attributes for the task
-      const [customAttributesResult] = await dbPMS.promise().execute(`
-        SELECT 
-          ca.attribute_id,
-          ca.name,
-          ca.type,
-          ca.options,
-          ca.is_required,
-          tca.value
-        FROM PM.m_custom_attributes ca
-        LEFT JOIN PM.m_task_custom_attributes tca ON ca.attribute_id = tca.attribute_id AND tca.task_id = ?
-        WHERE ca.applies_to IN ('task', 'both')
-        ORDER BY ca.name ASC
-      `, [id]);
-
-      // 5. Get attachments/images
-      const [attachmentsResult] = await dbPMS.promise().execute(`
-        SELECT 
-          a.attachment_id,
-          a.entity_type,
-          a.entity_id,
-          a.file_path,
-          a.file_name,
-          a.file_type,
-          a.file_size,
-          a.uploaded_by,
-          CONCAT(u_uploaded.firstname, ' ', u_uploaded.lastname) AS uploaded_by_name,
-          a.upload_date
-        FROM PM.t_attachments a
-        LEFT JOIN hots.user u_uploaded ON a.uploaded_by = u_uploaded.user_id
-        WHERE (a.entity_type = 'task' AND a.entity_id = ?)
-           OR (a.entity_type = 'task_step' AND a.entity_id IN (
-             SELECT step_id FROM PM.t_task_steps WHERE task_id = ?
-           ))
-        ORDER BY a.upload_date DESC
-      `, [id, id]);
-
-      // Process and structure the response
-      const responseData = {
-        task: task,
-        steps: stepsResult.map(step => ({
+      // Process task steps with journals
+      const taskSteps = stepsResult.map(step => {
+        const stepJournals = journalsResult.filter(journal => journal.step_id === step.step_id);
+        return {
           ...step,
-          report: step.report_id ? {
-            report_id: step.report_id,
-            report_sections: step.report_sections ? JSON.parse(step.report_sections) : null,
-            custom_attributes: step.report_custom_attributes ? JSON.parse(step.report_custom_attributes) : null,
-            submitted_date: step.report_submitted_date,
-            is_approved: step.report_is_approved,
-            approved_by: step.report_approved_by,
-            approved_date: step.report_approved_date
-          } : null
-        })),
-        teams: teamsResult,
-        customAttributes: customAttributesResult.map(attr => ({
-          ...attr,
-          options: attr.options ? JSON.parse(attr.options) : null,
-          value: attr.value ? JSON.parse(attr.value) : null
-        })),
-        attachments: attachmentsResult
+          journals: stepJournals.map(journal => ({
+            ...journal,
+            image_urls: journal.image_urls ? JSON.parse(journal.image_urls) : []
+          }))
+        };
+      });
+
+      // 4. Prepare final response - return task data directly (not nested)
+      const responseData = {
+        ...task,
+        task_steps: taskSteps,
+        // Ensure required fields have default values
+        status: task.status || 'todo',
+        priority: task.priority || 'medium',
+        custom_labels: [] // Add empty array for custom labels if not present
       };
+
+      console.log('Returning task data:', { 
+        task_id: responseData.task_id, 
+        status: responseData.status, 
+        steps_count: taskSteps.length 
+      });
 
       res.status(200).json({
         success: true,
@@ -325,7 +313,13 @@ module.exports = {
 
     } catch (error) {
       console.error('Error fetching task detail:', error);
-      res.status(500).json({ success: false, error: 'Failed to fetch task detail' });
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch task detail',
+        data: null,
+        packet: null,
+        message: error.message
+      });
     }
   },
 

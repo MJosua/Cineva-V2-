@@ -8,6 +8,10 @@ const task_steps_controller = require('../../controller/project_manager_controll
 route.get('/task/:taskId/steps', decodeTokenHT, task_steps_controller.getTaskSteps);
 route.post('/task/:taskId/steps', decodeTokenHT, task_steps_controller.createTaskStep);
 route.put('/steps/:stepId', decodeTokenHT, task_steps_controller.updateTaskStep);
+// Task Step Reports
+route.post('/steps/:stepId/reports', decodeTokenHT, task_steps_controller.createTaskStepReport);
+route.get('/steps/:stepId/reports', decodeTokenHT, task_steps_controller.getTaskStepReports);
+route.put('/reports/:reportId', decodeTokenHT, task_steps_controller.updateTaskStepReport);
 route.patch('/steps/:stepId/order', decodeTokenHT, task_steps_controller.updateTaskStepOrder);
 route.patch('/steps/:stepId/complete', decodeTokenHT, task_steps_controller.completeTaskStep);
 route.patch('/steps/:stepId/approval', decodeTokenHT, task_steps_controller.processTaskStepApproval);

@@ -147,21 +147,34 @@ module.exports = {
       const data = req.body;
       const userId = req.dataToken.user_id;
 
-      await dbPMS.promise().execute(`
-        UPDATE PM.t_task_steps 
-        SET name = ?, description = ?, status = ?, priority = ?, estimated_hours = ?, 
-            start_datetime = ?, end_datetime = ?, updated_date = NOW()
-        WHERE step_id = ?
-      `, [
-        data.name,
-        data.description,
-        data.status,
-        data.priority,
-        data.estimated_hours,
-        data.start_datetime,
-        data.end_datetime,
-        stepId
-      ]);
+      // Build dynamic SQL query based on provided fields
+      const allowedFields = ['name', 'description', 'status', 'priority', 'estimated_hours', 'start_datetime', 'end_datetime'];
+      const updateFields = [];
+      const updateValues = [];
+
+      // Only include fields that are provided in the request
+      allowedFields.forEach(field => {
+        if (data.hasOwnProperty(field)) {
+          updateFields.push(`${field} = ?`);
+          updateValues.push(data[field] === undefined ? null : data[field]);
+        }
+      });
+
+      // Always update the updated_date
+      updateFields.push('updated_date = NOW()');
+
+      if (updateFields.length === 1) { // Only updated_date
+        return res.status(400).json({ 
+          success: false, 
+          error: 'No valid fields provided for update' 
+        });
+      }
+
+      // Execute the dynamic update query
+      const sql = `UPDATE PM.t_task_steps SET ${updateFields.join(', ')} WHERE step_id = ?`;
+      updateValues.push(stepId);
+
+      await dbPMS.promise().execute(sql, updateValues);
 
       // Update custom attributes if provided
       if (data.custom_attributes && typeof data.custom_attributes === 'object') {
@@ -187,6 +200,131 @@ module.exports = {
     } catch (error) {
       console.error('Error updating task step:', error);
       res.status(500).json({ success: false, error: 'Failed to update task step' });
+    }
+  },
+
+  // New dedicated journal update endpoint
+  // Create task step report
+  createTaskStepReport: async (req, res) => {
+    try {
+      const { stepId } = req.params;
+      const { title, content, images, tags } = req.body;
+      const userId = req.dataToken.user_id;
+
+      const reportData = JSON.stringify({
+        title: title || '',
+        content: content || '',
+        images: images || [],
+        tags: tags || []
+      });
+
+      const sql = `
+        INSERT INTO PM.t_task_step_reports 
+        (task_step_id, report_data, submitted_by, submitted_date, is_approved) 
+        VALUES (?, ?, ?, NOW(), false)
+      `;
+
+      const [result] = await dbPMS.promise().execute(sql, [stepId, reportData, userId]);
+
+      // Get the created report with user details
+      const getReportSql = `
+        SELECT 
+          r.*,
+          CONCAT(u.firstname, ' ', u.lastname) as submitted_by_name
+        FROM PM.t_task_step_reports r
+        LEFT JOIN hots.user u ON r.submitted_by = u.user_id
+        WHERE r.report_id = ?
+      `;
+      
+      const [reportRows] = await dbPMS.promise().execute(getReportSql, [result.insertId]);
+      const report = reportRows[0];
+      
+      if (report && report.report_data) {
+        report.report_data = JSON.parse(report.report_data);
+      }
+
+      res.status(201).json({
+        success: true,
+        message: 'Report created successfully',
+        data: report
+      });
+    } catch (error) {
+      console.error('Error creating task step report:', error);
+      res.status(500).json({ success: false, error: 'Failed to create report' });
+    }
+  },
+
+  // Get task step reports
+  getTaskStepReports: async (req, res) => {
+    try {
+      const { stepId } = req.params;
+
+      const sql = `
+        SELECT 
+          r.*,
+          CONCAT(u_submitted.firstname, ' ', u_submitted.lastname) as submitted_by_name,
+          CONCAT(u_approved.firstname, ' ', u_approved.lastname) as approved_by_name
+        FROM PM.t_task_step_reports r
+        LEFT JOIN hots.user u_submitted ON r.submitted_by = u_submitted.user_id
+        LEFT JOIN hots.user u_approved ON r.approved_by = u_approved.user_id
+        WHERE r.task_step_id = ?
+        ORDER BY r.submitted_date DESC
+      `;
+
+      const [rows] = await dbPMS.promise().execute(sql, [stepId]);
+      
+      // Parse JSON report_data for each report
+      const reports = rows.map(report => ({
+        ...report,
+        report_data: report.report_data ? JSON.parse(report.report_data) : {}
+      }));
+
+      res.status(200).json({
+        success: true,
+        data: reports
+      });
+    } catch (error) {
+      console.error('Error fetching task step reports:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch reports' });
+    }
+  },
+
+  // Update task step report
+  updateTaskStepReport: async (req, res) => {
+    try {
+      const { reportId } = req.params;
+      const { title, content, images, tags } = req.body;
+      const userId = req.dataToken.user_id;
+
+      // Check if user owns the report or has permission
+      const checkSql = 'SELECT submitted_by FROM PM.t_task_step_reports WHERE report_id = ?';
+      const [checkRows] = await dbPMS.promise().execute(checkSql, [reportId]);
+      
+      if (checkRows.length === 0) {
+        return res.status(404).json({ success: false, error: 'Report not found' });
+      }
+
+      if (checkRows[0].submitted_by !== userId) {
+        return res.status(403).json({ success: false, error: 'Permission denied' });
+      }
+
+      const reportData = JSON.stringify({
+        title: title || '',
+        content: content || '',
+        images: images || [],
+        tags: tags || []
+      });
+
+      const sql = 'UPDATE PM.t_task_step_reports SET report_data = ? WHERE report_id = ?';
+      await dbPMS.promise().execute(sql, [reportData, reportId]);
+
+      res.status(200).json({
+        success: true,
+        message: 'Report updated successfully'
+      });
+    } catch (error) {
+      console.error('Error updating task step report:', error);
+      res.status(500).json({ success: false, error: 'Failed to update report' });
     }
   },
 

@@ -35,6 +35,8 @@ const projectmngr_kanban = require('./project_manager_controller/kanban_controll
 const projectmngr_approval = require('./project_manager_controller/approval_controller')
 const projectmngr_department = require('./project_manager_controller/department_controller')
 const projectmngr_team = require('./project_manager_controller/team_controller')
+const projectmngr_dashboard = require('./project_manager_controller/dashboard_controller')
+
 
 module.exports = {
     authController,
@@ -70,5 +72,5 @@ module.exports = {
     projectmngr_approval,
     projectmngr_department,
     projectmngr_team,
-
+    projectmngr_dashboard
 };

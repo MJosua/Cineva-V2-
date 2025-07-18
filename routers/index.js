@@ -47,6 +47,7 @@ const approvalmngr = require('./project_manager/approval_routes')
 const departmentmngr = require('./project_manager/department_routes')
 const teammngr = require('./project_manager/team_routes')
 const taskstepsmngr = require('./project_manager/task_steps_routes')
+const pmdashboard = require('./project_manager/dashboard_routes')
 
 module.exports = {
     authRouter,
@@ -79,5 +80,6 @@ module.exports = {
     approvalmngr,
     departmentmngr,
     teammngr,
-    taskstepsmngr
+    taskstepsmngr,
+    pmdashboard
 } 
