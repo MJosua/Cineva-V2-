@@ -2968,7 +2968,7 @@ module.exports = {
                             } else {
                                 console.log(timestamp, `getTicketComment success with empty list for ID ${ticket_id}`);
 
-                                return res.status(405).send({
+                                return res.status(200).send({
                                     success: false,
                                     message: "No data found",
                                     totalData: 0
@@ -4256,7 +4256,8 @@ module.exports = {
                                     'approver_id', ae.approver_id,
                                     'approver_name', CONCAT(u.firstname, ' ', u.lastname),
                                     'approval_order', ae.approval_order,
-                                    'approval_status', ae.approval_status
+                                    'approval_status', ae.approval_status,
+                                    'approver_leader', ae.approver_leader
                                 )
                             )
                             FROM t_approval_event ae
@@ -4469,7 +4470,8 @@ module.exports = {
                             'approver_name', CONCAT(u2.firstname, ' ', u2.lastname),
                             'approval_order', ae.approval_order,
                             'approval_status', ae.approval_status,
-                            'approval_date', ae.approve_date
+                            'approval_date', ae.approve_date,
+                            'approver_leader', ae.approver_leader
                         )
                     )
                     FROM t_approval_event ae

@@ -516,10 +516,10 @@ module.exports = {
 
         // cari username dulu
         const queryGetData = `
-        SELECT 
-            *
-        FROM 
-            m_plant
+       SELECT *
+            FROM m_plant
+            WHERE category != 'NICI/FS';
+
         `;
 
         dbHots.execute(queryGetData, (err1, results1) => {

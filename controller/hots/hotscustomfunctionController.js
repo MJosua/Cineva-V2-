@@ -916,26 +916,46 @@ module.exports = {
       
             <div class="section-title">SAMPLE REQUEST FORM</div>
       
-            <table class="no-border">
-              <tr>
-                <td valign="top">To</td><td>: ${factoryPIC[0].pic_name}</td>
-                <td valign="top">Name/Title</td><td>: ${getByLabel('name')}</td>
-              </tr>
-              <tr>
-                <td valign="top">Cc</td>
-                    <td valign="top">:
-                
-                        ${factoryPIC.slice(1).filter(Boolean).map(p => p.pic_name).join(',')}
-                   
-                    </td>
-                <td valign="top">Purposes</td><td valign="top">: ${getByLabel('purpose')}</td>
-              </tr>
-              <tr>
-                <td valign="top">Deliver to</td><td valign="top">: ${getByLabel('deliver')}</td>
-                <td valign="top"> Sample Category </td><td valign="top">: ${getByLabel('sample')} </td>
-                
-              </tr>
-            </table>
+           <style>
+                .no-border {
+                    width: 100%;
+                    table-layout: fixed;
+                    border-collapse: collapse;
+                }
+                .no-border td {
+                    vertical-align: top;
+                    padding: 4px;
+                }
+                .label {
+                    width: 12%;
+                    font-weight: bold;
+                }
+                .content {
+                    width: 38%;
+                }
+                </style>
+
+                <table class="no-border">
+                <tr>
+                    <td class="label">To</td>
+                    <td class="content">: ${factoryPIC[0].pic_name}</td>
+                    <td class="label">Name/Title</td>
+                    <td class="content">: ${getByLabel('name')}</td>
+                </tr>
+                <tr>
+                    <td class="label">Cc</td>
+                    <td class="content">: ${factoryPIC.slice(1).filter(Boolean).map(p => p.pic_name).join(',')}</td>
+                    <td class="label">Purposes</td>
+                    <td class="content">: ${getByLabel('purpose')}</td>
+                </tr>
+                <tr>
+                    <td class="label">Deliver to</td>
+                    <td class="content">: ${getByLabel('deliver')}</td>
+                    <td class="label">Category</td>
+                    <td class="content">: ${getByLabel('sample')}</td>
+                </tr>
+                </table>
+
       
             <table>
               <thead>

@@ -51,13 +51,13 @@ const transporter = nodemailer.createTransport({
     port: mailPORT,
     secure: mailPORT === 465,
     auth: {
-      user: mailUser,
-      pass: mailPassword,
+        user: mailUser,
+        pass: mailPassword,
     },
     tls: {
-      rejectUnauthorized: false,
+        rejectUnauthorized: false,
     },
-  });
+});
 
 //
 const gmailTransporter = nodemailer.createTransport({
@@ -73,7 +73,23 @@ const gmailTransporter = nodemailer.createTransport({
 module.exports = {
 
 
-
+    insertMailerLog : async ({ subject, body, to, cc }) => {
+        try {
+            await dbQuery(`
+                INSERT INTO t_mailer_eo (subject, body, \`to\`, cc, created_date, sent_date)
+                VALUES (
+                    ${dbConf.escape(subject)},
+                    ${dbConf.escape(body)},
+                    ${dbConf.escape(to)},
+                    ${dbConf.escape(cc)},
+                    NOW(),
+                    NOW()
+                )
+            `);
+        } catch (logErr) {
+            console.log(`${timestamp} FAILED TO LOG EMAIL TO DB: ${logErr}`);
+        }
+    },
 
     orderRecievedMailSender: async (user_id, employee_id, order_id_awal, company_id) => {
 
@@ -350,13 +366,8 @@ module.exports = {
             if (!dist_mail) {
                 console.log(`${timestamp} ERROR Cannot send EMAIL to DISTRIBUTOR because its not exist`)
             } else {
-                try {
-                    await transporter.sendMail({
-                        from: 'no-reply@indofoodinternational.com',
-                        to: distSender,
-                        cc: finalMergedEmailList,
-                        subject: `[E-Order] Order Submission ${po_buyer} is Successful!`,
-                        html: ` <div>
+
+let disthtml = ` <div>
                     <p>
                         Dear ${company_name},
                         <br>
@@ -452,10 +463,24 @@ module.exports = {
                         <br>
                     </p>
                 </div>
-                    `,
+                    `
+
+                try {
+                    await transporter.sendMail({
+                        from: 'no-reply@indofoodinternational.com',
+                        to: distSender,
+                        cc: finalMergedEmailList,
+                        subject: `[E-Order] Order Submission ${po_buyer} is Successful!`,
+                        html: disthtml,
                     });
                     console.log(timestamp + 'Email Sent to distributor: ' + dist_mail)
-
+                    await this.insertMailerLog({
+                        subject: `[E-Order] Distributor Order Submission ${po_buyer} is Successful!`,
+                        body: disthtml,
+                        order_id : order_id,
+                        to: distSender,
+                        cc: finalMergedEmailList
+                    });
                 } catch (error) {
                     console.log(timestamp + "MAILER ERROR, Message: " + error)
                 }
@@ -466,15 +491,7 @@ module.exports = {
                 console.log(`${timestamp} ERROR Cannot send EMAIL to ANALIS because its not exist`)
             } else {
 
-                try {
-                    await transporter.sendMail({
-                        from: 'no-reply@indofoodinternational.com',
-                        to: emailAnalisList,
-                        cc: ['rangga.primanto@icbp.indofood.co.id', 'anisa.novitasari@icbp.indofood.co.id', 'tripomo@icbp.indofood.co.id'],
-                        bcc: ['etria.purba@icbp.indofood.co.id', 'yosua.gultom@icbp.indofood.co.id', 'muhammad.asmarakusuma@icbp.indofood.co.id'],
-
-                        subject: `[E-Order] Order Submission ${po_buyer} - ${company_name} is Successful!`,
-                        html: ` <div>
+                let analysthtml = ` <div>
                        <p>
                            Dear Analyst,
                            <br>
@@ -562,10 +579,27 @@ module.exports = {
                         <br>
                     </p>
                    </div>
-                       `,
+                       `
+
+                try {
+                    await transporter.sendMail({
+                        from: 'no-reply@indofoodinternational.com',
+                        to: emailAnalisList,
+                        cc: ['rangga.primanto@icbp.indofood.co.id', 'anisa.novitasari@icbp.indofood.co.id', 'tripomo@icbp.indofood.co.id'],
+                        bcc: ['etria.purba@icbp.indofood.co.id', 'yosua.gultom@icbp.indofood.co.id', 'muhammad.asmarakusuma@icbp.indofood.co.id'],
+
+                        subject: `[E-Order] Order Submission ${po_buyer} - ${company_name} is Successful!`,
+                        html: analysthtml
+                        ,
                     });
                     console.log(timestamp + 'Email Sent to analis :' + emailAnalisList)
-
+                    await this.insertMailerLog({
+                        subject: `[E-Order] Analyst Order Submission ${po_buyer} is Successful!`,
+                        body: analysthtml,
+                        order_id : order_id,
+                        to: emailAnalisList,
+                        cc: finalMergedEmailList
+                    });
                 } catch (error) {
                     console.log(timestamp + "MAILER ERROR, Message: " + error)
                 }

@@ -324,6 +324,7 @@ module.exports = {
           mut.user_type,
           CAST(COALESCE(flav.value, 2) AS UNSIGNED) max_sku,
           CAST(COALESCE(pal.value, 0) AS UNSIGNED) pallet,
+          CAST(COALESCE(maxtrck.value, 0) AS UNSIGNED) max_truck,
           CAST(COALESCE(tr.value, 1) AS UNSIGNED) transport,
           COALESCE(p.firstname, '') firstname,
           COALESCE(p.midname, '') midname,
@@ -342,6 +343,8 @@ module.exports = {
         LEFT JOIN m_config_new pal ON
           su.company_id = pal.company_id
           AND pal.conditions = 2
+        LEFT JOIN m_config_new maxtrck ON
+        su.company_id = maxtrck.company_id
         LEFT JOIN m_config_new top ON
           su.company_id = top.company_id
           AND top.conditions = 3
@@ -494,7 +497,9 @@ module.exports = {
       LEFT JOIN sys_user su ON
         su.employee_id = me.employee_id
       WHERE
-        su.uid =  ${dbConf.escape(req.body.uid)};`))[0];
+        su.uid =  ${dbConf.escape(req.body.uid)}
+        AND su.type_id IN (3, 9);
+        ;`))[0];
 
       //buat token
       let token = createToken({ ...getUid }, '5m')

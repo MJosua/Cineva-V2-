@@ -717,7 +717,13 @@ module.exports = {
         let offset = (page - 1) * limit; // Correct offset calculation
         let desc = req.query.desc === "1" ? `DESC ` : `ASC`;
 
-        let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
+        let status = '';
+        if (req.query.status) {
+            const statusList = req.query.status.split(',').map(s => parseInt(s.trim())).filter(s => !isNaN(s));
+            if (statusList.length > 0) {
+                status = ` AND mo.status IN (${statusList.join(',')})`;
+            }
+        }
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : ' 1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : ' 99';
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
@@ -1011,8 +1017,13 @@ module.exports = {
         let offset = (page - 1) * limit; // Correct offset calculation
         let desc = req.query.desc === "1" ? `DESC ` : `ASC`;
 
-
-        let status = parseInt(req.query.status) ? ` AND mo.status = ${parseInt(req.query.status)}` : ``;
+        let status = '';
+        if (req.query.status) {
+            const statusList = req.query.status.split(',').map(s => parseInt(s.trim())).filter(s => !isNaN(s));
+            if (statusList.length > 0) {
+                status = ` AND mo.status IN (${statusList.join(',')})`;
+            }
+        }
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : '1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : '99';
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
