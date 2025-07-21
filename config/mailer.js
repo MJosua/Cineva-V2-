@@ -73,21 +73,34 @@ const gmailTransporter = nodemailer.createTransport({
 module.exports = {
 
 
-    insertMailerLog : async ({ subject, body, to, cc }) => {
+    insertMailerLog: async ({ subject, order_id, body, to, cc }) => {
         try {
-            await dbQuery(`
-                INSERT INTO t_mailer_eo (subject, body, \`to\`, cc, created_date, sent_date)
+            const result = await dbQuery(`
+                INSERT INTO t_mailer_eo (subject, body, order_id, \`to\`, cc)
                 VALUES (
                     ${dbConf.escape(subject)},
                     ${dbConf.escape(body)},
+                    ${dbConf.escape(order_id)},
                     ${dbConf.escape(to)},
                     ${dbConf.escape(cc)},
-                    NOW(),
-                    NOW()
                 )
             `);
+            return result.insertId; // return the ID to update later
         } catch (logErr) {
-            console.log(`${timestamp} FAILED TO LOG EMAIL TO DB: ${logErr}`);
+            console.log(`${timestamp} FAILED TO INSERT EMAIL LOG: ${logErr}`);
+            return null;
+        }
+    },
+    markMailerSent: async ({ id }) => {
+        if (!id) return;
+        try {
+            await dbQuery(`
+            UPDATE t_mailer_eo
+            SET sent_date = NOW()
+            WHERE order_id = ${dbConf.escape(id)}
+        `);
+        } catch (err) {
+            console.log(`${timestamp} FAILED TO UPDATE sent_date: ${err}`);
         }
     },
 
@@ -367,7 +380,7 @@ module.exports = {
                 console.log(`${timestamp} ERROR Cannot send EMAIL to DISTRIBUTOR because its not exist`)
             } else {
 
-let disthtml = ` <div>
+                let disthtml = ` <div>
                     <p>
                         Dear ${company_name},
                         <br>
@@ -464,7 +477,12 @@ let disthtml = ` <div>
                     </p>
                 </div>
                     `
-
+                const mailLogId = await insertMailerLog({
+                    subject: emailSubject,
+                    body: emailHtml,
+                    to: toEmail,
+                    cc: ccEmail
+                });
                 try {
                     await transporter.sendMail({
                         from: 'no-reply@indofoodinternational.com',
@@ -474,13 +492,8 @@ let disthtml = ` <div>
                         html: disthtml,
                     });
                     console.log(timestamp + 'Email Sent to distributor: ' + dist_mail)
-                    await this.insertMailerLog({
-                        subject: `[E-Order] Distributor Order Submission ${po_buyer} is Successful!`,
-                        body: disthtml,
-                        order_id : order_id,
-                        to: distSender,
-                        cc: finalMergedEmailList
-                    });
+                    await this.markMailerSent(mailLogId);
+
                 } catch (error) {
                     console.log(timestamp + "MAILER ERROR, Message: " + error)
                 }
@@ -580,7 +593,12 @@ let disthtml = ` <div>
                     </p>
                    </div>
                        `
-
+                const mailLogId = await insertMailerLog({
+                    subject: emailSubject,
+                    body: emailHtml,
+                    to: toEmail,
+                    cc: ccEmail
+                });
                 try {
                     await transporter.sendMail({
                         from: 'no-reply@indofoodinternational.com',
@@ -593,13 +611,7 @@ let disthtml = ` <div>
                         ,
                     });
                     console.log(timestamp + 'Email Sent to analis :' + emailAnalisList)
-                    await this.insertMailerLog({
-                        subject: `[E-Order] Analyst Order Submission ${po_buyer} is Successful!`,
-                        body: analysthtml,
-                        order_id : order_id,
-                        to: emailAnalisList,
-                        cc: finalMergedEmailList
-                    });
+                    await this.markMailerSent(mailLogId);
                 } catch (error) {
                     console.log(timestamp + "MAILER ERROR, Message: " + error)
                 }
