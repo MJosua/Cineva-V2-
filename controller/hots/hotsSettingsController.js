@@ -555,7 +555,9 @@ module.exports = {
             *
         FROM 
             m_sample_category
-        
+        where
+	    samplecat_group = 'NOODLE'
+
         `;
 
         dbHots.execute(queryGetData, (err1, results1) => {
