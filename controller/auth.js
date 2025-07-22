@@ -228,7 +228,7 @@ module.exports = {
         // token,
         err: ''
       });
-      console.log(timestamp + `==> Auth Login ${userID}: Username is not exist`);
+      console.log(timestamp + `==> Auth Login E-Order ${userID}: Username is not exist`);
     }
 
 

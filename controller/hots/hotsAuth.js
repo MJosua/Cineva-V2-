@@ -21,7 +21,7 @@ module.exports = {
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let { uid, asin } = req.body
-
+        console.log("req.body",req.body)
 
 
         // cari username dulu
