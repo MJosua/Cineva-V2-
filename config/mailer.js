@@ -3,6 +3,7 @@ const { dbConf, dbQuery, dbTMQuery } = require("../config/db");
 const { formatDate } = require("../Utility/DateFormat");
 // const { notification } = require("../automation");
 const os = require('os');
+const order = require("../controller/order");
 
 
 // PERHATIAN: INI CUMA BISA BERJALAN JIKA DI SERVER PRODUCTION\
@@ -73,16 +74,19 @@ const gmailTransporter = nodemailer.createTransport({
 module.exports = {
 
 
-    insertMailerLog: async ({ subject, order_id, body, to, cc }) => {
+    insertMailerLog: async ({ subject, order_id, body, recipient, cc }) => {
+        let date = new Date();
+        let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
         try {
             const result = await dbQuery(`
-                INSERT INTO t_mailer_eo (subject, body, order_id, \`to\`, cc)
+                INSERT INTO t_mailer_eo (subject, body, order_id, recipient, cc)
                 VALUES (
                     ${dbConf.escape(subject)},
                     ${dbConf.escape(body)},
                     ${dbConf.escape(order_id)},
-                    ${dbConf.escape(to)},
-                    ${dbConf.escape(cc)},
+                    ${dbConf.escape(recipient)},
+                    ${dbConf.escape(cc)}
                 )
             `);
             return result.insertId; // return the ID to update later
@@ -92,12 +96,17 @@ module.exports = {
         }
     },
     markMailerSent: async ({ id }) => {
+
+        let date = new Date();
+        let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+
         if (!id) return;
         try {
             await dbQuery(`
             UPDATE t_mailer_eo
             SET sent_date = NOW()
-            WHERE order_id = ${dbConf.escape(id)}
+            WHERE id = ${dbConf.escape(id)}
         `);
         } catch (err) {
             console.log(`${timestamp} FAILED TO UPDATE sent_date: ${err}`);
@@ -204,7 +213,8 @@ module.exports = {
         // Convert back to a single comma-separated string
         let finalMergedEmailList = Array.from(combinedEmailSet).join(', ');
 
-        setTimeout(async () => {
+        // Removed setTimeout to ensure async execution without delay
+        // setTimeout(async () => {
 
 
             let headerData = (await dbQuery(` 
@@ -374,7 +384,6 @@ module.exports = {
 
 
 
-
             //TO DISTRIBUTOR
             if (!dist_mail) {
                 console.log(`${timestamp} ERROR Cannot send EMAIL to DISTRIBUTOR because its not exist`)
@@ -477,11 +486,12 @@ module.exports = {
                     </p>
                 </div>
                     `
-                const mailLogId = await insertMailerLog({
-                    subject: emailSubject,
-                    body: emailHtml,
-                    to: toEmail,
-                    cc: ccEmail
+                const mailLogId = await module.exports.insertMailerLog({
+                    subject: `[E-Order] Order Submission ${po_buyer} is Successful!`,
+                    body: disthtml,
+                    order_id: order_id,
+                    recipient: distSender,
+                    cc: finalMergedEmailList
                 });
                 try {
                     await transporter.sendMail({
@@ -492,7 +502,7 @@ module.exports = {
                         html: disthtml,
                     });
                     console.log(timestamp + 'Email Sent to distributor: ' + dist_mail)
-                    await this.markMailerSent(mailLogId);
+                    await module.exports.markMailerSent(mailLogId);
 
                 } catch (error) {
                     console.log(timestamp + "MAILER ERROR, Message: " + error)
@@ -593,11 +603,12 @@ module.exports = {
                     </p>
                    </div>
                        `
-                const mailLogId = await insertMailerLog({
-                    subject: emailSubject,
-                    body: emailHtml,
-                    to: toEmail,
-                    cc: ccEmail
+                const mailLogId = await module.exports.insertMailerLog({
+                    subject: `[E-Order] Order Submission ${po_buyer} is Successful!`,
+                    order_id: order_id,
+                    body: analysthtml,
+                    recipient: emailAnalisList,
+                    cc: finalMergedEmailList
                 });
                 try {
                     await transporter.sendMail({
@@ -611,14 +622,13 @@ module.exports = {
                         ,
                     });
                     console.log(timestamp + 'Email Sent to analis :' + emailAnalisList)
-                    await this.markMailerSent(mailLogId);
+                    await module.exports.markMailerSent(mailLogId);
                 } catch (error) {
                     console.log(timestamp + "MAILER ERROR, Message: " + error)
                 }
 
             }
-        }, 1000);
-
+        // });
     }
     , forgotPasswordMailSender: async (targetMail, token) => {
         let date = new Date();
@@ -672,7 +682,6 @@ module.exports = {
 
         setTimeout(async () => {
 
-
             /*
             Order data:
             header data: 
@@ -680,6 +689,8 @@ module.exports = {
             let headerData = (await dbTMQuery(` 
             SELECT 
         TIMESTAMPDIFF(MONTH, NOW(), tm_exp_date) AS month_left,
+        TIMESTAMPDIFF(DAY, NOW(), tm_exp_date) AS days_left,
+        tm_brand, 
         TIMESTAMPDIFF(DAY, NOW(), tm_exp_date) AS days_left,
         tm_brand, 
         tm_id,
@@ -1019,7 +1030,8 @@ module.exports = {
 
         }, 1000);
     }
-    , notifMailDeliver: async (order_id,
+    , notifMailDeliver: async (
+        order_id,
         dist_mail,
         str_carbon_copy,
         po_buyer,

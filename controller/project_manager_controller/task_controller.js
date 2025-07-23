@@ -91,8 +91,8 @@ module.exports = {
       });
     } catch (error) {
       console.error('Error fetching tasks:', error);
-      res.status(500).json({
-        success: false,
+      res.status(500).json({ 
+        success: false, 
         error: 'Failed to fetch tasks',
         data: [],
         packet: [],
@@ -104,7 +104,7 @@ module.exports = {
   getMyTasks: async (req, res) => {
     try {
       console.log('getMyTasks called - User ID:', req.dataToken?.user_id);
-
+      
       if (!req.dataToken || !req.dataToken.user_id) {
         return res.status(401).json({
           success: false,
@@ -169,8 +169,8 @@ module.exports = {
       });
     } catch (error) {
       console.error('Error fetching my tasks:', error);
-      res.status(500).json({
-        success: false,
+      res.status(500).json({ 
+        success: false, 
         error: 'Failed to fetch tasks',
         data: [],
         packet: []
@@ -215,8 +215,8 @@ module.exports = {
 
       if (taskResult.length === 0) {
         console.log('Task not found for ID:', id);
-        return res.status(404).json({
-          success: false,
+        return res.status(404).json({ 
+          success: false, 
           error: 'Task not found',
           data: null,
           packet: null
@@ -299,10 +299,10 @@ module.exports = {
         custom_labels: [] // Add empty array for custom labels if not present
       };
 
-      console.log('Returning task data:', {
-        task_id: responseData.task_id,
-        status: responseData.status,
-        steps_count: taskSteps.length
+      console.log('Returning task data:', { 
+        task_id: responseData.task_id, 
+        status: responseData.status, 
+        steps_count: taskSteps.length 
       });
 
       res.status(200).json({
@@ -313,8 +313,8 @@ module.exports = {
 
     } catch (error) {
       console.error('Error fetching task detail:', error);
-      res.status(500).json({
-        success: false,
+      res.status(500).json({ 
+        success: false, 
         error: 'Failed to fetch task detail',
         data: null,
         packet: null,
@@ -328,48 +328,36 @@ module.exports = {
       const data = req.body;
       const userId = req.dataToken.user_id;
 
-      console.log('[createTask] Incoming data:', data);
-      console.log('[createTask] User ID from token:', userId);
-
       // Get default group if not specified
       let groupId = data.group_id;
       if (!groupId && data.project_id) {
-        console.log('[createTask] No group_id provided, fetching default group for project_id:', data.project_id);
         const [defaultGroup] = await dbPMS.promise().execute(`
           SELECT group_id FROM PM.t_task_groups 
           WHERE project_id = ? AND status_mapping = 'todo' 
           ORDER BY sort_order LIMIT 1
         `, [data.project_id]);
-
+        
         if (defaultGroup.length > 0) {
           groupId = defaultGroup[0].group_id;
-          console.log('[createTask] Default group_id found:', groupId);
-        } else {
-          console.log('[createTask] No default group found for project_id:', data.project_id);
         }
       }
 
-      const safeValue = (val) => val === undefined ? null : val;
-
       const [result] = await dbPMS.promise().execute(`
         INSERT INTO PM.t_tasks 
-        (name, description, status, priority, 
-        project_id, assigned_to, created_by, 
-        due_date,  created_date, updated_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        (name, description, status, priority, project_id, assigned_to, created_by, due_date, estimated_hours, group_id, created_date, updated_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
       `, [
-        safeValue(data.name),
-        safeValue(data.description),
-        safeValue(data.status) || 'todo',
-        safeValue(data.priority) || 'medium',
-        safeValue(data.project_id),
-        safeValue(data.assigned_to),
-        // safeValue(data.assigned_team),
-        safeValue(userId),
-        safeValue(data.due_date || null),
+        data.name,
+        data.description,
+        data.status || 'todo',
+        data.priority || 'medium',
+        data.project_id,
+        data.assigned_to,
+        userId,
+        data.due_date,
+        data.estimated_hours || 0,
+        groupId
       ]);
-
-      console.log('[createTask] Inserted task_id:', result.insertId);
 
       const [newTask] = await dbPMS.promise().execute(`
         SELECT 
@@ -386,11 +374,8 @@ module.exports = {
         WHERE t.task_id = ?
       `, [result.insertId]);
 
-      console.log('[createTask] New task fetched:', newTask[0]);
-
       // Update project progress
       await module.exports.updateProjectProgress(data.project_id);
-      console.log('[createTask] Project progress updated for project_id:', data.project_id);
 
       res.status(200).json({
         success: true,
@@ -398,11 +383,10 @@ module.exports = {
         packet: newTask[0]
       });
     } catch (error) {
-      console.error('[createTask] Error creating task:', error);
+      console.error('Error creating task:', error);
       res.status(500).json({ success: false, error: 'Failed to create task' });
     }
   },
-
 
   updateTask: async (req, res) => {
     try {
@@ -433,7 +417,7 @@ module.exports = {
       if (data.team_ids && Array.isArray(data.team_ids)) {
         // Remove existing team assignments
         await dbPMS.promise().execute('DELETE FROM PM.t_task_teams WHERE task_id = ?', [id]);
-
+        
         // Add new team assignments
         for (const teamId of data.team_ids) {
           await dbPMS.promise().execute(`
