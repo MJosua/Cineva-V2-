@@ -45,7 +45,8 @@ module.exports = {
 
   getMyProjects: async (req, res) => {
     try {
-      const userId = req.user.user_id;
+      const userId = req.dataToken.user_id;
+      console.log("userId",userId)
       const query = `
         SELECT 
           p.project_id,
@@ -553,7 +554,7 @@ module.exports = {
   requestToJoinProject: async (req, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.user_id;
+      const userId = req.dataToken.user_id;
 
       // Check if the user is already a member or has a pending request
       const existingMemberQuery = 'SELECT * from t_project_members WHERE project_id = ? AND user_id = ?';

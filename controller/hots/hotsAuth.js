@@ -66,7 +66,7 @@ module.exports = {
                     let dataLogin = results1[0]
 
                     if (dataLogin.login_attempt > process.env.SECURITY_TRIAL_LOGIN_HT || dataLogin.login_attempt == process.env.SECURITY_TRIAL_LOGIN_HT) {
-                        res.status(200).send({
+                        res.status(500).send({
                             message: ` Too many login attempt! Please reset password by "forgot password" to login!`,
                             success: false,
                             // userData,
@@ -690,7 +690,7 @@ module.exports = {
                     let dataLogin = results1[0]
 
                     if (dataLogin.login_attempt > process.env.SECURITY_TRIAL_LOGIN_HT || dataLogin.login_attempt == process.env.SECURITY_TRIAL_LOGIN_HT) {
-                        res.status(200).send({
+                        res.status(500).send({
                             message: ` Too many login attempt! Please reset password by "forgot password" to login!`,
                             success: false,
                             // userData,
