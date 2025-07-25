@@ -57,6 +57,8 @@ module.exports = {
         CAST(COALESCE(pal.value, 0) AS UNSIGNED) pallet,
         CAST(COALESCE(tr.value, 1) AS UNSIGNED) transport,
         COALESCE(p.firstname, '') firstname,
+        CAST(COALESCE(maxtrck.value, 0) AS UNSIGNED) max_truck,
+        CAST(COALESCE(maxflvrtrck.value, 0) AS UNSIGNED) max_flavour_truck,
         COALESCE(p.midname, '') midname,
         COALESCE(p.lastname, '') lastname
       FROM
@@ -73,6 +75,12 @@ module.exports = {
       LEFT JOIN m_config_new pal ON
         su.company_id = pal.company_id
         AND pal.conditions = 2
+      LEFT JOIN m_config_new maxtrck ON
+          su.company_id = maxtrck.company_id
+          AND maxtrck.conditions = 15
+        LEFT JOIN m_config_new maxflvrtrck ON
+          su.company_id = maxflvrtrck.company_id
+          AND maxflvrtrck.conditions = 16
       LEFT JOIN m_config_new top ON
         su.company_id = top.company_id
         AND top.conditions = 3
@@ -325,6 +333,7 @@ module.exports = {
           CAST(COALESCE(flav.value, 2) AS UNSIGNED) max_sku,
           CAST(COALESCE(pal.value, 0) AS UNSIGNED) pallet,
           CAST(COALESCE(maxtrck.value, 0) AS UNSIGNED) max_truck,
+          CAST(COALESCE(maxflvrtrck.value, 0) AS UNSIGNED) max_flavour_truck,
           CAST(COALESCE(tr.value, 1) AS UNSIGNED) transport,
           COALESCE(p.firstname, '') firstname,
           COALESCE(p.midname, '') midname,
@@ -344,7 +353,11 @@ module.exports = {
           su.company_id = pal.company_id
           AND pal.conditions = 2
         LEFT JOIN m_config_new maxtrck ON
-        su.company_id = maxtrck.company_id
+          su.company_id = maxtrck.company_id
+          AND maxtrck.conditions = 15
+        LEFT JOIN m_config_new maxflvrtrck ON
+          su.company_id = maxflvrtrck.company_id
+          AND maxflvrtrck.conditions = 16
         LEFT JOIN m_config_new top ON
           su.company_id = top.company_id
           AND top.conditions = 3

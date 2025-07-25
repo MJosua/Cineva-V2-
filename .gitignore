@@ -11,5 +11,6 @@
 *.jpeg
 *.png
 
+*.zip
 
 /config
