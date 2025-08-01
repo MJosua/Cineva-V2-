@@ -1,5 +1,5 @@
 const { query } = require("express");
-const { dbSR, dbQuerySR } = require("../config/db");
+const { dbSR, dbQuerySR } = require("../../config/db");
 const fs = require('fs')
 
 const { default: axios } = require("axios");
@@ -31,59 +31,85 @@ module.exports = {
 
         try {
             let query = `
-         select
-                *,
-                l.name as location_name,
-                l.location_id as location_list_id,
-                l.lat as location_lat,
-                l.lng as location_lang,
-                r.long as pin_long,
-	            r.lat as pin_lat,
-                pod.location_id  as pod_id,
-                DATE_FORMAT(pod.date , '%Y-%m-%d')pod_date,
-	            pol.location_id as pol_id,
-                DATE_FORMAT(pol.date , '%Y-%m-%d')pol_date,
-                DATE_FORMAT(e.date , '%Y-%m-%d')e_date,
-                v.vessel_id as vessel_vesid,
-                e.vessel_id as event_vessel
-            from
-                sea_rates.shipments s
-            left join sea_rates.containers c on
-                s.shipment_id = c.shipment_id
-            left join sea_rates.locations l on
-                s.shipment_id = l.shipment_id
-            left join sea_rates.events e on
-                s.shipment_id = e.shipment_id
-            left join sea_rates.route r on
-                s.shipment_id = r.shipment_id
-            left join sea_rates.vessel v on
-                s.shipment_id = v.shipment_id
-            left join sea_rates.pod pod on
-                s.shipment_id = pod.shipment_id
-            left join sea_rates.pol pol on
-                s.shipment_id = pol.shipment_id 
-            WHERE 
-                s.number = ? 
-                AND 
-                s.so_id = ?
-                and
-                s.shipment_id = (
-                    SELECT MAX(shipment_id) 
-                    FROM sea_rates.shipments 
-                    WHERE number = ?
-                    AND so_id = ?
-                )
-            group by
-                s.shipment_id,
-                c.container_id,
-                e.event_id,
-                v.vessel_id,
-                l.location_id;
+                            select
+                        s.shipment_id,
+                        s.number,
+                        s.so_id,
+                        s.sealine_name,
+                        s.status,
+                        c.container_number,
+                        e.*,
+                        l.name AS location_name,
+                        l_max.location_list_id,
+                        l.lat AS location_lat,
+                        l.lng AS location_lang,
+                        r.long as pin_long,
+                        r.lat as pin_lat,
+                        v.vessel_id as vessel_vesid,
+                        v.name,
+                        v.imo as vimo,
+                        e.vessel_id as event_vessel,
+                        pod.location_id AS pod_id,
+                        DATE_FORMAT(pod.date, '%Y-%m-%d') AS pod_date,
+                        pol.location_id AS pol_id,
+                        DATE_FORMAT(pol.date, '%Y-%m-%d') AS pol_date,
+                        DATE_FORMAT(e.date, '%Y-%m-%d') AS e_date
+                    from
+                        sea_rates.shipments s
+                    left join sea_rates.containers c 
+                        on
+                        s.shipment_id = c.shipment_id
+                    left join sea_rates.events e 
+                        on
+                        c.container_id = e.container_id
+                    left join sea_rates.locations l 
+                        on
+                        e.shipment_id = l.shipment_id
+                        and e.location_id = l.location_id
+                    LEFT JOIN (
+                        SELECT event_id, MAX(location_id) AS location_list_id
+                        FROM sea_rates.events
+                        GROUP BY event_id
+                    ) l_max ON l_max.event_id = e.event_id
+                    left join sea_rates.route r 
+                        on
+                        s.shipment_id = r.shipment_id
+                    left join sea_rates.vessel v 
+                        on
+                        s.shipment_id = v.shipment_id
+                        and e.vessel_id = v.vessel_id
+                    LEFT JOIN sea_rates.pod pod 
+                        ON 
+                        s.shipment_id = pod.shipment_id
+                    LEFT JOIN sea_rates.pol pol 
+                        ON 
+                        s.shipment_id = pol.shipment_id
+                    where
+                        (
+                            (cast(s.so_id as CHAR) = ?)
+                        )
+                        and
+                        (
+                        s.number = ?
+                            and s.shipment_id = (
+                            select
+                                shipment_id
+                            from
+                                sea_rates.shipments
+                            where
+                                number = ?
+                            order by
+                                last_updated_date desc
+                            limit 1
+                                                )
+                        )
+                    order by
+                        e.date desc;
             `
                 ;
 
 
-            dbSR.query(query, [number, so_id, number, so_id], (err, results) => {
+            dbSR.query(query, [so_id, number, number], (err, results) => {
                 if (err) {
                     console.log(timestamp + " Error GetSeaRatesTrackUser:", err);
                     return res.status(500).send({ error: "Database Error", details: err });
@@ -243,60 +269,99 @@ module.exports = {
 
 
         try {
-            let query = `
-                   SELECT
-                        e.*,
-                        l.name AS location_name,
-                        MAX(l.location_id) AS location_list_id,
-                        l.lat AS location_lat,
-                        l.lng AS location_lang,
-                        r.long AS pin_long,
-                        r.lat AS pin_lat,
-                        pod.location_id AS pod_id,
-                        DATE_FORMAT(pod.date, '%Y-%m-%d') AS pod_date,
-                        pol.location_id AS pol_id,
-                        DATE_FORMAT(pol.date, '%Y-%m-%d') AS pol_date,
-                        DATE_FORMAT(e.date, '%Y-%m-%d') AS e_date,
-                        v.vessel_id AS vessel_vesid,
-                        v.name,
-                        v.imo AS vimo,
-                        e.vessel_id AS event_vessel,
-                        s.number,
-                        s.so_id,
-                        s.sealine_name,
-                        s.status
-                    FROM
-                        sea_rates.shipments s
-                    LEFT JOIN sea_rates.containers c 
-                        ON s.shipment_id = c.shipment_id
-                    LEFT JOIN sea_rates.events e 
-                        ON s.shipment_id = e.shipment_id
-                    LEFT JOIN sea_rates.locations l 
-                        ON e.shipment_id = l.shipment_id AND e.location_id = l.location_id
-                    LEFT JOIN sea_rates.route r 
-                        ON s.shipment_id = r.shipment_id
-                    LEFT JOIN sea_rates.vessel v 
-                        ON s.shipment_id = v.shipment_id AND e.vessel_id = v.vessel_id
-                    LEFT JOIN sea_rates.pod pod 
-                        ON s.shipment_id = pod.shipment_id
-                    LEFT JOIN sea_rates.pol pol 
-                        ON s.shipment_id = pol.shipment_id
-                   WHERE
-                        (
-                            s.number = ?
-                            AND s.shipment_id = (
-                                SELECT shipment_id
-                                FROM sea_rates.shipments
-                                WHERE number = ?
-                                ORDER BY last_updated_date DESC
-                                LIMIT 1
+            let query = `       
+                        select
+                            s.shipment_id,
+                            s.number,
+                            s.so_id,
+                            s.sealine_name,
+                            s.status,
+                            c.container_number,
+                            e.event_id,
+                            e.order_id,
+                            e.location_id,
+                            e.description,
+                            e.event_type,
+                            e.event_code,
+                            e.date,
+                            e.actual,
+                            e.vessel_id,
+                            e.voyage,
+                            e.container_id,
+                            l.name as location_name,
+                            l_max.location_list_id,
+                            l.lat as location_lat,
+                            l.lng as location_lang,
+                            r.long as pin_long,
+                            r.lat as pin_lat,
+                            v.vessel_id as vessel_vesid,
+                            v.name,
+                            v.imo as vimo,
+                            e.vessel_id as event_vessel,
+                            pod.location_id as pod_id,
+                            DATE_FORMAT(pod.date, '%Y-%m-%d') as pod_date,
+                            pol.location_id as pol_id,
+                            DATE_FORMAT(pol.date, '%Y-%m-%d') as pol_date,
+                            DATE_FORMAT(e.date, '%Y-%m-%d') as e_date
+                        from
+                            sea_rates.shipments s
+                        left join sea_rates.containers c 
+                            on
+                            s.shipment_id = c.shipment_id
+                        left join sea_rates.events e
+                            on
+                            c.container_id = e.container_id
+                            and s.shipment_id = e.shipment_id
+                        left join sea_rates.locations l 
+                            on
+                            e.shipment_id = l.shipment_id
+                            and e.location_id = l.location_id
+                        left join (
+                            select
+                                event_id,
+                                MAX(location_id) as location_list_id
+                            from
+                                sea_rates.events
+                            group by
+                                event_id
+                        ) l_max on
+                            l_max.event_id = e.event_id
+                        left join sea_rates.route r 
+                            on
+                            s.shipment_id = r.shipment_id
+                        left join sea_rates.vessel v 
+                            on
+                            s.shipment_id = v.shipment_id
+                            and e.vessel_id = v.vessel_id
+                        left join sea_rates.pod pod 
+                            on
+                            s.shipment_id = pod.shipment_id
+                        left join sea_rates.pol pol 
+                            on
+                            s.shipment_id = pol.shipment_id
+                        where
+                            (
+                                cast(s.so_id as CHAR) = ?
                             )
-                        )
-                        OR s.so_id = ?
-                    GROUP BY
-                        e.event_id
-                    ORDER BY
-                        e.date DESC;
+                            or (
+                                s.number = ?
+                                and s.shipment_id = (
+                                select
+                                    shipment_id
+                                from
+                                    sea_rates.shipments
+                                where
+                                    number = ?
+                                order by
+                                    last_updated_date desc
+                                limit 1
+                                )
+                            )
+                            AND e.event_id IS NOT NULL
+                        order by
+                            e.date desc;
+
+                            
             `
                 ;
             const results = await dbQuerySR(query, [number, number, number]);
@@ -324,17 +389,7 @@ module.exports = {
                     console.log("row", row)
                     if (!shipmentData[shipmentId]) {
                         shipmentData[shipmentId] = {
-
-                            // Include container data
-                            container: {
-                                container_id: row.container_id,
-                                sealine_name: row.sealine_name,
-                                shipment_id: shipmentId,
-                                so_id: row.so_id,
-                                number: row.number,
-                                container_status: row.status,
-                            },
-                            // Initialize locations array
+                            container: [],
                             locations: [],
                             container_events: [],
                             pin_location: [],
@@ -346,6 +401,22 @@ module.exports = {
                                 }
                             ],
                         };
+                    }
+
+                    // Check if the container is already added
+                    const existingContainer = shipmentData[shipmentId].container.find(
+                        c => c.container_id === row.container_id
+                    );
+                    if (!existingContainer && row.container_id) {
+                        shipmentData[shipmentId].container.push({
+                            container_id: row.container_id,
+                            sealine_name: row.sealine_name,
+                            shipment_id: shipmentId,
+                            so_id: row.so_id,
+                            number: row.number,
+                            container_status: row.status,
+                            container_number: row.container_number,
+                        });
                     }
 
                     // Push location data if available
@@ -373,15 +444,14 @@ module.exports = {
 
                     // Check for duplicate events before adding
                     if (row.event_id) {
-
                         const containerEvents = shipmentData[shipmentId]?.container_events;
                         if (!containerEvents) {
                             console.warn(`shipmentData[${shipmentId}] or .container_events is missing`);
                             return;
                         }
 
-                        const existingEvent = containerEvents.find(ev => ev.event_id === row.event_id);
-                        if (!existingEvent) {
+                        const existingOrder = containerEvents.find(ev => ev.order_id === row.order_id);
+                        if (!existingOrder) {
                             containerEvents.push({
                                 event_id: row.event_id,
                                 order_id: row.order_id,
@@ -398,10 +468,20 @@ module.exports = {
                             });
                         }
                     } else {
-                        shipmentData[shipmentId].container_events.push({
-                            event_id: 1,
-                            description: "No Event Yet",
-                        });
+                        const containerEvents = shipmentData[shipmentId]?.container_events;
+                        if (!containerEvents) {
+                            console.warn(`shipmentData[${shipmentId}] or .container_events is missing`);
+                            return;
+                        }
+
+                        // Prevent adding "No Event Yet" multiple times
+                        const hasNoEvent = containerEvents.some(ev => ev.description === "No Event Yet");
+                        if (!hasNoEvent) {
+                            containerEvents.push({
+                                event_id: 1,
+                                description: "No Event Yet",
+                            });
+                        }
                     }
 
                     // Check for duplicate pin locations before adding

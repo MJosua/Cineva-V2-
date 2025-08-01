@@ -1134,7 +1134,6 @@ WHERE
 
             let injectedResults = results.unshift(global_parameter)
 
-            console.log("admin getCompany injectedResults", injectedResults);
             //success
             res.status(200).send({
               message: 'berhasil get data status',

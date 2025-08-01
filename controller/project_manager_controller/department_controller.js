@@ -34,6 +34,64 @@ module.exports = {
       res.status(500).json({ success: false, error: 'Failed to fetch departments' });
     }
   },
+  getDepartmentUsers: async (req, res) => {
+    let date = new Date();
+    let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+
+    try {
+      const { id } = req.params;
+
+      const [departments] = await dbPMS.promise().execute(`
+        SELECT 
+          d.*,
+          CONCAT(u.firstname, ' ', u.lastname) AS head_name
+        FROM hots.m_department d
+        LEFT JOIN hots.user u ON d.department_head = u.user_id
+        WHERE d.department_id = ?
+      `, [id]);
+
+      if (departments.length === 0) {
+        return res.status(404).json({ success: false, error: 'Department not found' });
+      }
+
+      // Get teams in this department
+      const [teams] = await dbPMS.promise().execute(`
+       SELECT 
+          t.*,
+          CONCAT(u.firstname, ' ', u.lastname) AS team_member_name,
+          (
+            SELECT CONCAT(u2.firstname, ' ', u2.lastname)
+            FROM hots.m_team_member tm2
+            JOIN hots.user u2 ON tm2.user_id = u2.user_id
+            WHERE tm2.team_id = t.team_id AND tm2.team_leader = 1
+            LIMIT 1
+          ) AS team_leader_name
+        FROM hots.m_team t
+        LEFT JOIN hots.m_team_member tm ON t.team_id = tm.team_id
+        LEFT JOIN hots.user u ON tm.user_id = u.user_id
+        WHERE t.department_id = ?
+      `, [id]);
+
+      // Get users in this department
+      const [users] = await dbPMS.promise().execute(`
+        SELECT 
+          user_id, uid, firstname, lastname, email, role_id, jobtitle_id, active
+        FROM hots.user
+        WHERE department_id = ?
+        ORDER BY lastname, firstname
+      `, [id]);
+
+      const department = departments[0];
+      department.teams = teams;
+      department.users = users;
+
+      console.log(timestamp + 'Department detail fetched:', id);
+      res.status(200).json({ success: true, data: department });
+    } catch (error) {
+      console.error(timestamp + 'Error fetching department detail:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch department detail' });
+    }
+  },
 
   getDepartmentDetail: async (req, res) => {
     let date = new Date();

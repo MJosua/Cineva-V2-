@@ -7,6 +7,9 @@ const department_controller = require('../../controller/project_manager_controll
 // Department routes
 route.get('/', decodeTokenHT, department_controller.getAllDepartments);
 route.get('/:id', decodeTokenHT, department_controller.getDepartmentDetail);
+// route.get('/:id/teams', decodeTokenHT, department_controller.getDepartmentTeams);
+route.get('/:id/users', decodeTokenHT, department_controller.getDepartmentUsers);
+// route.get('/:id/projects', decodeTokenHT, department_controller.getDepartmentProjects);
 route.post('/', decodeTokenHT, department_controller.createDepartment);
 route.put('/:id', decodeTokenHT, department_controller.updateDepartment);
 

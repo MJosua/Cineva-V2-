@@ -49,6 +49,7 @@ route.get('/detail/:ticket_id', decodeTokenHT, hotsTicket.getTicketDetail)
 // Ticket actions (should be POST, not PUT for these operations)
 route.post('/approve/:ticket_id', decodeTokenHT, hotsTicket.approveTicket)
 route.post('/reject/:ticket_id', decodeTokenHT, hotsTicket.rejectTicket)
+route.put('/close/:ticket_id', decodeTokenHT, hotsTicket.closeTicket)
 
 // Attachments
 route.get('/attachment/:ticket_id', decodeTokenHT, hotsTicket.getTicketAttachments)

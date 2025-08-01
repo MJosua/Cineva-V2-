@@ -17,6 +17,7 @@ route.patch('/:id/move-group', decodeTokenHT, task_controller.moveTaskToGroup);
 
 // Task dependencies
 route.post('/:id/dependencies', decodeTokenHT, task_controller.addTaskDependency);
+route.delete('/dependencies/:dependencyId', decodeTokenHT, task_controller.removeTaskDependency);
 
 // Time tracking
 route.post('/:id/time-entries', decodeTokenHT, task_controller.logTime);

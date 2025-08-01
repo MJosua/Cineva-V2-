@@ -4606,6 +4606,7 @@ module.exports = {
                 t.fulfilment_comment,
                 t.current_step,
                 CONCAT(u.firstname, ' ', u.lastname) as created_by_name,
+                u.user_id,
                 dpt.department_id AS dept_id,
                 dpt.department_name AS department_name,
                 dpt.department_shortname AS dept_shortname,
@@ -4833,6 +4834,49 @@ module.exports = {
                     message: "TICKET REJECTED SUCCESSFULLY"
                 });
             });
+        });
+    },
+
+    closeTicket: (req, res) => {
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+
+        let user_id = req.dataToken.user_id;
+        let ticket_id = req.params.ticket_id || req.body.ticket_id;
+        if (!ticket_id) {
+            return res.status(400).send({
+                success: false,
+                message: `ticket_id ${ticket_id}  are required`
+            });
+        }
+        console.log(" Trying to close ticket with ticket id ", ticket_id)
+        // Update approval event to rejected
+        let updateCloseQuery = `
+                UPDATE t_ticket 
+                SET status_id = 7, last_update = NOW() , reject_reason = "Closed by User"
+                where
+                ticket_id = ?
+            `;
+
+        dbHots.execute(updateCloseQuery, [ticket_id], (err, result) => {
+
+
+
+            if (err) {
+                console.log(timestamp, "CLOSE TICKET ERROR: ", err);
+                return res.status(502).send({
+                    success: false,
+                    message: err
+                });
+            }
+
+
+            console.log(timestamp, "CLOSE TICKET SUCCESS");
+            return res.status(200).send({
+                success: true,
+                message: "TICKET CLOSE SUCCESSFULLY"
+            });
+
         });
     },
 

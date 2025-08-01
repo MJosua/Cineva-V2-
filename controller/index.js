@@ -13,18 +13,18 @@ const productControllerTest = require('./product_test')
 
 const cardGenerator = require('./cardGenerator')
 
-const hotsAuth = require('./hots/hotsAuth')
-const hotsAdmin = require('./hots/hotsAdmin')
-const hotsTicket = require('./hots/hotsTicket')
-const hotsSettingsController = require('./hots/hotsSettingsController')
-const hotsTps = require('./hots/hotsTps')
-const hotscustomfunctionController = require('./hots/hotscustomfunctionController')
-const hotsSRFController = require('./hots/hotsSRFController');
+const hotsAuth = require('./hots_controller/hotsAuth')
+const hotsAdmin = require('./hots_controller/hotsAdmin')
+const hotsTicket = require('./hots_controller/hotsTicket')
+const hotsSettingsController = require('./hots_controller/hotsSettingsController')
+const hotsTps = require('./hots_controller/hotsTps')
+const hotscustomfunctionController = require('./hots_controller/hotscustomfunctionController')
+const hotsSRFController = require('./hots_controller/hotsSRFController');
 
 const shortenerController = require('./shortenerController')
 
 
-const srtsController = require('./srtsController')
+const srtsController = require('./searates/srtsController')
 
 // Project Manager controllers
 

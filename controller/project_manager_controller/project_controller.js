@@ -45,8 +45,9 @@ module.exports = {
 
   getMyProjects: async (req, res) => {
     try {
+
       const userId = req.dataToken.user_id;
-      console.log("userId",userId)
+
       const query = `
         SELECT 
           p.project_id,

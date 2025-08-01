@@ -9,7 +9,7 @@ module.exports = {
 
     try {
       const { team_id, message } = req.body;
-      const user_id = req.user.user_id; // From token middleware
+      const user_id = req.dataToken.user_id; // From token middleware
       
       console.log(timestamp + 'Creating team join request:', { team_id, user_id, message });
 
@@ -119,7 +119,7 @@ module.exports = {
     try {
       const { requestId } = req.params;
       const { status, response_message } = req.body;
-      const reviewed_by = req.user.user_id; // From token middleware
+      const reviewed_by = req.dataToken.user_id; // From token middleware
 
       console.log(timestamp + 'Updating join request:', { requestId, status, reviewed_by });
 
@@ -197,7 +197,7 @@ module.exports = {
     let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
     try {
-      const user_id = req.user.user_id; // From token middleware
+      const user_id = req.dataToken.user_id; // From token middleware
       console.log(timestamp + 'Fetching join requests for user:', user_id);
 
       const [requests] = await dbPMS.promise().execute(`

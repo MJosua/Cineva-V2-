@@ -125,15 +125,12 @@ module.exports = {
                 console.log(timestamp, "Error with approval count", err);
                 res.status(404).send('URL not found');
             } else {
-                console.log("results", results)
-                console.log("shortenlink", shortenlink)
 
                 if (results[0] === undefined) {
                     // No results found
                     return res.status(504).send('URL not found');
                 } else {
 
-                    console.log("results", results[0])
 
                     const url = results[0].url; // Extract the URL from the results
                     console.log(timestamp, "Redirecting to:", url);

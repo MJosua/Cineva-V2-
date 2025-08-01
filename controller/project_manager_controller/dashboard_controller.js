@@ -8,7 +8,7 @@ module.exports = {
     let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
     try {
-      const userId = req.user.user_id;
+      const userId = req.dataToken.user_id;
 
       // Get user's task statistics
       const [taskStats] = await dbPMS.promise().execute(`
@@ -72,7 +72,7 @@ module.exports = {
     let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
     try {
-      const userId = req.user.user_id;
+      const userId = req.dataToken.user_id;
       const { timeframe = 'month' } = req.query;
 
       let dateFilter = '';

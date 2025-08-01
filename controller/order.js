@@ -717,13 +717,17 @@ module.exports = {
         let offset = (page - 1) * limit; // Correct offset calculation
         let desc = req.query.desc === "1" ? `DESC ` : `ASC`;
 
-        let status = '';
-        if (req.query.status) {
+        let status = ' ';
+        if (req.query.status !== 0 && req.query.status !== undefined && req.query.status !== "0") {
             const statusList = req.query.status.split(',').map(s => parseInt(s.trim())).filter(s => !isNaN(s));
-            if (statusList.length > 0) {
-                status = ` AND mo.status IN (${statusList.join(',')})`;
+            console.log("statusList", statusList)
+
+            if (statusList.length >= 1) {
+                status = ` AND mo.status IN (${statusList.join(',')}) `;
             }
         }
+
+
         let stuffingstart = parseInt(req.query.stuffingstart) ? req.query.stuffingstart : ' 1';
         let stuffingend = parseInt(req.query.stuffingend) ? req.query.stuffingend : ' 99';
         let range = stuffingstart || stuffingend ? ` AND CASE WHEN mo.delv_week = 0 THEN 1 ELSE mo.delv_week END BETWEEN ${stuffingstart} AND ${stuffingend} ` : ``
@@ -1018,7 +1022,9 @@ module.exports = {
         let desc = req.query.desc === "1" ? `DESC ` : `ASC`;
 
         let status = '';
-        if (req.query.status) {
+        console.log("status", req.query)
+        if (req.query.status !== 0 && req.query.status !== undefined && req.query.status !== "0") {
+
             const statusList = req.query.status.split(',').map(s => parseInt(s.trim())).filter(s => !isNaN(s));
             if (statusList.length > 0) {
                 status = ` AND mo.status IN (${statusList.join(',')})`;
@@ -1293,7 +1299,16 @@ module.exports = {
                             when det.company_id not in (${blockingSoIdCompany})
                             and tae.appr_date is not null then so.so_id
                             else ''
-                        end as so_id
+                        end as so_id,
+                        tso.so_id,
+                        DATE_FORMAT(trd.delv_date, '%d-%b-%Y') delv_date,
+                        tr.ship_name vessel_name,
+                        tr.ship_line shipping_line,
+                        tr.cont_id,
+                        COALESCE(mp.product_name_no, mp.product_name) product_name,
+                        trd.qty, 
+                        DATE_FORMAT(tr.etd, '%d-%b-%Y') etd,
+                        DATE_FORMAT(tr.eta, '%d-%b-%Y') eta
                     from
                         m_order_dtl det
                     inner join m_order mo on
@@ -1322,15 +1337,25 @@ module.exports = {
                         ms.sku = mps.product_code
                     left join m_product_link mpls on
                         ms.sku = mpls.product_code
+                    LEFT JOIN trs_sales_order tso ON
+                        mo.order_id = tso.e_order
+                    LEFT JOIN trs_realization tr ON
+                        tso.so_id = tr.so_id    
                     left join trs_sales_order so on
                         mo.order_id = so.e_order
                         and 
                         so.cancel = 0
                     left join m_config_new msc on
                         msc.company_id = det.company_id
+                    LEFT JOIN trs_realization_detail trd ON
+                        tr.cont_id = trd.cont_id
+                        AND tr.so_id = trd.so_id
+                        AND tr.invoice_id = trd.invoice_id
                     left join trs_approval ta on
                         so.so_id = ta.key
                         and ta.company_id = so.company_id
+                    LEFT JOIN mst_product mp ON
+                        trd.sku = mp.product_code    
                     left join trs_approval_event tae on
                          so.approval_id = tae.appr_id
                         and tae.company_id = ta.company_id

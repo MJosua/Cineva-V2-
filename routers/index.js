@@ -33,7 +33,7 @@ const hotsTicket = require('./hots/hotsTicket')
 const hotsSettings = require('./hots/hotsSettings')
 const shortener = require('./shortener')
 const hotsTps = require('./hots/hotsTps')
-const srtsRouter = require('./srtsRouter')
+const srtsRouter = require('./searates/srtsRouter')
 
 const hotscustomfunction = require('./hots/hotscustomfunction')
 const user = require('../controller/user')

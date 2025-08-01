@@ -619,14 +619,32 @@ module.exports = {
     }
   },
 
-  // Placeholder methods for missing endpoints
+  // Task Dependencies Management
   getTaskDependencies: async (req, res) => {
     try {
       const { id } = req.params;
+      
+      const [dependencies] = await dbPMS.promise().execute(`
+        SELECT 
+          td.dependency_id,
+          td.task_id,
+          td.depends_on_task_id,
+          td.dependency_type,
+          td.lag_time,
+          td.created_by,
+          td.created_date,
+          t.name AS depends_on_task_name,
+          t.status AS depends_on_task_status
+        FROM PM.t_task_dependencies td
+        LEFT JOIN PM.t_tasks t ON td.depends_on_task_id = t.task_id
+        WHERE td.task_id = ?
+        ORDER BY td.created_date ASC
+      `, [id]);
+
       res.status(200).json({
         success: true,
-        data: [],
-        packet: []
+        data: dependencies,
+        packet: dependencies
       });
     } catch (error) {
       console.error('Error fetching task dependencies:', error);
@@ -636,13 +654,127 @@ module.exports = {
 
   addTaskDependency: async (req, res) => {
     try {
-      res.status(200).json({
+      const { id } = req.params;
+      const { depends_on_task_id, dependency_type = 'finish_to_start', lag_time = 0 } = req.body;
+      const userId = req.dataToken?.user_id;
+
+      if (!depends_on_task_id) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'depends_on_task_id is required' 
+        });
+      }
+
+      // Check if tasks exist
+      const [taskExists] = await dbPMS.promise().execute(
+        'SELECT task_id FROM PM.t_tasks WHERE task_id IN (?, ?)',
+        [id, depends_on_task_id]
+      );
+
+      if (taskExists.length !== 2) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'One or both tasks not found' 
+        });
+      }
+
+      // Check for circular dependency (basic check)
+      const [existingPath] = await dbPMS.promise().execute(`
+        WITH RECURSIVE dependency_path AS (
+          SELECT task_id, depends_on_task_id, 1 as depth
+          FROM PM.t_task_dependencies 
+          WHERE depends_on_task_id = ?
+          
+          UNION ALL
+          
+          SELECT td.task_id, td.depends_on_task_id, dp.depth + 1
+          FROM PM.t_task_dependencies td
+          INNER JOIN dependency_path dp ON td.depends_on_task_id = dp.task_id
+          WHERE dp.depth < 10
+        )
+        SELECT * FROM dependency_path WHERE task_id = ?
+      `, [id, depends_on_task_id]);
+
+      if (existingPath.length > 0) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'This dependency would create a circular dependency' 
+        });
+      }
+
+      // Check if dependency already exists
+      const [existingDep] = await dbPMS.promise().execute(
+        'SELECT dependency_id FROM PM.t_task_dependencies WHERE task_id = ? AND depends_on_task_id = ?',
+        [id, depends_on_task_id]
+      );
+
+      if (existingDep.length > 0) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Dependency already exists' 
+        });
+      }
+
+      // Add the dependency
+      const [result] = await dbPMS.promise().execute(`
+        INSERT INTO PM.t_task_dependencies 
+        (task_id, depends_on_task_id, dependency_type, lag_time, created_by, created_date)
+        VALUES (?, ?, ?, ?, ?, NOW())
+      `, [id, depends_on_task_id, dependency_type, lag_time, userId]);
+
+      // Fetch the created dependency with task details
+      const [newDependency] = await dbPMS.promise().execute(`
+        SELECT 
+          td.dependency_id,
+          td.task_id,
+          td.depends_on_task_id,
+          td.dependency_type,
+          td.lag_time,
+          td.created_by,
+          td.created_date,
+          t.name AS depends_on_task_name,
+          t.status AS depends_on_task_status
+        FROM PM.t_task_dependencies td
+        LEFT JOIN PM.t_tasks t ON td.depends_on_task_id = t.task_id
+        WHERE td.dependency_id = ?
+      `, [result.insertId]);
+
+      res.status(201).json({
         success: true,
+        data: newDependency[0],
+        packet: newDependency[0],
         message: 'Task dependency added successfully'
       });
     } catch (error) {
       console.error('Error adding task dependency:', error);
       res.status(500).json({ success: false, error: 'Failed to add task dependency' });
+    }
+  },
+
+  removeTaskDependency: async (req, res) => {
+    try {
+      const { dependencyId } = req.params;
+
+      const [result] = await dbPMS.promise().execute(
+        'DELETE FROM PM.t_task_dependencies WHERE dependency_id = ?',
+        [dependencyId]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'Dependency not found' 
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Task dependency removed successfully',
+        data: { dependency_id: dependencyId }
+      });
+    } catch (error) {
+      console.error('Error removing task dependency:', error);
+      res.status(500).json({ success: false, error: 'Failed to remove task dependency' });
     }
   },
 

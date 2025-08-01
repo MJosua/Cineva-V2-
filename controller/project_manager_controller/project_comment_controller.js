@@ -6,7 +6,7 @@ const projectCommentController = {
   getProjectComments: async (req, res) => {
     try {
       const { project_id } = req.params;
-      const userId = req.user.user_id;
+      const userId = req.dataToken.user_id;
 
       const query = `
         SELECT 
@@ -48,7 +48,7 @@ const projectCommentController = {
     try {
       const { project_id } = req.params;
       const { comment } = req.body;
-      const userId = req.user.user_id;
+      const userId = req.dataToken.user_id;
       
       // Handle file upload if present
       let file_url = null;
@@ -117,7 +117,7 @@ const projectCommentController = {
     try {
       const { comment_id } = req.params;
       const { comment } = req.body;
-      const userId = req.user.user_id;
+      const userId = req.dataToken.user_id;
 
       // Check if user owns the comment
       const checkQuery = `SELECT user_id FROM t_comment WHERE comment_id = ?`;
@@ -163,7 +163,7 @@ const projectCommentController = {
   deleteProjectComment: async (req, res) => {
     try {
       const { comment_id } = req.params;
-      const userId = req.user.user_id;
+      const userId = req.dataToken.user_id;
 
       // Check if user owns the comment
       const checkQuery = `SELECT user_id FROM t_comment WHERE comment_id = ?`;
