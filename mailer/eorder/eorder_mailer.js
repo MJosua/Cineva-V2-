@@ -1,6 +1,6 @@
 const nodemailer = require("nodemailer");
-const { dbConf, dbQuery, dbTMQuery } = require("../../db");
-const { formatDate } = require("../../../Utility/DateFormat");
+const { dbConf, dbQuery, dbTMQuery } = require("../../config/db");
+const { formatDate } = require("../../Utility/DateFormat");
 // const { notification } = require("../automation");
 const os = require('os');
 

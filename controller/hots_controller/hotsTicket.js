@@ -12,7 +12,7 @@ const hotsCheckApprovalLevel = require("../../config/hotsCheckApprovalLevel");
 // const { generateTokenHT, hashPasswordHT } = require("../config/encrypts"); 
 
 const fs = require('fs');
-const { hotsMailer } = require('../../mailer/eorder/mailer');
+const { hotsMailer } = require('../../mailer/eorder/eorder_mailer');
 const hotscustomfunctionController = require("./hotscustomfunctionController");
 
 const magenta = '\x1b[35m';
