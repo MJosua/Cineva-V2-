@@ -2,7 +2,7 @@
 const cron = require('node-cron');
 const { dbConf, dbQuery } = require(`../config/db`);
 // const order = require('../controller/order');
-const { notifMailDeliver } = require('../config/mailer')
+const { notifMailDeliver } = require('../mailer/eorder/mailer')
 
 const colors = {
     reset: "\x1b[0m",

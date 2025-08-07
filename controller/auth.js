@@ -1,6 +1,6 @@
 const { dbConf, dbQuery, addSqlLogger } = require("../config/db");
 const { hashPassword, createToken } = require("../config/encrypts");
-const { forgotPasswordMailSender } = require('../config/mailer');
+const { forgotPasswordMailSender } = require('../mailer/eorder/mailer');
 
 let yellowTerminal = "\x1b[33m";
 

@@ -879,7 +879,7 @@ module.exports = {
           <html>
             <head>
               <meta charset="utf-8" />
-              <title>SAMPLE REQUEST FORM</title>
+              <title>SAMPLE REQUEST FORM ( SRF )</title>
               <style>
                 body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; }
                 table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -914,7 +914,7 @@ module.exports = {
               </tr>
             </table>
       
-            <div class="section-title">SAMPLE REQUEST FORM</div>
+            <div class="section-title">SAMPLE REQUEST FORM ( SRF )</div>
       
            <style>
                 .no-border {

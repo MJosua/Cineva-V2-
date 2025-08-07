@@ -12,7 +12,7 @@ const hotsCheckApprovalLevel = require("../../config/hotsCheckApprovalLevel");
 // const { generateTokenHT, hashPasswordHT } = require("../config/encrypts"); 
 
 const fs = require('fs');
-const { hotsMailer } = require("../../config/mailer");
+const { hotsMailer } = require('../../mailer/eorder/mailer');
 const hotscustomfunctionController = require("./hotscustomfunctionController");
 
 const magenta = '\x1b[35m';
@@ -4277,10 +4277,10 @@ module.exports = {
                     LEFT JOIN m_team tm ON tm.team_id = t.assigned_team
                     WHERE t.created_by = ?
                     ORDER BY t.creation_date DESC
-                    LIMIT ? OFFSET ?
+                    LIMIT ${limit} OFFSET ${offset}
                 `;
 
-            dbHots.execute(queryGetMyTickets, [user_id, limit, offset], (err2, results2) => {
+            dbHots.execute(queryGetMyTickets, [user_id], (err2, results2) => {
                 if (err2) {
                     console.log(timestamp, "GET MY TICKETS ERROR: ", err2);
                     return res.status(502).send({
@@ -4373,10 +4373,10 @@ module.exports = {
                     LEFT JOIN m_team tm ON tm.team_id = t.assigned_team
                     LEFT JOIN user u ON u.user_id = t.created_by
                     ORDER BY t.creation_date DESC
-                    LIMIT ? OFFSET ?
+                    LIMIT ${limit} OFFSET ${offset}
                 `;
 
-            dbHots.execute(queryGetAllTickets, [limit, offset], (err2, results2) => {
+            dbHots.execute(queryGetAllTickets, (err2, results2) => {
                 if (err2) {
                     console.log(timestamp, "GET ALL TICKETS ERROR: ", err2);
                     return res.status(502).send({

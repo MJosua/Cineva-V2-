@@ -4,7 +4,7 @@ const {
     // addSqlLogger
 } = require("../../config/db");
 const { generateTokenHT, hashPasswordHT } = require("../../config/encrypts");
-const { hotsForgotPasswordMailer } = require('../../config/mailer');
+const { hotsForgotPasswordMailer } = require('../../mailer/eorder/mailer');
 // const cookieParser = require('cookie-parser');
 const { compare } = require('bcrypt');
 

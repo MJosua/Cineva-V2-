@@ -102,7 +102,7 @@ route.get('/get_completionstatus', decodeTokenHT, hotsSettingsController.getcomp
 route.get('/get_srf_plant', decodeTokenHT, hotsSettingsController.getSRFPlant)
 route.get('/get_srf_sampleCategory', decodeTokenHT, hotsSettingsController.getSRFSampleCategory)
 route.get('/get_srf_deliverTo', decodeTokenHT, hotsSettingsController.getSRFDeliverTo)
-route.get('/get_srf_sku', decodeTokenHT, hotsSRFController.getSKUNoFilter)
+route.get('/get_srf_sku', decodeTokenHT, hotsSRFController.getAllSkunRM)
 route.get('/get_srf_purpose', decodeTokenHT, hotsSRFController.getPurpose)
 
 
