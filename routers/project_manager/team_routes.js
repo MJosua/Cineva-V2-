@@ -7,7 +7,7 @@ const teamJoinRequestController = require('../../controller/project_manager_cont
 
 // Team CRUD routes
 route.get('/', decodeTokenHT, team_controller.getAllTeams);
-// route.get('/user', decodeTokenHT, team_controller.getUserTeams);
+route.get('/user', decodeTokenHT, team_controller.getUserTeams);
 route.get('/byid/:department_id', decodeTokenHT, team_controller.getAllTeams);
 route.post('/', decodeTokenHT, team_controller.createTeam);
 route.get('/:id', decodeTokenHT, team_controller.getTeamDetail);
@@ -15,9 +15,9 @@ route.put('/:id', decodeTokenHT, team_controller.updateTeam);
 route.delete('/:id', decodeTokenHT, team_controller.deleteTeam);
 
 // Team member management
-// route.get('/:id/members', decodeTokenHT, team_controller.getTeamMembers);
-// route.post('/:id/members', decodeTokenHT, team_controller.addTeamMember);
-// route.delete('/:id/members/:userId', decodeTokenHT, team_controller.removeTeamMember);
+route.get('/:id/members', decodeTokenHT, team_controller.getTeamMembers);
+route.post('/:id/members', decodeTokenHT, team_controller.addTeamMember);
+route.delete('/:id/members/:userId', decodeTokenHT, team_controller.removeTeamMember);
 
 // Team join request routes
 // route.post('/:id/join-request', decodeTokenHT, teamJoinRequestController.requestToJoinTeam);

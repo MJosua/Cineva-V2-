@@ -291,7 +291,13 @@ const {
   departmentmngr,
   teammngr,
   taskstepsmngr,
-  pmdashboard
+  pmdashboard,
+  usermngr,
+  rolemngr,
+  timetrackingmngr,
+  notificationmngr,
+  projecttemplatemngr,
+  projectcommentmngr
 } = require("./routers");
 
 // Auth: 
@@ -308,6 +314,12 @@ App.use("/pm/team", teammngr);
 App.use("/pm/task", taskmngr); // This is the critical route
 App.use("/pm/task-steps", taskstepsmngr);
 App.use("/pm/dashboard", pmdashboard);
+App.use("/pm/user", usermngr);
+App.use("/pm/role", rolemngr);
+App.use("/pm/time-tracking", timetrackingmngr);
+App.use("/pm/notification", notificationmngr);
+App.use("/pm/project-templates", projecttemplatemngr);
+App.use("/pm/project-comments", projectcommentmngr);
 
 // Auth TM: 
 //App.use("/auth_tm", authTmRouter);

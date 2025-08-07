@@ -1,4 +1,5 @@
-const { dbHOTS } = require('../../config/database');
+const { dbHots } = require('../../config/db');
+
 const { decodeTokenHT } = require('../../config/encrypts');
 
 const projectCommentController = {
@@ -26,7 +27,7 @@ const projectCommentController = {
         ORDER BY c.date_created DESC
       `;
 
-      const [comments] = await dbHOTS.promise().execute(query, [project_id]);
+      const [comments] = await dbHots.promise().execute(query, [project_id]);
 
       res.status(200).json({
         success: true,
@@ -68,7 +69,7 @@ const projectCommentController = {
         VALUES (?, ?, ?, ?, NOW(), ?, ?)
       `;
 
-      await dbHOTS.promise().execute(insertQuery, [
+      await dbHots.promise().execute(insertQuery, [
         commentId,
         project_id,
         userId,
@@ -95,7 +96,7 @@ const projectCommentController = {
         WHERE c.comment_id = ?
       `;
 
-      const [newComment] = await dbHOTS.promise().execute(selectQuery, [commentId]);
+      const [newComment] = await dbHots.promise().execute(selectQuery, [commentId]);
 
       res.status(201).json({
         success: true,
@@ -121,7 +122,7 @@ const projectCommentController = {
 
       // Check if user owns the comment
       const checkQuery = `SELECT user_id FROM t_comment WHERE comment_id = ?`;
-      const [existingComment] = await dbHOTS.promise().execute(checkQuery, [comment_id]);
+      const [existingComment] = await dbHots.promise().execute(checkQuery, [comment_id]);
 
       if (existingComment.length === 0) {
         return res.status(404).json({
@@ -143,7 +144,7 @@ const projectCommentController = {
         WHERE comment_id = ?
       `;
 
-      await dbHOTS.promise().execute(updateQuery, [comment, comment_id]);
+      await dbHots.promise().execute(updateQuery, [comment, comment_id]);
 
       res.status(200).json({
         success: true,
@@ -167,7 +168,7 @@ const projectCommentController = {
 
       // Check if user owns the comment
       const checkQuery = `SELECT user_id FROM t_comment WHERE comment_id = ?`;
-      const [existingComment] = await dbHOTS.promise().execute(checkQuery, [comment_id]);
+      const [existingComment] = await dbHots.promise().execute(checkQuery, [comment_id]);
 
       if (existingComment.length === 0) {
         return res.status(404).json({
@@ -184,7 +185,7 @@ const projectCommentController = {
       }
 
       const deleteQuery = `DELETE FROM t_comment WHERE comment_id = ?`;
-      await dbHOTS.promise().execute(deleteQuery, [comment_id]);
+      await dbHots.promise().execute(deleteQuery, [comment_id]);
 
       res.status(200).json({
         success: true,

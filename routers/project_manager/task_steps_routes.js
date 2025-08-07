@@ -1,24 +1,27 @@
-
 const express = require('express');
 const route = express.Router();
 const { decodeTokenHT } = require('../../config/encrypts');
 const task_steps_controller = require('../../controller/project_manager_controller/task_steps_controller');
 
-// Task Step CRUD operations
+// Task Steps CRUD operations
 route.get('/task/:taskId/steps', decodeTokenHT, task_steps_controller.getTaskSteps);
 route.post('/task/:taskId/steps', decodeTokenHT, task_steps_controller.createTaskStep);
+// route.get('/steps/:stepId', decodeTokenHT, task_steps_controller.getTaskStepById);
 route.put('/steps/:stepId', decodeTokenHT, task_steps_controller.updateTaskStep);
-// Task Step Reports
-route.post('/steps/:stepId/reports', decodeTokenHT, task_steps_controller.createTaskStepReport);
-route.get('/steps/:stepId/reports', decodeTokenHT, task_steps_controller.getTaskStepReports);
-route.put('/reports/:reportId', decodeTokenHT, task_steps_controller.updateTaskStepReport);
-route.patch('/steps/:stepId/order', decodeTokenHT, task_steps_controller.updateTaskStepOrder);
-route.patch('/steps/:stepId/complete', decodeTokenHT, task_steps_controller.completeTaskStep);
-route.patch('/steps/:stepId/approval', decodeTokenHT, task_steps_controller.processTaskStepApproval);
 route.delete('/steps/:stepId', decodeTokenHT, task_steps_controller.deleteTaskStep);
 
-// Task Step Templates
-route.get('/templates/task-steps', decodeTokenHT, task_steps_controller.getTaskStepTemplates);
-route.post('/templates/task-steps', decodeTokenHT, task_steps_controller.createTaskStepTemplate);
+// Task Step completion
+route.patch('/steps/:stepId/complete', decodeTokenHT, task_steps_controller.completeTaskStep);
+// route.patch('/steps/:stepId/uncomplete', decodeTokenHT, task_steps_controller.uncompleteTaskStep);
+
+// Task Step journals
+// route.get('/steps/:stepId/journals', decodeTokenHT, task_steps_controller.getStepJournals);
+// route.post('/steps/:stepId/journals', decodeTokenHT, task_steps_controller.addStepJournal);
+// route.put('/journals/:journalId', decodeTokenHT, task_steps_controller.updateStepJournal);
+// route.delete('/journals/:journalId', decodeTokenHT, task_steps_controller.deleteStepJournal);
+
+// Bulk operations
+// route.patch('/task/:taskId/steps/reorder', decodeTokenHT, task_steps_controller.reorderTaskSteps);
+// route.post('/task/:taskId/steps/bulk', decodeTokenHT, task_steps_controller.bulkCreateTaskSteps);
 
 module.exports = route;

@@ -115,6 +115,7 @@ const dbHots = mysql.createPool({
 const dbQueryHots = util.promisify(dbHots.query).bind(dbHots);
 
 
+
 const dbPMS = mysql.createPool({
     // connectionLimit : 20, 
     multipleStatements: true,
@@ -186,7 +187,7 @@ module.exports = {
     dbTM, dbTMQuery,
     dbIndomieku, dbQueryIndomieku,
     dbCardGenerator, dbQueryCardGenerator,
-    dbHots, dbClick, dbQueryHots, dbQueryClick,
+    dbHots,  dbClick, dbQueryHots, dbQueryClick,
     dbSR, dbQuerySR,
     dbPMS,dbQueryPMS,
     addSqlLogger

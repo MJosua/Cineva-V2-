@@ -36,7 +36,6 @@ const hotsTps = require('./hots/hotsTps')
 const srtsRouter = require('./searates/srtsRouter')
 
 const hotscustomfunction = require('./hots/hotscustomfunction')
-const user = require('../controller/user')
 
 // Project Manager routes
 const projectmngr = require('./project_manager/project_routes')
@@ -48,6 +47,15 @@ const departmentmngr = require('./project_manager/department_routes')
 const teammngr = require('./project_manager/team_routes')
 const taskstepsmngr = require('./project_manager/task_steps_routes')
 const pmdashboard = require('./project_manager/dashboard_routes')
+const projectcommentmngr = require('./project_manager/project_comment_routes')
+const projecttemplatemngr = require('./project_manager/project_template_routes')
+const notificationmngr = require('./project_manager/notification_routes')
+const timetrackingmngr = require('./project_manager/time_tracking_routes')
+const usermngr = require('./project_manager/user_routes')
+const rolemngr = require('./project_manager/role_routes')
+
+
+
 
 module.exports = {
     authRouter,
@@ -81,5 +89,11 @@ module.exports = {
     departmentmngr,
     teammngr,
     taskstepsmngr,
-    pmdashboard
-} 
+    pmdashboard,
+    projectcommentmngr,
+    projecttemplatemngr,
+    notificationmngr,
+    timetrackingmngr,
+    usermngr,
+    rolemngr
+}

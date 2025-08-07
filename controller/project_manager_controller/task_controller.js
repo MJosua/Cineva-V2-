@@ -91,8 +91,8 @@ module.exports = {
       });
     } catch (error) {
       console.error('Error fetching tasks:', error);
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         error: 'Failed to fetch tasks',
         data: [],
         packet: [],
@@ -104,7 +104,7 @@ module.exports = {
   getMyTasks: async (req, res) => {
     try {
       console.log('getMyTasks called - User ID:', req.dataToken?.user_id);
-      
+
       if (!req.dataToken || !req.dataToken.user_id) {
         return res.status(401).json({
           success: false,
@@ -169,8 +169,8 @@ module.exports = {
       });
     } catch (error) {
       console.error('Error fetching my tasks:', error);
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         error: 'Failed to fetch tasks',
         data: [],
         packet: []
@@ -215,8 +215,8 @@ module.exports = {
 
       if (taskResult.length === 0) {
         console.log('Task not found for ID:', id);
-        return res.status(404).json({ 
-          success: false, 
+        return res.status(404).json({
+          success: false,
           error: 'Task not found',
           data: null,
           packet: null
@@ -299,10 +299,10 @@ module.exports = {
         custom_labels: [] // Add empty array for custom labels if not present
       };
 
-      console.log('Returning task data:', { 
-        task_id: responseData.task_id, 
-        status: responseData.status, 
-        steps_count: taskSteps.length 
+      console.log('Returning task data:', {
+        task_id: responseData.task_id,
+        status: responseData.status,
+        steps_count: taskSteps.length
       });
 
       res.status(200).json({
@@ -313,8 +313,8 @@ module.exports = {
 
     } catch (error) {
       console.error('Error fetching task detail:', error);
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         error: 'Failed to fetch task detail',
         data: null,
         packet: null,
@@ -329,36 +329,37 @@ module.exports = {
       const userId = req.dataToken.user_id;
 
       // Get default group if not specified
-      let groupId = data.group_id;
+      let groupId = data.assigned_team;
       if (!groupId && data.project_id) {
         const [defaultGroup] = await dbPMS.promise().execute(`
           SELECT group_id FROM PM.t_task_groups 
           WHERE project_id = ? AND status_mapping = 'todo' 
           ORDER BY sort_order LIMIT 1
         `, [data.project_id]);
-        
+
         if (defaultGroup.length > 0) {
           groupId = defaultGroup[0].group_id;
         }
       }
-
+      console.log("data",data)
       const [result] = await dbPMS.promise().execute(`
         INSERT INTO PM.t_tasks 
-        (name, description, status, priority, project_id, assigned_to, created_by, due_date, estimated_hours, group_id, created_date, updated_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        (name, description, status, priority, project_id, 
+ 
+        created_by, due_date,  group_id, created_date, updated_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?,?, NOW(), NOW())
       `, [
         data.name,
         data.description,
         data.status || 'todo',
         data.priority || 'medium',
         data.project_id,
-        data.assigned_to,
+        // data.assigned_to,
         userId,
         data.due_date,
-        data.estimated_hours || 0,
-        groupId
+        groupId || 0
       ]);
-
+      console.log("result", result)
       const [newTask] = await dbPMS.promise().execute(`
         SELECT 
           t.*,
@@ -417,7 +418,7 @@ module.exports = {
       if (data.team_ids && Array.isArray(data.team_ids)) {
         // Remove existing team assignments
         await dbPMS.promise().execute('DELETE FROM PM.t_task_teams WHERE task_id = ?', [id]);
-        
+
         // Add new team assignments
         for (const teamId of data.team_ids) {
           await dbPMS.promise().execute(`
@@ -623,7 +624,7 @@ module.exports = {
   getTaskDependencies: async (req, res) => {
     try {
       const { id } = req.params;
-      
+
       const [dependencies] = await dbPMS.promise().execute(`
         SELECT 
           td.dependency_id,
@@ -659,9 +660,9 @@ module.exports = {
       const userId = req.dataToken?.user_id;
 
       if (!depends_on_task_id) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'depends_on_task_id is required' 
+        return res.status(400).json({
+          success: false,
+          error: 'depends_on_task_id is required'
         });
       }
 
@@ -672,9 +673,9 @@ module.exports = {
       );
 
       if (taskExists.length !== 2) {
-        return res.status(404).json({ 
-          success: false, 
-          error: 'One or both tasks not found' 
+        return res.status(404).json({
+          success: false,
+          error: 'One or both tasks not found'
         });
       }
 
@@ -696,9 +697,9 @@ module.exports = {
       `, [id, depends_on_task_id]);
 
       if (existingPath.length > 0) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'This dependency would create a circular dependency' 
+        return res.status(400).json({
+          success: false,
+          error: 'This dependency would create a circular dependency'
         });
       }
 
@@ -709,9 +710,9 @@ module.exports = {
       );
 
       if (existingDep.length > 0) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Dependency already exists' 
+        return res.status(400).json({
+          success: false,
+          error: 'Dependency already exists'
         });
       }
 
@@ -761,9 +762,9 @@ module.exports = {
       );
 
       if (result.affectedRows === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          error: 'Dependency not found' 
+        return res.status(404).json({
+          success: false,
+          error: 'Dependency not found'
         });
       }
 
