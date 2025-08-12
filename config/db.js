@@ -21,6 +21,8 @@
 
 
 const mysql = require('mysql2');
+const mysqlmb = require('mysql2/promise');
+
 const util = require('util');
 const os = require('os');
 
@@ -178,6 +180,15 @@ const addSqlLogger = (user_id, sql_parameter, message, function_name) => {
 
 }
 
+//meetingbook
+const dbmeetingbook = mysqlmb.createPool({
+    host: host_config,
+    user: user_config,
+    password: password_config,
+    database: 'meetingbook',
+});
+
+
 // dbConf.connect()
 
 
@@ -187,9 +198,9 @@ module.exports = {
     dbTM, dbTMQuery,
     dbIndomieku, dbQueryIndomieku,
     dbCardGenerator, dbQueryCardGenerator,
-    dbHots,  dbClick, dbQueryHots, dbQueryClick,
+    dbHots, dbClick, dbQueryHots, dbQueryClick,
     dbSR, dbQuerySR,
-    dbPMS,dbQueryPMS,
+    dbPMS, dbQueryPMS, dbmeetingbook,
     addSqlLogger
 
 }

@@ -1,5 +1,5 @@
 // BISMILAHIROHMANNIROHIM
-
+const readline = require('readline');
 /**
  * IOD INTEGRATED API:
  * ADALAH API YANG MENGAKOMODASIKAN BERBAGAI WEBAPPP IOD UNTUK DIGUNAKAN SECARA BERSAMA-SAMA DAN TERINTEGRASI
@@ -54,6 +54,7 @@ const os = require('os');
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
+
 
 
 const swaggerOptions = {
@@ -258,6 +259,8 @@ io.on("connection", (socket) => {
 
 
 
+
+
 //================================ ROUTERS =============================
 
 // CONFIGURE ROUTERS
@@ -297,11 +300,29 @@ const {
   timetrackingmngr,
   notificationmngr,
   projecttemplatemngr,
-  projectcommentmngr
+  projectcommentmngr,
+  mbbookings,
+  mbdayColors,
+  mbrooms,
+  mbsettings,
+  mbtimeslots,
+  mbusers,
 } = require("./routers");
+
+
 
 // Auth: 
 App.use("/auth", authRouter);
+
+
+// meeting book
+App.use("/api/bookings", mbbookings);
+App.use("/api/day-colors", mbdayColors);
+App.use("/api/rooms", mbrooms);
+App.use("/api/settings", mbsettings);
+App.use("/api/timeslots", mbtimeslots);
+App.use("/api/users", mbusers);
+
 
 
 // Project_manager: 
@@ -448,13 +469,6 @@ App.use('*', (req, res) => {
 // }));
 
 
-// ========= for test program ============
-
-// Auth_test: 
-//App.use("/bdrtny", authRouterTest);
-
-//Product_test: 
-//App.use("/vgerbhyy", productRouterTest);
 
 
 //======================================================================
@@ -483,12 +497,25 @@ const {
   dbClick
 } = require("./config/db");
 
+
+let totalConnections = 5; // total DBs
+let doneConnections = 0;
+
+function checkDone() {
+  doneConnections++;
+  if (doneConnections === totalConnections) {
+    console.log("✅ All database connections are established!");
+    console.log("=============================================================");
+  }
+}
+
 //FOR POOLING CONNECTION
 dbConf.getConnection((error, connection) => {
   if (error) {
     console.log("Error DB e-Order Connection!", error.sqlMessage);
   } else {
     console.log(`DB e-Order has been connected ${connection.threadId}`);
+    checkDone();
   }
 });
 
@@ -497,6 +524,7 @@ dbTM.getConnection((error, connection) => {
     console.log("Error DB Trademark Management Connection!", error.sqlMessage);
   } else {
     console.log(`DB Trademark Management has been connected ${connection.threadId}`);
+    checkDone();
   }
 });
 
@@ -505,6 +533,7 @@ dbCardGenerator.getConnection((error, connection) => {
     console.log("Error DB Card Generator Connection!", error.sqlMessage);
   } else {
     console.log(`DB Card Generator has been connected ${connection.threadId}`);
+    checkDone();
   }
 });
 
@@ -513,6 +542,7 @@ dbHots.getConnection((error, connection) => {
     console.log("Error DB HOTS Connection!", error.sqlMessage);
   } else {
     console.log(`DB HOTS has been connected ${connection.threadId}`);
+    checkDone();
   }
 
 });
@@ -523,9 +553,12 @@ dbClick.getConnection((error, connection) => {
     console.log("Error DB Click Connection!", error.sqlMessage);
   } else {
     console.log(`DB Click has been connected ${connection.threadId}`);
+    checkDone();
   }
 
 });
+
+
 
 
 /*
@@ -546,7 +579,9 @@ dbIndomieku.getConnection((error, connection) => {
 const {
   trademarkMgmtAuto,
   notification,
-  cleanup
+  cleanup,
+  automatemb,
+
 
 } = require('./automation');
 const { error } = require("console");
@@ -555,6 +590,22 @@ trademarkMgmtAuto.runCheck();
 notification.shippingMailNotification();
 cleanup.cleanupOrphan();
 // notification.callInsertSO();
+
+// commandprompt
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+
+// ========= for test program ============
+
+// Import testing utilities
+const testingUtils = require('./testing-utils');
+
+
+// =======================================
+
 
 
 //============================= UPDATE REGISTER =============================
@@ -575,3 +626,6 @@ cleanup.cleanupOrphan();
  * 
  * 
  */
+
+
+

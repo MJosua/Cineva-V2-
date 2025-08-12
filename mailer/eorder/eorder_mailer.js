@@ -23,10 +23,8 @@ function production() {
 
     if (getLocalIp() == "10.126.106.105") {
         // return "production"
-        console.log("production")
         return true;
     } else {
-        console.log("development")
         // return "development"
         return false;
     }

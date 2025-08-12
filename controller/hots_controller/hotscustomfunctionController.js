@@ -838,6 +838,8 @@ module.exports = {
         const generatesrf = await getSRFNumber(factory, sample);
 
 
+
+
         const itemRows = detailRows.filter(row =>
             row.lbl_col?.toLowerCase().includes('item')
         );
@@ -978,11 +980,18 @@ module.exports = {
             </table>
       
             <div class="note">
-                <strong>Note:</strong>
+                <strong>Request Detail:</strong>
                 ${getByLabel('PO_Number') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${getByLabel('PO_Number')}</p>` : ''}
                 ${getByLabel('Week Delivery') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>` : ''}
                 <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('Declare') === 1 ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
                 ${getByLabel('notes') ? `<p>${getByLabel('notes')}</p>` : ''}
+
+              <strong>Thank you</strong>
+            </div>
+
+            <div class="note">
+                <strong>Note:</strong>
+               
 
               <strong>Thank you</strong>
             </div>

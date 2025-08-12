@@ -55,6 +55,14 @@ const usermngr = require('./project_manager/user_routes')
 const rolemngr = require('./project_manager/role_routes')
 
 
+//booking manager
+const mbbookings = require('./meetingbook/bookings')
+const mbdayColors = require('./meetingbook/dayColors')
+const mbrooms = require('./meetingbook/rooms')
+const mbsettings = require('./meetingbook/settings')
+const mbtimeslots = require('./meetingbook/timeslots')
+const mbusers = require('./meetingbook/users')
+
 
 
 module.exports = {
@@ -95,5 +103,14 @@ module.exports = {
     notificationmngr,
     timetrackingmngr,
     usermngr,
-    rolemngr
+    rolemngr,
+
+
+    //meetingbook
+    mbbookings,
+    mbdayColors,
+    mbrooms,
+    mbsettings,
+    mbtimeslots,
+    mbusers,
 }

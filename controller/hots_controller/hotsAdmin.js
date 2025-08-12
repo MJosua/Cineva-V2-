@@ -4,7 +4,7 @@ const {
     // addSqlLogger
 } = require("../../config/db");
 const { generateTokenHT, hashPasswordHT } = require("../../config/encrypts");
-const { hotsForgotPasswordMailer } = require('../../mailer/eorder/eorder_mailer');
+const { hotsForgotPasswordMailer } = require('../../mailer/hots/hots_mailer');
 // const cookieParser = require('cookie-parser');
 
 const redColor = '\x1b[31m'; // Red 

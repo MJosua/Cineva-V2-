@@ -12,7 +12,7 @@ const hotsCheckApprovalLevel = require("../../config/hotsCheckApprovalLevel");
 // const { generateTokenHT, hashPasswordHT } = require("../config/encrypts"); 
 
 const fs = require('fs');
-const { hotsMailer } = require('../../mailer/eorder/eorder_mailer');
+const { hotsMailer, hotsSubmitMailer } = require('../../mailer/hots/hots_mailer');
 const hotscustomfunctionController = require("./hotscustomfunctionController");
 
 const magenta = '\x1b[35m';
@@ -2269,7 +2269,7 @@ module.exports = {
         set
             approve_date = now(),
             approval_status = 2,
-            rejection_remark = ?
+            remark = ?
         where
 	    approval_id = ?
         and
@@ -2401,7 +2401,7 @@ module.exports = {
                             'approval_order', a.approval_order,
                             'approver_name', CONCAT(u.firstname, " ", u.lastname),
                             'approval_status', a.approval_status,
-                            'cancel_remark', a.rejection_remark
+                            'cancel_remark', a.remark
                         )
                     )
                 FROM
@@ -2558,7 +2558,7 @@ module.exports = {
                                 'approval_order', a.approval_order,
                                 'approver_name', CONCAT(u.firstname, " ", u.lastname),
                                 'approval_status', a.approval_status,
-                                'cancel_remark', a.rejection_remark
+                                'cancel_remark', a.remark
                             )
                         )
                     FROM
@@ -3977,6 +3977,8 @@ module.exports = {
         let timestamp = "\x1b[33m" + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
         let user_id = req.dataToken.user_id;
+        let user_name = req.dataToken.username;
+
         let service_id = req.params.service_id;
         let { upload_ids, ...formData } = req.body;
 
@@ -4126,6 +4128,10 @@ module.exports = {
 
             // Custom functions
             await module.exports.callexecuteCustomFunctions(service_id, ticket_id);
+
+            if (mailAddress && mailAddress.length > 0) {
+                await hotsSubmitMailer(ticket_id, user_name, service.service_name, mailAddress);
+            }
 
             return res.status(200).send({
                 success: true,
@@ -4676,7 +4682,7 @@ module.exports = {
                             'approval_order', ae.approval_order,
                             'approval_status', ae.approval_status,
                             'approval_date', DATE_FORMAT(ae.approve_date, '%Y-%m-%d %H:%i:%s'),
-                            'rejection_remark', ae.rejection_remark,
+                            'remark', ae.remark,
                             'approver_leader', ae.approver_leader
                         )
                     )
@@ -4792,7 +4798,7 @@ module.exports = {
         // Update approval event to rejected
         let updateApprovalQuery = `
                 UPDATE t_approval_event 
-                SET approval_status = 2, approve_date = NOW(), rejection_remark = ?
+                SET approval_status = 2, approve_date = NOW(), remark = ?
                 WHERE approval_id = ? AND approver_id = ? AND approval_status = 0
             `;
 
@@ -5028,7 +5034,7 @@ module.exports = {
             // Approve current approver
             await conn.query(`
             UPDATE t_approval_event 
-            SET approval_status = 1, approve_date = NOW(), rejection_remark = ?
+            SET approval_status = 1, approve_date = NOW(), remark = ?
             WHERE approval_id = ? AND approver_id = ? AND approval_status = 0
           `, [comment, ticket_id, user_id]);
 
