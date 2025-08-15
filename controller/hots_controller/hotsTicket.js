@@ -12,7 +12,7 @@ const hotsCheckApprovalLevel = require("../../config/hotsCheckApprovalLevel");
 // const { generateTokenHT, hashPasswordHT } = require("../config/encrypts"); 
 
 const fs = require('fs');
-const { hotsMailer, hotsSubmitMailer } = require('../../mailer/hots/hots_mailer');
+const { hotsMailer, hotsSubmitMailer, hotsApproveRequest } = require('../../mailer/hots/hots_mailer');
 const hotscustomfunctionController = require("./hotscustomfunctionController");
 
 const magenta = '\x1b[35m';
@@ -3977,10 +3977,11 @@ module.exports = {
         let timestamp = "\x1b[33m" + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
         let user_id = req.dataToken.user_id;
-        let user_name = req.dataToken.username;
-
+        let user_name = req.dataToken.firstname;
         let service_id = req.params.service_id;
         let { upload_ids, ...formData } = req.body;
+
+        const mailAddress = await dbQueryHots(`SELECT email  FROM USER WHERE user_id = ${req.dataToken.user_id}`);
 
         if (!service_id) {
             return res.status(400).send({
@@ -4128,9 +4129,9 @@ module.exports = {
 
             // Custom functions
             await module.exports.callexecuteCustomFunctions(service_id, ticket_id);
-
             if (mailAddress && mailAddress.length > 0) {
-                await hotsSubmitMailer(ticket_id, user_name, service.service_name, mailAddress);
+                hotsSubmitMailer(false, ticket_id, user_name, service.service_name, mailAddress[0].email);
+                hotsApproveRequest(false, ticket_id,);
             }
 
             return res.status(200).send({
@@ -4512,8 +4513,6 @@ module.exports = {
         `;
 
             dbHots.execute(queryGetTaskList, [limit, offset], (err2, results2) => {
-                console.log("results2", results2)
-                console.log(timestamp, "GET TASK LIST SUCCESSc", results2, "2");
 
                 if (err2) {
                     console.log(timestamp, "GET TASK LIST ERROR: ", err2);
@@ -4886,6 +4885,50 @@ module.exports = {
         });
     },
 
+    closeTicketservice: (req, res) => {
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+
+        let user_id = req.dataToken.user_id;
+        let ticket_id = req.params.ticket_id || req.body.ticket_id;
+        if (!ticket_id) {
+            return res.status(400).send({
+                success: false,
+                message: `ticket_id ${ticket_id}  are required`
+            });
+        }
+        console.log(" Trying to close ticket with ticket id ", ticket_id)
+        // Update approval event to rejected
+        let updateCloseQuery = `
+                UPDATE t_ticket 
+                SET status_id = 6, last_update = NOW() , reject_reason = "Closed by Service"
+                where
+                ticket_id = ?
+            `;
+
+        dbHots.execute(updateCloseQuery, [ticket_id], (err, result) => {
+
+
+
+            if (err) {
+                console.log(timestamp, "CLOSE TICKET ERROR: ", err);
+                return res.status(502).send({
+                    success: false,
+                    message: err
+                });
+            }
+
+
+            console.log(timestamp, "CLOSE TICKET SUCCESS");
+            return res.status(200).send({
+                success: true,
+                message: "TICKET CLOSE SUCCESSFULLY"
+            });
+
+        });
+    },
+
+
     // 10. Get Ticket Attachments  
     getTicketAttachments: (req, res) => {
         let date = new Date();
@@ -5042,17 +5085,13 @@ module.exports = {
             await conn.query(`
             UPDATE t_approval_event ae
             LEFT JOIN t_workflow_step ws ON ws.step_id = ae.step_id
-            SET ae.approval_status = 1, ae.approve_date = NOW()
+            SET ae.approval_status = 1
             WHERE ae.approval_id = ? AND ae.approval_order = ? AND ae.approval_status = 0
           `, [ticket_id, current_step]);
 
             console.log(timestamp, `Step ${current_step} approved for ticket ${ticket_id}`);
 
-            // Custom hook per step
-            await module.exports.executeCustomFunctionsByTrigger(service_id, ticket_id, 'on_step_approved', {
-                current_step,
-                approver_id: user_id
-            });
+           
 
             // Check for next pending step
             const [nextStepCheck] = await conn.query(`
@@ -5065,6 +5104,8 @@ module.exports = {
             const hasNext = nextStepCheck[0].pending_count > 0;
             const nextStep = nextStepCheck[0].next_step;
 
+            await conn.commit();
+
             if (hasNext) {
                 await conn.query(`
               UPDATE t_ticket 
@@ -5072,27 +5113,33 @@ module.exports = {
               WHERE ticket_id = ?
             `, [nextStep, ticket_id]);
 
+                await module.exports.executeCustomFunctionsByTrigger(service_id, ticket_id, 'on_trigger', {
+                    approver_id: user_id
+                });
+
                 console.log(timestamp, `Ticket ${ticket_id} moved to step ${nextStep}`);
             } else {
-                await conn.query(`
-              UPDATE t_ticket 
-              SET status_id = 3, current_step = NULL, last_update = NOW()
-              WHERE ticket_id = ?
-            `, [ticket_id]);
+               
 
                 console.log(timestamp, `Ticket ${ticket_id} fully approved`);
 
-                await module.exports.executeCustomFunctionsByTrigger(service_id, ticket_id, 'on_final_approved', {
+                await module.exports.executeCustomFunctionsByTrigger(service_id, ticket_id, 'on_trigger', {
                     final_approver_id: user_id,
                     total_steps: current_step
                 });
 
-                await module.exports.executeCustomFunctionsByTrigger(service_id, ticket_id, 'on_approved', {
-                    approver_id: user_id
-                });
+                await conn.query(`
+                    UPDATE t_ticket 
+                    SET status_id = 3, current_step = NULL, last_update = NOW()
+                    WHERE ticket_id = ?
+                  `, [ticket_id]);
+
+
             }
 
             await conn.commit();
+
+            hotsApproveRequest(false, ticket_id,);
 
             return res.status(200).json({
                 success: true,
@@ -5191,13 +5238,13 @@ module.exports = {
                     resolve();
                     return;
                 }
-
+                console.log("customFunctions",customFunctions)
                 // Get complete ticket data
                 const getTicketDataQuery = `
                 SELECT 
                     t.ticket_id, t.service_id, s.service_name, t.created_by, t.status_id,
                     CONCAT(u.firstname, ' ', u.lastname) as created_by_name,
-                    tm.team_name, d.dept_name,
+                    tm.team_name, d.department_name,
                     td.*
                 FROM t_ticket t
                 LEFT JOIN m_service s ON s.service_id = t.service_id
@@ -5224,14 +5271,26 @@ module.exports = {
                     try {
                         // Execute each custom function
                         for (const customFunction of customFunctions) {
-                            console.log(`Executing function: ${customFunction.function_name} (ID: ${customFunction.function_id})`);
+                            console.log(`Executing function: ${customFunction.name} (ID: ${customFunction.id})`);
+                            
+                            let functionData = {};
 
-                            const functionData = JSON.parse(customFunction.function_data || '{}');
-                            functionData.function_id = customFunction.function_id;
-                            functionData.trigger_event = triggerEvent;
-
+                            if (typeof customFunction.config === 'string') {
+                              try {
+                                functionData = JSON.parse(customFunction.config);
+                              } catch (err) {
+                                console.error('Invalid JSON in customFunction.config:', err);
+                                functionData = {};
+                              }
+                            } else if (typeof customFunction.config === 'object' && customFunction.config !== null) {
+                              functionData = { ...customFunction.config };
+                            }
+                            
+                            functionData.function_id = customFunction.id;
+                            functionData.trigger_event = customFunction.trigger_event;
+                            
                             // Map ticket data to template variables
-                            const variables = module.exports.mapTicketDataToVariables(ticket, ticket);
+                            const variables = module.exports.mapTicketDataToVariables(ticket, ticketData);
 
                             // Add additional trigger-specific data
                             Object.assign(variables, additionalData);
@@ -5239,16 +5298,23 @@ module.exports = {
                             // Log the execution
                             const logQuery = `
                                                                                 INSERT INTO t_custom_function_logs (
-                                                                                    function_id, ticket_id, trigger_event, execution_status, 
-                                                                                    execution_date, input_data, output_data
-                                                                                ) VALUES (?, ?, ?, 'executing', NOW(), ?, NULL)
+                                                                                    ticket_id, 
+                                                                                    function_name,  
+                                                                                    trigger_event, 
+                                                                                    status, 
+                                                                                    execution_time, 
+                                                                                    created_by, 
+                                                                                    service_id
+                                                                                ) VALUES (?, ?, ?, 'executing', NOW(), ?, ?)
                                                                             `;
 
                             dbHots.execute(logQuery, [
-                                customFunction.function_id,
                                 ticketId,
+                                customFunction.name,
                                 triggerEvent,
-                                JSON.stringify({ variables, functionData })
+                                
+                                ticketData.created_by,
+                                serviceId
                             ], (logErr, logResult) => {
                                 if (logErr) {
                                     console.error('Error logging function execution:', logErr);

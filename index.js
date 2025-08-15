@@ -56,6 +56,21 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 
 
+function getLocalIP() {
+  const interfaces = os.networkInterfaces();
+  for (let name in interfaces) {
+    for (let iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return null;
+}
+
+const API_URL = getLocalIP();
+
+
 
 const swaggerOptions = {
   definition: {
@@ -145,7 +160,7 @@ let svr = production() ? https.createServer(SSL, App) : http.createServer(App);
 let PORT = production() ? process.env.PORT_SSL : process.env.DEV_PORT;
 console.log("Server status is Production?", production())
 
-
+module.exports = { PORT, API_URL };
 
 
 const io = new Server(

@@ -1179,70 +1179,7 @@ module.exports = {
     }
 
 
-
-    //hots 
-    , hotsMailer: async (emailAdress, mailSubject, mailBody) => {
-
-        let date = new Date();
-        let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-
-        try {
-
-            if (emailAdress, mailSubject, mailBody) {
-                await transporter.sendMail({
-                    from: 'no-reply@indofoodinternational.com',
-                    to: emailAdress,
-                    subject: `[IOD HOTS] ${mailSubject}`,
-                    html: `${mailBody}`,
-                })
-
-                console.log(`${timestamp} Cannot Send Mail! emailAdress, mailSubject, mailBody is invalid or not exist`)
-
-            } else {
-
-                console.log(`${timestamp} Sending Mail to ${emailAdress} with mailSubject : ${mailSubject}`)
-            }
-
-        } catch (error) {
-
-            console.log(`${timestamp} Error sending mail to ${emailAdress} error message: ${error}`)
-
-        }
-
-
-
-    }
-    , hotsForgotPasswordMailer: async (address, token) => {
-        let date = new Date();
-        let timestamp =
-            date.toLocaleDateString("id") + " " + date.toLocaleTimeString("id") + " : ";
-
-        try {
-            const info = await transporter.sendMail({
-                from: mailaccount,
-                to: address,
-                subject: "Reset Password",
-                html: `
-              <div>
-                <h3>To reset your password, copy this URL into an incognito browser tab or click the link below:</h3>
-                <br>
-                <a href="${process.env.FE_URL_HOTS}/forgot-password/${token}">
-                  ${process.env.FE_URL_HOTS}/forgot-password/${token}
-                </a>
-                <br><br>
-                <h4>Please do not share this link with anyone.</h4>
-              </div>
-            `,
-            });
-
-            console.log(`${timestamp} ✅ Email sent to ${address}`);
-            console.log(`Message ID: ${info.messageId}`);
-            console.log(`Response: ${info.response}`);
-        } catch (error) {
-            console.error(`${timestamp} ❌ ERROR sending mail to ${address}`);
-            console.error(error);
-        }
-    }
+    
 
 
 }

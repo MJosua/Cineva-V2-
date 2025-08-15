@@ -14,6 +14,7 @@ const yellowTerminal = '\x1b[33m';
 
 const puppeteer = require('puppeteer');
 const Mustache = require('mustache');
+const { PORT, API_URL } = require("../..");
 
 /**
  * Custom Function Controller
@@ -715,9 +716,12 @@ module.exports = {
 
 
 
+
         let itemRowsHtml = '';
         let totalPcs = 0;
         let totalCtn = 0;
+
+
 
         const cleanValue = (value) => {
             try {
@@ -727,6 +731,8 @@ module.exports = {
                 return value;
             }
         };
+
+
 
         const getByLabel = (labelKeyword) => {
             const row = detailRows.find(r =>
@@ -738,17 +744,17 @@ module.exports = {
         const getteamleaderEmail = async (teamId) => {
             try {
                 const query = `
-                    SELECT
-                        u.email AS team_leader_email,
-                        CONCAT(u.firstname, ' ', u.lastname) AS team_leader_name
-                    FROM
-                        m_team_member mtm
-                    JOIN user u ON mtm.user_id = u.user_id
-                    WHERE
-                        mtm.team_leader = "1"
-                        AND mtm.team_id = ${teamId}
-                    LIMIT 1
-                `;
+                        SELECT
+                            u.email AS team_leader_email,
+                            CONCAT(u.firstname, ' ', u.lastname) AS team_leader_name
+                        FROM
+                            m_team_member mtm
+                        JOIN user u ON mtm.user_id = u.user_id
+                        WHERE
+                            mtm.team_leader = "1"
+                            AND mtm.team_id = ${teamId}
+                        LIMIT 1
+                    `;
                 const result = await dbQueryHots(query);
                 return result[0] || { team_leader_name: 'Unknown', team_leader_email: '-' };
             } catch (error) {
@@ -760,9 +766,9 @@ module.exports = {
         const getFactoryPPIC = async (factory) => {
             try {
                 const query = `
-                    SELECT pic_name, flag FROM iod.map_factory_pic WHERE LOWER(remarks) LIKE '%${factory}%'
-                    order by flag
-                `;
+                        SELECT pic_name, flag FROM iod.map_factory_pic WHERE LOWER(remarks) LIKE '%${factory}%'
+                        order by flag
+                    `;
                 const result = await dbQuery(query);
                 console.log("result", result)
                 console.log("factory", factory)
@@ -776,14 +782,21 @@ module.exports = {
         const getApproval = async (dataticket_id) => {
             try {
                 const query = `
-                  SELECT t.approval_order,t.approve_date, t.approver_id, CONCAT(u.firstname, ' ', u.lastname) AS fullname  from t_approval_event t 
-                    left join user u 
-                    on t.approver_id = u.user_id
-                    where t.approval_id = ${dataticket_id}
-                    and
-                    t.approver_leader = "1"
-
-                `;
+                      SELECT 
+                      t.approval_order,
+                      t.approve_date, 
+                      t.approver_id,
+                      t.remark, 
+                      CONCAT(u.firstname, ' ', u.lastname) AS fullname  
+                      from 
+                      t_approval_event t 
+                        left join user u 
+                        on t.approver_id = u.user_id
+                        where t.approval_id = ${dataticket_id}
+                        and
+                        t.approver_leader = "1"
+    
+                    `;
                 const result = await dbQueryHots(query);
                 return (result && result.length > 0) ? result : [{ approval_order: "", approve_date: "", approver_id: "", fullname: "" }];
             } catch (error) {
@@ -805,10 +818,10 @@ module.exports = {
 
             // Step 1: Get category shortname
             const categoryQuery = await dbQueryHots(`
-                SELECT samplecat_shortname 
-                FROM m_sample_category 
-                WHERE samplecat_name LIKE ${dbHots.escape('%' + categoryName + '%')}
-            `);
+                    SELECT samplecat_shortname 
+                    FROM m_sample_category 
+                    WHERE samplecat_name LIKE ${dbHots.escape('%' + categoryName + '%')}
+                `);
             const category = categoryQuery[0]?.samplecat_shortname;
 
             if (!category || category === "NICI") return "-";
@@ -817,11 +830,11 @@ module.exports = {
 
             // Step 2: Get current count
             const runQuery = await dbQueryHots(`
-                SELECT COUNT(ticket_id) AS total
-                FROM t_ticket
-                WHERE MONTH(creation_date) = ${currentMonth}
-                AND YEAR(creation_date) = ${year}
-            `);
+                    SELECT COUNT(ticket_id) AS total
+                    FROM t_ticket
+                    WHERE MONTH(creation_date) = ${currentMonth}
+                    AND YEAR(creation_date) = ${year}
+                `);
 
             const nextNumber = String((runQuery[0]?.total || 0) + 1).padStart(3, '0');
 
@@ -838,6 +851,44 @@ module.exports = {
         const generatesrf = await getSRFNumber(factory, sample);
 
 
+        const getAllEmployees = async (data, approvallist) => {
+            try {
+                // Urutkan: created_by dulu, lalu approver_id sesuai approval_order
+                const orderedUserIds = [
+                    data.created_by,
+                    ...approvallist
+                        .sort((a, b) => a.approval_order - b.approval_order)
+                        .map(item => item.approver_id)
+                ];
+
+                // Hilangkan duplikat tapi pertahankan urutan (pakai Set)
+                const uniqueOrderedIds = [...new Set(orderedUserIds)];
+
+                // Query pakai IN biar lebih singkat
+                const query = `
+                    SELECT user_id, employee_id
+                    FROM user
+                    WHERE user_id IN (${uniqueOrderedIds.map(id => `'${id}'`).join(', ')})
+                  `;
+
+                const result = await dbQueryHots(query);
+
+                // Susun hasil sesuai urutan original (karena SELECT IN tidak menjamin urutan)
+                const orderedResult = uniqueOrderedIds.map(id =>
+                    result.find(user => user.user_id === id) || { user_id: id, fullname: 'Unknown' }
+                );
+
+                return orderedResult;
+            } catch (error) {
+                console.error('Error fetching employees:', error);
+                return [];
+            }
+        };
+
+        const employees = await getAllEmployees(data, approvallist);
+        console.log(employees);
+
+        console.table(approvallist)
 
 
         const itemRows = detailRows.filter(row =>
@@ -869,149 +920,241 @@ module.exports = {
             }
 
             itemRowsHtml += `
-            <tr>
-              <td>${i + 1}</td>
-              <td>${itemName}</td>
-              <td>${pcs}</td>
-              <td>${ctn}</td>
-            </tr>`;
+                <tr>
+                  <td>${i + 1}</td>
+                  <td>${itemName}</td>
+                  <td>${pcs}</td>
+                  <td>${ctn}</td>
+                </tr>`;
         });
-        console.log("data.approval_section", data.approval_section)
+
+        let notesHtml = '';
+
+
+        approvallist.forEach((data, i) => {
+            if (data.remark && data.remark.trim() !== '') {
+                notesHtml += `
+                <li>${data.fullname} noted ${data.remark}</li>
+              `;
+            }
+        });
+
+
+        console.log(` approvallist[2].approve_date `,  approvallist[2].approve_date)
+        console.log(` approvallist[2] `,  approvallist[2])
         const html = `
-          <html>
-            <head>
-              <meta charset="utf-8" />
-              <title>SAMPLE REQUEST FORM ( SRF )</title>
-              <style>
-                body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                th, td { border: 1px solid #000; padding: 5px; text-align: left; }
-                .no-border td { border: none; }
-                .center { text-align: center; }
-                .bold { font-weight: bold; }
-                .section-title { margin-top: 20px; font-weight: bold; font-size: 16px; text-align: center; }
-                .note { border: 1px solid #000; padding: 10px; margin-top: 10px; }
-                .approval-table td { height: 60px; vertical-align: bottom; text-align: center; }
-                .small { font-size: 10px; }
-              </style>
-            </head>
-            <body>
-      
-            <table class="no-border">
-              <tr>
-                <td><strong>PT. INDOFOOD CBP SUKSES MAKMUR</strong></td>
-                <td style="text-align:right;">To&nbsp;: <em>${factoryPIC[0].pic_name} </em> </td>
-              </tr>
-              <tr>
-                <td><strong>Division</strong>&nbsp;: IOD </td>
-                <td style="text-align:right;">From&nbsp;: <em>${teamLeader?.team_leader_name || 'Unknown'} </em></td>
-              </tr>
-              <tr>
-                <td><strong>Location</strong>&nbsp;: INDOFOOD TOWER LT.23</td>
-                <td></td>
-              </tr>
-              <tr>
-                <td><strong>SRF NO</strong>&nbsp;: ${generatesrf}</td>
-                <td></td>
-              </tr>
-            </table>
-      
-            <div class="section-title">SAMPLE REQUEST FORM ( SRF )</div>
-      
-           <style>
-                .no-border {
-                    width: 100%;
-                    table-layout: fixed;
-                    border-collapse: collapse;
-                }
-                .no-border td {
-                    vertical-align: top;
-                    padding: 4px;
-                }
-                .label {
-                    width: 12%;
-                    font-weight: bold;
-                }
-                .content {
-                    width: 38%;
-                }
-                </style>
-
+              <html>
+                <head>
+                  <meta charset="utf-8" />
+                  <title>SAMPLE REQUEST FORM ( SRF )</title>
+                  <style>
+                    body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th, td { border: 1px solid #000; padding: 5px; text-align: left; }
+                    .no-border td { border: none; }
+                    .center { text-align: center; }
+                    .bold { font-weight: bold; }
+                    .section-title { margin-top: 20px; font-weight: bold; font-size: 16px; text-align: center; }
+                    .note { border: 1px solid #000; padding: 10px; margin-top: 10px; }
+                    .approval-table td { height: 60px; vertical-align: bottom; text-align: center; }
+                    .small { font-size: 10px; }
+                  </style>
+                </head>
+                <body>
+    
+                <div style="display:flex;justify-content:space-between;width:100%;">
+                    <div>
+                        <img
+                            src="http://${API_URL}:${PORT}/aset/image/indofood_header_logo.png"
+                            style="height:50px"
+                        />
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;">
+                        <img
+                            src="http://${API_URL}:${PORT}/aset/image/icbp_header_logo.png"
+                            style="height:50px"
+                        />
+                    </div>
+                </div>
+    
+    
+                <br>
+    
                 <table class="no-border">
-                <tr>
-                    <td class="label">To</td>
-                    <td class="content">: ${factoryPIC[0].pic_name}</td>
-                    <td class="label">Name/Title</td>
-                    <td class="content">: ${getByLabel('name')}</td>
-                </tr>
-                <tr>
-                    <td class="label">Cc</td>
-                    <td class="content">: ${factoryPIC.slice(1).filter(Boolean).map(p => p.pic_name).join(',')}</td>
-                    <td class="label">Purposes</td>
-                    <td class="content">: ${getByLabel('purpose')}</td>
-                </tr>
-                <tr>
-                    <td class="label">Deliver to</td>
-                    <td class="content">: ${getByLabel('deliver')}</td>
-                    <td class="label">Category</td>
-                    <td class="content">: ${getByLabel('sample')}</td>
-                </tr>
+                  <tr>
+                    <td><strong>PT. INDOFOOD CBP SUKSES MAKMUR</strong></td>
+                    <td style="text-align:right;">To&nbsp;: <em>${factoryPIC[0].pic_name} </em> </td>
+                  </tr>
+                  <tr>
+                    <td><strong>Division</strong>&nbsp;: IOD </td>
+                    <td style="text-align:right;">From&nbsp;: <em>${teamLeader?.team_leader_name || 'Unknown'} </em></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Location</strong>&nbsp;: INDOFOOD TOWER LT.23</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><strong>SRF NO</strong>&nbsp;: ${generatesrf}</td>
+                    <td></td>
+                  </tr>
                 </table>
+          
+                <div class="section-title">SAMPLE REQUEST FORM ( SRF )</div>
+          
+               <style>
+                    .no-border {
+                        width: 100%;
+                        table-layout: fixed;
+                        border-collapse: collapse;
+                    }
+                    .no-border td {
+                        vertical-align: top;
+                        padding: 4px;
+                    }
+                    .label {
+                        width: 12%;
+                        font-weight: bold;
+                    }
+                    .content {
+                        width: 38%;
+                    }
+                    </style>
+    
+                    <table class="no-border">
+                    <tr>
+                        <td class="label">To</td>
+                        <td class="content">: ${factoryPIC[0].pic_name}</td>
+                        <td class="label">Name/Title</td>
+                        <td class="content">: ${getByLabel('name')}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Cc</td>
+                        <td class="content">: ${factoryPIC.slice(1).filter(Boolean).map(p => p.pic_name).join(',')}</td>
+                        <td class="label">Purposes</td>
+                        <td class="content">: ${getByLabel('purpose')}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Deliver to</td>
+                        <td class="content">: ${getByLabel('deliver')}</td>
+                        <td class="label">Category</td>
+                        <td class="content">: ${getByLabel('sample')}</td>
+                    </tr>
+                    </table>
+    
+          
+                <table>
+                  <thead>
+                    <tr>
+                      <th>NO</th>
+                      <th>DESCRIPTION</th>
+                      <th>QUANTITY IN PCS</th>
+                      <th>QUANTITY IN CTN</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+    
+                    ${itemRowsHtml}
+                    <tr>
+                      <td colspan="2" class="bold" style="text-align: right;">TOTAL</td>
+                      <td class="bold">${totalPcs} PCS</td>
+                      <td class="bold">${totalCtn} CTN</td>
+                    </tr>
+                  </tbody>
+                </table>
+          
+                <div class="note">
+                    <strong>Request Detail:</strong>
+                    ${getByLabel('PO_Number') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${getByLabel('PO_Number')}</p>` : ''}
+                    ${getByLabel('Week Delivery') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>` : ''}
+                    <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('Declare') === 1 ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
+                    ${getByLabel('notes') ? `<p>${getByLabel('notes')}</p>` : ''}
+    
+                  <strong>Thank you</strong>
+                </div>
+    
+                <div class="note">
+                    <strong>Note:</strong>
+                   <br>
 
-      
-            <table>
-              <thead>
-                <tr>
-                  <th>NO</th>
-                  <th>DESCRIPTION</th>
-                  <th>QUANTITY IN PCS</th>
-                  <th>QUANTITY IN CTN</th>
-                </tr>
-              </thead>
-              <tbody>
+                     ${notesHtml}
+                  <strong>Thank you</strong>
+                </div>
+          
+                <table class="approval-table">
+                  <tr class="bold">
+                    <td>Request by</td>
+                    <td>Approved by</td>
+                    <td>Approved by</td>
+                  </tr>
+                  <tr>
+                    
+                    <td style="padding:10px;vertical-align:top;">
+                            <div style="height: 100%; max-height:130px;display:flex; align-items: center;">
+                    
+                        <img
+                            alt="sign"
+                            src="http://${API_URL}:${PORT}/ttd/sign-${employees[0]?.employee_id}.jpg"
+                            style="width:120px;display:block;margin:0 auto 5px auto;"
+                        />
+                        </div>
+                        <br>
+                        ${data?.requester_name || ''}
+                        <br>
+                        <span style="font-size:12px;color:#555;">${data.business_analyst || 'Business Analyst'}</span>
+                    </td>
+    
+                    <td style="padding:10px;vertical-align:top;">
 
-                ${itemRowsHtml}
-                <tr>
-                  <td colspan="2" class="bold" style="text-align: right;">TOTAL</td>
-                  <td class="bold">${totalPcs} PCS</td>
-                  <td class="bold">${totalCtn} CTN</td>
-                </tr>
-              </tbody>
-            </table>
-      
-            <div class="note">
-                <strong>Request Detail:</strong>
-                ${getByLabel('PO_Number') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${getByLabel('PO_Number')}</p>` : ''}
-                ${getByLabel('Week Delivery') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>` : ''}
-                <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('Declare') === 1 ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
-                ${getByLabel('notes') ? `<p>${getByLabel('notes')}</p>` : ''}
+                        ${approvallist[1] && approvallist[1].approve_date
+                            ? `
+                              <div style="height: 100%; max-height:130px; display:flex; align-items: center;">
+                                <img
+                                  alt="sign"
+                                  src="http://${API_URL}:${PORT}/ttd/sign-${employees[2].employee_id}.jpg"
+                                  style="width:120px;display:block;margin:0 auto 5px auto;"
+                                />
+                              </div>
+                              `
+                            : ''
+                         }    
+                   
+                        <br>
+                        ${approvallist.find(a => a.approval_order === 2)?.fullname || ''}
+                        <br>
+                        <span style="font-size:12px;color:#555;">Logistics Manager</span>
+                    </td>
+    
+                    <td style="padding:10px;vertical-align:top;">
 
-              <strong>Thank you</strong>
-            </div>
+                       ${approvallist[2] && approvallist[2].approve_date ?
+                `
+                            <div style="height: 100%; max-height:130px;display:flex; align-items: center;">
 
-            <div class="note">
-                <strong>Note:</strong>
-               
+                        <img
+                        alt="sign"
+                        src="http://${API_URL}:${PORT}/ttd/sign-${employees[3].employee_id}.jpg"
+                        style="width:120px;display:block;margin:0 auto 5px auto;"
+                         />
+                         </div>
+                         `
+                :
+                ''
 
-              <strong>Thank you</strong>
-            </div>
-      
-            <table class="approval-table">
-              <tr class="bold">
-                <td>Request by</td>
-                <td>Approved by</td>
-                <td>Approved by</td>
-              </tr>
-              <tr>
-                <td>${data?.requester_name || ''}<br /><span class="small">${data.business_analyst || 'Business Analyst'}</span></td>
-                <td>${approvallist.find(a => a.approval_order === 2)?.fullname || ''}<br /><span class="small">Logistics Manager</span></td>
-                <td>${approvallist.find(a => a.approval_order === 3)?.fullname || ''}<br /><span class="small">Accounting Manager</span></td>
-              </tr>
-            </table>
-      
-            </body>
-          </html>
-        `;
+            }   
+                    
+                   
+                        <br>
+                        ${approvallist.find(a => a.approval_order === 3)?.fullname || ''}
+                        <br>
+                        <span style="font-size:12px;color:#555;">Accounting Manager</span>
+                    </td>
+    
+                  </tr>
+                </table>
+          
+                </body>
+              </html>
+            `;
 
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
@@ -1020,6 +1163,10 @@ module.exports = {
         await browser.close();
 
         return filePath;
+
+
+
+
     },
 
 

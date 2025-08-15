@@ -169,10 +169,16 @@ module.exports = {
 
         // Generate first table
         const requestTable = requestRows.map(row => `
+            ${row.cstm_col ?
+                `
             <tr>
-                <th>${row.lbl_col}</th>
-                <td style="padding-left:20px;">${row.cstm_col || ''}</td>
+                <th style="text-align:left">${row.lbl_col}</th>
+                <td style="padding-left:20px;">: ${row.cstm_col || ''}</td>
             </tr>
+                `
+                :
+                ``
+            }
         `).join('');
 
         // Generate second table
@@ -183,27 +189,53 @@ module.exports = {
                  <tr>
                     <th style="border:2px solid black; padding: 8px; background-color: #f2f2f2;">No</th>
                     <th style="border:2px solid black; padding: 8px; background-color: #f2f2f2;">Item Name</th>
-                    <th style="border:2px solid black; padding: 8px; background-color: #f2f2f2;">Quantity</th>
+                    <th style="border:2px solid black; padding: 8px; background-color: #f2f2f2;">Qty Pcs</th>
+                    <th style="border:2px solid black; padding: 8px; background-color: #f2f2f2;">Qty Ctn</th>
                  </tr>
             `;
         }
-
+        let totalPcs = 0;
+        let totalCtn = 0;
         let totalQty = 0;
         for (let i = 0; i < itemRows.length; i++) {
             if (itemRows[i].lbl_col === 'Item Name') {
                 const itemName = itemRows[i].cstm_col;
+
                 const qty = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity + Unit')
                     ? itemRows[i + 1].cstm_col
                     : '';
+
+                const qtypcs = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity + Unit' && itemRows[i + 1].cstm_col.toLowerCase().includes('pcs'))
+                    ? itemRows[i + 1].cstm_col
+                    : '';
+
+                const qtyctn = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity + Unit' && itemRows[i + 1].cstm_col.toLowerCase().includes('ctn'))
+                    ? itemRows[i + 1].cstm_col
+                    : '';
+
+                let pcs = '', ctn = '';
+
+                if (qty.toLowerCase().includes('pcs')) {
+                    pcs = qty;
+                    const val = parseInt(qty);
+                    if (!isNaN(val)) totalPcs += val;
+                }
+
+                if (qty.toLowerCase().includes('ctn')) {
+                    ctn = qty;
+                    const val = parseInt(qty);
+                    if (!isNaN(val)) totalCtn += val;
+                }
 
                 const qtyNumber = parseFloat(qty) || 0;
                 totalQty += qtyNumber;
 
                 itemsTable += `
             <tr>
-                <td style="border:2px solid black; padding: 8px;">${(itemsTable.match(/<tr>/g) || []).length + 1}</td>
+                <td style="border:2px solid black; padding: 8px;">${(itemsTable.match(/<tr>/g) || []).length}</td>
                 <td style="border:2px solid black; padding: 8px;">${itemName}</td>
-                <td style="border:2px solid black; padding: 8px;">${qty}</td>
+                <td style="border:2px solid black; padding: 8px;">${qtypcs}</td>
+                <td style="border:2px solid black; padding: 8px;">${qtyctn}</td>
             </tr>
         `;
             }
@@ -213,12 +245,11 @@ module.exports = {
             itemsTable += `
             <tr>
                 <td colspan="2" style="border:2px solid black; padding: 8px; font-weight:bold;">Total</td>
-                <td style="border:2px solid black; padding: 8px; font-weight:bold;">${totalQty}</td>
+                <td style="border:2px solid black; padding: 8px; font-weight:bold;">${totalPcs}</td>
+                <td style="border:2px solid black; padding: 8px; font-weight:bold;">${totalCtn}</td>
             </tr>
         `;
         }
-
-
 
         const [approvalResult] = await dbHots.promise().execute(
             ` SELECT ae.approval_order, ae.approval_status, 
@@ -235,12 +266,20 @@ module.exports = {
             console.table(approvalResult);
         }
 
+
+
         const approvalTable = approvalResult.map(row => `
-            <tr>
-                <th>${row.lbl_col}</th>
-                <td style="padding-left:20px;">${row.cstm_col || ''}</td>
+            <tr >
+                <th style="text-align:left;border:2px solid black; padding: 8px; font-weight:bold;">${row.user_name}</th>
+                <td style=" border:2px solid black; text-align : center;  "  > ${row.approval_status === 0 ? "📝" : "✅"}  </td>
             </tr>
         `).join('');
+
+        const dateOnly = date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+          }); 
 
         const htmlContent = `
         <div>
@@ -248,22 +287,24 @@ module.exports = {
             Dear ${user_name},
             Your ${service_name} ticket has been successfully submitted to the HOTS system. The ticket details are as follows:
             </p>
-            <br><br />
+            <br>
+
+            <h2> Ticket Detail </h2>
 
             <table style="border-collapse: collapse; text-align:left; border: none;">
                 <tr>
-                    <th>Ticket No</th>
-                    <td style="padding-left:20px;">${ticket_id}</td>
+                    <th style="text-align:left">Ticket No</th>
+                    <td style="padding-left:20px;">: ${ticket_id}</td>
                 </tr>
 
                 <tr>
-                    <th>Request Date</th>
-                    <td style="padding-left:20px;">${date}</td>
+                    <th style="text-align:left">Request Date</th>
+                    <td style="padding-left:20px;">: ${dateOnly}</td>
                 </tr>
 
                 <tr>
-                    <th>Requested By</th>
-                    <td style="padding-left:20px;">${user_name}</td>
+                    <th style="text-align:left">Requested By</th>
+                    <td style="padding-left:20px;">: ${user_name}</td>
                 </tr>
 
                 ${requestTable}
@@ -271,7 +312,7 @@ module.exports = {
             </table>
 
 
-            <br></br>
+            <br>
             ${itemsTable &&
             `
             <h2>
@@ -289,13 +330,24 @@ module.exports = {
 
             </table>
             
+            
+            ${approvalTable &&
+
+            `
+<br>
             <h2> Approval List </h2>
 
-            <table style="border:2px solid black; border-collapse: collapse; width: 100%; max-width: 600px; font-family: Arial, sans-serif;">
-    
-                ${approvalTable}
+                        <table style="border:2px solid black; border-collapse: collapse; width: 100%; max-width: 600px; font-family: Arial, sans-serif;">
+                
+                            ${approvalTable}
 
-            </table>
+                        </table>
+            `
+
+
+
+            }
+            
 
 
             <p>
@@ -309,11 +361,15 @@ module.exports = {
         </div>
         `;
 
+        if (test) {
+            console.log("html", htmlContent)
+        }
+
         try {
             const info = await transporter.sendMail({
                 from: mailaccount,
                 to: mailAddress,
-                subject: `[HOTS] - {{service_name}} Submission Confirmation - Ticket No. {{ticket_number}}`,
+                subject: `[HOTS] - ${service_name} Submission Confirmation - Ticket No. ${ticket_id}`,
                 html: htmlContent,
             });
 
@@ -325,7 +381,290 @@ module.exports = {
             console.log(`Message ID: ${info.messageId} `);
             console.log(`Response: ${info.response} `);
         } catch (error) {
-            console.error(`${timestamp} ❌ ERROR sending mail to ${mailAddress} `);
+            console.error(`${timestamp} ❌ ERROR sending hotsSubmitMailer mail to ${mailAddress} `);
+            console.error(error);
+        }
+    },
+
+    hotsApproveRequest: async (test = "false", ticket_id,) => {
+        let date = new Date();
+        let timestamp =
+            date.toLocaleDateString("id") + " " + date.toLocaleTimeString("id") + " : ";
+
+
+
+        const [dataResult] = await dbHots.promise().execute(
+            `SELECT td.order_col, td.cstm_col, td.lbl_col,
+            ms.service_name,
+            CONCAT(u.firstname, ' ', u.lastname) as user_name,
+            t.current_step
+            FROM 
+            t_ticket_detail td
+            LEFT JOIN
+            t_ticket t ON t.ticket_id = td.ticket_id
+            LEFT JOIN
+            m_service ms ON ms.service_id = t.service_id
+            LEFT JOIN
+            user u ON u.user_id = t.created_by 
+            WHERE td.ticket_id = ?`,
+            [ticket_id]
+        );
+
+        const service_name = dataResult[0].service_name;
+        const user_name = dataResult[0].user_name;
+        const currentstep = dataResult[0].current_step;
+
+        const [approvalResult] = await dbHots.promise().execute(
+            ` SELECT ae.approval_order, ae.approval_status, 
+              CONCAT(u.firstname, ' ', u.lastname) as user_name,
+              u.email
+                from 
+                t_approval_event ae
+                left join 
+                user u on ae.approver_id = u.user_id
+                where approval_id = ? `,
+            [ticket_id]
+        );
+
+        const emailAddresses = approvalResult
+            .filter(item => Number(item.approval_order) === Number(currentstep) && !!item.email)
+            .map(item => item.email);
+
+        if (!emailAddresses || emailAddresses.length === 0) {
+            console.log("approvalResult", approvalResult)
+            console.log("currentstep", currentstep)
+            console.log("emailAddress", emailAddresses)
+            console.log("No email address, nothing to send");
+            return 0;
+        }
+
+
+        if (test) {
+            console.log("Ticket ID param:", ticket_id);
+            console.table(dataResult);
+        }
+
+        const itemIndex = dataResult.findIndex(r => r.lbl_col === 'Item Name');
+
+        let requestRows = [];
+        let itemRows = [];
+
+        if (itemIndex !== -1) {
+            requestRows = dataResult.slice(0, itemIndex);        // before Item Name
+            itemRows = dataResult.slice(itemIndex);              // from Item Name onwards
+        } else {
+            requestRows = dataResult; // if no Item Name, everything goes here
+            itemRows = [];
+        }
+
+        // Generate first table
+        const requestTable = requestRows.map(row => `
+            ${row.cstm_col ?
+                `
+            <tr>
+                <th style="text-align:left">${row.lbl_col}</th>
+                <td style="padding-left:20px;">: ${row.cstm_col || ''}</td>
+            </tr>
+                `
+                :
+                ``
+            }
+           
+        `).join('');
+
+        // Generate second table
+        let itemsTable = '';
+
+        if (itemRows.length > 0) {
+            itemsTable += `
+                 <tr>
+                    <th style="border:2px solid black; padding: 8px; background-color: #f2f2f2;">No</th>
+                    <th style="border:2px solid black; padding: 8px; background-color: #f2f2f2;">Item Name</th>
+                    <th style="border:2px solid black; padding: 8px; background-color: #f2f2f2;">Qty Pcs</th>
+                    <th style="border:2px solid black; padding: 8px; background-color: #f2f2f2;">Qty Ctn</th>
+                 </tr>
+            `;
+        }
+
+        let totalPcs = 0;
+        let totalCtn = 0;
+        let totalQty = 0;
+        for (let i = 0; i < itemRows.length; i++) {
+            if (itemRows[i].lbl_col === 'Item Name') {
+                const itemName = itemRows[i].cstm_col;
+
+                const qty = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity + Unit')
+                    ? itemRows[i + 1].cstm_col
+                    : '';
+
+                const qtypcs = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity + Unit' && itemRows[i + 1].cstm_col.toLowerCase().includes('pcs'))
+                    ? itemRows[i + 1].cstm_col
+                    : '';
+
+                const qtyctn = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity + Unit' && itemRows[i + 1].cstm_col.toLowerCase().includes('ctn'))
+                    ? itemRows[i + 1].cstm_col
+                    : '';
+
+                let pcs = '', ctn = '';
+
+                if (qty.toLowerCase().includes('pcs')) {
+                    pcs = qty;
+                    const val = parseInt(qty);
+                    if (!isNaN(val)) totalPcs += val;
+                }
+
+                if (qty.toLowerCase().includes('ctn')) {
+                    ctn = qty;
+                    const val = parseInt(qty);
+                    if (!isNaN(val)) totalCtn += val;
+                }
+
+                const qtyNumber = parseFloat(qty) || 0;
+                totalQty += qtyNumber;
+
+                itemsTable += `
+            <tr>
+                <td style="border:2px solid black; padding: 8px;">${(itemsTable.match(/<tr>/g) || []).length}</td>
+                <td style="border:2px solid black; padding: 8px;">${itemName}</td>
+                <td style="border:2px solid black; padding: 8px;">${qtypcs}</td>
+                <td style="border:2px solid black; padding: 8px;">${qtyctn}</td>
+            </tr>
+        `;
+            }
+        }
+
+        if (totalQty > 0) {
+            itemsTable += `
+            <tr>
+                <td colspan="2" style="border:2px solid black; padding: 8px; font-weight:bold;">Total</td>
+                <td style="border:2px solid black; padding: 8px; font-weight:bold;">${totalPcs}</td>
+                <td style="border:2px solid black; padding: 8px; font-weight:bold;">${totalCtn}</td>
+            </tr>
+        `;
+        }
+
+
+
+
+
+        if (test) {
+            console.table(approvalResult);
+        }
+
+
+
+        const approvalTable = approvalResult.map(row => `
+            <tr >
+                <th style="text-align:left;border:2px solid black; padding: 8px; font-weight:bold;">${row.user_name}</th>
+                <td style=" border:2px solid black; text-align : center;  "  > ${row.approval_status === 0 ? "📝" : "✅"}  </td>
+            </tr>
+        `).join('');
+
+        const htmlContent = `
+        <div>
+            <p>
+            Dear Approver,
+            You have a pending approval request for the following:
+            </p>
+            <br>
+
+            <h2> Ticket Detail </h2>
+            <table style="border-collapse: collapse; text-align:left; border: none;">
+                <tr>
+                    <th style="text-align:left">Ticket No</th>
+                    <td style="padding-left:20px;">: ${ticket_id}</td>
+                </tr>
+
+                <tr>
+                    <th style="text-align:left" >Request Date</th>
+                    <td style="padding-left:20px;">: ${date}</td>
+                </tr>
+
+                <tr>
+                    <th style="text-align:left">Requested By</th>
+                    <td style="padding-left:20px;">: ${user_name}</td>
+                </tr>
+
+                ${requestTable}
+
+            </table>
+
+
+            <br>
+            ${itemsTable &&
+            `
+            <h2>
+                ITEM LIST
+            </h2>
+            `
+            }
+        
+
+            <table style="border:2px solid black; border-collapse: collapse; width: 100%; max-width: 600px; font-family: Arial, sans-serif;">
+  
+          
+  
+                ${itemsTable}
+
+            </table>
+ 
+            <p style="font-weight:900; text-align:center;">
+            Click this to visit the Hots Task Page, please login first and click again if not directly sending you to the ticket detail page :
+            <br>
+            <a style="font-weight:700;" href="https://www.indofoodinternational.com/hots/ticket/${ticket_id}">Click Me</a>
+            </p>
+            
+            ${approvalTable &&
+
+            `
+<br>
+            <h2> Approval List </h2>
+
+                        <table style="border:2px solid black; border-collapse: collapse; width: 100%; max-width: 600px; font-family: Arial, sans-serif;">
+                
+                            ${approvalTable}
+
+                        </table>
+            `
+
+
+
+            }
+            
+
+
+            <p>
+            Best regards,
+
+            <strong>
+                HOTS
+            </strong>
+            </p>
+
+        </div>
+        `;
+
+        if (test) {
+            console.log("html", htmlContent)
+        }
+
+        try {
+            const info = await transporter.sendMail({
+                from: mailaccount,
+                to: emailAddresses,
+                subject: `[HOTS] - ${service_name} Approval Notification - Ticket No. ${ticket_id}`,
+                html: htmlContent,
+            });
+
+            if (test) {
+                console.log("html", htmlContent)
+            }
+
+            console.log(`${timestamp} ✅ Email sent to ${emailAddresses} `);
+            console.log(`Message ID: ${info.messageId} `);
+            console.log(`Response: ${info.response} `);
+        } catch (error) {
+            console.error(`${timestamp} ❌ ERROR sending hotsApproveRequest mail to ${emailAddresses} `);
             console.error(error);
         }
     },

@@ -45,11 +45,13 @@ route.get('/task_count', decodeTokenHT, hotsTicket.getTaskCount)
 
 // Ticket details
 route.get('/detail/:ticket_id', decodeTokenHT, hotsTicket.getTicketDetail)
+route.put('/detail/:ticket_id', decodeTokenHT, hotsTicket.putTicketDetail)
 
 // Ticket actions (should be POST, not PUT for these operations)
 route.post('/approve/:ticket_id', decodeTokenHT, hotsTicket.approveTicket)
 route.post('/reject/:ticket_id', decodeTokenHT, hotsTicket.rejectTicket)
 route.put('/close/:ticket_id', decodeTokenHT, hotsTicket.closeTicket)
+route.put('/closeservice/:ticket_id', decodeTokenHT, hotsTicket.closeTicketservice)
 
 // Attachments
 route.get('/attachment/:ticket_id', decodeTokenHT, hotsTicket.getTicketAttachments)

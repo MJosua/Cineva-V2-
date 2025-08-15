@@ -1,12 +1,12 @@
 const readline = require('readline');
-const { hotsSubmitMailer } = require('./mailer/hots/hots_mailer');
+const { hotsSubmitMailer, hotsApproveRequest } = require('./mailer/hots/hots_mailer');
 const { dbConf, dbQuery, dbTMQuery, dbHots } = require('./config/db');
 const express = require('express');
+const { API_URL, PORT } = require('.');
 
 const App = express();
-App.set('port', 3000);
 App.listen(App.get('port'), () => {
-    console.log(`🚀 Server running at http://localhost:${App.get('port')}`);
+    console.log(`🚀 Server running at http://${API_URL}:${PORT}`);
 });
 
 const rl = readline.createInterface({
@@ -27,6 +27,10 @@ rl.on('line', async (input) => {
     }
     else if (cmd === '/port') {
         console.log('✅ Server is running on port', App.get('port'));
+    }
+    else if (cmd === '/mail1') {
+        console.log('📧 Sending approval mail...');
+        await hotsApproveRequest( true, 2025012310098300,);
     }
     else if (cmd === '/exit') {
         console.log('👋 Exiting...');
