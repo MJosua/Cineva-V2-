@@ -1304,8 +1304,6 @@ module.exports = {
                         tr.ship_name vessel_name,
                         tr.ship_line shipping_line,
                         tr.cont_id,
-                        COALESCE(mp.product_name_no, mp.product_name) product_name,
-                        trd.qty, 
                         DATE_FORMAT(tr.etd, '%d-%b-%Y') etd,
                         DATE_FORMAT(tr.eta, '%d-%b-%Y') eta
                     from
@@ -1360,6 +1358,95 @@ module.exports = {
                         and tae.company_id = ta.company_id
                         and tae.id = 4
                         where
+                    det.order_id = ?`
+
+                let parameter = [order_id]
+
+                dbConf.query(query, parameter, (err, results) => {
+
+                    if (err) {
+                        res.status(500).send(err);
+                        console.log(timestamp + "Error getOneOrderDetail!", err)
+                    } else {
+                        res.status(200).send(results);
+
+                    }
+                })
+            } else {
+                res.status(401).send({
+                    success: false,
+                    message: 'unauthorized'
+                })
+            }
+
+        } catch (error) {
+            console.log(timestamp + error);
+            res.status(500).send(error);
+        }
+
+
+
+    }
+    , getOneOrderDetailRealization: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        let order_id = req.params.order_id
+        //untuk menghilangkan week tertentu.
+        let getBlockingCompany = (await dbQuery(`select company_id from m_config_new mcn where conditions = 12;`));
+        // Error prevention: Check if getBlockingCompany is not empty and has the value you expect
+        let blockingSoIdCompany = getBlockingCompany.length
+            ? getBlockingCompany.map(row => row.company_id).join(', ')
+            : '0';
+
+        try {
+
+            if (req.dataToken.user_id) {
+                // let { company_id } = req.body 
+
+                let query = `
+                    select
+                        distinct det.order_id,
+                        det.company_id,
+                        mco.company_name,
+                        det.created_by,
+                        su.firstname,
+                        case
+                            when det.company_id not in (${blockingSoIdCompany})
+                            and tae.appr_date is not null then so.so_id
+                            else ''
+                        end as so_id,
+                        DATE_FORMAT(trd.delv_date, '%d-%b-%Y') delv_date,
+                        tr.ship_name vessel_name,
+                        tr.ship_line shipping_line,
+                        tr.cont_id,
+                        COALESCE(mp.product_name_no, mp.product_name) product_name,
+                        trd.qty, 
+                        DATE_FORMAT(tr.etd, '%d-%b-%Y') etd,
+                        DATE_FORMAT(tr.eta, '%d-%b-%Y') eta
+                    from
+                        m_order_dtl det
+                    join mst_company mco on
+                        det.company_id = mco.company_id
+                    left join sys_user su on
+                        su.user_id = det.created_by
+                    left join trs_sales_order so on
+                        det.order_id = so.e_order
+                        and so.cancel = 0
+                    left join trs_realization tr on
+                        so.so_id = tr.so_id    
+                    left join trs_realization_detail trd on
+                        tr.cont_id = trd.cont_id
+                        and tr.so_id = trd.so_id
+                        and tr.invoice_id = trd.invoice_id
+                    left join mst_product mp on
+                        trd.sku = mp.product_code    
+                    left join trs_approval_event tae on
+                        so.approval_id = tae.appr_id
+                        and tae.company_id = so.company_id
+                        and tae.id = 4
+                    where
                     det.order_id = ?`
 
                 let parameter = [order_id]

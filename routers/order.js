@@ -55,6 +55,7 @@ route.get('/stuffing_date', readToken, orderController.getStuffingDateTrucking)
 route.get('/get_all_in', readToken, orderController.getOrderAllIn) 
 route.get('/get_realization', readToken, orderController.getRealizationAllIn)
 route.get('/get_order_detail/:order_id', readToken, orderController.getOneOrderDetail)
+route.get('/get_order_real/:order_id', readToken, orderController.getOneOrderDetailRealization)
 
 
 route.get("/track_container", readToken, orderController.containerTracking); 
