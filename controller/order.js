@@ -1300,7 +1300,6 @@ module.exports = {
                             and tae.appr_date is not null then so.so_id
                             else ''
                         end as so_id,
-                        tso.so_id,
                         DATE_FORMAT(trd.delv_date, '%d-%b-%Y') delv_date,
                         tr.ship_name vessel_name,
                         tr.ship_line shipping_line,

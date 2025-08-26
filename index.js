@@ -68,7 +68,7 @@ function getLocalIP() {
   return null;
 }
 
-const API_URL = getLocalIP();
+const API_URL =  production() ? "backend.indofoodinternational.com" : getLocalIP() ;
 
 
 
