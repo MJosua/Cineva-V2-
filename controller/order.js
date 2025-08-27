@@ -4714,7 +4714,20 @@ module.exports = {
             console.log(timestamp, " FAILED at mailerAPI: order_id is not provided ")
         }
 
-    }
+    },
+    checkOrderReal: async (req, res) => {
+        let { blno } = req.params
+
+        let getsoid = (await dbQuery(`select invoice_id from trs_realization where cont_id = ${blno} or ;`));
+        // Error prevention: Check if getBlockingCompany is not empty and has the value you expect
+        let blockingSoIdCompany = getBlockingCompany.length
+            ? getBlockingCompany.map(row => row.company_id).join(', ')
+            : '0';
+
+    },
+    saveSseaRates: async (req, res) => [
+
+    ]
 
 
 }

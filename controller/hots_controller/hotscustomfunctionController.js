@@ -910,13 +910,19 @@ module.exports = {
             if (qty.toLowerCase().includes('pcs')) {
                 pcs = qty;
                 const val = parseInt(qty);
-                if (!isNaN(val)) totalPcs += val;
+                if (!isNaN(val)) {
+                    totalPcs += val;
+                    pcs = val.toLocaleString(); // 👈 format with thousand separator
+                }
             }
 
             if (qty.toLowerCase().includes('ctn')) {
                 ctn = qty;
                 const val = parseInt(qty);
-                if (!isNaN(val)) totalCtn += val;
+                if (!isNaN(val)) {
+                    totalCtn += val;
+                    ctn = val.toLocaleString(); // 👈 format with thousand separator
+                }
             }
 
             itemRowsHtml += `
@@ -934,14 +940,14 @@ module.exports = {
         approvallist.forEach((data, i) => {
             if (data.remark && data.remark.trim() !== '') {
                 notesHtml += `
-                <li>${data.fullname} noted ${data.remark}</li>
+                <li>${data.fullname} : ${data.remark}</li>
               `;
             }
         });
 
 
-        console.log(` approvallist[2].approve_date `,  approvallist[2].approve_date)
-        console.log(` approvallist[2] `,  approvallist[2])
+        console.log(` approvallist[2].approve_date `, approvallist[2].approve_date)
+        console.log(` approvallist[2] `, approvallist[2])
         const html = `
               <html>
                 <head>
@@ -987,7 +993,7 @@ module.exports = {
                   </tr>
                   <tr>
                     <td><strong>Division</strong>&nbsp;: IOD </td>
-                    <td style="text-align:right;">From&nbsp;: <em>${teamLeader?.team_leader_name || 'Unknown'} </em></td>
+                    <td style="text-align:right;"></td>
                   </tr>
                   <tr>
                     <td><strong>Location</strong>&nbsp;: INDOFOOD TOWER LT.23</td>
@@ -1056,8 +1062,8 @@ module.exports = {
                     ${itemRowsHtml}
                     <tr>
                       <td colspan="2" class="bold" style="text-align: right;">TOTAL</td>
-                      <td class="bold">${totalPcs} PCS</td>
-                      <td class="bold">${totalCtn} CTN</td>
+                      <td class="bold">${totalPcs.toLocaleString()} PCS</td>
+                      <td class="bold">${totalCtn.toLocaleString()} CTN</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1069,7 +1075,6 @@ module.exports = {
                     <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('Declare') === 1 ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
                     ${getByLabel('notes') ? `<p>${getByLabel('notes')}</p>` : ''}
     
-                  <strong>Thank you</strong>
                 </div>
     
                 <div class="note">
@@ -1081,11 +1086,11 @@ module.exports = {
                 </div>
           
                 <table class="approval-table">
-                  <tr class="bold">
-                    <td>Request by</td>
-                    <td>Approved by</td>
-                    <td>Approved by</td>
-                  </tr>
+                 <tr class="bold">
+                    <td style="text-align:center; vertical-align:middle;">Request by</td>
+                    <td style="text-align:center; vertical-align:middle;">Approved by</td>
+                    <td style="text-align:center; vertical-align:middle;">Approved by</td>
+                </tr>
                   <tr>
                     
                     <td style="padding:10px;vertical-align:top;">
@@ -1106,7 +1111,7 @@ module.exports = {
                     <td style="padding:10px;vertical-align:top;">
 
                         ${approvallist[1] && approvallist[1].approve_date
-                            ? `
+                ? `
                               <div style="height: 100%; max-height:130px; display:flex; align-items: center;">
                                 <img
                                   alt="sign"
@@ -1115,8 +1120,8 @@ module.exports = {
                                 />
                               </div>
                               `
-                            : ''
-                         }    
+                : ''
+            }    
                    
                         <br>
                         ${approvallist.find(a => a.approval_order === 2)?.fullname || ''}

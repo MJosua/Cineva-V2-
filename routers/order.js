@@ -83,4 +83,8 @@ route.delete('/delete-po', readToken, orderController.deleteFile)
 route.delete('/delete', readToken, orderController.deleteOrder)
 
 
+//Check and save searates custom query
+route.post('/check/:blno', readToken, orderController.checkOrderReal)
+route.post('/savesearate/:soid', readToken, orderController.saveSseaRates)
+
 module.exports = route;
