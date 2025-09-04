@@ -365,6 +365,9 @@ module.exports = {
             `
                 ;
             const results = await dbQuerySR(query, [number, number, number]);
+
+            
+
             if (results.length < 1) {
                 try {
                     const url = `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=auto&force_update=false&route=true&ais=false`;
@@ -372,8 +375,30 @@ module.exports = {
                     const searatesRes = await axios.get(url);
                     console.log("Fallback from Searates:", searatesRes.data);
 
+
+                    try {
+                        // bentuk record seperti struktur yang dibutuhkan saveShipmentData
+                        const fallbackRecord = {
+                            details: {
+                                data: searatesRes.data
+                            }
+                        };
+                    
+                        return res.status(200).send({
+                            message: "Saved from fallback (Searates)",
+                            data: searatesRes.data
+                        });
+                    } catch (err) {
+                        console.error("❌ Error saving fallback data:", err);
+                        return res.status(500).send({ error: "Save fallback failed", details: err });
+                    }
+
+
                     // Return fallback data
-                    return res.status(200).send({ data: searatesRes.data });
+                    return res.status(200).send({
+                        message: "Saved from fallback (Searates)",
+                        data: searatesRes.data
+                    });
                 } catch (err) {
                     console.error("Error calling Searates fallback:", err);
                     return res.status(500).send({ error: "Fallback API failed", details: err });

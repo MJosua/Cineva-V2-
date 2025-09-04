@@ -1229,6 +1229,8 @@ module.exports = {
     }
     , getOneOrderDetail: async (req, res) => {
 
+        
+
         let date = new Date();
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
@@ -1246,8 +1248,9 @@ module.exports = {
                 // let { company_id } = req.body 
 
                 let query = `
-                    select
-                        distinct det.order_id,	det.company_id,
+                                                            
+                       select DISTINCT
+                        det.order_id,	det.company_id,
                         mco.company_name,
                         det.created_by,
                         su.firstname,
@@ -1299,14 +1302,8 @@ module.exports = {
                             when det.company_id not in (${blockingSoIdCompany})
                             and tae.appr_date is not null then so.so_id
                             else ''
-                        end as so_id,
-                        DATE_FORMAT(trd.delv_date, '%d-%b-%Y') delv_date,
-                        tr.ship_name vessel_name,
-                        tr.ship_line shipping_line,
-                        tr.cont_id,
-                        DATE_FORMAT(tr.etd, '%d-%b-%Y') etd,
-                        DATE_FORMAT(tr.eta, '%d-%b-%Y') eta
-                    from
+                        end as so_id
+                        from
                         m_order_dtl det
                     inner join m_order mo on
                         mo.order_id = det.order_id
@@ -1336,29 +1333,24 @@ module.exports = {
                         ms.sku = mpls.product_code
                     LEFT JOIN trs_sales_order tso ON
                         mo.order_id = tso.e_order
-                    LEFT JOIN trs_realization tr ON
-                        tso.so_id = tr.so_id    
                     left join trs_sales_order so on
                         mo.order_id = so.e_order
                         and 
                         so.cancel = 0
                     left join m_config_new msc on
                         msc.company_id = det.company_id
-                    LEFT JOIN trs_realization_detail trd ON
-                        tr.cont_id = trd.cont_id
-                        AND tr.so_id = trd.so_id
-                        AND tr.invoice_id = trd.invoice_id
-                    left join trs_approval ta on
+                   left join trs_approval ta on
                         so.so_id = ta.key
                         and ta.company_id = so.company_id
-                    LEFT JOIN mst_product mp ON
-                        trd.sku = mp.product_code    
-                    left join trs_approval_event tae on
+                   left join trs_approval_event tae on
                          so.approval_id = tae.appr_id
                         and tae.company_id = ta.company_id
                         and tae.id = 4
                         where
-                    det.order_id = ?`
+                    det.order_id = 
+                    		${order_id} 
+
+                        `
 
                 let parameter = [order_id]
 

@@ -2,7 +2,7 @@ const readline = require('readline');
 const { hotsSubmitMailer, hotsApproveRequest } = require('./mailer/hots/hots_mailer');
 const { dbConf, dbQuery, dbTMQuery, dbHots } = require('./config/db');
 const express = require('express');
-const { API_URL, PORT } = require('.');
+const { API_URL, PORT } = require('./index');
 
 const App = express();
 App.listen(App.get('port'), () => {

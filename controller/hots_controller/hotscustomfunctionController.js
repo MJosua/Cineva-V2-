@@ -14,8 +14,7 @@ const yellowTerminal = '\x1b[33m';
 
 const puppeteer = require('puppeteer');
 const Mustache = require('mustache');
-const { PORT, API_URL } = require("../..");
-
+const { PORT, API_URL } = require("../../index");
 /**
  * Custom Function Controller
  * Base Path: /hots_settings/custom_functions/
@@ -971,13 +970,13 @@ module.exports = {
                 <div style="display:flex;justify-content:space-between;width:100%;">
                     <div>
                         <img
-                            src="http://${API_URL}:${PORT}/aset/image/indofood_header_logo.png"
+                            src="https://backend.indofoodinternational.com:2864/aset/image/indofood_header_logo.png"
                             style="height:50px"
                         />
                     </div>
                     <div style="display:flex;justify-content:flex-end;">
                         <img
-                            src="http://${API_URL}:${PORT}/aset/image/icbp_header_logo.png"
+                            src="https://backend.indofoodinternational.com:2864/aset/image/icbp_header_logo.png"
                             style="height:50px"
                         />
                     </div>
@@ -1098,7 +1097,7 @@ module.exports = {
                     
                         <img
                             alt="sign"
-                            src="http://${API_URL}:${PORT}/ttd/sign-${employees[0]?.employee_id}.jpg"
+                            src="https://backend.indofoodinternational.com:2864/ttd/sign-${employees[0]?.employee_id}.jpg"
                             style="width:120px;display:block;margin:0 auto 5px auto;"
                         />
                         </div>
@@ -1115,7 +1114,7 @@ module.exports = {
                               <div style="height: 100%; max-height:130px; display:flex; align-items: center;">
                                 <img
                                   alt="sign"
-                                  src="http://${API_URL}:${PORT}/ttd/sign-${employees[2].employee_id}.jpg"
+                                  src="https://backend.indofoodinternational.com:2864/ttd/sign-${employees[2].employee_id}.jpg"
                                   style="width:120px;display:block;margin:0 auto 5px auto;"
                                 />
                               </div>
@@ -1137,7 +1136,7 @@ module.exports = {
 
                         <img
                         alt="sign"
-                        src="http://${API_URL}:${PORT}/ttd/sign-${employees[3].employee_id}.jpg"
+                        src="https://backend.indofoodinternational.com:2864/ttd/sign-${employees[3].employee_id}.jpg"
                         style="width:120px;display:block;margin:0 auto 5px auto;"
                          />
                          </div>
