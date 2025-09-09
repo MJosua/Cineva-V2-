@@ -1225,19 +1225,43 @@ module.exports = {
                 html: (`
                 <div>
                     <p>
-                    Dear ${company_name} ,  
+                    Dear ${company_name[0].company_name} ,  
                     </p>  
                     <br>
                     <p>
-                        This email to inform you that your Feedback has been sent as like this email :. 
+                        This email to inform you that your Feedback has been sent as like this email :
                     </p>  
-                    <p>
+                     <p style="font-weight:900">
                         ${judul}
                     </p>  
                 
                     <div>
                        ${isi}
                     </div>
+
+                    <p>
+                       
+                        Best Regards,
+                        <br>
+                        <span style="font-weight: bold;">
+                        International Operations Division
+                        </span>
+                        <br>
+                        <span style="font-weight: bold;">
+                        PT Indofood CBP Sukses Makmur, Tbk.
+                        </span>
+                        <br>
+                        Indofood Tower, 23rd Floor, Jakarta, Indonesia
+                        <br><br>
+                        For any inquiries or assistance, please contact our support team.
+                        <br>
+                        <a href="https://www.indofoodinternational.com/">www.indofoodinternational.com </a>
+                        <br>
+                        <a href="https://www.indofoodinternational.com/e-order/termsncondition">
+                        Order Terms & Conditions
+                        </a>
+                        <br>
+                    </p>
 
                 </div>`),
             });
@@ -1329,19 +1353,44 @@ module.exports = {
                 html: (`
                 <div>
                     <p>
-                    Dear ${company_name} Analyst ,  
+                    Dear ${company_name[0].company_name} Analyst ,  
                     </p>  
                     <br>
                     <p>
                         This email to inform you that Feedback from ${user_data[0].firstname} has been collected as like this email :. 
                     </p>  
-                    <p>
+                    <p style="font-weight:900">
                         ${judul}
                     </p>  
                 
                     <div>
                        ${isi}
                     </div>
+
+                    <p>
+                       
+                        Best Regards,
+                        <br>
+                        <span style="font-weight: bold;">
+                        International Operations Division
+                        </span>
+                        <br>
+                        <span style="font-weight: bold;">
+                        PT Indofood CBP Sukses Makmur, Tbk.
+                        </span>
+                        <br>
+                        Indofood Tower, 23rd Floor, Jakarta, Indonesia
+                        <br><br>
+                        For any inquiries or assistance, please contact our support team.
+                        <br>
+                        <a href="https://www.indofoodinternational.com/">www.indofoodinternational.com </a>
+                        <br>
+                        <a href="https://www.indofoodinternational.com/e-order/termsncondition">
+                        Order Terms & Conditions
+                        </a>
+                        <br>
+                    </p>
+
 
                 </div>`),
             });
