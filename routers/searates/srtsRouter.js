@@ -6,5 +6,6 @@ const { srtsController } = require('../../controller');
 
 route.get('/searatesTrack/:so_id/:number', readToken, srtsController.GetSeaRatesTrackUser)
 route.get('/searatesTrackByNumber/:number',  srtsController.GetSeaRatesTrackNumber)
+route.get('/checkdata/:number',  srtsController.SearatesCheck)
 
 module.exports = route;

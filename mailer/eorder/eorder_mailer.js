@@ -1189,7 +1189,6 @@ module.exports = {
         let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
         try {
             let user_data = await dbQuery(`
-           
                 select 
                 me.email,
                 su.firstname,
@@ -1251,6 +1250,8 @@ module.exports = {
     }
     ,
     feedback_eorder_admin: async (judul, isi, gambar, company, user) => {
+        
+        let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         try {
 
