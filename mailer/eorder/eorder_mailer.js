@@ -1202,6 +1202,7 @@ module.exports = {
                 su.employee_id = me.employee_id 
                 where
                 su.user_id = ${user}
+                limt 1
                 `);
 
             let company_name = await dbQuery(`
@@ -1252,6 +1253,40 @@ module.exports = {
     feedback_eorder_admin: async (judul, isi, gambar, company, user) => {
 
         try {
+
+            let analyst_email = await dbQuery(`
+                 select distinct
+                    GROUP_CONCAT(distinct d.email order by d.email separator ', ') as iod_mail
+                from
+                    sys_user su
+                left join mst_employee me on
+                    su.employee_id = me.employee_id
+                left join mst_company mc on
+                    su.company_id = mc.company_id
+                left join map_resp_for_dist a on
+                    a.distributor_id = su.company_id
+                    and NOW() between a.creation_date and coalesce(a.finish_date, '9999-12-31')
+                left join mst_team b on
+                    a.team_id = b.team_id
+                    and a.company_id = b.company_id
+                    and b.active = 1
+                left join mst_team_member c on
+                    b.team_id = c.team_id
+                    and b.company_id = c.company_id
+                left join mst_employee d on
+                    a.company_id = d.company_id
+                    and c.employee_id = d.employee_id
+                where
+                    su.company_id = ${dbConf.escape(company_id)}
+                    and b.team_category = 6
+                    and me.email is not null
+                group by
+                    su.company_id,
+                    me.email
+                `);
+
+                let to_emails = analyst_email.length > 0 ? analyst_email[0].iod_mail : '';
+
             let user_data = await dbQuery(`
            
                 select 
@@ -1281,7 +1316,7 @@ module.exports = {
 
             await transporter.sendMail({
                 from: 'no-reply@indofoodinternational.com',
-                to: user_data.email,
+                to: to_emails,
                 //cc: carbon_copy,
                 bcc: ['etria.purba@icbp.indofood.co.id', 'muhammad.asmarakusuma@icbp.indofood.co.id'],
                 subject: ` [E-Order] Feedback ${userdata.firstname} ${userdata.lastname || ""} - ${company_name}`,
