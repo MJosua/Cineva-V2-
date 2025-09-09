@@ -1201,7 +1201,7 @@ module.exports = {
                 su.employee_id = me.employee_id 
                 where
                 su.user_id = ${user}
-                limt 1
+                limit 1
                 `);
 
             let company_name = await dbQuery(`
@@ -1214,13 +1214,14 @@ module.exports = {
                     limit 1
                     `);
 
+            console.log("company", company)
 
-            await transporter.sendMail({
+            transporter.sendMail({
                 from: 'no-reply@indofoodinternational.com',
-                to: user_data.email,
+                to: user_data[0].email,
                 //cc: carbon_copy,
                 bcc: ['etria.purba@icbp.indofood.co.id', 'muhammad.asmarakusuma@icbp.indofood.co.id'],
-                subject: ` [E-Order] Feedback ${userdata.firstname} ${userdata.lastname || ""} - ${company_name}`,
+                subject: ` [E-Order] Feedback ${user_data[0].firstname} ${user_data[0].lastname || ""} - ${company_name}`,
                 html: (`
                 <div>
                     <p>
@@ -1241,19 +1242,22 @@ module.exports = {
                 </div>`),
             });
 
-            console.log(timestamp + " Mail just sent to : " + dist_mail);
+            console.log(timestamp + " Mail just sent to : " + user_data[0].firstname);
 
         } catch (error) {
-            console.log(timestamp + " notifMailDeliver ERROR : " + error);
+            console.log(timestamp + " feedback_eorder ERROR : " + error);
         }
 
     }
     ,
     feedback_eorder_admin: async (judul, isi, gambar, company, user) => {
-        
+        let date = new Date();
+
         let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         try {
+
+
 
             let analyst_email = await dbQuery(`
                  select distinct
@@ -1278,7 +1282,7 @@ module.exports = {
                     a.company_id = d.company_id
                     and c.employee_id = d.employee_id
                 where
-                    su.company_id = ${dbConf.escape(company_id)}
+                    su.company_id = ${dbConf.escape(company)}
                     and b.team_category = 6
                     and me.email is not null
                 group by
@@ -1286,7 +1290,7 @@ module.exports = {
                     me.email
                 `);
 
-                let to_emails = analyst_email.length > 0 ? analyst_email[0].iod_mail : '';
+            let to_emails = analyst_email.length > 0 ? analyst_email[0].iod_mail : '';
 
             let user_data = await dbQuery(`
            
@@ -1302,6 +1306,7 @@ module.exports = {
                 su.employee_id = me.employee_id 
                 where
                 su.user_id = ${user}
+                limit 1
                 `);
 
             let company_name = await dbQuery(`
@@ -1313,14 +1318,14 @@ module.exports = {
                     mc.company_id = ${company}
                     limit 1
                     `);
-
-
-            await transporter.sendMail({
+            console.log("user_data", user_data)
+            console.log("user", user)
+            transporter.sendMail({
                 from: 'no-reply@indofoodinternational.com',
                 to: to_emails,
                 //cc: carbon_copy,
                 bcc: ['etria.purba@icbp.indofood.co.id', 'muhammad.asmarakusuma@icbp.indofood.co.id'],
-                subject: ` [E-Order] Feedback ${userdata.firstname} ${userdata.lastname || ""} - ${company_name}`,
+                subject: ` [E-Order] Feedback ${user_data[0].firstname} ${user_data[0].lastname || ""} - ${company_name}`,
                 html: (`
                 <div>
                     <p>
@@ -1328,7 +1333,7 @@ module.exports = {
                     </p>  
                     <br>
                     <p>
-                        This email to inform you that Feedback from ${firstname} has been collected as like this email :. 
+                        This email to inform you that Feedback from ${user_data[0].firstname} has been collected as like this email :. 
                     </p>  
                     <p>
                         ${judul}
@@ -1341,10 +1346,10 @@ module.exports = {
                 </div>`),
             });
 
-            console.log(timestamp + " Mail just sent to : " + dist_mail);
+            console.log(timestamp + " Mail just sent to : " + to_emails);
 
         } catch (error) {
-            console.log(timestamp + " notifMailDeliver ERROR : " + error);
+            console.log(timestamp + " feedback_eorder_admin ERROR : " + error);
         }
 
     }
