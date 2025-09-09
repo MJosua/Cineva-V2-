@@ -1,6 +1,7 @@
 const { query } = require("express");
 const { dbConf, dbQuery, addSqlLogger } = require("../config/db");
-const fs = require('fs')
+const fs = require('fs');
+const { feedback_eorder, feedback_eorder_admin } = require("../mailer/eorder/eorder_mailer");
 
 let blue = "\x1b[36m";
 
@@ -285,7 +286,7 @@ module.exports = {
                         res.status(200).send({
 
                             "Notify": notifyTP,
-                            "BillTP":  spc.length > 0 ? billTP : [defaultEntry, ...restEntries]
+                            "BillTP": spc.length > 0 ? billTP : [defaultEntry, ...restEntries]
                         });
 
                         console.log(timestamp + `get user shiptoparty for ${company_id} list success.`);
@@ -476,6 +477,11 @@ module.exports = {
                     res.status(200).send(results);
                     console.log(timestamp + `user add feedback success `);
                     addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), `addFeedback-`)
+
+                    feedback_eorder(form.title, form.feedback, imgUrl, req.dataToken.company_id, req.dataToken.user_id)
+                    feedback_eorder_admin(form.title, form.feedback, imgUrl, req.dataToken.company_id, req.dataToken.user_id)
+
+
                 }
 
             })
@@ -508,6 +514,7 @@ module.exports = {
                         addSqlLogger(req.dataToken.user_id, (query), `--data getFeedback-`, `getFeedback-`)
                     }
                 })
+
 
             } else {
                 res.status(401).send({

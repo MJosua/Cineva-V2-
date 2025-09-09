@@ -91,7 +91,8 @@ module.exports = {
             console.log(`${timestamp} FAILED TO INSERT EMAIL LOG: ${logErr}`);
             return null;
         }
-    },
+    }
+    ,
     markMailerSent: async ({ id }) => {
 
         let date = new Date();
@@ -109,8 +110,8 @@ module.exports = {
         } catch (err) {
             console.log(`${timestamp} FAILED TO UPDATE sent_date: ${err}`);
         }
-    },
-
+    }
+    ,
     orderRecievedMailSender: async (user_id, employee_id, order_id_awal, company_id) => {
 
         let date = new Date();
@@ -215,7 +216,7 @@ module.exports = {
         // setTimeout(async () => {
 
 
-            let headerData = (await dbQuery(` 
+        let headerData = (await dbQuery(` 
                 select
                     distinct 
                                     ms.order_id,
@@ -270,33 +271,33 @@ module.exports = {
                 where
                     ms.order_id = ${order_id_awal};`))[0];
 
-            let {
-                po_buyer,
-                order_id,
-                po_date,
-                delv_week_desc,
-                delv_date,
-                po_url,
-                port_shipment,
-                final_dest,
-                cont_size,
-                cont_qty,
-                ship_to,
-                stuffing_date,
-                remarks,
-                summary_remarks
-            } = headerData;
+        let {
+            po_buyer,
+            order_id,
+            po_date,
+            delv_week_desc,
+            delv_date,
+            po_url,
+            port_shipment,
+            final_dest,
+            cont_size,
+            cont_qty,
+            ship_to,
+            stuffing_date,
+            remarks,
+            summary_remarks
+        } = headerData;
 
-            let po_link = po_url && (po_url.trim() !== "" || po_url !== " ") ?
-                `<a href='${process.env.BE_URL + po_url}'> 
+        let po_link = po_url && (po_url.trim() !== "" || po_url !== " ") ?
+            `<a href='${process.env.BE_URL + po_url}'> 
                     click to open file 
                 </a>`
-                :
-                `<a href='https://www.indofoodinternational.com/e-order/indofoodpo/${order_id}'> 
+            :
+            `<a href='https://www.indofoodinternational.com/e-order/indofoodpo/${order_id}'> 
                     click to open file 
                 </a> `;
 
-            let skuData = await dbQuery(` 
+        let skuData = await dbQuery(` 
             SELECT  DISTINCT 
             ms.order_id,  
             ms.qty, 
@@ -312,82 +313,82 @@ module.exports = {
             LEFT JOIN sys_text st ON st.text_id = mc.country_name_id AND st.lang_id = 1
             WHERE ms.order_id = ${order_id};`);
 
-            let raw_qty = parseInt((await dbQuery(`SELECT sum(qty) AS total_qty FROM m_summary ms WHERE ms.order_id = ${dbConf.escape(order_id)};`))[0].total_qty)
-            let total_qty = raw_qty.toLocaleString()
-            let container = cont_size == 1 ? '20FT' : cont_size == 2 ? '40FT' : cont_size == 4 ? '40HC' : 'truck';
+        let raw_qty = parseInt((await dbQuery(`SELECT sum(qty) AS total_qty FROM m_summary ms WHERE ms.order_id = ${dbConf.escape(order_id)};`))[0].total_qty)
+        let total_qty = raw_qty.toLocaleString()
+        let container = cont_size == 1 ? '20FT' : cont_size == 2 ? '40FT' : cont_size == 4 ? '40HC' : 'truck';
 
-            const printOrderTable = () => {
+        const printOrderTable = () => {
 
 
-                // dua ini sama aja aslinya
-                if (cont_size == 8) {
-                    return skuData.map((val) => {
-                        return (
-                            `<tr>
+            // dua ini sama aja aslinya
+            if (cont_size == 8) {
+                return skuData.map((val) => {
+                    return (
+                        `<tr>
                                 <td style="border:1px solid black; padding: 5px;">  ${val.sku_name}  </td>
                                 <td style="border:1px solid black; padding: 5px;">  ${((val.qty).toLocaleString())}  </td>
                              </tr>`
-                        );
-                    }).join('');
-                } else {
-                    return skuData.map((val) => {
-                        return (
-                            `<tr>
-                                <td style="border:1px solid black; padding: 5px;">  ${val.sku_name}  </td>
-                                <td style="border:1px solid black; padding: 5px;">  ${((val.qty).toLocaleString())}  </td>
-                             </tr>`
-                        );
-                    }).join('');
-                }
-
-
-            }
-            const printDelv_method = () => {
-
-                if (cont_size == 8) {
-                    return ` <td>Est. Delivery Date</td> <td>: ${formatDate(delv_date)} </td> `
-                } else {
-                    return ` <td>Est. Delivery Week</td> <td>: ${delv_week_desc} </td> `
-                }
-
-            }
-            const printPort_method = () => {
-                if (cont_size == 8) {
-                    return ` <td> Destination </td> <td>: ${final_dest}</td>  `
-                } else {
-                    return ` <td>Port of Destination </td> <td>: ${port_shipment}</td>`
-                }
-
-            }
-
-            const printContainer_method = () => {
-                if (cont_size == 8) {
-                    return `  <td>Truck Qty</td> <td>: 1 </td>`
-                } else {
-                    return `<td> Container </td>  <td>:  ${cont_qty} X ${container}</td> `
-                }
-            }
-
-            const printRemarks_method = () => {
-                if (cont_size == 8) {
-                    return `<td> Remarks </td> <td>: ${summary_remarks ? summary_remarks : '-'} </td>`
-                } else {
-                    return `<td> Remarks </td> <td>:  ${remarks ? remarks : '-'}</td> `
-                }
-            }
-            // let delv_method = isTrucking ? ` <td>Est. Delivery Date</td> <td>: ${stuffing_date} </td> ` : ` <td>Est. Delivery Week</td> <td>: ${delv_week_desc} </td> `;
-            // let port_method = isTrucking ? ` <td> Destination </td>   ` : ` <td>Port of Destination	</td> `;
-            // let container_method = isTrucking ? `  <td>Truck Qty</td> <td>:${cont_qty}</td>` : `<td> Container </td>  <td>:  ${cont_qty} X ${container}</td> `;
-
-
-
-
-            //TO DISTRIBUTOR
-            if (!dist_mail) {
-                console.log(`${timestamp} ERROR Cannot send EMAIL to DISTRIBUTOR because its not exist`)
+                    );
+                }).join('');
             } else {
+                return skuData.map((val) => {
+                    return (
+                        `<tr>
+                                <td style="border:1px solid black; padding: 5px;">  ${val.sku_name}  </td>
+                                <td style="border:1px solid black; padding: 5px;">  ${((val.qty).toLocaleString())}  </td>
+                             </tr>`
+                    );
+                }).join('');
+            }
 
-                let disthtml = ` <div>
+
+        }
+        const printDelv_method = () => {
+
+            if (cont_size == 8) {
+                return ` <td>Est. Delivery Date</td> <td>: ${formatDate(delv_date)} </td> `
+            } else {
+                return ` <td>Est. Delivery Week</td> <td>: ${delv_week_desc} </td> `
+            }
+
+        }
+        const printPort_method = () => {
+            if (cont_size == 8) {
+                return ` <td> Destination </td> <td>: ${final_dest}</td>  `
+            } else {
+                return ` <td>Port of Destination </td> <td>: ${port_shipment}</td>`
+            }
+
+        }
+
+        const printContainer_method = () => {
+            if (cont_size == 8) {
+                return `  <td>Truck Qty</td> <td>: 1 </td>`
+            } else {
+                return `<td> Container </td>  <td>:  ${cont_qty} X ${container}</td> `
+            }
+        }
+
+        const printRemarks_method = () => {
+            if (cont_size == 8) {
+                return `<td> Remarks </td> <td>: ${summary_remarks ? summary_remarks : '-'} </td>`
+            } else {
+                return `<td> Remarks </td> <td>:  ${remarks ? remarks : '-'}</td> `
+            }
+        }
+        // let delv_method = isTrucking ? ` <td>Est. Delivery Date</td> <td>: ${stuffing_date} </td> ` : ` <td>Est. Delivery Week</td> <td>: ${delv_week_desc} </td> `;
+        // let port_method = isTrucking ? ` <td> Destination </td>   ` : ` <td>Port of Destination	</td> `;
+        // let container_method = isTrucking ? `  <td>Truck Qty</td> <td>:${cont_qty}</td>` : `<td> Container </td>  <td>:  ${cont_qty} X ${container}</td> `;
+
+
+
+
+        //TO DISTRIBUTOR
+        if (!dist_mail) {
+            console.log(`${timestamp} ERROR Cannot send EMAIL to DISTRIBUTOR because its not exist`)
+        } else {
+
+            let disthtml = ` <div>
                     <p>
                         Dear ${company_name},
                         <br>
@@ -484,35 +485,35 @@ module.exports = {
                     </p>
                 </div>
                     `
-                const mailLogId = await module.exports.insertMailerLog({
+            const mailLogId = await module.exports.insertMailerLog({
+                subject: `[E-Order] Order Submission ${po_buyer} is Successful!`,
+                body: disthtml,
+                order_id: order_id,
+                recipient: distSender,
+                cc: finalMergedEmailList
+            });
+            try {
+                await transporter.sendMail({
+                    from: 'no-reply@indofoodinternational.com',
+                    to: distSender,
+                    cc: finalMergedEmailList,
                     subject: `[E-Order] Order Submission ${po_buyer} is Successful!`,
-                    body: disthtml,
-                    order_id: order_id,
-                    recipient: distSender,
-                    cc: finalMergedEmailList
+                    html: disthtml,
                 });
-                try {
-                    await transporter.sendMail({
-                        from: 'no-reply@indofoodinternational.com',
-                        to: distSender,
-                        cc: finalMergedEmailList,
-                        subject: `[E-Order] Order Submission ${po_buyer} is Successful!`,
-                        html: disthtml,
-                    });
-                    console.log(timestamp + 'Email Sent to distributor: ' + dist_mail)
-                    await module.exports.markMailerSent(mailLogId);
+                console.log(timestamp + 'Email Sent to distributor: ' + dist_mail)
+                await module.exports.markMailerSent(mailLogId);
 
-                } catch (error) {
-                    console.log(timestamp + "MAILER ERROR, Message: " + error)
-                }
+            } catch (error) {
+                console.log(timestamp + "MAILER ERROR, Message: " + error)
             }
+        }
 
-            //TO ANALIS
-            if (!emailAnalisList) {
-                console.log(`${timestamp} ERROR Cannot send EMAIL to ANALIS because its not exist`)
-            } else {
+        //TO ANALIS
+        if (!emailAnalisList) {
+            console.log(`${timestamp} ERROR Cannot send EMAIL to ANALIS because its not exist`)
+        } else {
 
-                let analysthtml = ` <div>
+            let analysthtml = ` <div>
                        <p>
                            Dear Analyst,
                            <br>
@@ -601,34 +602,35 @@ module.exports = {
                     </p>
                    </div>
                        `
-                const mailLogId = await module.exports.insertMailerLog({
-                    subject: `[E-Order] Order Submission ${po_buyer} is Successful!`,
-                    body: analysthtml,
-                    order_id: order_id,
-                    recipient: emailAnalisList,
-                    cc: finalMergedEmailList
+            const mailLogId = await module.exports.insertMailerLog({
+                subject: `[E-Order] Order Submission ${po_buyer} is Successful!`,
+                body: analysthtml,
+                order_id: order_id,
+                recipient: emailAnalisList,
+                cc: finalMergedEmailList
+            });
+            try {
+                await transporter.sendMail({
+                    from: 'no-reply@indofoodinternational.com',
+                    to: emailAnalisList,
+                    cc: ['rangga.primanto@icbp.indofood.co.id', 'anisa.novitasari@icbp.indofood.co.id', 'tripomo@icbp.indofood.co.id'],
+                    bcc: ['etria.purba@icbp.indofood.co.id', 'yosua.gultom@icbp.indofood.co.id', 'muhammad.asmarakusuma@icbp.indofood.co.id'],
+
+                    subject: `[E-Order] Order Submission ${po_buyer} - ${company_name} is Successful!`,
+                    html: analysthtml
+                    ,
                 });
-                try {
-                    await transporter.sendMail({
-                        from: 'no-reply@indofoodinternational.com',
-                        to: emailAnalisList,
-                        cc: ['rangga.primanto@icbp.indofood.co.id', 'anisa.novitasari@icbp.indofood.co.id', 'tripomo@icbp.indofood.co.id'],
-                        bcc: ['etria.purba@icbp.indofood.co.id', 'yosua.gultom@icbp.indofood.co.id', 'muhammad.asmarakusuma@icbp.indofood.co.id'],
-
-                        subject: `[E-Order] Order Submission ${po_buyer} - ${company_name} is Successful!`,
-                        html: analysthtml
-                        ,
-                    });
-                    console.log(timestamp + 'Email Sent to analis :' + emailAnalisList)
-                    await module.exports.markMailerSent(mailLogId);
-                } catch (error) {
-                    console.log(timestamp + "MAILER ERROR, Message: " + error)
-                }
-
+                console.log(timestamp + 'Email Sent to analis :' + emailAnalisList)
+                await module.exports.markMailerSent(mailLogId);
+            } catch (error) {
+                console.log(timestamp + "MAILER ERROR, Message: " + error)
             }
+
+        }
         // });
     }
-    , forgotPasswordMailSender: async (targetMail, token) => {
+    ,
+    forgotPasswordMailSender: async (targetMail, token) => {
         let date = new Date();
         let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
@@ -655,7 +657,8 @@ module.exports = {
             console.log(`${timestamp} Error sending mail to ${targetMail} error message: ${error}`)
         }
     }
-    , NotifyTMGmailBulkMailSender6: async (tm_id) => {
+    ,
+    NotifyTMGmailBulkMailSender6: async (tm_id) => {
 
         let date = new Date();
         let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
@@ -843,7 +846,8 @@ module.exports = {
 
         }, 1000);
     }
-    , NotifyTMGmailBulkMailSender1: async (tm_id) => {
+    ,
+    NotifyTMGmailBulkMailSender1: async (tm_id) => {
 
         let date = new Date();
         let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
@@ -1028,7 +1032,8 @@ module.exports = {
 
         }, 1000);
     }
-    , notifMailDeliver: async (
+    ,
+    notifMailDeliver: async (
         order_id,
         dist_mail,
         str_carbon_copy,
@@ -1177,9 +1182,138 @@ module.exports = {
             console.log(timestamp + " notifMailDeliver ERROR : " + error);
         }
     }
+    ,
+    feedback_eorder: async (judul, isi, gambar, company, user) => {
+
+        let date = new Date();
+        let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+        try {
+            let user_data = await dbQuery(`
+           
+                select 
+                me.email,
+                su.firstname,
+                su.lastname 
+                from 
+                sys_user su
+                left join
+                mst_employee me 
+                on 
+                su.employee_id = me.employee_id 
+                where
+                su.user_id = ${user}
+                `);
+
+            let company_name = await dbQuery(`
+           
+                select company_name
+                    from 
+                    mst_company mc
+                    where
+                    mc.company_id = ${company}
+                    limit 1
+                    `);
 
 
-    
+            await transporter.sendMail({
+                from: 'no-reply@indofoodinternational.com',
+                to: user_data.email,
+                //cc: carbon_copy,
+                bcc: ['etria.purba@icbp.indofood.co.id', 'muhammad.asmarakusuma@icbp.indofood.co.id'],
+                subject: ` [E-Order] Feedback ${userdata.firstname} ${userdata.lastname || ""} - ${company_name}`,
+                html: (`
+                <div>
+                    <p>
+                    Dear ${company_name} ,  
+                    </p>  
+                    <br>
+                    <p>
+                        This email to inform you that your Feedback has been sent as like this email :. 
+                    </p>  
+                    <p>
+                        ${judul}
+                    </p>  
+                
+                    <div>
+                       ${isi}
+                    </div>
+
+                </div>`),
+            });
+
+            console.log(timestamp + " Mail just sent to : " + dist_mail);
+
+        } catch (error) {
+            console.log(timestamp + " notifMailDeliver ERROR : " + error);
+        }
+
+    }
+    ,
+    feedback_eorder_admin: async (judul, isi, gambar, company, user) => {
+
+        try {
+            let user_data = await dbQuery(`
+           
+                select 
+                me.email,
+                su.firstname,
+                su.lastname 
+                from 
+                sys_user su
+                left join
+                mst_employee me 
+                on 
+                su.employee_id = me.employee_id 
+                where
+                su.user_id = ${user}
+                `);
+
+            let company_name = await dbQuery(`
+           
+                select company_name
+                    from 
+                    mst_company mc
+                    where
+                    mc.company_id = ${company}
+                    limit 1
+                    `);
+
+
+            await transporter.sendMail({
+                from: 'no-reply@indofoodinternational.com',
+                to: user_data.email,
+                //cc: carbon_copy,
+                bcc: ['etria.purba@icbp.indofood.co.id', 'muhammad.asmarakusuma@icbp.indofood.co.id'],
+                subject: ` [E-Order] Feedback ${userdata.firstname} ${userdata.lastname || ""} - ${company_name}`,
+                html: (`
+                <div>
+                    <p>
+                    Dear ${company_name} Analyst ,  
+                    </p>  
+                    <br>
+                    <p>
+                        This email to inform you that Feedback from ${firstname} has been collected as like this email :. 
+                    </p>  
+                    <p>
+                        ${judul}
+                    </p>  
+                
+                    <div>
+                       ${isi}
+                    </div>
+
+                </div>`),
+            });
+
+            console.log(timestamp + " Mail just sent to : " + dist_mail);
+
+        } catch (error) {
+            console.log(timestamp + " notifMailDeliver ERROR : " + error);
+        }
+
+    }
+
+
 
 
 }
