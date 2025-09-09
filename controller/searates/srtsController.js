@@ -266,6 +266,255 @@ module.exports = {
 
         const number = req.params.number.toLocaleString();
 
+        // 📌 Fungsi reusable untuk simpan data Searates ke DB
+        async function saveSearatesRecord(record) {
+            console.log("📌 First time event Updated");
+            let connection;
+            const metadata = record.data.metadata;
+
+            // 🟢 Save shipment (UPSERT)
+            const shipmentQuery = `
+        INSERT INTO shipments(
+            number,
+            so_id,
+            type,
+            sealine,
+            sealine_name,
+            status,
+            last_updated_date
+        ) VALUES (?, ?, ?, ?, ?, ?, NOW())
+        ON DUPLICATE KEY UPDATE
+            type = VALUES(type),
+            sealine = VALUES(sealine),
+            sealine_name = VALUES(sealine_name),
+            status = VALUES(status),
+            last_updated_date = NOW()
+    `;
+
+            const [shipmentResult] = await dbQuerySR(shipmentQuery, [
+                metadata.number ?? null,
+                record.so_id ?? 0,
+                metadata.type ?? null,
+                metadata.sealine ?? null,
+                metadata.sealine_name ?? null,
+                metadata.status ?? null,
+            ]);
+
+            const shipmentId =
+                shipmentResult.insertId ||
+                (await dbQuerySR(
+                    "SELECT id FROM shipments WHERE number = ?",
+                    [metadata.number]
+                ))[0][0].id;
+
+            console.log(`✅ Shipment saved (Container Number : ${metadata.number})`);
+
+            // 🟢 Save first-time event
+            const firstTimeEventQuery = `
+        INSERT INTO events(
+            order_id,
+            location_id,
+            description,
+            event_type,
+            event_code,
+            date,
+            actual,
+            vessel_id,
+            voyage,
+            container_id,
+            shipment_id,
+            status
+        ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            description = VALUES(description),
+            date = VALUES(date),
+            status = VALUES(status)
+    `;
+
+            await dbQuerySR(firstTimeEventQuery, [
+                0,
+                0,
+                "First time API-CALL",
+                "system",
+                "FIRST_CALL",
+                new Date(),
+                1,
+                null,
+                null,
+                0,
+                shipmentId,
+                "start",
+            ]);
+
+            // 🟢 Save locations
+            const locationsQuery = `
+        INSERT INTO locations (
+            location_id, name, state, country, locode, lat, lng, shipment_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            name = VALUES(name),
+            state = VALUES(state),
+            country = VALUES(country),
+            locode = VALUES(locode),
+            lat = VALUES(lat),
+            lng = VALUES(lng),
+            shipment_id = VALUES(shipment_id)
+    `;
+
+            if (record.data.locations) {
+                for (const l of record.data.locations) {
+                    await dbQuerySR(locationsQuery, [
+                        l.id ?? null,
+                        l.name ?? null,
+                        l.state ?? null,
+                        l.country ?? null,
+                        l.locode ?? null,
+                        l.lat ?? null,
+                        l.lng ?? null,
+                        shipmentId,
+                    ]);
+                }
+                console.log("✅ Locations upserted successfully");
+            }
+
+            // 🟢 Save route pin
+            if (record.data.route_data?.pin?.length >= 2) {
+                const [lat, long] = record.data.route_data.pin;
+
+                const routeQuery = `
+            INSERT INTO route(lat, \`long\`, shipment_id)
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                lat = VALUES(lat),
+                \`long\` = VALUES(\`long\`)
+        `;
+
+                await dbQuerySR(routeQuery, [lat ?? null, long ?? null, shipmentId]);
+                console.log("✅ Route upserted successfully");
+            } else {
+                console.warn("⚠️ No route pin available");
+            }
+
+            // 🟢 Save POL
+            if (record.data.route?.pol) {
+                const pol = record.data.route.pol;
+
+                const polQuery = `
+            INSERT INTO pol(location_id, date, actual, shipment_id, last_updated_date)
+            VALUES (?, ?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE
+                date = VALUES(date),
+                actual = VALUES(actual),
+                last_updated_date = NOW()
+        `;
+
+                await dbQuerySR(polQuery, [
+                    pol.location ?? null,
+                    pol.date ?? null,
+                    pol.actual ?? null,
+                    shipmentId,
+                ]);
+                console.log("✅ POL upserted successfully");
+            }
+
+            // 🟢 Save POD
+            if (record.data.route?.pod) {
+                const pod = record.data.route.pod;
+
+                const podQuery = `
+            INSERT INTO pod(location_id, date, predictive_eta, actual, shipment_id, last_updated_date)
+            VALUES (?, ?, ?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE
+                date = VALUES(date),
+                predictive_eta = VALUES(predictive_eta),
+                actual = VALUES(actual),
+                last_updated_date = NOW()
+        `;
+
+                await dbQuerySR(podQuery, [
+                    pod.location ?? null,
+                    pod.date ?? null,
+                    pod.predictive_eta ?? null,
+                    pod.actual ?? null,
+                    shipmentId,
+                ]);
+                console.log("✅ POD upserted successfully");
+            }
+
+            // 🟢 Save vessels
+            if (record.data.vessels) {
+                const vesselsQuery = `
+            INSERT INTO vessel(imo, name, vessel_id, shipment_id)
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                name = VALUES(name)
+        `;
+
+                for (const v of record.data.vessels) {
+                    await dbQuerySR(vesselsQuery, [
+                        v.imo ?? null,
+                        v.name ?? null,
+                        v.id ?? null,
+                        shipmentId,
+                    ]);
+                }
+                console.log("✅ Vessels upserted successfully");
+            }
+
+            // 🟢 Save containers + events
+            if (record.data.containers) {
+                const containersQuery = `
+            INSERT INTO containers(container_id, container_number, iso_code, size_type, status, shipment_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                iso_code = VALUES(iso_code),
+                size_type = VALUES(size_type),
+                status = VALUES(status)
+        `;
+
+                const eventQuery = `
+            INSERT INTO events(order_id, location_id, description, event_type, event_code, date, actual, vessel_id, voyage, container_id, shipment_id, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                description = VALUES(description),
+                date = VALUES(date),
+                status = VALUES(status)
+        `;
+
+                for (const [i, c] of record.data.containers.entries()) {
+                    await dbQuerySR(containersQuery, [
+                        i + 1,
+                        c.number ?? null,
+                        c.iso_code ?? null,
+                        c.size_type ?? null,
+                        c.status ?? null,
+                        shipmentId,
+                    ]);
+
+                    if (c.events) {
+                        for (const e of c.events) {
+                            await dbQuerySR(eventQuery, [
+                                e.order_id ?? null,
+                                e.location ?? null,
+                                e.description ?? null,
+                                e.event_type ?? null,
+                                e.event_code ?? null,
+                                e.date ?? null,
+                                e.actual ?? null,
+                                e.vessel ?? null,
+                                e.voyage ?? null,
+                                i + 1,
+                                shipmentId,
+                                e.status ?? null,
+                            ]);
+                        }
+                    }
+                }
+                console.log("✅ Containers and events upserted successfully");
+            }
+
+            return shipmentId; // biar bisa dipakai di luar fungsi
+        }
 
 
         try {
@@ -358,6 +607,11 @@ module.exports = {
                                 )
                             )
                             AND e.event_id IS NOT NULL
+                             and (
+                            s.last_updated_date >= NOW() - INTERVAL 2 WEEK
+                            or
+                            pod.date <= NOW() 
+                            )
                         order by
                             e.date desc;
 
@@ -366,32 +620,24 @@ module.exports = {
                 ;
             const results = await dbQuerySR(query, [number, number, number]);
 
-            
+
 
             if (results.length < 1) {
                 try {
                     const url = `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=auto&force_update=false&route=true&ais=false`;
 
                     const searatesRes = await axios.get(url);
+
                     console.log("Fallback from Searates:", searatesRes.data);
 
+                    const record = {
+                        so_id: so_id,           // ini dari parameter function kamu
+                        cont_id: number,        // kalau mau simpan cont_id juga
+                        data: searatesRes.data  // seluruh hasil dari API
+                      }; // pastikan sesuai struktur
 
-                    try {
-                        // bentuk record seperti struktur yang dibutuhkan saveShipmentData
-                        const fallbackRecord = {
-                            details: {
-                                data: searatesRes.data
-                            }
-                        };
-                    
-                        return res.status(200).send({
-                            message: "Saved from fallback (Searates)",
-                            data: searatesRes.data
-                        });
-                    } catch (err) {
-                        console.error("❌ Error saving fallback data:", err);
-                        return res.status(500).send({ error: "Save fallback failed", details: err });
-                    }
+                    // 🔥 Panggil logic UPSERT penuh
+                    await saveSearatesRecord(record);
 
 
                     // Return fallback data

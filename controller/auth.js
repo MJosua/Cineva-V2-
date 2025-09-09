@@ -60,7 +60,11 @@ module.exports = {
         CAST(COALESCE(maxtrck.value, 0) AS UNSIGNED) max_truck,
         CAST(COALESCE(maxflvrtrck.value, 0) AS UNSIGNED) max_flavour_truck,
         COALESCE(p.midname, '') midname,
-        COALESCE(p.lastname, '') lastname
+        COALESCE(p.lastname, '') lastname,
+        COALESCE(
+          JSON_ARRAYAGG(mcn.conditions),
+          JSON_ARRAY()
+        ) AS spc_condition
       FROM
         sys_user su
       JOIN mst_company mc ON
@@ -92,6 +96,8 @@ module.exports = {
         me.employee_id = su.employee_id
       LEFT JOIN person p ON
         p.person_id = me.employee_id
+      LEFT JOIN m_config_new mcn 
+        ON mcn.company_id = su.company_id  
       WHERE
         su.uid = ?
       AND 
@@ -318,60 +324,59 @@ module.exports = {
 
         let userID = await dbQuery(
           `
-          SELECT
-          su.uid,
-          su.user_id,
-          su.lang_id,
-          su.employee_id,
-          mc.country_id,
-          mc.company_name,
-          mc.company_id,
-          mct.country_desc,
-          su.active,
-          su.type_id,
-          mut.user_type,
-          CAST(COALESCE(flav.value, 2) AS UNSIGNED) max_sku,
-          CAST(COALESCE(pal.value, 0) AS UNSIGNED) pallet,
-          CAST(COALESCE(maxtrck.value, 0) AS UNSIGNED) max_truck,
-          CAST(COALESCE(maxflvrtrck.value, 0) AS UNSIGNED) max_flavour_truck,
-          CAST(COALESCE(tr.value, 1) AS UNSIGNED) transport,
-          COALESCE(p.firstname, '') firstname,
-          COALESCE(p.midname, '') midname,
-          COALESCE(p.lastname, '') lastname
-        FROM
-          sys_user su
-        JOIN mst_company mc ON
-          su.company_id = mc.company_id
-        JOIN mst_country mct ON
-          mct.country_id = mc.country_id
-        JOIN m_user_type mut ON
-          su.type_id = mut.type_id
-        LEFT JOIN m_config_new flav ON
-          su.company_id = flav.company_id
-          AND flav.conditions = 1
-        LEFT JOIN m_config_new pal ON
-          su.company_id = pal.company_id
-          AND pal.conditions = 2
-        LEFT JOIN m_config_new maxtrck ON
-          su.company_id = maxtrck.company_id
-          AND maxtrck.conditions = 15
-        LEFT JOIN m_config_new maxflvrtrck ON
-          su.company_id = maxflvrtrck.company_id
-          AND maxflvrtrck.conditions = 16
-        LEFT JOIN m_config_new top ON
-          su.company_id = top.company_id
-          AND top.conditions = 3
-        LEFT JOIN m_config_new tr ON
-          tr.company_id = su.company_id
-          AND tr.active = 1
-          AND tr.conditions = 7
-        LEFT JOIN mst_employee me ON
-          me.employee_id = su.employee_id
-        LEFT JOIN person p ON
-          p.person_id = me.employee_id
-        WHERE
-          su.user_id = ${dbConf.escape(req.dataToken.user_id)}
-        LIMIT 1	  
+         SELECT
+            su.uid,
+            su.user_id,
+            su.lang_id,
+            su.employee_id,
+            mc.country_id,
+            mc.company_name,
+            mc.company_id,
+            mct.country_desc,
+            su.active,
+            su.type_id,
+            mut.user_type,
+            CAST(COALESCE(flav.value, 2) AS UNSIGNED) max_sku,
+            CAST(COALESCE(pal.value, 0) AS UNSIGNED) pallet,
+            CAST(COALESCE(maxtrck.value, 0) AS UNSIGNED) max_truck,
+            CAST(COALESCE(maxflvrtrck.value, 0) AS UNSIGNED) max_flavour_truck,
+            CAST(COALESCE(tr.value, 1) AS UNSIGNED) transport,
+            COALESCE(p.firstname, '') firstname,
+            COALESCE(p.midname, '') midname,
+            COALESCE(p.lastname, '') lastname,
+            COALESCE(
+                JSON_ARRAYAGG(mcn.conditions),
+                JSON_ARRAY()
+            ) AS spc_condition
+        FROM sys_user su
+        JOIN mst_company mc 
+            ON su.company_id = mc.company_id
+        JOIN mst_country mct 
+            ON mct.country_id = mc.country_id
+        JOIN m_user_type mut 
+            ON su.type_id = mut.type_id
+        LEFT JOIN m_config_new flav 
+            ON su.company_id = flav.company_id AND flav.conditions = 1
+        LEFT JOIN m_config_new pal 
+            ON su.company_id = pal.company_id AND pal.conditions = 2
+        LEFT JOIN m_config_new maxtrck 
+            ON su.company_id = maxtrck.company_id AND maxtrck.conditions = 15
+        LEFT JOIN m_config_new maxflvrtrck 
+            ON su.company_id = maxflvrtrck.company_id AND maxflvrtrck.conditions = 16
+        LEFT JOIN m_config_new top 
+            ON su.company_id = top.company_id AND top.conditions = 3
+        LEFT JOIN m_config_new tr 
+            ON tr.company_id = su.company_id AND tr.active = 1 AND tr.conditions = 7
+        LEFT JOIN mst_employee me 
+            ON me.employee_id = su.employee_id
+        LEFT JOIN person p 
+            ON p.person_id = me.employee_id
+        LEFT JOIN m_config_new mcn  -- 👈 generic join for collecting ids
+            ON mcn.company_id = su.company_id
+        WHERE su.user_id = ${dbConf.escape(req.dataToken.user_id)}
+        GROUP BY su.uid
+        LIMIT 1
+
                    
               `
         );
