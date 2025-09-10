@@ -324,7 +324,7 @@ ORDER BY
                 order by
                     mpc.product_type_name
                 ;`
-                
+
                 dbConf.query(query, (err, results) => {
 
                     if (err) {
@@ -462,7 +462,61 @@ ORDER BY
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get product catalog for ${req.dataToken.company_id} success`);
-                       // addSqlLogger(req.dataToken.user_id, (query), '-- data getProductCatalog', ` getProductCatalog`)
+                        // addSqlLogger(req.dataToken.user_id, (query), '-- data getProductCatalog', ` getProductCatalog`)
+
+                    }
+
+                })
+
+            } else {
+
+                res.status(401).send({
+                    success: false,
+                    message: 'unauthorized'
+                })
+
+            }
+        } catch (error) {
+
+            if (error) {
+                res.status(500).send(error);
+                console.log(timestamp + `get product order error! ${error}`);
+            }
+        }
+
+
+
+    }, getOMCode: async (req, res) => {
+
+        /**
+         * Produk yang ditampilkan hanya product yang MOQnya nol
+        * hal ini untuk menyaring produk dari IAI, SWK, dan SWT.
+        */
+
+        try {
+            if (req.dataToken.user_id) {
+
+                let date = new Date();
+                let timestamp = gray + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+                // add query AND mp.division_id = mpc.division_id 
+
+                let query = `
+                    SELECT JSON_OBJECTAGG(other_code, product_code) AS skuMap
+                    FROM map_product_code
+                    where 
+                    distributor_id = ${req.dataToken.company_id}
+                    ;
+                `
+
+                dbConf.query(query, (err, results) => {
+                    if (err) {
+                        res.status(500).send(err);
+                        console.log(timestamp + `get om code catalog for ${req.dataToken.company_id} error! ${err}`);
+                    } else {
+                        res.status(200).send(results);
+                        console.log(timestamp + `get om code catalog for ${req.dataToken.company_id} success`);
+                        // addSqlLogger(req.dataToken.user_id, (query), '-- data getProductCatalog', ` getProductCatalog`)
 
                     }
 
@@ -490,7 +544,5 @@ ORDER BY
 };
 
  
-
-
 
 

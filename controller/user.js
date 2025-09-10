@@ -70,6 +70,50 @@ module.exports = {
 
 
     },
+    portfind: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        try {
+            if (req.dataToken.user_id) {
+
+                let query = `
+                select mpd.id, mh.harbour_code
+                    from 
+                    mst_harbour mh
+                    left join map_port_for_dist mpd
+                    on mh.harbour_id = mpd.harbour_id
+                    where
+                    mpd.finish_date is null
+                    and
+                    mpd.distributor_id = ${req.dataToken.company_id}
+                `
+
+                dbConf.query(query, (err, results) => {
+                    if (err) {
+                        res.status(500).send(err);
+                        console.log(timestamp + "Error Get port list", err);
+                    } else {
+                        res.status(200).send(results);
+                        console.log(timestamp + `get user Port List for ${req.dataToken.company_id} success`);
+                        addSqlLogger(req.dataToken.user_id, (query), `--getPort`, `getPort`)
+                    }
+
+                })
+            } else {
+                res.status(401).send({
+                    success: false,
+                    message: 'error_auth'
+                })
+            }
+        } catch (error) {
+            console.log(timestamp + error);
+            res.status(500).send(error);
+        }
+
+
+    },
     stp: async (req, res) => {
 
         let date = new Date();

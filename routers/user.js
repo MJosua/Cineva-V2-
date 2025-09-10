@@ -1,6 +1,6 @@
 const express = require('express')
 const route = express.Router();
-const { readToken } = require('../config/encrypts')
+const { readToken, readTokenTM } = require('../config/encrypts')
 const { userController } = require('../controller');
 const { imageUploader } = require('../config/uploader')
 
@@ -12,6 +12,11 @@ route.post('/request-change-data', readToken, userController.addRequstDataChange
 route.post('/email', readToken, userController.updateEmail)
 
 route.get('/port', readToken, userController.port);
+
+//digunakan untuk om
+route.get('/portfind', readToken, userController.portfind)
+
+
 route.get('/stp', readToken, userController.stp);
 route.get('/ostp', readToken, userController.ostp);
 route.get('/profile', readToken, userController.profile)
