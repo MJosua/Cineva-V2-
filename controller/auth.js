@@ -516,7 +516,8 @@ module.exports = {
         su.employee_id = me.employee_id
       WHERE
         su.uid =  ${dbConf.escape(req.body.uid)}
-        AND su.type_id IN (3, 9);
+        AND su.type_id IN (3, 9)
+         limit 1
         ;`))[0];
 
       //buat token

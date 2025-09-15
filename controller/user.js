@@ -246,7 +246,43 @@ module.exports = {
             res.status(500).send(error);
         }
     },
-    ostp: async (req, res) => {
+    findntp: async (req, res) => {
+        const date = new Date();
+        const timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+
+        try {
+            if (!req.dataToken?.user_id) {
+                return res.status(401).send({ success: false, message: 'error_auth' });
+            }
+
+            const company_id = req.params.company_id;
+
+            const querynotify = `
+            SELECT * FROM mst_company mc 
+            WHERE company_type_id = 7 
+            AND parent_company_id = ?
+          `;
+
+            // Use await instead of wrapping with new Promise
+            const notifyTP = await new Promise((resolve, reject) => {
+                dbConf.query(querynotify, [company_id], (err, results) => {
+                    if (err) reject(err);
+                    else resolve(results);
+                });
+            });
+
+            res.status(200).send({ Notify: notifyTP });
+            console.log("notifyTP", notifyTP)
+            console.log(timestamp + `get user findntp for ${company_id} list success.`);
+
+        } catch (error) {
+            console.error(timestamp + "Error in findntp queries:", error);
+            res.status(500).send(error);
+        }
+    }
+
+
+    , ostp: async (req, res) => {
         let date = new Date();
         let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
@@ -275,11 +311,20 @@ module.exports = {
                 `;
 
 
-                let checkbtpspecialcondition = `
+                let checkbtpspecialconditionhidebtp = `
                 SELECT active FROM m_config_new mspc 
                 WHERE company_id = ${company_id}
                 and
                 conditions = 14
+                and
+                active = 1
+            `;
+
+                let checkbtpspecialconditionhidentp = `
+                SELECT value FROM m_config_new mspc 
+                WHERE company_id = ${company_id}
+                and
+                conditions = 18
                 and
                 active = 1
             `;
@@ -305,32 +350,56 @@ module.exports = {
                         });
                     }),
                     new Promise((resolve, reject) => {
-                        dbConf.query(checkbtpspecialcondition, (err, results) => {
+                        dbConf.query(checkbtpspecialconditionhidebtp, (err, results) => {
+                            if (err) reject(err);
+                            else resolve(results);
+                        });
+                    }),
+                    new Promise((resolve, reject) => {
+                        dbConf.query(checkbtpspecialconditionhidentp, (err, results) => {
                             if (err) reject(err);
                             else resolve(results);
                         });
                     }),
 
                 ])
-                    .then(([notifyTP, billTP, checkcompanyname, spc]) => {
+                    .then(([notifyTP, billTP, checkcompanyname, spcbtp, spcntp]) => {
 
 
-                        const defaultEntry = {
+                        const defaultEntrybtp = {
                             company_id,
                             company_name: checkcompanyname[0].company_name
                         };
 
+                        let notifyTPFinal = notifyTP;
+
+                        if (spcntp.length > 0) {
+                            const spcntpValue = spcntp[0].value;
+
+                            // Find matching company in notifyTP
+                            const specialCompany = notifyTP.find(n => n.company_id.toString() === spcntpValue.toString());
+                            console.log("spcntpValue", spcntpValue)
+                            console.log("specialCompany", specialCompany)
+
+                            if (specialCompany) {
+                                // Reorder so specialCompany is first
+                                notifyTPFinal = [
+                                    specialCompany,
+                                    ...notifyTP.filter(n => n.company_id.toString() !== spcntpValue.toString())
+                                ];
+                            }
+                        }
+
                         // Combine the default with the first real entry (optional merging)
 
-
                         // Rest of the entries, skipping the first
-                        const restEntries = billTP;
+                        const restEntriesbtp = billTP;
 
 
                         res.status(200).send({
 
-                            "Notify": notifyTP,
-                            "BillTP": spc.length > 0 ? billTP : [defaultEntry, ...restEntries]
+                            "Notify": notifyTPFinal,
+                            "BillTP": spcbtp.length > 0 ? billTP : [defaultEntrybtp, ...restEntriesbtp]
                         });
 
                         console.log(timestamp + `get user shiptoparty for ${company_id} list success.`);
