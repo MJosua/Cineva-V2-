@@ -1,6 +1,7 @@
 const {
     dbHots,
     dbQueryHots,
+    dbQuery,
     // addSqlLogger
 } = require("../../config/db");
 const { generateTokenHT, hashPasswordHT } = require("../../config/encrypts");
@@ -18,10 +19,16 @@ module.exports = {
     login: async (req, res) => {
 
         let date = new Date();
+
+        let current_delv_week = (await dbQuery(`SELECT day2week(NOW()) AS wikwik;`))[0].wikwik;
+
+
+
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let { uid, asin } = req.body
         console.log("req.body",req.body)
+        
 
 
         // cari username dulu
@@ -145,7 +152,8 @@ module.exports = {
                                     success: true,
                                     message: `Login success! Welcome ${uid}`,
                                     userData: results2[0],
-                                    tokek
+                                    tokek,
+                                    current_delv_week
                                 })
                                 // res.status(200).cookie('tokek', tokek, {
                                 //     httpOnly: true,
@@ -201,6 +209,8 @@ module.exports = {
 
 
         let date = new Date();
+        let current_delv_week = (await dbQuery(`SELECT day2week(NOW()) AS wikwik;`))[0].wikwik;
+
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         if (req.dataToken.user_id) {
@@ -284,7 +294,8 @@ module.exports = {
                             res.status(200).send({
                                 success: true,
                                 userData,
-                                tokek
+                                tokek,
+                                current_delv_week
                             })
                             let queryUpdateToken = `UPDATE user 
                                                         SET 

@@ -84,7 +84,7 @@ route.get('/open_tiket_count', decodeTokenHT, hotsTicket.getOpenTiketCount)
 route.get('/rejected_tiket_count', decodeTokenHT, hotsTicket.getRejectTiketCount)
 
 
-route.get('/detail/:service_id/:ticket_id', decodeTokenHT, hotsTicket.getTicketDetail_old)
+route.get('/detail_old/:service_id/:ticket_id', decodeTokenHT, hotsTicket.getTicketDetail_old)
 route.post('/approve/:service_id/:ticket_id', decodeTokenHT, hotsTicket.setApprove)
 route.post('/reject/:ticket_id', decodeTokenHT, hotsTicket.setReject)
 

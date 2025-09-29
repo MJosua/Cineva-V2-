@@ -23,6 +23,7 @@ module.exports = {
 
         const number = req.params.number;
 
+
         if (!req.dataToken.user_id) {
             console.log(timestamp + " Unauthorized!");
             return res.status(401).send({ error: "Unauthorized" });
@@ -265,6 +266,10 @@ module.exports = {
 
         const number = req.params.number.toLocaleString();
 
+        const sealine = req.params?.sealine?.toLocaleString() || "auto";
+        const refresh = req.query?.refresh === "true" ? true : false;
+
+
         // 📌 Fungsi reusable untuk simpan data Searates ke DB
         async function saveSearatesRecord(record) {
             let connection;
@@ -290,9 +295,10 @@ module.exports = {
                     last_updated_date = NOW()
     `;
 
+            console.log("metadata", metadata)
             const shipmentResult = await dbQuerySR(shipmentQuery, [
                 record.shipment_id ?? null,
-                metadata.number ?? null,
+                number,
                 record.so_id ?? 0,
                 metadata.type ?? null,
                 metadata.sealine ?? null,
@@ -329,6 +335,7 @@ module.exports = {
             description = VALUES(description),
             date = VALUES(date),
             status = VALUES(status)
+
     `;
 
             await dbQuerySR(firstTimeEventQuery, [
@@ -405,7 +412,8 @@ module.exports = {
             ON DUPLICATE KEY UPDATE
                 date = VALUES(date),
                 actual = VALUES(actual),
-                last_updated_date = NOW()
+                last_updated_date = NOW(),
+                location_id = VALUES(location_id)
         `;
 
                 await dbQuerySR(polQuery, [
@@ -428,16 +436,19 @@ module.exports = {
                 date = VALUES(date),
                 predictive_eta = VALUES(predictive_eta),
                 actual = VALUES(actual),
-                last_updated_date = NOW()
+                last_updated_date = NOW(),
+                location_id = VALUES(location_id)
+
         `;
 
-                await dbQuerySR(podQuery, [
+                const row = await dbQuerySR(podQuery, [
                     pod.location ?? null,
                     pod.date ?? null,
                     pod.predictive_eta ?? null,
-                    pod.actual ?? null,
+                    pod.actual ? 1 : 0,
                     shipmentId,
                 ]);
+
                 console.log("✅ POD upserted successfully");
             }
 
@@ -462,6 +473,8 @@ module.exports = {
             }
 
             // 🟢 Save containers + events
+
+
             if (record.data.containers) {
                 const containersQuery = `
             INSERT INTO containers(container_id, container_number, iso_code, size_type, status, shipment_id)
@@ -477,8 +490,19 @@ module.exports = {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 description = VALUES(description),
+                
                 date = VALUES(date),
-                status = VALUES(status)
+                status = VALUES(status),
+                vessel_id = VALUES(vessel_id),
+                voyage = VALUES(voyage),
+                location_id = VALUES(location_id),
+                actual = VALUES(actual),
+
+                event_type = VALUES(event_type),
+                event_code = VALUES(event_code),
+
+                container_id = VALUES(container_id)
+
         `;
 
                 for (const [i, c] of record.data.containers.entries()) {
@@ -492,7 +516,9 @@ module.exports = {
                     ]);
 
                     if (c.events) {
+
                         for (const e of c.events) {
+
                             await dbQuerySR(eventQuery, [
                                 e.order_id ?? null,
                                 e.location ?? null,
@@ -549,6 +575,7 @@ module.exports = {
                             v.imo as vimo,
                             e.vessel_id as event_vessel,
                             pod.location_id as pod_id,
+                            pod.actual,
                             DATE_FORMAT(pod.date, '%Y-%m-%d') as pod_date,
                             pol.location_id as pol_id,
                             DATE_FORMAT(pol.date, '%Y-%m-%d') as pol_date,
@@ -621,9 +648,30 @@ module.exports = {
                 ;
             const results = await dbQuerySR(query, [number, number, number]);
 
+            let reload;
+
+            if (results[0].last_updated_date) {
+                const lastUpdate = new Date(results[0].last_updated_date);
+                const now = new Date();
+
+                // difference in milliseconds
+                const diffMs = now - lastUpdate;
+
+                // convert to hours
+                const diffHours = diffMs / (1000 * 60 * 60);
 
 
-            if (results.length < 1) {
+                if(results[0].actual === 1){
+                    reload = false
+                }else{
+
+                    reload = diffHours >= 5; // true if more than 5 hours, else false
+
+                }
+                console.log("results[0].actual",results[0].actual)
+            }
+
+            if (results.length < 1 || reload) {
                 try {
 
 
@@ -651,6 +699,8 @@ module.exports = {
                         s.so_id = tso.so_id 
                         where
                         s.number = "${number}"
+                        order by s.last_updated_date DESC
+                        limit 1
 
                     `
 
@@ -662,8 +712,8 @@ module.exports = {
                     const contIdClean = checkresult[0]?.cont_id?.replace("-", "");
                     const url =
                         checkresult[0]?.bl_no
-                            ? `https://tracking.searates.com/tracking?api_key=${key}&number=${checkresult[0].bl_no}&sealine=auto&force_update=false&route=true&ais=false`
-                            : `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=auto&force_update=false&route=true&ais=false`;
+                            ? `https://tracking.searates.com/tracking?api_key=${key}&number=${checkresult[0].bl_no}&sealine=${sealine}&force_update=false&type=bl&route=true&ais=false`
+                            : `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=${sealine}&force_update=false&route=true&ais=false`;
 
                     let searatesRes = await axios.get(url);
 
@@ -711,6 +761,7 @@ module.exports = {
                             container_events: [],
                             pin_location: [],
                             vessels: [],
+                            metadata: [],
                             dataRoute: [
                                 {
                                     pod: [],
@@ -822,6 +873,7 @@ module.exports = {
                     }
 
                     // Check for duplicate vessels before adding
+
                     if (row.vessel_id) {
                         const existingVessel = shipmentData[shipmentId].vessels.find(v => v.vessel_id === row.vessel_id);
 
@@ -833,7 +885,6 @@ module.exports = {
                                 vessel_id: row.vessel_vesid
                             });
                         }
-                        console.log("  shipmentData[shipmentId].vessels", shipmentData[shipmentId].vessels)
                     }
 
                     if (!shipmentData[shipmentId].dataRoute || shipmentData[shipmentId].dataRoute.length === 0) {
@@ -860,6 +911,14 @@ module.exports = {
                             });
                         }
                     }
+
+                    if (row.last_updated_date) {
+                        shipmentData[shipmentId].metadata = {
+                            ...shipmentData[shipmentId].metadata,
+                            last_updated_date: row.last_updated_date,
+                        };
+                    }
+
 
 
                 });
@@ -913,7 +972,7 @@ module.exports = {
 
             const shipmentResult = await dbQuerySR(shipmentQuery, [
                 record.shipment_id ?? null,
-                metadata.number ?? null,
+                number,
                 record.so_id ?? 0,
                 metadata.type ?? null,
                 metadata.sealine ?? null,
@@ -1026,7 +1085,9 @@ module.exports = {
             ON DUPLICATE KEY UPDATE
                 date = VALUES(date),
                 actual = VALUES(actual),
-                last_updated_date = NOW()
+                last_updated_date = NOW(),
+                location_id = VALUES(location_id)
+
         `;
 
                 await dbQuerySR(polQuery, [
@@ -1049,7 +1110,9 @@ module.exports = {
                 date = VALUES(date),
                 predictive_eta = VALUES(predictive_eta),
                 actual = VALUES(actual),
-                last_updated_date = NOW()
+                last_updated_date = NOW(),
+                location_id = VALUES(location_id)
+
         `;
 
                 await dbQuerySR(podQuery, [
@@ -1061,6 +1124,7 @@ module.exports = {
                 ]);
                 console.log("✅ POD upserted successfully");
             }
+
 
             // 🟢 Save vessels
             if (record.data.vessels) {
@@ -1099,7 +1163,18 @@ module.exports = {
             ON DUPLICATE KEY UPDATE
                 description = VALUES(description),
                 date = VALUES(date),
-                status = VALUES(status)
+                status = VALUES(status),
+                vessel_id = VALUES(vessel_id),
+                voyage = VALUES(voyage),
+                location_id = VALUES(location_id),
+                actual = VALUES(actual),
+
+                event_type = VALUES(event_type),
+                event_code = VALUES(event_code),
+
+                container_id = VALUES(container_id)
+
+
         `;
 
                 for (const [i, c] of record.data.containers.entries()) {

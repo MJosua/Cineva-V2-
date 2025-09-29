@@ -104,6 +104,8 @@ route.get('/get_srf_sampleCategory', decodeTokenHT, hotsSettingsController.getSR
 route.get('/get_srf_deliverTo', decodeTokenHT, hotsSettingsController.getSRFDeliverTo)
 route.get('/get_srf_sku', decodeTokenHT, hotsSRFController.getAllSkunRM)
 route.get('/get_srf_purpose', decodeTokenHT, hotsSRFController.getPurpose)
+route.get('/get_srf_po', decodeTokenHT, hotsSRFController.getPONumbersrf)
+
 
 
 //Data Update

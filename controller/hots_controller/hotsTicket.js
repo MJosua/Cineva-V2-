@@ -3786,6 +3786,7 @@ module.exports = {
                 [functionId]
             );
 
+
             if (functionDetails.length === 0) {
                 if (isManual) {
                     return reqOrTicketId.res.status(404).json({
@@ -4117,7 +4118,6 @@ module.exports = {
             }
 
             await Promise.all(approvalPromises);
-            console.log("approvalPromises", approvalPromises)
             // Handle file uploads
             if (upload_ids && upload_ids.length > 0) {
                 await dbHots.promise().execute(`

@@ -1194,7 +1194,7 @@ module.exports = {
 
             // Generate document
             const documentPath = await module.exports.generateDocument(config, ticketData, params);
-
+            console.log("dataawal", ticketData)
             // Save generated document info
             await dbHots.promise().query(`
                 INSERT INTO t_generated_documents 

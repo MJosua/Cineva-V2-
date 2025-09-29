@@ -161,7 +161,7 @@ module.exports = {
     getAllSkunRM: async (req, res) => {
         let date = new Date();
         let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-        
+
         if (!req.dataToken.user_id) {
             console.log(timestamp, "getAllProductNames is Unauthorized");
             return res.status(401).send({
@@ -169,20 +169,41 @@ module.exports = {
                 message: `Unauthorized`
             });
         }
-    
+
         const queryRM = `
-            SELECT DISTINCT 
-                UPPER(CONCAT(COALESCE(rm_code, ''), " | ", rm_desc)) AS product_name_complete
-            FROM iod.mst_rm
+            select
+                distinct 
+                UPPER(
+                    CONCAT(
+                        coalesce(mb.rm_matcode, ''), 
+                        ' | ',
+                        mbt.rm_type,
+                        ' ',
+                        mp.product_sku,
+                        ' | ',
+                        mb.rm_desc
+                    
+                    )
+                ) as product_name_complete,
+                mb.rm_type
+            from
+                iod.mst_bom mb
+            left join iod.mst_product mp
+                on
+                mb.fg_matcode = mp.product_code
+            left join iod.mst_bom_type mbt 
+                on
+                mbt.id = mb.rm_type
         `;
-    
+
         const querySKU = `
             SELECT DISTINCT 
                 UPPER(CONCAT(
                     COALESCE(mp.product_code, ''), " | ",
                     COALESCE(mp.product_name_no, mp.product_name), " - ",
                     mp.product_sku
-                )) AS product_name_complete
+                )) AS product_name_complete,
+                0 AS rm_type
             FROM map_item_for_dist mi
             LEFT JOIN mst_company mc ON mi.distributor_id = mc.company_id
             INNER JOIN mst_product mp ON mi.product_id = mp.product_id AND mp.company_id = 100 AND mp.active = 1
@@ -199,20 +220,20 @@ module.exports = {
             AND COALESCE(mi.moq, 0) > 0
             ORDER BY mpc.product_type_name
         `;
-    
+
         try {
             const [rmResults] = await dbConf.promise().execute(queryRM);
             const [skuResults] = await dbConf.promise().execute(querySKU);
-    
+
             const combinedResults = [...rmResults, ...skuResults];
-    
+
             console.log(timestamp, "Successfully fetched RM and SKU data!");
             res.status(200).send({
                 success: true,
                 message: "Combined RM and SKU results",
                 results: combinedResults
             });
-    
+
         } catch (err) {
             console.log(timestamp, "Error at getAllProductNames, message:", err);
             res.status(500).send({
@@ -272,5 +293,73 @@ module.exports = {
 
 
     },
+
+    getPONumbersrf: async (req, res) => {
+
+        let querygetPONumbersrf = ` 
+                select 
+                    tso.po_number,
+                    (tsd.quantity  - COALESCE(trd.qty, 0)) AS remaining_qty
+                    from
+                    trs_so_detail tsd 
+                    left join
+                    trs_realization_detail trd 
+                    on
+                    tsd.so_id = trd.so_id and tsd.sku_id = trd.sku 
+                    left join
+                    dat_cwo dc 
+                    on
+                    tsd.so_id = dc.so_id and tsd.sku_id = dc.product_code 
+                    left join
+                    trs_sales_order tso 
+                    on
+                    tsd.so_id = tso.so_id
+                    where
+                    tso.client_id  = ?
+                    and
+                    dc.close = 0
+                AND (tsd.quantity - COALESCE(trd.qty, 0)) > 0;
+        `
+
+        param = req.dataToken.company_id
+
+
+        if (param) {
+
+            dbQuery.execute(querygetPONumbersrf, param, (err, res) => {
+
+
+                if (err) {
+                    res.status(500).send({
+                        success: false,
+                        message: `error get PO, no number `,
+                        err1
+                    })
+                } else {
+
+                    if (results1[0]) {
+                        res.status(200).send({
+                            success: false,
+                            message: "Cannot send email! No email Address founded!",
+                        });
+                        console.log(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => Cannot send email! No email Address founded!")
+
+                    }
+
+                }
+
+            })
+
+
+        } else {
+            res.status(401).send({
+                success: false,
+                message: `No Token Found `,
+                err1
+            })
+        }
+
+
+    }
 
 }

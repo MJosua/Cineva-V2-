@@ -23,19 +23,32 @@ rl.on('line', async (input) => {
     console.clear();
     if (cmd === '/mail') {
         console.log('📧 Sending mail...');
-        await hotsSubmitMailer( true, 2025012310098300, 'yosuaXG', 'service_name', 'josua.prima@gmail.com');
+        await hotsSubmitMailer(true, 2025012310098300, 'yosuaXG', 'service_name', 'josua.prima@gmail.com');
     }
     else if (cmd === '/port') {
         console.log('✅ Server is running on port', App.get('port'));
     }
     else if (cmd === '/mail1') {
         console.log('📧 Sending approval mail...');
-        await hotsApproveRequest( true, 2025012310098300,);
+        await hotsApproveRequest(true, 2025012310098300,);
     }
     else if (cmd === '/exit') {
         console.log('👋 Exiting...');
         process.exit(0);
     }
+    else if (cmd === '/cekso') {
+
+        let result = await dbQuery(`CALL insert_so()`);
+
+        // result[0] = rows (if your SP does SELECT)
+        // result[1] = metadata (OkPacket)
+        let affected = result?.[0]?.affectedRows || result?.[1]?.affectedRows || 0;
+
+        console.log(
+            `call insert_so [WAS DONE]: affectedRows=${affected}`
+        );
+    }
+
     else {
         console.log(`Unknown command: ${cmd}`);
     }

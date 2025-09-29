@@ -17,18 +17,18 @@ module.exports = {
     shippingMailNotification: async () => {
 
         // trial    
-        
+
         console.log(`AUTOMATION => shippingMailNotification [IS READY]`);
-        
-        
+
+
         //prod: per Hour
         cron.schedule('0 * * * *', async () => {
-            
+
             let date = new Date();
             let timestamp = colors.green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ' + colors.reset;
-            
+
             //dev: per 1/2 minutes
-             //cron.schedule('*/1 * * * *', async () => {
+            //cron.schedule('*/1 * * * *', async () => {
 
             try {
 
@@ -194,7 +194,7 @@ module.exports = {
 
     //         try {
     //             let sql = await dbQuery(`CALL insert_so`)
-    //             console.log(timestamp + ` */15 * * * * AUTOMATION => call insert_so [WAS DONE]:` +  JSON.stringify(sql.affectedRows));
+    //             console.log(timestamp + ` */15 * * * * AUTOMATION => call insert_so [WAS DONE]:` + JSON.stringify(sql.affectedRows));
     //         } catch (error) {
     //             console.log(timestamp + 'Error at callInsertSO, ' + error)
     //         }
