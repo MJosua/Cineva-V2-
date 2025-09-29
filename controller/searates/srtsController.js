@@ -470,7 +470,66 @@ module.exports = {
                     ]);
                 }
                 console.log("✅ Vessels upserted successfully");
+
             }
+
+            const routepod = record.details.data.route;
+
+            if (routepod.pod.actual === true) {
+                const updateEorder = `
+                    UPDATE iod.m_order mo
+                        JOIN iod.trs_sales_order tso 
+                            ON mo.order_id = tso.e_order
+                        SET mo.status = 3
+                        WHERE tso.so_id = ?;
+                `
+
+                await connection.execute(updateEorder, [
+                    record.so_id
+                ]);
+                console.log("updateEorder", updateEorder)
+
+                eorderDelivered(record.so_id)
+
+
+                // =====================================================================
+
+                // i2iDelivered(record.so_id)
+
+                const updatei2i = `
+                        INSERT INTO iod.trs_realization_searates (
+                            so_id,  
+                            cont_id, 
+                            ata,
+                            atd
+                        )
+                        VALUES (?, ?, ?, ?)
+                        ON DUPLICATE KEY UPDATE
+                            so_id = VALUES(so_id),
+                            cont_id = VALUES(cont_id),
+                            ata = VALUES(ata),
+                            atd = VALUES(atd);
+                    `;
+
+
+
+
+                if (record.details.data.containers && Array.isArray(record.details.data.containers)) {
+                    for (const container of record.details.data.containers) {
+                        await connection.execute(updatei2i, [
+                            record.so_id,
+                            container.number ?? null,
+                            record.details.data.route.pod?.date ?? null,
+                            record.details.data.route.pol?.date ?? null,
+                        ]);
+
+                        console.log("✅", record.details.data.containers.length, "Containers inserted successfully to trs");
+                    }
+                }
+
+
+            }
+
 
             // 🟢 Save containers + events
 
@@ -661,14 +720,14 @@ module.exports = {
                 const diffHours = diffMs / (1000 * 60 * 60);
 
 
-                if(results[0].actual === 1){
+                if (results[0].actual === 1) {
                     reload = false
-                }else{
+                } else {
 
                     reload = diffHours >= 5; // true if more than 5 hours, else false
 
                 }
-                console.log("results[0].actual",results[0].actual)
+                console.log("results[0].actual", results[0].actual)
             }
 
             if (results.length < 1 || reload) {
