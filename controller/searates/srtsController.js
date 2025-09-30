@@ -709,7 +709,7 @@ module.exports = {
 
             let reload;
 
-            if (results[0].last_updated_date) {
+            if (results && results[0]?.last_updated_date) {
                 const lastUpdate = new Date(results[0].last_updated_date);
                 const now = new Date();
 
