@@ -23,6 +23,7 @@ module.exports = {
 
         const number = req.params.number;
 
+        const refresh = req.query.refresh;
 
         if (!req.dataToken.user_id) {
             console.log(timestamp + " Unauthorized!");
@@ -31,7 +32,7 @@ module.exports = {
         console.log("trackuser")
         try {
             let query = `
-                            select
+                        select
                         s.shipment_id,
                         s.number,
                         s.so_id,
@@ -472,15 +473,18 @@ module.exports = {
                 console.log("✅ Vessels upserted successfully");
 
             }
-
-            const routepod = record.details.data.route;
+            const routepod = record.data?.route;
 
             if (routepod.pod.actual === true) {
+
+
+
+
                 const updateEorder = `
                     UPDATE iod.m_order mo
                         JOIN iod.trs_sales_order tso 
                             ON mo.order_id = tso.e_order
-                        SET mo.status = 3
+                        SET mo.status = 4
                         WHERE tso.so_id = ?;
                 `
 
@@ -489,7 +493,6 @@ module.exports = {
                 ]);
                 console.log("updateEorder", updateEorder)
 
-                eorderDelivered(record.so_id)
 
 
                 // =====================================================================
@@ -513,7 +516,7 @@ module.exports = {
 
 
 
-
+                console.log("record.details", record.details)
                 if (record.details.data.containers && Array.isArray(record.details.data.containers)) {
                     for (const container of record.details.data.containers) {
                         await connection.execute(updatei2i, [
@@ -707,30 +710,25 @@ module.exports = {
                 ;
             const results = await dbQuerySR(query, [number, number, number]);
 
-            let reload;
+            let reload = false; // default
 
-            if (results && results[0]?.last_updated_date) {
+            if (refresh && results[0]?.last_updated_date) {
                 const lastUpdate = new Date(results[0].last_updated_date);
                 const now = new Date();
-
-                // difference in milliseconds
                 const diffMs = now - lastUpdate;
-
-                // convert to hours
                 const diffHours = diffMs / (1000 * 60 * 60);
 
-
                 if (results[0].actual === 1) {
-                    reload = false
+                    reload = false;
                 } else {
-
-                    reload = diffHours >= 5; // true if more than 5 hours, else false
-
+                    reload = diffHours >= 5;
                 }
-                console.log("results[0].actual", results[0].actual)
             }
 
-            if (results.length < 1 || reload) {
+
+            if (results.length < 1 || reload.toLocaleString() === "true") {
+                console.log("reload 3", true)
+
                 try {
 
 
