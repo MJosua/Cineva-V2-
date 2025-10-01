@@ -1061,8 +1061,8 @@ module.exports = {
                 mo.order_id,
                 tr.ship_name vessel_name,
                 tr.ship_line shipping_line,
-                trs.ata,
-                trs.atd,
+                DATE_FORMAT(tr.etd, '%b %d, %Y') etd,
+                DATE_FORMAT(tr.eta, '%b %d, %Y') eta,
                 tr.cont_id,
                 tr.so_id  
             from
@@ -1108,7 +1108,7 @@ module.exports = {
                             <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.cont_id ? val.cont_id : '-'}</td>
                             <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.product_name ? val.product_name : '-'}</td>
                             <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.qty ? (val.qty).toLocaleString() : '-'}</td>
-                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.atd ? val.atd : '-'}</td>
+                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.etd ? val.etd : '-'}</td>
                             <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.eta ? val.eta : '-'}</td>
                         </tr>`
                     );

@@ -199,7 +199,8 @@ module.exports = {
                             mc.company_id = mo.company_id
                     WHERE
                             mo.status = 3
-                    limit 1
+                            and 
+	                        mo.order_id = 250028500011 
                     `)
 
             /**
