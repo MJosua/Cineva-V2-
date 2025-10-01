@@ -1,5 +1,5 @@
 const { query } = require("express");
-const { dbSR, dbQuerySR, dbQuery } = require("../../config/db");
+const { dbSR, dbQuerySR, dbQuery, dbConf } = require("../../config/db");
 const fs = require('fs')
 
 const { default: axios } = require("axios");
@@ -275,7 +275,8 @@ module.exports = {
         async function saveSearatesRecord(record) {
             let connection;
             const metadata = record.data.metadata;
-
+            connection = await dbConf.promise().getConnection();
+            console.log("record", record)
             // 🟢 Save shipment (UPSERT)
             const shipmentQuery = `
                 INSERT INTO shipments(
@@ -516,17 +517,16 @@ module.exports = {
 
 
 
-                console.log("record.details", record.details)
-                if (record.details.data.containers && Array.isArray(record.details.data.containers)) {
-                    for (const container of record.details.data.containers) {
+                if (record.data.containers && Array.isArray(record.data.containers)) {
+                    for (const container of record.data.containers) {
                         await connection.execute(updatei2i, [
                             record.so_id,
                             container.number ?? null,
-                            record.details.data.route.pod?.date ?? null,
-                            record.details.data.route.pol?.date ?? null,
+                            record.data.route.pod?.date ?? null,
+                            record.data.route.pol?.date ?? null,
                         ]);
 
-                        console.log("✅", record.details.data.containers.length, "Containers inserted successfully to trs");
+                        console.log("✅", record.data.containers.length, "Containers inserted successfully to trs");
                     }
                 }
 
@@ -546,6 +546,7 @@ module.exports = {
                 size_type = VALUES(size_type),
                 status = VALUES(status)
         `;
+
 
                 const eventQuery = `
             INSERT INTO events(order_id, location_id, description, event_type, event_code, date, actual, vessel_id, voyage, container_id, shipment_id, status)
@@ -637,7 +638,6 @@ module.exports = {
                             v.imo as vimo,
                             e.vessel_id as event_vessel,
                             pod.location_id as pod_id,
-                            pod.actual,
                             DATE_FORMAT(pod.date, '%Y-%m-%d') as pod_date,
                             pol.location_id as pol_id,
                             DATE_FORMAT(pol.date, '%Y-%m-%d') as pol_date,
@@ -709,20 +709,17 @@ module.exports = {
             `
                 ;
             const results = await dbQuerySR(query, [number, number, number]);
-
-            let reload = false; // default
-
-            if (refresh && results[0]?.last_updated_date) {
+            let reload = false; // default q
+            if (refresh && results) {
                 const lastUpdate = new Date(results[0].last_updated_date);
                 const now = new Date();
                 const diffMs = now - lastUpdate;
                 const diffHours = diffMs / (1000 * 60 * 60);
 
-                if (results[0].actual === 1) {
-                    reload = false;
-                } else {
-                    reload = diffHours >= 5;
+                if (diffHours >= 5) {
+                    reload = true;
                 }
+
             }
 
 
@@ -789,7 +786,6 @@ module.exports = {
                         cont_id: number,        // kalau mau simpan cont_id juga
                         data: searatesRes.data.data  // seluruh hasil dari API
                     }; // pastikan sesuai struktur
-
                     // 🔥 Panggil logic UPSERT penuh
                     saveSearatesRecord(record);
 
@@ -808,7 +804,6 @@ module.exports = {
 
                 const shipmentData = {};
                 console.log("Call Searates Success for SO ID : ", results[0].so_id)
-
                 results.forEach(row => {
                     const shipmentId = row.shipments_id;
                     if (!shipmentData[shipmentId]) {
@@ -874,7 +869,6 @@ module.exports = {
                             console.warn(`shipmentData[${shipmentId}] or .container_events is missing`);
                             return;
                         }
-
                         const existingOrder = containerEvents.find(ev => ev.order_id === row.order_id);
                         if (!existingOrder) {
                             containerEvents.push({
@@ -1233,6 +1227,7 @@ module.exports = {
 
 
         `;
+
 
                 for (const [i, c] of record.data.containers.entries()) {
                     await dbQuerySR(containersQuery, [
