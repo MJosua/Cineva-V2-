@@ -68,7 +68,7 @@ function getLocalIP() {
   return null;
 }
 
-const API_URL =  production() ? "backend.indofoodinternational.com" : getLocalIP() ;
+const API_URL = production() ? "backend.indofoodinternational.com" : getLocalIP();
 
 
 
@@ -152,6 +152,7 @@ function production() {
   } else {
     // return "development"
     return false;
+
   }
 
 

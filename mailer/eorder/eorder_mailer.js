@@ -1047,42 +1047,58 @@ module.exports = {
         try {
 
             let trackingDetailQuery = await dbQuery(`
-            SELECT
+            select
+                mc.company_name,
+                mo.po_buyer,
+                mh.harbour_name,
                 DATE_FORMAT(trd.delv_date, '%b %d, %Y') delv_date,
+                CASE 
+                    WHEN mp.product_name_no IS NOT NULL 
+                    THEN mp.product_name_no
+                    ELSE mp.product_name
+                END AS product_name,
+                trd.qty,
                 mo.order_id,
                 tr.ship_name vessel_name,
                 tr.ship_line shipping_line,
+                trs.ata,
+                trs.atd,
                 tr.cont_id,
-                DATE_FORMAT(tr.etd, '%b %d, %Y') etd,
-                DATE_FORMAT(tr.eta, '%b %d, %Y') eta,
-                mos.status_order,
-                mos.notes status_detail,
-                COALESCE(mp.product_name_no, mp.product_name) product_name,
-                trd.qty, 
-                CASE
-                    WHEN sum(ms.qty) <= sum(trd.qty) THEN 1
-                    ELSE 0
-                    END finished
-                    FROM
-                    m_order mo
-            LEFT JOIN m_summary ms ON
-                mo.order_id = ms.order_id
-                LEFT JOIN m_order_status mos ON
-	            mos.id = mo.status
-            LEFT JOIN trs_sales_order tso ON
-		        mo.order_id = tso.e_order
-                LEFT JOIN trs_realization tr ON
-                tso.so_id = tr.so_id
-            LEFT JOIN trs_realization_detail trd ON
+                tr.so_id  
+            from
+                m_order mo
+            left join trs_sales_order tso
+                on
+                tso.e_order = mo.order_id
+            left join trs_realization tr 
+                on
+                tr.so_id = tso.so_id
+            left join trs_realization_detail trd 
+                on
                 tr.cont_id = trd.cont_id
-		        AND tr.so_id = trd.so_id
-                AND tr.invoice_id = trd.invoice_id
-	        LEFT JOIN mst_product mp ON
-                trd.sku = mp.product_code
-            WHERE
+                and tr.so_id = trd.so_id
+                and tr.invoice_id = trd.invoice_id
+            left join trs_realization_searates trs 
+                on
+                trs.so_id = tr.so_id
+                and trs.cont_id = tr.cont_id
+            left join mst_product mp 
+                on
+                mp.product_code = trd.sku
+            LEFT JOIN mst_company mc 
+                on 
+                mc.company_id = mo.company_id
+            left join map_port_for_dist mpfd
+                on
+                mo.company_id = mpfd.distributor_id
+            left join mst_harbour mh 
+                on
+                mpfd.harbour_id = mh.harbour_id 
+            where
                 mo.order_id = ${order_id}
-            GROUP BY
-                1,2,3,4; `);
+            group by 
+                tr.cont_id, trd.sku  
+                `);
 
             const trackingDetail = () => {
                 return trackingDetailQuery.map((val) => {
@@ -1092,7 +1108,7 @@ module.exports = {
                             <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.cont_id ? val.cont_id : '-'}</td>
                             <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.product_name ? val.product_name : '-'}</td>
                             <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.qty ? (val.qty).toLocaleString() : '-'}</td>
-                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.etd ? val.etd : '-'}</td>
+                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.atd ? val.atd : '-'}</td>
                             <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.eta ? val.eta : '-'}</td>
                         </tr>`
                     );
@@ -1144,10 +1160,7 @@ module.exports = {
                     </p>
 
                     <p>
-                        If you have any questions or concerns, please do not hesitate to contact us via these contact:
-                        <br>
-                        ${emailAnalisList}
-                        <br>
+                        
                         Thank you for your order!
                         
                         <br>

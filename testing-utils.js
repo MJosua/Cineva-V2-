@@ -3,6 +3,7 @@ const { hotsSubmitMailer, hotsApproveRequest } = require('./mailer/hots/hots_mai
 const { dbConf, dbQuery, dbTMQuery, dbHots } = require('./config/db');
 const express = require('express');
 const { API_URL, PORT } = require('./index');
+const { shippingMailNotificationManual } = require('./automation/notification');
 
 const App = express();
 App.listen(App.get('port'), () => {
@@ -47,6 +48,11 @@ rl.on('line', async (input) => {
         console.log(
             `call insert_so [WAS DONE]: affectedRows=${affected}`
         );
+    }
+    else if (cmd === 'cekmail'){
+
+        shippingMailNotificationManual()
+
     }
 
     else {
