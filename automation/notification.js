@@ -81,6 +81,30 @@ module.exports = {
 
 
                         //ubah status order notif
+                        let sqlCheck = dbQuery(` SELECT order_id FROM event_logger WHERE order_id = ${val.order_id};`)
+
+                        if (sqlCheck[0]) {
+
+                            let sqlUpdate = dbQuery(`
+                            UPDATE
+                                event_logger
+                            SET
+                                login_trial_time = now(),
+                                is_notified = 1
+                            WHERE order_id = ${val.order_id} `)
+
+                            console.log(`status sqlUpdate ${JSON.stringify(sqlUpdate)}`)
+
+                        } else {
+
+                            let sqlInject = dbQuery(` 
+                            INSERT INTO event_logger
+                                (login_trial_time,  user_id, event_type, is_notified,  order_id)
+                            VALUES
+                                (now(),  ${val.user_id},  2,  1,  ${val.order_id} )`)
+
+                            console.log(`status sqlInject ${JSON.stringify(sqlInject)}`)
+                        }
 
                         if (order_id) {
                             return notifMailDeliver(
@@ -210,7 +234,7 @@ module.exports = {
 
             // let carbon_copy = (sqlCheckOrderProceed[0].cc).split(',')
             // console.log(`carbon_copy ${carbon_copy}`)
-            console.log("sqlCheckOrderProceed",sqlCheckOrderProceed)
+            console.log("sqlCheckOrderProceed", sqlCheckOrderProceed)
 
             const sendMail = () => {
                 return sqlCheckOrderProceed.map((val) => {
@@ -222,6 +246,32 @@ module.exports = {
                     let status_order = val.status_order
                     let po_buyer = val.po_buyer
                     let company_name = val.company_name
+
+
+                    let sqlCheck = dbQuery(` SELECT order_id FROM event_logger WHERE order_id = ${val.order_id};`)
+
+                    if (sqlCheck[0]) {
+
+                        let sqlUpdate = dbQuery(`
+                        UPDATE
+                            event_logger
+                        SET
+                            login_trial_time = now(),
+                            is_notified = 1
+                        WHERE order_id = ${val.order_id} `)
+
+                        console.log(`status sqlUpdate ${JSON.stringify(sqlUpdate)}`)
+
+                    } else {
+
+                        let sqlInject = dbQuery(` 
+                        INSERT INTO event_logger
+                            (login_trial_time,  user_id, event_type, is_notified,  order_id)
+                        VALUES
+                            (now(),  ${val.user_id},  2,  1,  ${val.order_id} )`)
+
+                        console.log(`status sqlInject ${JSON.stringify(sqlInject)}`)
+                    }
 
 
                     //ubah status order notif

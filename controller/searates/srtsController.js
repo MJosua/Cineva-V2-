@@ -704,8 +704,6 @@ module.exports = {
                             )
                         order by
                             e.date desc;
-
-                            
             `
                 ;
             const results = await dbQuerySR(query, [number, number, number]);
