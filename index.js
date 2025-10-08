@@ -127,9 +127,15 @@ if (process.env.PORT === '9999') {
 
 
 //reading SSL certification directory
+// const SSL = {
+//   key: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_KEY)),
+//   cert: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_CERT))
+// };
+
+
 const SSL = {
-  key: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_KEY)),
-  cert: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_CERT))
+  pfx: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_PFX)),
+  passphrase: process.env.SSL_FILE_PFX_PASSWORD
 };
 
 function production() {

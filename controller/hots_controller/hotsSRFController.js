@@ -10,6 +10,7 @@ const {
 
 const { uploadFile } = require("../order");
 const { hotsMailer } = require('../../mailer/hots/hots_mailer');
+const { ConsoleInfo } = require("../../Utility/consoleinfo");
 
 
 let green = "\x1b[32m"
@@ -169,7 +170,7 @@ module.exports = {
                 message: `Unauthorized`
             });
         }
-
+// `       Jadi BOM`
         const queryRM = `
             select
                 distinct 
@@ -195,6 +196,7 @@ module.exports = {
                 on
                 mbt.id = mb.rm_type
         `;
+
 
         const querySKU = `
             SELECT DISTINCT 
@@ -228,6 +230,7 @@ module.exports = {
             const combinedResults = [...rmResults, ...skuResults];
 
             console.log(timestamp, "Successfully fetched RM and SKU data!");
+            ConsoleInfo.info("KETARIK COK")
             res.status(200).send({
                 success: true,
                 message: "Combined RM and SKU results",

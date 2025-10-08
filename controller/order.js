@@ -1229,7 +1229,7 @@ module.exports = {
     }
     , getOneOrderDetail: async (req, res) => {
 
-        
+
 
         let date = new Date();
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
@@ -1249,106 +1249,94 @@ module.exports = {
 
                 let query = `
                                                             
-                       select DISTINCT
-                        det.order_id,	det.company_id,
-                        mco.company_name,
-                        det.created_by,
-                        su.firstname,
-                        case
-                            when det.cont_size = 8 then ms.detail_id
-                            else det.detail_id
-                        end detail_id,
-                        mc.container_name,
-                        case
-                            when det.cont_qty = 0 then 1
-                            else det.cont_qty
-                        end cont_qty,
-                        case
-                            when det.cont_size = 8 then ms.sku
-                            else det.sku1
-                        end sku1,
-                        case
-                            when det.cont_size = 8 then coalesce(mps.product_name_no, mps.product_name)
-                            else coalesce(mp1.product_name_no, mp1.product_name)
-                        end product_name_1,
-                        case
-                            when det.cont_size = 8 then mpls.img
-                            else mpl1.img
-                        end url_1,
-                        case
-                            when det.cont_size = 8 then ms.qty
-                            else det.qty1
-                        end qty1,
-                        det.price1,
-                        case
-                            when det.cont_size = 8 then mps.product_sku
-                            else mp1.product_sku
-                        end prod_sku_1,
-                        det.sku2,
-                        coalesce(mp2.product_name_no, mp2.product_name) product_name_2,
-                        mpl2.img url_2,
-                        det.qty2,
-                        det.price2,
-                        mp2.product_sku prod_sku_2,
-                        det.sku2,
-                        coalesce(mp3.product_name_no, mp3.product_name) product_name_3,
-                        mpl3.img url_3,
-                        det.qty3,
-                        det.price3,
-                        mp3.product_sku prod_sku_3,
-                        det.remarks,
-                        det.bulk,
-                        case
-                            when det.company_id not in (${blockingSoIdCompany})
-                            and tae.appr_date is not null then so.so_id
-                            else ''
-                        end as so_id
-                        from
-                        m_order_dtl det
-                    inner join m_order mo on
-                        mo.order_id = det.order_id
-                    join mst_company mco on
-                        det.company_id = mco.company_id
-                    left join sys_user su on
-                        su.user_id = det.created_by
-                    left join mst_container mc on
-                        mc.container_id = det.cont_size
-                    left join mst_product mp1 on
-                        det.sku1 = mp1.product_code
-                    left join mst_product mp2 on
-                        det.sku2 = mp2.product_code
-                    left join mst_product mp3 on
-                        det.sku3 = mp3.product_code
-                    left join m_product_link mpl1 on
-                        det.sku1 = mpl1.product_code
-                    left join m_product_link mpl2 on
-                        det.sku2 = mpl2.product_code
-                    left join m_product_link mpl3 on
-                        det.sku3 = mpl3.product_code
-                    left join m_summary ms on
-                        mo.order_id = ms.order_id
-                    left join mst_product mps on
-                        ms.sku = mps.product_code
-                    left join m_product_link mpls on
-                        ms.sku = mpls.product_code
-                    LEFT JOIN trs_sales_order tso ON
-                        mo.order_id = tso.e_order
-                    left join trs_sales_order so on
-                        mo.order_id = so.e_order
-                        and 
-                        so.cancel = 0
-                    left join m_config_new msc on
-                        msc.company_id = det.company_id
-                   left join trs_approval ta on
-                        so.so_id = ta.key
-                        and ta.company_id = so.company_id
-                   left join trs_approval_event tae on
-                         so.approval_id = tae.appr_id
-                        and tae.company_id = ta.company_id
-                        and tae.id = 4
-                        where
-                    det.order_id = 
-                    		${order_id} 
+                      WITH ApprovedSO AS (
+    -- This CTE finds all approved Sales Orders that are not cancelled.
+    -- The INNER JOINs here are efficient because we only want orders that meet all criteria.
+    SELECT
+        so.e_order,
+        so.so_id
+    FROM
+        trs_sales_order so
+    INNER JOIN trs_approval ta ON
+        so.so_id = ta.key AND so.company_id = ta.company_id
+    INNER JOIN trs_approval_event tae ON
+        so.approval_id = tae.appr_id AND so.company_id = tae.company_id
+    WHERE
+        so.cancel = 0
+      AND tae.id = 4                -- Specific approval event
+      AND tae.appr_date IS NOT NULL -- The approval has been dated
+)
+-- Main Query
+SELECT DISTINCT -- Consider removing DISTINCT if you can resolve the source of duplicates
+    det.order_id,
+    det.company_id,
+    mco.company_name,
+    det.created_by,
+    su.firstname,
+    CASE WHEN det.cont_size = 8 THEN ms.detail_id ELSE det.detail_id END AS detail_id,
+    mc.container_name,
+    CASE WHEN det.cont_qty = 0 THEN 1 ELSE det.cont_qty END AS cont_qty,
+    -- SKU 1 details
+    CASE WHEN det.cont_size = 8 THEN ms.sku ELSE det.sku1 END AS sku1,
+    CASE WHEN det.cont_size = 8 THEN COALESCE(mps.product_name_no, mps.product_name) ELSE COALESCE(mp1.product_name_no, mp1.product_name) END AS product_name_1,
+    CASE WHEN det.cont_size = 8 THEN mpls.img ELSE mpl1.img END AS url_1,
+    CASE WHEN det.cont_size = 8 THEN ms.qty ELSE det.qty1 END AS qty1,
+    det.price1,
+    CASE WHEN det.cont_size = 8 THEN mps.product_sku ELSE mp1.product_sku END AS prod_sku_1,
+    -- SKU 2 details
+    det.sku2,
+    COALESCE(mp2.product_name_no, mp2.product_name) AS product_name_2,
+    mpl2.img AS url_2,
+    det.qty2,
+    det.price2,
+    mp2.product_sku AS prod_sku_2,
+    -- SKU 3 details
+    det.sku3, -- Original query had det.sku2 here, assuming it was a typo for sku3
+    COALESCE(mp3.product_name_no, mp3.product_name) AS product_name_3,
+    mpl3.img AS url_3,
+    det.qty3,
+    det.price3,
+    mp3.product_sku AS prod_sku_3,
+    det.remarks,
+    det.bulk,
+    -- Simplified so_id logic using the CTE
+    CASE WHEN det.company_id NOT IN (${blockingSoIdCompany}) THEN COALESCE(approved_so.so_id, '') ELSE '' END AS so_id
+FROM
+    m_order_dtl det
+INNER JOIN m_order mo ON
+    mo.order_id = det.order_id
+INNER JOIN mst_company mco ON
+    det.company_id = mco.company_id
+LEFT JOIN sys_user su ON
+    su.user_id = det.created_by
+LEFT JOIN mst_container mc ON
+    mc.container_id = det.cont_size
+-- Joins for SKU 1 based on container size
+LEFT JOIN mst_product mp1 ON
+    det.sku1 = mp1.product_code AND det.cont_size <> 8
+LEFT JOIN m_product_link mpl1 ON
+    det.sku1 = mpl1.product_code AND det.cont_size <> 8
+-- Joins for Summary SKU based on container size
+LEFT JOIN m_summary ms ON
+    mo.order_id = ms.order_id AND det.cont_size = 8
+LEFT JOIN mst_product mps ON
+    ms.sku = mps.product_code AND det.cont_size = 8
+LEFT JOIN m_product_link mpls ON
+    ms.sku = mpls.product_code AND det.cont_size = 8
+-- Joins for SKU 2 & 3
+LEFT JOIN mst_product mp2 ON
+    det.sku2 = mp2.product_code
+LEFT JOIN m_product_link mpl2 ON
+    det.sku2 = mpl2.product_code
+LEFT JOIN mst_product mp3 ON
+    det.sku3 = mp3.product_code
+LEFT JOIN m_product_link mpl3 ON
+    det.sku3 = mpl3.product_code
+-- Join our pre-filtered approved sales orders
+LEFT JOIN ApprovedSO approved_so ON
+    mo.order_id = approved_so.e_order
+WHERE
+    det.order_id = ${order_id} ;
 
                         `
 
