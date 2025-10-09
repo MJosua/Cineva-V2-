@@ -945,8 +945,6 @@ module.exports = {
         });
 
 
-        console.log(` approvallist[2].approve_date `, approvallist[2].approve_date)
-        console.log(` approvallist[2] `, approvallist[2])
         const html = `
               <html>
                 <head>

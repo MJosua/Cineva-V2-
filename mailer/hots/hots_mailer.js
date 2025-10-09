@@ -409,7 +409,7 @@ module.exports = {
             WHERE td.ticket_id = ?`,
             [ticket_id]
         );
-
+        console.log("dataResult",dataResult[0])
         const service_name = dataResult[0].service_name;
         const user_name = dataResult[0].user_name;
         const currentstep = dataResult[0].current_step;
