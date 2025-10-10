@@ -661,7 +661,7 @@ module.exports = {
 
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + "Error getOrderHeader !", err)
+                        console.log(timestamp + "Error getOrderHeader with ID !", err)
                     } else {
 
                         if (results[0]) {
@@ -1935,7 +1935,8 @@ WHERE
             let blockingDate = getBlockingDate ? getBlockingDate.value : 0
 
 
-            let query = `select
+            let query = `
+                        select
                             *
                         from
                             (
