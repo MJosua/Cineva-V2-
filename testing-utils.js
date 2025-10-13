@@ -4,6 +4,8 @@ const { dbConf, dbQuery, dbTMQuery, dbHots } = require('./config/db');
 const express = require('express');
 const { API_URL, PORT } = require('./index');
 const { shippingMailNotificationManual } = require('./automation/notification');
+const { stuffingWeek } = require('./controller/order');
+const { orderController } = require('./controller');
 
 const App = express();
 App.listen(App.get('port'), () => {
@@ -17,6 +19,26 @@ const rl = readline.createInterface({
 
 rl.setPrompt('> ');
 rl.prompt();
+
+    const req = {
+      dataToken: { company_id: 999 }, // fake token for testing
+      query: {},
+      body: {}
+    };
+    const res = {
+        status(code) {
+          this.statusCode = code;
+          return this; // allow chaining like res.status(200).send()
+        },
+        send(data) {
+          console.log(`Response ${this.statusCode || 200}:`, data);
+        },
+        json(data) {
+          console.log(`Response ${this.statusCode || 200}:`, JSON.stringify(data, null, 2));
+        },
+      };
+  
+
 
 rl.on('line', async (input) => {
     const cmd = input.trim();
@@ -49,10 +71,15 @@ rl.on('line', async (input) => {
             `call insert_so [WAS DONE]: affectedRows=${affected}`
         );
     }
-    else if (cmd === 'cekmail'){
+    else if (cmd === 'cekmail') {
 
         shippingMailNotificationManual()
 
+    }
+
+    else if (cmd === 'cekweek') {
+
+        await orderController.stuffingWeek(req, res, true);
     }
 
     else {

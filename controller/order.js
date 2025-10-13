@@ -1913,30 +1913,93 @@ WHERE
             console.log(timestamp + `add Order Summary by ${user_id} UNAUTHORIZE`);
         }
 
-    }
-    , stuffingWeek: async (req, res) => {
+    },
+    stuffingWeek: async (req, res, test = false) => {
+        try {
+            const date = new Date();
+            const timestamp = `${date.toLocaleDateString('id')} ${date.toLocaleTimeString('id')} :`;
+
+            // if test mode, use mock token safely
+            const company_id = test ? 101 : req?.dataToken?.company_id;
+            const user_id = test ? 1098 : req?.dataToken?.user_id ?? 0;
+            console.log("c================================================================")
+
+            console.log("company_id", company_id)
+            console.log("user_id", user_id)
+
+            if (!req?.dataToken && test === false) {
+                if (res) {
+                    return res.status(401).send({
+                        success: false,
+                        message: 'unauthorized',
+                    });
+                } else {
+                    console.error('|ERROR| Unauthorized — no company_id');
+                    return { success: false, message: 'unauthorized' };
+                }
+            }
+
+            const getWeekLimit =
+                (
+                    await dbQuery(`
+                SELECT mcn.value FROM m_config_new mcn 
+                WHERE mcn.conditions = 9 
+                AND mcn.company_id = ${company_id}  
+                AND mcn.active = 1;
+              `)
+                )[0] ?? {};
 
 
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+            const weekLimit = getWeekLimit.value ?? 13;
 
-        if (req.dataToken.company_id) {
-
-            let getWeekLimit = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 9 AND mcn.company_id = ${req.dataToken.company_id}  AND mcn.active = 1;`))[0]
-
-            //cuma 13 data week yang ditampilin untuk default.
-            let weekLimit = getWeekLimit ? getWeekLimit.value : 13
-
-
-            //untuk menghilangkan week tertentu.
-            let getBlockingDate = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 10 AND mcn.company_id = 100  AND mcn.active = 1;`))[0]
-
-            //error prevention
-            let blockingDate = getBlockingDate ? getBlockingDate.value : 0
+            const getBlockingDate =
+                (
+                    await dbQuery(`
+                SELECT mcn.value FROM m_config_new mcn 
+                WHERE mcn.conditions = 10 
+                AND mcn.company_id = ${company_id}  
+                AND mcn.active = 1;
+              `)
+                )[0] ?? {};
 
 
-            let query = `
-                        select
+            const blockingDate = getBlockingDate.value ?? 0;
+
+
+            const GET_DISTRIBUTOR_TIMEFENCE_SQL =
+                (
+                    await dbQuery(`
+                SELECT COALESCE(time_fence, 0) time_fence 
+                FROM map_cont_for_dist 
+                WHERE dist_id = ${company_id} 
+                AND now() BETWEEN start_date AND COALESCE(finish_date, '9999-12-31')
+              `)
+                )[0] ?? {};
+
+            console.log(`blockingdate : ` + ` ${blockingDate} ` + `|| Week Limit : ` + ` ${weekLimit}`)
+            console.log('GET_DISTRIBUTOR_TIMEFENCE_SQL', GET_DISTRIBUTOR_TIMEFENCE_SQL);
+
+
+            const GET_DELIVERY_WEEK = (
+                await dbQuery(`
+
+            SELECT COALESCE(time_fence, 0) time_fence 
+            FROM map_cont_for_dist 
+            WHERE dist_id = ${company_id} 
+            AND now() BETWEEN start_date AND COALESCE(finish_date, '9999-12-31')
+            
+          `)
+            )[0] ?? {};
+
+
+            //             "SELECT week, delivery_week, year FROM dat_operational_calendar "
+            //                 + "WHERE company_id=#company_id AND opcal_id>=#OPCAL_ID AND
+            //             year = #YEAR AND "
+            //                 + "factory_id=#FACTORY_ID AND product_type_id=256 ORDER BY
+            //   opcal_id LIMIT 1";
+
+            const query = `
+            select
                             *
                         from
                             (
@@ -1989,7 +2052,7 @@ WHERE
                                 dat_operational_calendar doc
                             left join map_cont_for_dist mc on
                                 mc.company_id = 100
-                                and mc.dist_id = ${req.dataToken.company_id}
+                                and mc.dist_id = ${company_id}
                             left join sys_text st on
                                 st.lang_id = 1
                                 and st.text_id = -100,
@@ -2048,25 +2111,22 @@ WHERE
                         order by
                             id
                         limit ${weekLimit}
-                        `
+          `;
 
+            const results = await dbQuery(query);
 
-            dbConf.query(query, (err, results) => {
-                if (err) {
-                    res.status(500).send(err);
-                    console.log("|ERROR| GET STUFFINGWEEK", err)
-                } else {
-                    res.status(200).send(results);
-                    console.log(timestamp + `get Order Stuffing Week for ${req.dataToken.company_id} limit ${weekLimit} success`);
-                    addSqlLogger(req.dataToken.user_id, '-- query stuffing week', '--data stuffing week', 'getStuffingWeek')
-                }
-            })
+            console.log(timestamp, `get Order Stuffing Week for ${company_id} limit ${weekLimit} success`);
 
-        } else {
-            res.status(401).send({
-                success: false,
-                message: 'unauthorized'
-            })
+            if (res) {
+                
+                res.status(200).send(results);
+            } else {
+                return results; // allow standalone testing
+            }
+
+        } catch (err) {
+            console.error('|ERROR| GET STUFFINGWEEK', err);
+            return { success: false, error: err.message };
         }
     }
     , getOrder_id: async (req, res) => {
