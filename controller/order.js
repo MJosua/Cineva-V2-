@@ -1935,12 +1935,11 @@ WHERE
 
 
             // Mock or real token
-            const company_id = test ? 101 : req?.dataToken?.company_id;
-            const user_id = test ? 1098 : req?.dataToken?.user_id ?? 0;
-            const dist_id = req.body?.dist || req.query?.dist || company_id; // mimic distId from req
+            const company_id = test === true ? 101 : req?.dataToken?.company_id;
+            const user_id = test === true ? 1098 : req?.dataToken?.user_id ?? 0;
 
             console.log('==========================================');
-            console.log('StuffingWeek start', { company_id, user_id, dist_id });
+            console.log('StuffingWeek start', { company_id, user_id });
 
             // Unauthorized check
             if (!req?.dataToken && !test) {
@@ -1964,7 +1963,6 @@ WHERE
                 LIMIT 1
             `);
             const strTodayCalId = todayOpcal[0]?.opcal_id || null;
-            console.log("today's OPCAL_ID =", strTodayCalId);
 
             // --- Step 3: Get Delivery Week Info ---
             sql = `
@@ -1988,17 +1986,14 @@ WHERE
             sql = `
                 SELECT COALESCE(time_fence, 0) AS time_fence 
                 FROM map_cont_for_dist 
-                WHERE dist_id=${dist_id}
+                WHERE dist_id=${company_id}
                   AND NOW() BETWEEN start_date AND COALESCE(finish_date, '9999-12-31')
             `;
-            console.log('GET_DISTRIBUTOR_TIMEFENCE_SQL:', sql);
 
             const timeFenceData = (await dbQuery(sql))[0] ?? {};
             const timeFence = timeFenceData.time_fence ?? 0;
             if (timeFence !== 0) deliveryWeek = timeFence;
-
-            console.log("deliveryData", deliveryData.length)
-            console.log("strTodayCalId", strTodayCalId)
+            console.log("timeFence", timeFence)
             // --- Step 5: Loop through deliveryRows ---
             for (const row of deliveryData) {
                 let actualWeek = row.week ?? 0;
@@ -2010,7 +2005,6 @@ WHERE
                 if (timeFence !== 0) {
                     deliveryWeek = timeFence;
                 }
-
                 // Adjust week-year overflow (week > 52)
                 deliveryWeek += actualWeek;
                 if (deliveryWeek > 52) {
@@ -2054,15 +2048,28 @@ WHERE
 
                 // --- Step 8: check for max Date ---
 
+                let nextdeliverycheckyear
+                let nextdeliverycheckweek
+
+                if (deliveryWeek === 52) {
+                    console.log("actualweek", deliveryWeek)
+                    nextdeliverycheckyear = deliveryYear + 1
+                    nextdeliverycheckweek = 1
+                } else {
+                    nextdeliverycheckyear = deliveryYear
+                    nextdeliverycheckweek = deliveryWeek + 1
+
+                }
+
                 sqlNextRow = `
                     SELECT opcal_id 
                     FROM dat_operational_calendar 
                     WHERE 
-                    year = ${deliveryYear}
+                    year = ${nextdeliverycheckyear}
                     and
                     factory_id=1 
                     AND 
-                    week=${deliveryWeek + 1} 
+                    week=${nextdeliverycheckweek} 
                     AND 
                     product_type_id=256 
                     LIMIT 1
@@ -2072,18 +2079,21 @@ WHERE
                 const nextRow = await dbQuery(sqlNextRow);
                 const nextOpcalId = nextRow[0]?.opcal_id ?? null;
 
+
                 let maxDateObj;
 
                 if (nextOpcalId) {
-                  const nextEpochSec = Number(nextOpcalId) * 100;
-                  maxDateObj = new Date(nextEpochSec * 1000);
-                  maxDateObj.setDate(maxDateObj.getDate() - 1);
+                    const nextEpochSec = Number(nextOpcalId) * 100;
+                    maxDateObj = new Date(nextEpochSec * 1000);
+                    maxDateObj.setDate(maxDateObj.getDate() - 1);
+
                 } else {
-                  // if there's no next week (e.g. end of year), fallback = +6 days
-                  maxDateObj = new Date(minDateObj);
-                  maxDateObj.setDate(maxDateObj.getDate() + 6);
+                    // if there's no next week (e.g. end of year), fallback = +6 days
+                    console.log(" Reminder sudah tidak ada opcal id untuk kalender berikutnya ")
+                    maxDateObj = new Date(minDateObj);
+                    maxDateObj.setDate(maxDateObj.getDate() + 6);
                 }
-                
+
                 const maxDate = DATE_FORMATTER.format(maxDateObj);
 
 
