@@ -1915,218 +1915,208 @@ WHERE
 
     },
     stuffingWeek: async (req, res, test = false) => {
+        let sql;
         try {
             const date = new Date();
-            const timestamp = `${date.toLocaleDateString('id')} ${date.toLocaleTimeString('id')} :`;
+            const timestamp = `${date.toLocaleDateString('id')} ${date.toLocaleTimeString('id')}`;
+            const IOD_TIMEZONE = 7; // GMT+7 (adjust if different)
+            const DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
+                month: 'short', // Nov
+                day: '2-digit', // 03
+                year: 'numeric' // 2025
+            });
 
-            // if test mode, use mock token safely
+            let getWeekLimit = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 9 AND mcn.company_id = ${req.dataToken.company_id}  AND mcn.active = 1;`))[0]
+
+
+            let weekLimit = getWeekLimit ? getWeekLimit.value : 13
+            console.log("weekLimit", weekLimit)
+            const weeksList = [];
+
+
+            // Mock or real token
             const company_id = test ? 101 : req?.dataToken?.company_id;
             const user_id = test ? 1098 : req?.dataToken?.user_id ?? 0;
-            console.log("c================================================================")
+            const dist_id = req.body?.dist || req.query?.dist || company_id; // mimic distId from req
 
-            console.log("company_id", company_id)
-            console.log("user_id", user_id)
+            console.log('==========================================');
+            console.log('StuffingWeek start', { company_id, user_id, dist_id });
 
-            if (!req?.dataToken && test === false) {
-                if (res) {
-                    return res.status(401).send({
-                        success: false,
-                        message: 'unauthorized',
-                    });
-                } else {
-                    console.error('|ERROR| Unauthorized — no company_id');
-                    return { success: false, message: 'unauthorized' };
-                }
+            // Unauthorized check
+            if (!req?.dataToken && !test) {
+                const msg = 'Unauthorized — missing token or company_id';
+                console.error('|ERROR|', msg);
+                return res ? res.status(401).send({ success: false, message: msg }) : { success: false, message: msg };
             }
 
-            const getWeekLimit =
-                (
-                    await dbQuery(`
-                SELECT mcn.value FROM m_config_new mcn 
-                WHERE mcn.conditions = 9 
-                AND mcn.company_id = ${company_id}  
-                AND mcn.active = 1;
-              `)
-                )[0] ?? {};
+            // --- Step 1: Determine Current Date Info ---
+            const today = new Date();
+            const todayIsSunday = today.getDay() === 0;
+            let actualWeek = 0;
+            let deliveryWeek = -1;
+            let deliveryYear = today.getFullYear();
 
+            // --- Step 2: Get OPCAL_ID equivalent ---
+            const todayOpcal = await dbQuery(`
+                SELECT opcal_id 
+                FROM dat_operational_calendar 
+                WHERE DATE(FROM_UNIXTIME(opcal_id * 100)) = CURDATE()
+                LIMIT 1
+            `);
+            const strTodayCalId = todayOpcal[0]?.opcal_id || null;
+            console.log("today's OPCAL_ID =", strTodayCalId);
 
-            const weekLimit = getWeekLimit.value ?? 13;
+            // --- Step 3: Get Delivery Week Info ---
+            sql = `
+                SELECT week, delivery_week, year 
+                FROM dat_operational_calendar 
+                WHERE 
+                  opcal_id >= ${strTodayCalId} 
+                  and YEAR >= ${deliveryYear}
+                  AND factory_id=1 
+                  AND product_type_id=256 
+                group by week
+                ORDER BY opcal_id
+                limit ${weekLimit}
+            `;
+            const deliveryData = (await dbQuery(sql)) ?? {};
 
-            const getBlockingDate =
-                (
-                    await dbQuery(`
-                SELECT mcn.value FROM m_config_new mcn 
-                WHERE mcn.conditions = 10 
-                AND mcn.company_id = ${company_id}  
-                AND mcn.active = 1;
-              `)
-                )[0] ?? {};
+            actualWeek = deliveryData.week ?? 0;
+            deliveryWeek = deliveryData.delivery_week ?? -1;
 
-
-            const blockingDate = getBlockingDate.value ?? 0;
-
-
-            const GET_DISTRIBUTOR_TIMEFENCE_SQL =
-                (
-                    await dbQuery(`
-                SELECT COALESCE(time_fence, 0) time_fence 
+            // --- Step 4: Distributor Time Fence ---
+            sql = `
+                SELECT COALESCE(time_fence, 0) AS time_fence 
                 FROM map_cont_for_dist 
-                WHERE dist_id = ${company_id} 
-                AND now() BETWEEN start_date AND COALESCE(finish_date, '9999-12-31')
-              `)
-                )[0] ?? {};
+                WHERE dist_id=${dist_id}
+                  AND NOW() BETWEEN start_date AND COALESCE(finish_date, '9999-12-31')
+            `;
+            console.log('GET_DISTRIBUTOR_TIMEFENCE_SQL:', sql);
 
-            console.log(`blockingdate : ` + ` ${blockingDate} ` + `|| Week Limit : ` + ` ${weekLimit}`)
-            console.log('GET_DISTRIBUTOR_TIMEFENCE_SQL', GET_DISTRIBUTOR_TIMEFENCE_SQL);
+            const timeFenceData = (await dbQuery(sql))[0] ?? {};
+            const timeFence = timeFenceData.time_fence ?? 0;
+            if (timeFence !== 0) deliveryWeek = timeFence;
 
-
-            const GET_DELIVERY_WEEK = (
-                await dbQuery(`
-
-            SELECT COALESCE(time_fence, 0) time_fence 
-            FROM map_cont_for_dist 
-            WHERE dist_id = ${company_id} 
-            AND now() BETWEEN start_date AND COALESCE(finish_date, '9999-12-31')
-            
-          `)
-            )[0] ?? {};
+            console.log("deliveryData", deliveryData.length)
+            console.log("strTodayCalId", strTodayCalId)
+            // --- Step 5: Loop through deliveryRows ---
+            for (const row of deliveryData) {
+                let actualWeek = row.week ?? 0;
+                let deliveryWeek = row.delivery_week ?? -1;
+                let deliveryYear = row.year ?? new Date().getFullYear();
 
 
-            //             "SELECT week, delivery_week, year FROM dat_operational_calendar "
-            //                 + "WHERE company_id=#company_id AND opcal_id>=#OPCAL_ID AND
-            //             year = #YEAR AND "
-            //                 + "factory_id=#FACTORY_ID AND product_type_id=256 ORDER BY
-            //   opcal_id LIMIT 1";
+                // Apply distributor time fence if any
+                if (timeFence !== 0) {
+                    deliveryWeek = timeFence;
+                }
 
-            const query = `
-            select
-                            *
-                        from
-                            (
-                            select
-                                max(opcal_id) opcal_id,
-                                cast(concat(year,
-                                                right(concat('00', week),
-                                                2))as unsigned) as id,
-                                year,
-                                week,
-                                DATE_FORMAT(FROM_UNIXTIME(concat(min(opcal_id),
-                                                    '00')),
-                                                    '%b %d, %Y') startingDate,
-                                DATE_FORMAT(FROM_UNIXTIME(concat(max(opcal_id),
-                                                    '00')),
-                                                    '%b %d, %Y') endingDate,
-                                @min_week := (
-                                select
-                                    min(week)
-                                from
-                                    dat_operational_calendar doc
-                                where
-                                    opcal_id >= 
-                                                        left(unix_timestamp(DATE_FORMAT(
-                                                                case year
-                                                                    when year(now()) 
-                                                                    then now()
-                                                                    else date_add(now(),
-                                                                    interval 1 year)
-                                                                end, '%Y-01-01')),
-                                    8)
-                                    and opcal_id = 
-                                                            left(unix_timestamp(DATE_FORMAT(
-                                                                case year
-                                                                    when year(now()) then now()
-                                                                    else date_add(now(),
-                                                                    interval 1 year)
-                                                                end, '%Y-%m-%d')),
-                                    8)
-                                    and factory_id = 1
-                                    and product_type_id = 256
-                                    and doc.company_id = 100
-                                limit 1) min_week,
-                                @time_fence := case
-                                    when coalesce(mc.time_fence, 0) = 0 then st.txt
-                                    else mc.time_fence
-                                end as time_fence,
-                                @rownum := @rownum + 1 as rownum
-                            from
-                                dat_operational_calendar doc
-                            left join map_cont_for_dist mc on
-                                mc.company_id = 100
-                                and mc.dist_id = ${company_id}
-                            left join sys_text st on
-                                st.lang_id = 1
-                                and st.text_id = -100,
-                                (
-                                select
-                                    @min_week := 0) x,
-                                (
-                                select
-                                    @time_fence := 0) y,
-                                (
-                                select
-                                    @rownum := 0) r
-                            where
-                                opcal_id >= left(
-                                                    unix_timestamp(DATE_FORMAT(
-                                                    case year
-                                                        when year(now()) 
-                                                        then now()
-                                                        else date_add(now(),
-                                                        interval 1 year)
-                                                    end, '%Y-01-01')),
-                                8)
-                                and year = 
-                                                    year(DATE_FORMAT(FROM_UNIXTIME(concat(opcal_id, '00')), '%Y-%m-%d'))
-                                and doc.factory_id = 1
-                                and doc.product_type_id = 256
-                                and doc.company_id = 100
-                            group by
-                                2,
-                                3,
-                                4) a
-                        where
-                            a.opcal_id >= (
-                            select
-                                opcal_id
-                            from
-                                dat_operational_calendar
-                            where
-                                opcal_id >= left(
-                                                    unix_timestamp(DATE_FORMAT(
-                                                        case year 
-                                                            when year(now()) 
-                                                            then now() 
-                                                            else date_add(now(), 
-                                                            interval 1 year) 
-                                                        end , '%Y-01-01')),
-                                8)
-                                    and factory_id = 1
-                                    and product_type_id = 256
-                                    and company_id = 100
-                                order by
-                                    opcal_id asc
-                                limit 1)
-                            and rownum >= @min_week + @time_fence
-                            and week not in (${blockingDate})
-                        order by
-                            id
-                        limit ${weekLimit}
-          `;
+                // Adjust week-year overflow (week > 52)
+                deliveryWeek += actualWeek;
+                if (deliveryWeek > 52) {
+                    deliveryWeek = deliveryWeek - 52;
+                    deliveryYear += 1;
+                }
 
-            const results = await dbQuery(query);
+                // --- Step 6: Get First Day of Week (OPCAL for deliveryWeek) ---
+                sql = `
+                    SELECT opcal_id 
+                    FROM dat_operational_calendar 
+                    WHERE 
+                    year = ${deliveryYear}
+                    and
+                    factory_id=1 
+                    AND 
+                    week=${deliveryWeek} 
+                    AND 
+                    product_type_id=256 
+                    LIMIT 1
+                `;
+                const opcalFirstDayData = await dbQuery(sql);
+                const numOpcalId = opcalFirstDayData[0]?.opcal_id ?? null;
 
-            console.log(timestamp, `get Order Stuffing Week for ${company_id} limit ${weekLimit} success`);
+                if (!numOpcalId) continue; // skip this week if no data found
+
+                // --- Step 7: Convert opcal_id to Date ---
+                const opcalEpochSec = Number(numOpcalId) * 100;
+                const minDateObj = new Date(opcalEpochSec * 1000);
+                const todayIsSunday = new Date().getDay() === 0;
+                if (minDateObj.getDay() === 0) {
+                    // Adjust Sunday to Monday
+                    minDateObj.setDate(minDateObj.getDate() + (todayIsSunday ? -6 : 1));
+                }
+
+                const minDate = DATE_FORMATTER.format(minDateObj);
+
+
+                const minDay = minDateObj.getDay(); // 0=Sunday, 1=Monday, ... 6=Saturday
+
+
+                // --- Step 8: check for max Date ---
+
+                sqlNextRow = `
+                    SELECT opcal_id 
+                    FROM dat_operational_calendar 
+                    WHERE 
+                    year = ${deliveryYear}
+                    and
+                    factory_id=1 
+                    AND 
+                    week=${deliveryWeek + 1} 
+                    AND 
+                    product_type_id=256 
+                    LIMIT 1
+                `;
+
+
+                const nextRow = await dbQuery(sqlNextRow);
+                const nextOpcalId = nextRow[0]?.opcal_id ?? null;
+
+                let maxDateObj;
+
+                if (nextOpcalId) {
+                  const nextEpochSec = Number(nextOpcalId) * 100;
+                  maxDateObj = new Date(nextEpochSec * 1000);
+                  maxDateObj.setDate(maxDateObj.getDate() - 1);
+                } else {
+                  // if there's no next week (e.g. end of year), fallback = +6 days
+                  maxDateObj = new Date(minDateObj);
+                  maxDateObj.setDate(maxDateObj.getDate() + 6);
+                }
+                
+                const maxDate = DATE_FORMATTER.format(maxDateObj);
+
+
+                // Push into weeksList
+                weeksList.push({
+                    opcal_id: numOpcalId,
+                    id: `${deliveryYear}${String(deliveryWeek).padStart(2, '0')}`,
+                    year: deliveryYear,
+                    week: deliveryWeek,
+                    startingDate: minDate,
+                    endingDate: maxDate, // you can calculate +6 days if needed
+                });
+            }
+
+            // --- Step 8: Return Result ---
+            const result = {
+                success: true,
+                weeksList,
+            };
+
+
+
 
             if (res) {
-                
-                res.status(200).send(results);
+                return res.status(200).send(result);
             } else {
-                return results; // allow standalone testing
+                return result;
             }
 
         } catch (err) {
             console.error('|ERROR| GET STUFFINGWEEK', err);
-            return { success: false, error: err.message };
+            const result = { success: false, message: err.message };
+            return res ? res.status(500).send(result) : result;
         }
     }
     , getOrder_id: async (req, res) => {
