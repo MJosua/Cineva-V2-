@@ -128,38 +128,52 @@ module.exports = {
 
 
         let userData = (await dbQuery(`
-		select
-            su.company_id,
-            su.employee_id as dist_employeeid,
-            me.email as dist_mail,
-            mc.company_name,
-            GROUP_CONCAT(distinct d.email order by d.email separator ', ') as iod_mail
-        from
-            sys_user su
-        left join mst_employee me on
-            su.employee_id = me.employee_id
-        left join mst_company mc on
-            su.company_id = mc.company_id
-        left join map_resp_for_dist a on
-            a.distributor_id = su.company_id
-            and NOW() between a.creation_date and coalesce(a.finish_date, '9999-12-31')
-        left join mst_team b on
-            a.team_id = b.team_id
-            and a.company_id = b.company_id
-            and b.active = 1
-        left join mst_team_member c on
-            b.team_id = c.team_id
-            and b.company_id = c.company_id
-        left join mst_employee d on
-            a.company_id = d.company_id
-            and c.employee_id = d.employee_id
-        where
-            su.company_id = ${dbConf.escape(company_id)}
-            and b.team_category = 6
-            and me.email is not null
-        group by
-            su.company_id,
-            me.email
+               SELECT
+                        el.is_notified,
+                        me.email AS "to",
+                        p.person_notice cc,
+                        mo.order_id,
+                        mos.status_order,
+                        mo.po_buyer,
+                        mc.company_name,
+                        mc.company_id,
+                        mo.created_by user_id,
+                        GROUP_CONCAT(distinct d.email order by d.email separator ', ') as iod_mail
+                    FROM
+                        m_order mo
+                    LEFT JOIN event_logger el ON
+                        mo.order_id = el.order_id
+                            AND el.event_type = 2
+                    LEFT JOIN person p ON
+                            mo.created_by = p.person_id
+                    LEFT JOIN mst_employee me ON
+                            mo.created_by = me.person_id
+                    LEFT JOIN m_order_status mos ON
+                            mo.status = mos.id
+                    LEFT JOIN mst_company mc ON
+                            mc.company_id = mo.company_id
+                    left join map_resp_for_dist a on
+                    a.distributor_id = mc.company_id
+                    and NOW() between a.creation_date and coalesce(a.finish_date, '9999-12-31')
+                	left join mst_team b on
+                    a.team_id = b.team_id
+                    and a.company_id = b.company_id
+                    and b.active = 1
+                	left join mst_team_member c on
+                    b.team_id = c.team_id
+                    and b.company_id = c.company_id
+                	left join mst_employee d on
+                    a.company_id = d.company_id
+                    and c.employee_id = d.employee_id
+                    WHERE
+                            mo.status = 3
+                            AND 
+                            el.is_notified IS NULL 
+                          and 
+           					 b.team_category = 6
+            					and 
+            					me.email is not null
+                     group by po_buyer 
         ;`))[0];
 
         // // IF YOU ALREADY SURE, THIS MUST BE PRODUCTION 
@@ -168,6 +182,7 @@ module.exports = {
             dist_employeeid = null,
             company_name = null,
             iod_mail = null
+
         } = userData || {};
 
 
@@ -1033,166 +1048,118 @@ module.exports = {
         }, 1000);
     }
     ,
-    notifMailDeliver: async (
+    notifMailDeliver : async (
         order_id,
         dist_mail,
         str_carbon_copy,
         po_buyer,
-        company_name,) => {
-
-        let date = new Date();
-        let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-
+        company_name
+    ) => {
+        const date = new Date();
+        const timestamp = date.toLocaleDateString("id") + " " + date.toLocaleTimeString("id") + " : ";
 
         try {
-
-            let trackingDetailQuery = await dbQuery(`
-            select
+            const trackingDetailQuery = await dbQuery(`
+            SELECT
                 mc.company_name,
                 mo.po_buyer,
                 mh.harbour_name,
-                DATE_FORMAT(trd.delv_date, '%b %d, %Y') delv_date,
+                DATE_FORMAT(trd.delv_date, '%b %d, %Y') AS delv_date,
                 CASE 
-                    WHEN mp.product_name_no IS NOT NULL 
-                    THEN mp.product_name_no
+                    WHEN mp.product_name_no IS NOT NULL THEN mp.product_name_no
                     ELSE mp.product_name
                 END AS product_name,
                 trd.qty,
                 mo.order_id,
-                tr.ship_name vessel_name,
-                tr.ship_line shipping_line,
-                DATE_FORMAT(tr.etd, '%b %d, %Y') etd,
-                DATE_FORMAT(tr.eta, '%b %d, %Y') eta,
+                tr.ship_name AS vessel_name,
+                tr.ship_line AS shipping_line,
+                DATE_FORMAT(tr.etd, '%b %d, %Y') AS etd,
+                DATE_FORMAT(tr.eta, '%b %d, %Y') AS eta,
                 tr.cont_id,
                 tr.so_id  
-            from
+            FROM
                 m_order mo
-            left join trs_sales_order tso
-                on
-                tso.e_order = mo.order_id
-            left join trs_realization tr 
-                on
-                tr.so_id = tso.so_id
-            left join trs_realization_detail trd 
-                on
-                tr.cont_id = trd.cont_id
-                and tr.so_id = trd.so_id
-                and tr.invoice_id = trd.invoice_id
-            left join trs_realization_searates trs 
-                on
-                trs.so_id = tr.so_id
-                and trs.cont_id = tr.cont_id
-            left join mst_product mp 
-                on
-                mp.product_code = trd.sku
-            LEFT JOIN mst_company mc 
-                on 
-                mc.company_id = mo.company_id
-            left join map_port_for_dist mpfd
-                on
-                mo.company_id = mpfd.distributor_id
-            left join mst_harbour mh 
-                on
-                mpfd.harbour_id = mh.harbour_id 
-            where
+            LEFT JOIN trs_sales_order tso ON tso.e_order = mo.order_id
+            LEFT JOIN trs_realization tr ON tr.so_id = tso.so_id
+            LEFT JOIN trs_realization_detail trd ON tr.cont_id = trd.cont_id
+                AND tr.so_id = trd.so_id
+                AND tr.invoice_id = trd.invoice_id
+            LEFT JOIN trs_realization_searates trs ON trs.so_id = tr.so_id
+                AND trs.cont_id = tr.cont_id
+            LEFT JOIN mst_product mp ON mp.product_code = trd.sku
+            LEFT JOIN mst_company mc ON mc.company_id = mo.company_id
+            LEFT JOIN map_port_for_dist mpfd ON mo.company_id = mpfd.distributor_id
+            LEFT JOIN mst_harbour mh ON mpfd.harbour_id = mh.harbour_id
+            WHERE
                 mo.order_id = ${order_id}
-            group by 
-                tr.cont_id, trd.sku  
-                `);
+            GROUP BY 
+                tr.cont_id, trd.sku;
+          `);
 
-            const trackingDetail = () => {
-                return trackingDetailQuery.map((val) => {
-                    return (
-                        `<tr>
-                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.delv_date ? val.delv_date : '-'}</td>
-                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.cont_id ? val.cont_id : '-'}</td>
-                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.product_name ? val.product_name : '-'}</td>
-                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.qty ? (val.qty).toLocaleString() : '-'}</td>
-                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.etd ? val.etd : '-'}</td>
-                            <td style="border:1px solid black; margin-right: 10px; margin-left: 10px: ">${val.eta ? val.eta : '-'}</td>
-                        </tr>`
-                    );
-                }).join('');
+            const trackingDetailRows = trackingDetailQuery
+                .map(
+                    (val) => `
+              <tr>
+                <td style="border:1px solid black;">${val.delv_date || "-"}</td>
+                <td style="border:1px solid black;">${val.cont_id || "-"}</td>
+                <td style="border:1px solid black;">${val.product_name || "-"}</td>
+                <td style="border:1px solid black;">${val.qty?.toLocaleString() || "-"}</td>
+                <td style="border:1px solid black;">${val.etd || "-"}</td>
+                <td style="border:1px solid black;">${val.eta || "-"}</td>
+              </tr>`
+                )
+                .join("");
 
-            }
-
-            let carbon_copy = str_carbon_copy ? str_carbon_copy.split(",") : []
+            const carbon_copy = str_carbon_copy
+                ? str_carbon_copy.split(",").map((e) => e.trim()).filter(Boolean)
+                : [];
 
             await transporter.sendMail({
-                from: 'no-reply@indofoodinternational.com',
+                from: "no-reply@indofoodinternational.com",
                 to: dist_mail,
-                //cc: carbon_copy,
-                bcc: ['etria.purba@icbp.indofood.co.id', 'muhammad.asmarakusuma@icbp.indofood.co.id'],
-                subject: ` [E-Order] Order on Delivery ${po_buyer} - ${company_name}`,
-                html: (`
-                <div>
-                    <p>
-                    Dear ${company_name} ,  
-                    </p>  
-                    <br>
-                    <p>
-                        This email to inform you that your order ${po_buyer} has been shipped. 
-                    </p>  
-                    <p>
-                        Your order is being shipped via ${trackingDetailQuery[0] ? trackingDetailQuery[0].shipping_line : ' our trusted shipping line'} and is expected to arrive on ${trackingDetailQuery[0] ? trackingDetailQuery[0].eta : 'schedule'}.
-                        You can track the status of your shipment using the following tracking details: 
-                    </p>  
-                
-                    <div>
-                        <table style="  border:1px solid black;  ">
-                            <tr>
-                                <th style="border:1px solid black;">Stuffing Date</th>
-                                <th style="border:1px solid black;">Container ID</th>
-                                <th style="border:1px solid black;">Item Name</th>
-                                <th style="border:1px solid black;">Qty</th>
-                                <th style="border:1px solid black;">ETD</th>
-                                <th style="border:1px solid black;">ETA</th>
-                            </tr> 
-                          ${trackingDetail()} 
-                        </table> 
-                    </div>
-
-                    <p>
-                      Please note that this is an estimated delivery and arrival date may vary depending on shipping conditions.
-                        <br>
-                      If you have any questions or concerns, please do not hesitate to contact us.
-                        <br>
-                    </p>
-
-                    <p>
-                        
-                        Thank you for your order!
-                        
-                        <br>
-                        <br>
-                        Best Regards,
-                        <br>
-                        <span style="font-weight: bold;">
-                        International Operations Division
-                        </span>
-                        <br>
-                        <span style="font-weight: bold;">
-                        PT Indofood CBP Sukses Makmur, Tbk.
-                        </span>
-                        <br>
-                        Indofood Tower, 23rd Floor, Jakarta, Indonesia
-                        <br><br>
-                        For any inquiries or assistance, please contact our support team.
-                        <br>
-                        <a href="https://www.indofoodinternational.com/">www.indofoodinternational.com </a>
-                        <br>
-                        <a href="https://www.indofoodinternational.com/e-order/termsncondition">
-                        Order Terms & Conditions
-                        </a>
-                        <br>
-                    </p>
-                </div>`),
+                cc: carbon_copy.length ? carbon_copy : undefined,
+                bcc: ["etria.purba@icbp.indofood.co.id", "muhammad.asmarakusuma@icbp.indofood.co.id"],
+                subject: `[E-Order] Order on Delivery ${po_buyer} - ${company_name}`,
+                html: `
+              <div>
+                <p>Dear ${company_name},</p>
+                <br>
+                <p>This email is to inform you that your order <b>${po_buyer}</b> has been shipped.</p>
+                <p>Your order is being shipped via ${trackingDetailQuery[0]?.shipping_line || "our trusted shipping line"} 
+                   and is expected to arrive on ${trackingDetailQuery[0]?.eta || "schedule"}.</p>
+                <br>
+                <table style="border:1px solid black; border-collapse: collapse;">
+                  <tr>
+                    <th style="border:1px solid black;">Stuffing Date</th>
+                    <th style="border:1px solid black;">Container ID</th>
+                    <th style="border:1px solid black;">Item Name</th>
+                    <th style="border:1px solid black;">Qty</th>
+                    <th style="border:1px solid black;">ETD</th>
+                    <th style="border:1px solid black;">ETA</th>
+                  </tr>
+                  ${trackingDetailRows}
+                </table>
+                <br>
+                <p>
+                  Please note that this is an estimated delivery, and arrival may vary depending on conditions.<br>
+                  Thank you for your order!
+                </p>
+                <p>
+                  <b>International Operations Division</b><br>
+                  PT Indofood CBP Sukses Makmur, Tbk.<br>
+                  Indofood Tower, 23rd Floor, Jakarta, Indonesia<br>
+                  <a href="https://www.indofoodinternational.com/">www.indofoodinternational.com</a>
+                </p>
+              </div>
+            `,
             });
 
-            console.log(timestamp + " Mail just sent to : " + dist_mail);
+            console.log(`${timestamp} [MAIL SENT] to ${dist_mail}`);
+            return true; // ✅ SUCCESS FLAG
 
         } catch (error) {
-            console.log(timestamp + " notifMailDeliver ERROR : " + error);
+            console.log(`${timestamp} notifMailDeliver ERROR: ${error.message}`);
+            return false; // ❌ FAIL FLAG
         }
     }
     ,

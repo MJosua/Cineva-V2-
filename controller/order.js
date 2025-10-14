@@ -1930,7 +1930,6 @@ WHERE
 
 
             let weekLimit = getWeekLimit ? getWeekLimit.value : 13
-            console.log("weekLimit", weekLimit)
             const weeksList = [];
 
 
@@ -1938,8 +1937,6 @@ WHERE
             const company_id = test === true ? 101 : req?.dataToken?.company_id;
             const user_id = test === true ? 1098 : req?.dataToken?.user_id ?? 0;
 
-            console.log('==========================================');
-            console.log('StuffingWeek start', { company_id, user_id });
 
             // Unauthorized check
             if (!req?.dataToken && !test) {
@@ -1993,7 +1990,6 @@ WHERE
             const timeFenceData = (await dbQuery(sql))[0] ?? {};
             const timeFence = timeFenceData.time_fence ?? 0;
             if (timeFence !== 0) deliveryWeek = timeFence;
-            console.log("timeFence", timeFence)
             // --- Step 5: Loop through deliveryRows ---
             for (const row of deliveryData) {
                 let actualWeek = row.week ?? 0;
@@ -2052,7 +2048,6 @@ WHERE
                 let nextdeliverycheckweek
 
                 if (deliveryWeek === 52) {
-                    console.log("actualweek", deliveryWeek)
                     nextdeliverycheckyear = deliveryYear + 1
                     nextdeliverycheckweek = 1
                 } else {

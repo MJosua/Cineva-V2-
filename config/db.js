@@ -68,7 +68,8 @@ const dbConf = mysql.createPool({
     host: host_config,
     user: user_config,
     password: password_config,
-    database: process.env.DB_NAME
+    database: process.env.DB_NAME,
+    connectTimeout: 10000, // connection timeout
 });
 const dbQuery = util.promisify(dbConf.query).bind(dbConf);
 
@@ -79,7 +80,8 @@ const dbTM = mysql.createPool({
     host: host_config,
     user: user_config,
     password: password_config,
-    database: process.env.DB_NAME_TM
+    database: process.env.DB_NAME_TM,
+    connectTimeout: 10000, // connection timeout
 });
 const dbTMQuery = util.promisify(dbTM.query).bind(dbTM);
 
@@ -112,7 +114,8 @@ const dbHots = mysql.createPool({
     host: host_config,
     user: user_config,
     password: password_config,
-    database: process.env.DB_NAME_HT
+    database: process.env.DB_NAME_HT,
+    connectTimeout: 10000, // connection timeout
 });
 const dbQueryHots = util.promisify(dbHots.query).bind(dbHots);
 
@@ -124,7 +127,8 @@ const dbPMS = mysql.createPool({
     host: host_config,
     user: user_config,
     password: password_config,
-    database: process.env.DB_NAME_PMS
+    database: process.env.DB_NAME_PMS,
+    connectTimeout: 10000, // connection timeout
 });
 const dbQueryPMS = util.promisify(dbPMS.query).bind(dbPMS);
 
@@ -137,7 +141,8 @@ const dbClick = mysql.createPool({
     host: host_config,
     user: user_config,
     password: password_config,
-    database: process.env.DB_NAME_Click
+    database: process.env.DB_NAME_Click,
+    connectTimeout: 10000, // connection timeout
 });
 const dbQueryClick = util.promisify(dbClick.query).bind(dbClick);
 
@@ -148,7 +153,8 @@ const dbSR = mysql.createPool({
     host: host_config,
     user: user_config,
     password: password_config,
-    database: process.env.DB_NAME_SR
+    database: process.env.DB_NAME_SR,
+    connectTimeout: 10000, // connection timeout
 });
 const dbQuerySR = util.promisify(dbSR.query).bind(dbSR);
 

@@ -3,6 +3,7 @@ const { dbSR, dbQuerySR, dbQuery, dbConf } = require("../../config/db");
 const fs = require('fs')
 
 const { default: axios } = require("axios");
+const { timeout } = require("puppeteer");
 
 let blue = "\x1b[36m";
 
@@ -606,6 +607,7 @@ module.exports = {
         }
 
 
+
         try {
             let query = `       
                         select
@@ -767,14 +769,14 @@ module.exports = {
                             ? `https://tracking.searates.com/tracking?api_key=${key}&number=${checkresult[0].bl_no}&sealine=${sealine}&force_update=false&type=bl&route=true&ais=false`
                             : `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=${sealine}&force_update=false&route=true&ais=false`;
 
-                    let searatesRes = await axios.get(url);
+                    let searatesRes = await callaxios(url);
 
                     // ✅ cek aman pakai optional chaining
                     if (!searatesRes.data?.data?.metadata?.sealine_name) {
                         console.warn("⚠️ Sealine name not found, retrying with contIdClean...");
 
                         const fallbackUrl = `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=auto&force_update=false&route=true&ais=false`;
-                        searatesRes = await axios.get(fallbackUrl); // pakai reassign, bukan const baru
+                        searatesRes = await callaxios(fallbackUrl); // pakai reassign, bukan const baru
                     }
 
 
@@ -796,12 +798,17 @@ module.exports = {
                 } catch (err) {
                     console.error("Error calling Searates fallback:", err);
                     return res.status(500).send({ error: "Fallback API failed", details: err });
+
+                    console.warn("⚠️ SeaRates timeout. Retrying...");
+                    await new Promise(r => setTimeout(r, 2000));
+                    return axios.get(url, { timeout: 5000 }); // one retry
+
                 }
             } else {
 
 
                 const shipmentData = {};
-                console.log("Call Searates Success for SO ID : ", results[0].so_id)
+                console.log("Call Searates Success usind backend for SO ID : ", results[0].so_id)
                 results.forEach(row => {
                     const shipmentId = row.shipments_id;
                     if (!shipmentData[shipmentId]) {
@@ -979,6 +986,21 @@ module.exports = {
             console.log(timestamp + " Error at User => GetSeaRatesTrackNumber:", error);
             return res.status(500).send({ error: "Internal Server Error", details: error });
         }
+
+        async function callaxios(url) {
+            try {
+                const res = await axios.get(url, { timeout: 5000 });
+                return res.data;
+            } catch (err) {
+                if (err.code === 'ECONNABORTED') {
+                    console.warn("⚠️ SeaRates timeout. Retrying...");
+                    await new Promise(r => setTimeout(r, 2000));
+                    return axios.get(url, { timeout: 5000 }); // one retry
+                }
+                throw err;
+            }
+        }
+
     },
 
     SearatesCheck: async (req, res) => {
@@ -1239,6 +1261,8 @@ module.exports = {
 
                     if (c.events) {
                         for (const e of c.events) {
+
+                            console.log("e ",e)
                             await dbQuerySR(eventQuery, [
                                 e.order_id ?? null,
                                 e.location ?? null,
@@ -1307,7 +1331,7 @@ module.exports = {
 
 
             if (results.length < 1) {
-                console.log("Check Searates new save for SO ID : ", results[0].so_id)
+                // console.log("Check Searates new save for SO ID : ", results[0].so_id)
 
                 try {
 
@@ -1349,14 +1373,14 @@ module.exports = {
                             ? `https://tracking.searates.com/tracking?api_key=${key}&number=${checkresult[0].bl_no}&sealine=auto&force_update=false&route=true&ais=false`
                             : `https://tracking.searates.com/tracking?api_key=${key}&number=${contIdClean}&sealine=auto&force_update=false&route=true&ais=false`;
 
-                    let searatesRes = await axios.get(url);
+                    let searatesRes = await axios.get(url, { timeout: "10000" });
 
                     // ✅ cek aman pakai optional chaining
                     if (!searatesRes.data?.data?.metadata?.sealine_name) {
                         console.warn("⚠️ Sealine name not found, retrying with contIdClean...");
 
                         const fallbackUrl = `https://tracking.searates.com/tracking?api_key=${key}&number=${contIdClean}&sealine=auto&force_update=false&route=true&ais=false`;
-                        searatesRes = await axios.get(fallbackUrl); // pakai reassign, bukan const baru
+                        searatesRes = await axios.get(fallbackUrl , { timeout: "10000" }); // pakai reassign, bukan const baru
                     }
 
                     const record = {
@@ -1368,10 +1392,11 @@ module.exports = {
 
                     // 🔥 Panggil logic UPSERT penuh
 
-                    console.log("record", record)
 
                     if (searatesRes) {
                         await saveSearatesRecord(record);
+                        console.log("Check Searates, using Searates, Success for SO ID : ", checkresult[0]?.so_id)
+
                     }
 
                     // Return fallback data
@@ -1386,10 +1411,8 @@ module.exports = {
             } else {
 
 
-                const shipmentData = {};
-                console.log("Check Searates Success for SO ID : ", results[0].so_id)
-
-                return res.status(200).send(shipmentData);
+                console.log("Check Searates, using database, Success for SO ID : ", results[0].so_id)
+                return res.status(200).send(results);
             }
         } catch (error) {
             console.log(timestamp + " Error at User => GetSeaRatesTrackNumber:", error);

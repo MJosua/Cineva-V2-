@@ -121,10 +121,26 @@ module.exports = {
             } else {
 
 
+
+
               let userData = results;
 
               //berhasil login
               if (results[0]) {
+
+                console.log("results[0]",results[0])
+
+                if (results[0].type_id === 1) {
+
+                  console.log("results[0]",results[0])
+                  res.status(200).send({
+                    message: ` Wrong username`,
+                    success: false,
+                    // userData,
+                    // token,
+                    err: ''
+                  });
+                }
 
                 let rawDataToken = results[0];
                 let dataToken = {
@@ -176,6 +192,17 @@ module.exports = {
                   });
                   console.log(timestamp + `==> Auth Login ${userID} UNAUTHORIZED TO LOGIN`);
 
+                } else if( userData[0].active === null || userData[0].active === undefined ){
+
+                  //login berhasil
+                  res.status(200).send({
+                    success: true,
+                    userData,
+                    token,
+                    message: `Wrong combination of Username or Password!`
+                  });
+                  addSqlLogger((userData[0].user_id), query, 'success: false', 'login')
+                  console.log(timestamp + `==> Auth Login ${userID} False`);
                 } else {
 
                   //login berhasil

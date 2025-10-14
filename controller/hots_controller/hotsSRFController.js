@@ -170,7 +170,7 @@ module.exports = {
                 message: `Unauthorized`
             });
         }
-// `       Jadi BOM`
+        // `       Jadi BOM`
         const queryRM = `
             select
                 distinct 
@@ -299,29 +299,45 @@ module.exports = {
 
     getPONumbersrf: async (req, res) => {
 
+        const today = new Date();
+        let deliveryYear = today.getFullYear();
+        const company_id = req.params.company_id;
+        
         let querygetPONumbersrf = ` 
                 select 
                     tso.po_number,
-                    (tsd.quantity  - COALESCE(trd.qty, 0)) AS remaining_qty
+                   	GREATEST(
+				        tsd.quantity - COALESCE(SUM(trd.qty), 0),
+				        0
+				    ) AS remaining_qty,
+                    tsd.quantity as "quantity dari tsd",
+                    trd.qty  as "quantity dari trd",
+                    tso.so_id,
+                    tsd.sku_id                  
                     from
                     trs_so_detail tsd 
-                    left join
-                    trs_realization_detail trd 
+                    join
+                    trs_sales_order tso 
                     on
-                    tsd.so_id = trd.so_id and tsd.sku_id = trd.sku 
-                    left join
+                    tsd.so_id = tso.so_id and tsd.client_id = tso.client_id 
+                    join
                     dat_cwo dc 
                     on
                     tsd.so_id = dc.so_id and tsd.sku_id = dc.product_code 
                     left join
-                    trs_sales_order tso 
+                    trs_realization_detail trd 
                     on
-                    tsd.so_id = tso.so_id
+                    tsd.so_id = trd.so_id and tsd.sku_id = trd.sku 
                     where
-                    tso.client_id  = ?
+                    tso.client_id  in (${company_id})
                     and
                     dc.close = 0
-                AND (tsd.quantity - COALESCE(trd.qty, 0)) > 0;
+                    and 
+					year(tso.delv_date) >= ${deliveryYear}
+					group by 
+					tsd.so_id, tsd.sku_id  
+					HAVING  
+					remaining_qty > 0
         `
 
         param = req.dataToken.company_id
@@ -365,6 +381,6 @@ module.exports = {
 
     },
 
-    
+
 
 }
