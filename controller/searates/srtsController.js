@@ -267,6 +267,7 @@ module.exports = {
         let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
         const number = req.params.number.toLocaleString();
+        const so_id = req.params.so_id.toLocaleString();
 
         const sealine = req.params?.sealine?.toLocaleString() || "auto";
         const refresh = req.query?.refresh === "true" ? true : false;
