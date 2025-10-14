@@ -174,24 +174,24 @@ module.exports = {
 
     shippingMailNotificationManual: async (orderIds = [250028500011]) => {
         console.log(`⚙️  MANUAL TEST => shippingMailNotificationManual [IS READY]`);
-        
+
         const date = new Date();
         const timestamp =
-          colors.green +
-          date.toLocaleDateString("id") +
-          " " +
-          date.toLocaleTimeString("id") +
-          colors.reset;
-      
+            colors.green +
+            date.toLocaleDateString("id") +
+            " " +
+            date.toLocaleTimeString("id") +
+            colors.reset;
+
         try {
-          if (!Array.isArray(orderIds) || orderIds.length === 0) {
-            console.warn(`[WARN] No order IDs provided for manual test.`);
-            return;
-          }
-      
-          console.log(`[INFO] Running manual notification for orders: ${orderIds.join(", ")}`);
-      
-          const sqlCheckOrderProceed = await dbQuery(`
+            if (!Array.isArray(orderIds) || orderIds.length === 0) {
+                console.warn(`[WARN] No order IDs provided for manual test.`);
+                return;
+            }
+
+            console.log(`[INFO] Running manual notification for orders: ${orderIds.join(", ")}`);
+
+            const sqlCheckOrderProceed = await dbQuery(`
             SELECT
                 el.is_notified,
                 me.email AS "to",
@@ -235,95 +235,97 @@ module.exports = {
                 AND b.team_category = 6
             GROUP BY mo.order_id;
           `);
-      
-          if (!sqlCheckOrderProceed.length) {
-            console.log(`${timestamp} [INFO] Tidak ada order ditemukan untuk dikirim notifikasi.`);
-            return;
-          }
-      
-          console.log(`${timestamp} [INFO] ${sqlCheckOrderProceed.length} order ditemukan untuk dikirim email.`);
-      
-          // 🔁 Process each order
-          for (const val of sqlCheckOrderProceed) {
-            const { order_id, to, cc, po_buyer, company_name, user_id } = val;
-      
-            if (!order_id || !to || !po_buyer || !company_name) {
-              console.warn(`[WARN] Skipping invalid data for order_id: ${order_id}`);
-              continue;
+
+            if (!sqlCheckOrderProceed.length) {
+                console.log(`${timestamp} [INFO] Tidak ada order ditemukan untuk dikirim notifikasi.`);
+                return;
             }
-      
-            try {
-              // 1️⃣ Send main email first
-              const mailResult = await notifMailDeliver(
-                order_id,
-                to,
-                cc,
-                po_buyer,
-                company_name
-              );
-      
-              if (mailResult === true) {
-                console.log(`[SUCCESS] Email terkirim untuk Order ID ${order_id}`);
-      
-                // 2️⃣ Send analyst email & update DB in parallel
-                await Promise.all([
-                  // Analyst email
-                  (async () => {
-                    try {
-                      await notifMailDeliver(
+
+            console.log(`${timestamp} [INFO] ${sqlCheckOrderProceed.length} order ditemukan untuk dikirim email.`);
+
+            // 🔁 Process each order
+            for (const val of sqlCheckOrderProceed) {
+                const { order_id, to, cc, po_buyer, company_name, user_id, iod_mail } = val;
+
+                if (!order_id || !to || !po_buyer || !company_name) {
+                    console.warn(`[WARN] Skipping invalid data for order_id: ${order_id}`);
+                    continue;
+                }
+
+                try {
+                    // 1️⃣ Send main email first
+                    const mailResult = await notifMailDeliver(
                         order_id,
-                        "horison.ningsih@icbp.indofood.co.id, IndofoodCanada@indofood.ca, marcel.sarsito@icbp.indofood.co.id",
+                        to,
                         cc,
                         po_buyer,
                         company_name
-                      );
-                      console.log(`[INFO] Analyst email sent for order ${order_id}`);
-                    } catch (err) {
-                      console.warn(`[WARN] Analyst email failed for order ${order_id}: ${err.message}`);
-                    }
-                  })(),
-      
-                  // Event logger update
-                  (async () => {
-                    try {
-                      const sqlCheck = await dbQuery(`
+                    );
+
+                    if (mailResult === true) {
+                        console.log(`[SUCCESS] Email terkirim untuk Order ID ${order_id}`);
+
+                        // 2️⃣ Send analyst email & update DB in parallel
+                        await Promise.all([
+                            // Analyst email
+                            (async () => {
+                                try {
+                                    await notifMailDeliver(
+                                        order_id,
+                                        iod_mail,
+                                        cc,
+                                        po_buyer,
+                                        company_name
+                                    );
+                                    console.log(`[INFO] Analyst email sent for order ${order_id}`);
+                                    console.log(`[INFO] Analyst email List : ${iod_mail}`);
+
+                                } catch (err) {
+                                    console.warn(`[WARN] Analyst email failed for order ${order_id}: ${err.message}`);
+                                }
+                            })(),
+
+                            // Event logger update
+                            (async () => {
+                                try {
+                                    const sqlCheck = await dbQuery(`
                         SELECT order_id FROM event_logger WHERE order_id = ${order_id};
                       `);
-      
-                      if (sqlCheck.length > 0) {
-                        await dbQuery(`
+
+                                    if (sqlCheck.length > 0) {
+                                        await dbQuery(`
                           UPDATE event_logger
                           SET login_trial_time = NOW(), is_notified = 1
                           WHERE order_id = ${order_id};
                         `);
-                        console.log(`[UPDATED] event_logger updated for order ${order_id}`);
-                      } else {
-                        await dbQuery(`
+                                        console.log(`[UPDATED] event_logger updated for order ${order_id}`);
+                                    } else {
+                                        await dbQuery(`
                           INSERT INTO event_logger (login_trial_time, user_id, event_type, is_notified, order_id)
                           VALUES (NOW(), ${user_id}, 2, 1, ${order_id});
                         `);
-                        console.log(`[INSERTED] event_logger created for order ${order_id}`);
-                      }
-                    } catch (dbErr) {
-                      console.error(`[ERROR] Failed updating event_logger for order ${order_id}: ${dbErr.message}`);
+                                        console.log(`[INSERTED] event_logger created for order ${order_id}`);
+                                    }
+                                } catch (dbErr) {
+                                    console.error(`[ERROR] Failed updating event_logger for order ${order_id}: ${dbErr.message}`);
+                                }
+                            })()
+                        ]);
+                    } else {
+                        console.log(`[FAILED] Email gagal dikirim untuk order ${order_id}`);
                     }
-                  })()
-                ]);
-              } else {
-                console.log(`[FAILED] Email gagal dikirim untuk order ${order_id}`);
-              }
-            } catch (innerError) {
-              console.error(`[ERROR] Gagal memproses order ${order_id}:`, innerError);
+                } catch (innerError) {
+                    console.error(`[ERROR] Gagal memproses order ${order_id}:`, innerError);
+                }
             }
-          }
-      
-          console.log(`${timestamp} ✅ MANUAL => shippingMailNotificationManual selesai dijalankan.`);
-      
+
+            console.log(`${timestamp} ✅ MANUAL => shippingMailNotificationManual selesai dijalankan.`);
+
         } catch (error) {
-          console.error("❌ Error at shippingMailNotificationManual:", error);
+            console.error("❌ Error at shippingMailNotificationManual:", error);
         }
-      },
-      
+    },
+
 
 
 }
