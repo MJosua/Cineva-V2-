@@ -267,7 +267,7 @@ module.exports = {
         let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
         const number = req.params.number.toLocaleString();
-        const so_id = req.params.so_id.toLocaleString();
+        const so_id = req.params.so_id ? req.params.so_id.toLocaleString() : "";
 
         const sealine = req.params?.sealine?.toLocaleString() || "auto";
         const refresh = req.query?.refresh === "true" ? true : false;
@@ -276,6 +276,7 @@ module.exports = {
         // 📌 Fungsi reusable untuk simpan data Searates ke DB
         async function saveSearatesRecord(record) {
             let connection;
+            console.log("record", record)
             const metadata = record.data.metadata;
             connection = await dbConf.promise().getConnection();
             console.log("record", record)
@@ -725,7 +726,6 @@ module.exports = {
 
 
             if (results.length < 1 || reload.toLocaleString() === "true") {
-                console.log("reload 3", true)
 
                 try {
 
@@ -774,7 +774,7 @@ module.exports = {
 
                     // ✅ cek aman pakai optional chaining
                     if (!searatesRes.data?.data?.metadata?.sealine_name) {
-                        console.warn("⚠️ Sealine name not found, retrying with contIdClean...");
+                        console.warn(`⚠️ Sealine name not found, try to find $${number} retrying with contIdClean... maybe not BL Number`);
 
                         const fallbackUrl = `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=auto&force_update=false&route=true&ais=false`;
                         searatesRes = await callaxios(fallbackUrl); // pakai reassign, bukan const baru
@@ -788,8 +788,16 @@ module.exports = {
                         data: searatesRes.data.data  // seluruh hasil dari API
                     }; // pastikan sesuai struktur
                     // 🔥 Panggil logic UPSERT penuh
-                    saveSearatesRecord(record);
 
+                    if (record.data) {
+                        saveSearatesRecord(record);
+                    } else {
+                        console.log("TIDAK ADA DATA DITEMUKAN")
+                        return res.status(500).send({
+                            message: "No data found on searates",
+                            data: searatesRes.data
+                        });
+                    }
 
                     // Return fallback data
                     return res.status(200).send({
@@ -1263,7 +1271,7 @@ module.exports = {
                     if (c.events) {
                         for (const e of c.events) {
 
-                            console.log("e ",e)
+                            console.log("e ", e)
                             await dbQuerySR(eventQuery, [
                                 e.order_id ?? null,
                                 e.location ?? null,
@@ -1366,7 +1374,6 @@ module.exports = {
 
                     const checkresult = await dbQuery(querycheck_so_Id);
 
-                    console.log("checkresult", checkresult)
 
                     const contIdClean = checkresult[0]?.cont_id?.replace("-", "");
                     const url =
@@ -1381,7 +1388,7 @@ module.exports = {
                         console.warn("⚠️ Sealine name not found, retrying with contIdClean...");
 
                         const fallbackUrl = `https://tracking.searates.com/tracking?api_key=${key}&number=${contIdClean}&sealine=auto&force_update=false&route=true&ais=false`;
-                        searatesRes = await axios.get(fallbackUrl , { timeout: "10000" }); // pakai reassign, bukan const baru
+                        searatesRes = await axios.get(fallbackUrl, { timeout: "10000" }); // pakai reassign, bukan const baru
                     }
 
                     const record = {
