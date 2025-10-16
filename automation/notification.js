@@ -82,7 +82,7 @@ module.exports = {
 
                 // 🔁 Loop per row agar sequential dan bisa pakai await dengan aman
                 for (const val of sqlCheckOrderProceed) {
-                    const { order_id, to, cc, po_buyer, company_name, user_id } = val;
+                    const { order_id, to, cc, po_buyer, company_name, user_id, iod_mail } = val;
 
                     if (!order_id || !to) {
                         console.log(`[WARN] Skipping invalid data for order_id: ${order_id}`);
@@ -111,7 +111,7 @@ module.exports = {
                                         try {
                                             await notifMailDeliver(
                                                 order_id,
-                                                "horison.ningsih@icbp.indofood.co.id, IndofoodCanada@indofood.ca, marcel.sarsito@icbp.indofood.co.id", // analyst email(s)
+                                                iod_mail,
                                                 cc,
                                                 po_buyer,
                                                 company_name

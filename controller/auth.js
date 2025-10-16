@@ -130,7 +130,7 @@ module.exports = {
 
                 console.log("results[0]",results[0])
 
-                if (results[0].type_id === 1) {
+                if (results[0].type_id === 1 || results[0].type_id === 2 || results[0].type_id === 4  ) {
 
                   console.log("results[0]",results[0])
                   res.status(200).send({
