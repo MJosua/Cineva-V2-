@@ -128,52 +128,38 @@ module.exports = {
 
 
         let userData = (await dbQuery(`
-               SELECT
-                        el.is_notified,
-                        me.email AS "to",
-                        p.person_notice cc,
-                        mo.order_id,
-                        mos.status_order,
-                        mo.po_buyer,
-                        mc.company_name,
-                        mc.company_id,
-                        mo.created_by user_id,
-                        GROUP_CONCAT(distinct d.email order by d.email separator ', ') as iod_mail
-                    FROM
-                        m_order mo
-                    LEFT JOIN event_logger el ON
-                        mo.order_id = el.order_id
-                            AND el.event_type = 2
-                    LEFT JOIN person p ON
-                            mo.created_by = p.person_id
-                    LEFT JOIN mst_employee me ON
-                            mo.created_by = me.person_id
-                    LEFT JOIN m_order_status mos ON
-                            mo.status = mos.id
-                    LEFT JOIN mst_company mc ON
-                            mc.company_id = mo.company_id
-                    left join map_resp_for_dist a on
-                    a.distributor_id = mc.company_id
-                    and NOW() between a.creation_date and coalesce(a.finish_date, '9999-12-31')
-                	left join mst_team b on
-                    a.team_id = b.team_id
-                    and a.company_id = b.company_id
-                    and b.active = 1
-                	left join mst_team_member c on
-                    b.team_id = c.team_id
-                    and b.company_id = c.company_id
-                	left join mst_employee d on
-                    a.company_id = d.company_id
-                    and c.employee_id = d.employee_id
-                    WHERE
-                            mo.status = 3
-                            AND 
-                            el.is_notified IS NULL 
-                          and 
-           					 b.team_category = 6
-            					and 
-            					me.email is not null
-                     group by po_buyer 
+        select
+            su.company_id,
+            su.employee_id as dist_employeeid,
+            me.email as dist_mail,
+            mc.company_name,
+            GROUP_CONCAT(distinct d.email order by d.email separator ', ') as iod_mail
+        from
+            sys_user su
+        left join mst_employee me on
+            su.employee_id = me.employee_id
+        left join mst_company mc on
+            su.company_id = mc.company_id
+        left join map_resp_for_dist a on
+            a.distributor_id = su.company_id
+            and NOW() between a.creation_date and coalesce(a.finish_date, '9999-12-31')
+        left join mst_team b on
+            a.team_id = b.team_id
+            and a.company_id = b.company_id
+            and b.active = 1
+        left join mst_team_member c on
+            b.team_id = c.team_id
+            and b.company_id = c.company_id
+        left join mst_employee d on
+            a.company_id = d.company_id
+            and c.employee_id = d.employee_id
+        where
+            su.company_id = ${dbConf.escape(company_id)}
+            and b.team_category = 6
+            and me.email is not null
+        group by
+            su.company_id,
+            me.email
         ;`))[0];
 
         // // IF YOU ALREADY SURE, THIS MUST BE PRODUCTION 
@@ -1048,7 +1034,7 @@ module.exports = {
         }, 1000);
     }
     ,
-    notifMailDeliver : async (
+    notifMailDeliver: async (
         order_id,
         dist_mail,
         str_carbon_copy,

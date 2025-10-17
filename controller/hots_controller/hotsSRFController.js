@@ -298,87 +298,71 @@ module.exports = {
     },
 
     getPONumbersrf: async (req, res) => {
+        try {
+            const today = new Date();
+            const deliveryYear = today.getFullYear();
+            const company_id = req.params.company_id;
+            if (!company_id) {
+                return res.status(401).send({
+                    success: false,
+                    message: "No company ID provided.",
+                });
+            }
 
-        const today = new Date();
-        let deliveryYear = today.getFullYear();
-        const company_id = req.params.company_id;
-        
-        let querygetPONumbersrf = ` 
-                select 
+            const query = `
+                SELECT 
                     tso.po_number,
-                   	GREATEST(
-				        tsd.quantity - COALESCE(SUM(trd.qty), 0),
-				        0
-				    ) AS remaining_qty,
-                    tsd.quantity as "quantity dari tsd",
-                    trd.qty  as "quantity dari trd",
+                    GREATEST(
+                        tsd.quantity - COALESCE(SUM(trd.qty), 0),
+                        0
+                    ) AS remaining_qty,
+                    tsd.quantity AS "quantity_dari_tsd",
+                    trd.qty AS "quantity_dari_trd",
                     tso.so_id,
                     tsd.sku_id                  
-                    from
-                    trs_so_detail tsd 
-                    join
-                    trs_sales_order tso 
-                    on
-                    tsd.so_id = tso.so_id and tsd.client_id = tso.client_id 
-                    join
-                    dat_cwo dc 
-                    on
-                    tsd.so_id = dc.so_id and tsd.sku_id = dc.product_code 
-                    left join
-                    trs_realization_detail trd 
-                    on
-                    tsd.so_id = trd.so_id and tsd.sku_id = trd.sku 
-                    where
-                    tso.client_id  in (${company_id})
-                    and
-                    dc.close = 0
-                    and 
-					year(tso.delv_date) >= ${deliveryYear}
-					group by 
-					tsd.so_id, tsd.sku_id  
-					HAVING  
-					remaining_qty > 0
-        `
+                FROM trs_so_detail tsd 
+                JOIN trs_sales_order tso 
+                    ON tsd.so_id = tso.so_id AND tsd.client_id = tso.client_id 
+                JOIN dat_cwo dc 
+                    ON tsd.so_id = dc.so_id AND tsd.sku_id = dc.product_code 
+                LEFT JOIN trs_realization_detail trd 
+                    ON tsd.so_id = trd.so_id AND tsd.sku_id = trd.sku 
+                WHERE tso.client_id = ?
+                    AND dc.close = 0
+                    AND YEAR(tso.delv_date) >= ?
+                GROUP BY tsd.so_id, tsd.sku_id, tso.po_number, tsd.quantity, trd.qty, tso.so_id
+                HAVING remaining_qty > 0
+            `;
 
-        param = req.dataToken.company_id
-
-
-        if (param) {
-
-            dbQuery.execute(querygetPONumbersrf, param, (err, res) => {
-
-
+            dbConf.execute(query, [company_id, deliveryYear], (err, results) => {
                 if (err) {
-                    res.status(500).send({
+                    return res.status(500).send({
                         success: false,
-                        message: `error get PO, no number `,
-                        err1
-                    })
-                } else {
-
-                    if (results1[0]) {
-                        res.status(200).send({
-                            success: false,
-                            message: "Cannot send email! No email Address founded!",
-                        });
-                        console.log(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => Cannot send email! No email Address founded!")
-
-                    }
-
+                        message: "Error retrieving PO numbers.",
+                        error: err.message,
+                    });
                 }
 
-            })
+                if (!results || results.length === 0) {
+                    return res.status(404).send({
+                        success: false,
+                        message: "No PO numbers found with remaining quantity.",
+                    });
+                }
 
+                res.status(200).send({
+                    success: true,
+                    data: results,
+                });
+            });
+        } catch (error) {
 
-        } else {
-            res.status(401).send({
+            res.status(500).send({
                 success: false,
-                message: `No Token Found `,
-                err1
-            })
+                message: "Unexpected server error.",
+                error: error.message,
+            });
         }
-
-
     },
 
 
