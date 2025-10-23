@@ -5,7 +5,7 @@ const express = require('express');
 const { API_URL, PORT } = require('./index');
 const { shippingMailNotificationManual } = require('./automation/notification');
 const { stuffingWeek } = require('./controller/order');
-const { orderController } = require('./controller');
+const { orderController, hotsSettingsController } = require('./controller');
 
 const App = express();
 App.listen(App.get('port'), () => {
@@ -20,24 +20,24 @@ const rl = readline.createInterface({
 rl.setPrompt('> ');
 rl.prompt();
 
-    const req = {
-      dataToken: { company_id: 999 }, // fake token for testing
-      query: {},
-      body: {}
-    };
-    const res = {
-        status(code) {
-          this.statusCode = code;
-          return this; // allow chaining like res.status(200).send()
-        },
-        send(data) {
-          console.log(`Response ${this.statusCode || 200}:`, data);
-        },
-        json(data) {
-          console.log(`Response ${this.statusCode || 200}:`, JSON.stringify(data, null, 2));
-        },
-      };
-  
+const req = {
+    dataToken: { company_id: 999 }, // fake token for testing
+    query: {},
+    body: {}
+};
+const res = {
+    status(code) {
+        this.statusCode = code;
+        return this; // allow chaining like res.status(200).send()
+    },
+    send(data) {
+        console.log(`Response ${this.statusCode || 200}:`, data);
+    },
+    json(data) {
+        console.log(`Response ${this.statusCode || 200}:`, JSON.stringify(data, null, 2));
+    },
+};
+
 
 
 rl.on('line', async (input) => {
@@ -77,9 +77,15 @@ rl.on('line', async (input) => {
 
     }
 
-    else if (cmd === 'cekweek') {
+    else if (cmd === 'cekweekada') {
 
         await orderController.stuffingWeek(req, res, true);
+    }
+
+    else if (cmd === 'cekweek') {
+
+        await hotsSettingsController.todaysweek(req,res);
+
     }
 
     else {

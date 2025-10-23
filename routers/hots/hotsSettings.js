@@ -106,7 +106,7 @@ route.get('/get_srf_sku', decodeTokenHT, hotsSRFController.getAllSkunRM)
 route.get('/get_srf_purpose', decodeTokenHT, hotsSRFController.getPurpose)
 route.get('/get_srf_po/:company_id', decodeTokenHT, hotsSRFController.getPONumbersrf)
 
-
+route.get('/get_srf/todaysweek', decodeTokenHT, hotsSettingsController.todaysweek)
 
 //Data Update
 route.get('/get_data_update_service', decodeTokenHT, hotsSettingsController.getservice_dataupdate)

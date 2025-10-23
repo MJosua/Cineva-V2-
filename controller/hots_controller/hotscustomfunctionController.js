@@ -740,6 +740,18 @@ module.exports = {
             return cleanValue(row?.cstm_col || '');
         };
 
+        const getSelectedFilterByLabel = (labelKeyword) => {
+            if (!Array.isArray(req.body)) return null;
+
+            const entry = req.body.find(
+                (item) =>
+                    item.label?.toLowerCase().includes(labelKeyword.toLowerCase()) &&
+                    item.selectedObject
+            );
+
+            return entry?.selectedObject?.filter ?? null;
+        };
+
         const getteamleaderEmail = async (teamId) => {
             try {
                 const query = `
@@ -765,8 +777,17 @@ module.exports = {
         const getFactoryPPIC = async (factory) => {
             try {
                 const query = `
-                        SELECT pic_name, flag FROM iod.map_factory_pic WHERE LOWER(remarks) LIKE '%${factory}%'
-                        order by flag
+                                  select
+                                        pic_name,
+                                        flag
+                                    from
+                                        iod.map_factory_pic
+                                    where
+                                        plant_id = ${factory}
+                                        and 
+                                                end_date is null
+                                    order by
+                                        flag
                     `;
                 const result = await dbQuery(query);
                 console.log("result", result)
@@ -843,12 +864,15 @@ module.exports = {
 
 
         const teamLeader = await getteamleaderEmail(17);
-        const factoryPIC = await getFactoryPPIC(getByLabel('factory'));
+        const factoryPIC = await getFactoryPPIC(getByLabel('Factory_id'));
         const approvallist = await getApproval(data?.ticket_id);
         const factory = getByLabel('factory');
+        const factory_id = getByLabel('Factory_id');
         const sample = getByLabel('sample');
         const generatesrf = await getSRFNumber(factory, sample);
 
+
+        console.log("factoryPIC", factoryPIC)
 
         const getAllEmployees = async (data, approvallist) => {
             try {
@@ -944,6 +968,10 @@ module.exports = {
             }
         });
 
+        const toPICs = factoryPIC.filter(p => p.flag === 1).map(p => p.pic_name);
+
+        // Group 2 (Cc)
+        const ccPICs = factoryPIC.filter(p => p.flag === 2).map(p => p.pic_name);
 
         const html = `
               <html>
@@ -986,7 +1014,7 @@ module.exports = {
                 <table class="no-border">
                   <tr>
                     <td><strong>PT. INDOFOOD CBP SUKSES MAKMUR</strong></td>
-                    <td style="text-align:right;">To&nbsp;: <em>${factoryPIC[0].pic_name} </em> </td>
+                    <td style="text-align:right;">To&nbsp;: <em> ${toPICs.join(', ')} </em> </td>
                   </tr>
                   <tr>
                     <td><strong>Division</strong>&nbsp;: IOD </td>
@@ -1026,13 +1054,13 @@ module.exports = {
                     <table class="no-border">
                     <tr>
                         <td class="label">To</td>
-                        <td class="content">: ${factoryPIC[0].pic_name}</td>
+                        <td class="content">:  ${toPICs.join(', ')}</td>
                         <td class="label">Name/Title</td>
                         <td class="content">: ${getByLabel('name')}</td>
                     </tr>
                     <tr>
                         <td class="label">Cc</td>
-                        <td class="content">: ${factoryPIC.slice(1).filter(Boolean).map(p => p.pic_name).join(',')}</td>
+                        <td class="content">:  ${ccPICs.join(', ')}</td>
                         <td class="label">Purposes</td>
                         <td class="content">: ${getByLabel('purpose')}</td>
                     </tr>
@@ -1070,21 +1098,22 @@ module.exports = {
                     ${getByLabel('PO_Number') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${getByLabel('PO_Number')}</p>` : ''}
                     ${getByLabel('Week Delivery') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>` : ''}
                     <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('Declare') === 1 ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
-                    ${getByLabel('notes') ? `<p>${getByLabel('notes')}</p>` : ''}
     
                 </div>
     
                 <div class="note">
                     <strong>Note:</strong>
                    <br>
-
+                    ${getByLabel('Request Detail') ? `<p>${getByLabel('Request Detail')}</p>` : ''}
                      ${notesHtml}
                   <strong>Thank you</strong>
                 </div>
           
-                <table class="approval-table">
+                <table class="approval-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
+ 
                  <tr class="bold">
                     <td style="text-align:center; vertical-align:middle;">Request by</td>
+                    <td style="text-align:center; vertical-align:middle;">Approved by</td>
                     <td style="text-align:center; vertical-align:middle;">Approved by</td>
                     <td style="text-align:center; vertical-align:middle;">Approved by</td>
                 </tr>
@@ -1104,6 +1133,7 @@ module.exports = {
                         <br>
                         <span style="font-size:12px;color:#555;">${data.business_analyst || 'Business Analyst'}</span>
                     </td>
+                    
     
                     <td style="padding:10px;vertical-align:top;">
 
@@ -1112,18 +1142,24 @@ module.exports = {
                               <div style="height: 100%; max-height:130px; display:flex; align-items: center;">
                                 <img
                                   alt="sign"
-                                  src="https://backend.indofoodinternational.com:2864/ttd/sign-${employees[2].employee_id}.jpg"
+                                  src="https://backend.indofoodinternational.com:2864/ttd/sign-${employees[1].employee_id}.jpg"
                                   style="width:120px;display:block;margin:0 auto 5px auto;"
                                 />
                               </div>
                               `
-                : ''
+                :
+                `   
+                 <div style="height: 100%; max-height:130px; display:flex; align-items: center;">
+                                
+                              </div>
+                `
+
             }    
                    
                         <br>
-                        ${approvallist.find(a => a.approval_order === 2)?.fullname || ''}
+                        ${approvallist.find(a => a.approval_order === 1)?.fullname || ''}
                         <br>
-                        <span style="font-size:12px;color:#555;">Logistics Manager</span>
+                        <span style="font-size:12px;color:#555;">Regional Manager</span>
                     </td>
     
                     <td style="padding:10px;vertical-align:top;">
@@ -1140,13 +1176,46 @@ module.exports = {
                          </div>
                          `
                 :
-                ''
+                `   
+                <div style="height: 100%; max-height:130px; display:flex; align-items: center;">
+                               
+                             </div>
+               `
 
             }   
                     
                    
                         <br>
                         ${approvallist.find(a => a.approval_order === 3)?.fullname || ''}
+                        <br>
+                        <span style="font-size:12px;color:#555;">Logistic Manager</span>
+                    </td>
+
+                    <td style="padding:10px;vertical-align:top;">
+
+                       ${approvallist[3] && approvallist[3].approve_date ?
+                `
+                            <div style="height: 100%; max-height:130px;display:flex; align-items: center;">
+
+                        <img
+                        alt="sign"
+                        src="https://backend.indofoodinternational.com:2864/ttd/sign-${employees[4].employee_id}.jpg"
+                        style="width:120px;display:block;margin:0 auto 5px auto;"
+                         />
+                         </div>
+                         `
+                :
+                `   
+                <div style="height: 100%; max-height:130px; display:flex; align-items: center;">
+                               
+                             </div>
+               `
+
+            }   
+                    
+                   
+                        <br>
+                        ${approvallist.find(a => a.approval_order === 4)?.fullname || ''}
                         <br>
                         <span style="font-size:12px;color:#555;">Accounting Manager</span>
                     </td>

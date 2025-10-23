@@ -1,6 +1,7 @@
 const {
     dbHots,
     dbQueryHots,
+    dbQuery,
     // addSqlLogger
 } = require("../../config/db");
 // const cookieParser = require('cookie-parser');
@@ -516,7 +517,7 @@ module.exports = {
 
         // cari username dulu
         const queryGetData = `
-       SELECT *
+        SELECT *
             FROM m_plant
             WHERE category != 'NICI/FS';
 
@@ -2484,6 +2485,67 @@ module.exports = {
             });
         }
     },
+
+    todaysweek: async (req, res) => {
+        try {
+          const currentDate = new Date();
+          const timestamp =
+            yellowTerminal +
+            currentDate.toLocaleDateString('id') +
+            ' ' +
+            currentDate.toLocaleTimeString('id') +
+            ' : ';
+          const user_id = req.dataToken.user_id;
+          const deliveryYear = currentDate.getFullYear();
+      
+          // --- Step 1: Get today's operational calendar ID ---
+          const todayOpcalQuery = `
+            SELECT opcal_id FROM dat_operational_calendar WHERE DATE(FROM_UNIXTIME(opcal_id * 100)) = CURDATE() LIMIT 1
+          `;
+          const todayOpcal = await dbQuery(todayOpcalQuery);
+          const strTodayCalId = todayOpcal?.[0]?.opcal_id ?? null;
+      
+          if (!strTodayCalId) {
+            console.log(timestamp, 'No matching operational calendar for today');
+            return res.status(404).json({
+              status: 'error',
+              message: 'No operational calendar found for today.',
+            });
+          }
+      
+          // --- Step 2: Get Delivery Week Info ---
+          const sql = `
+            SELECT week, delivery_week, year 
+            FROM dat_operational_calendar 
+            WHERE 
+              opcal_id >= ${strTodayCalId}
+              AND year >= ${deliveryYear}
+              AND factory_id = 1
+              AND product_type_id = 256
+            ORDER BY opcal_id
+            LIMIT 1
+          `;
+          const deliveryData = await dbQuery(sql);
+          const actualWeek = deliveryData?.[0]?.week ?? 0;
+      
+          // --- Step 3: Return the result ---
+          return res.status(200).json({
+            status: 'success',
+            data: {
+              actualWeek,
+              deliveryYear,
+            },
+          });
+        } catch (error) {
+          console.error('Error in todaysweek:', error);
+          return res.status(500).json({
+            status: 'error',
+            message: 'Internal server error.',
+            error: error.message,
+          });
+        }
+      },
+      
 
 
 

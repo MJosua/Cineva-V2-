@@ -603,6 +603,8 @@ module.exports = {
                     </p>
                    </div>
                        `
+
+
             const mailLogId = await module.exports.insertMailerLog({
                 subject: `[E-Order] Order Submission ${po_buyer} is Successful!`,
                 body: analysthtml,
@@ -624,11 +626,10 @@ module.exports = {
                 console.log(timestamp + 'Email Sent to analis :' + emailAnalisList)
                 await module.exports.markMailerSent(mailLogId);
             } catch (error) {
-                console.log(timestamp + "MAILER ERROR, Message: " + error)
+                console.log(timestamp + "MAILER ERROR when try to sent mail to analyst, Message: " + error)
             }
 
         }
-        // });
     }
     ,
     forgotPasswordMailSender: async (targetMail, token) => {

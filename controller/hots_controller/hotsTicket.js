@@ -3991,6 +3991,8 @@ module.exports = {
             });
         }
 
+        console.log("req.body", req.body)
+
         try {
             // Get service details
             const [serviceResult] = await dbHots.promise().execute(`
@@ -4036,18 +4038,93 @@ module.exports = {
 
             // Insert ticket detail
             const detailInsertPromises = [];
-            for (let i = 1; i <= 16; i++) {
-                const cstmColValue = formData[`cstm_col${i}`] || '';
-                const lblColValue = formData[`lbl_col${i}`] || '';
-                if (cstmColValue || lblColValue) {
-                    detailInsertPromises.push(dbHots.promise().execute(`
-                        INSERT INTO t_ticket_detail (
-                            ticket_id, cstm_col, lbl_col, order_col
-                        ) VALUES (?, ?, ?, ?)
-                    `, [ticket_id, cstmColValue, lblColValue, i]));
+            let orderCounter = 0;
+
+            const entries = Object.entries(formData)
+                .filter(([key]) => !isNaN(Number(key))) // only numbered keys
+                .sort(([a], [b]) => Number(a) - Number(b));
+
+            for (const [index, item] of entries) {
+                const { label, value, type, rows, combinedMapping } = item;
+
+                // --- Handle normal fields ---
+                if (type !== "rowgroup") {
+                    if (value !== "" && value !== undefined && value !== null) {
+                        detailInsertPromises.push(
+                            dbHots.promise().execute(
+                                `INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, order_col)
+             VALUES (?, ?, ?, ?)`,
+                                [ticket_id, value, label, orderCounter]
+                            )
+                        );
+                        orderCounter++;
+                    }
+                    continue;
+                }
+
+                // --- Handle Rowgroup ---
+                if (type === "rowgroup" && Array.isArray(rows)) {
+                    for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+                        const row = rows[rowIndex];
+
+                        // Define labels for clarity
+                        const colLabels = {
+                            firstValue: "Item Name",
+                            secondValue: "Quantity",
+                            thirdValue: "Unit",
+                        };
+
+                        // 🔹 Combined mapping parts (e.g., ['second','third'])
+                        const combinedParts = combinedMapping ? combinedMapping.split("_") : [];
+
+                        // 🔹 Step 1: Insert uncombined columns (those NOT in combinedParts)
+                        const uncombinedCols = Object.keys(colLabels).filter(
+                            (key) => !combinedParts.includes(key.replace("Value", ""))
+                        );
+
+                        for (const colKey of uncombinedCols) {
+                            const val = row[colKey];
+                            if (val) {
+                                detailInsertPromises.push(
+                                    dbHots.promise().execute(
+                                        `INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, order_col)
+                               VALUES (?, ?, ?, ?)`,
+                                        [ticket_id, val, colLabels[colKey], orderCounter]
+                                    )
+                                );
+                                orderCounter++;
+                            }
+                        }
+
+                        // 🔹 Step 2: Insert combined value (if defined)
+                        if (combinedParts.length > 0) {
+                            const combinedValues = combinedParts
+                                .map((p) => row[`${p}Value`])
+                                .filter(Boolean);
+                            const combinedLabels = combinedParts
+                                .map((p) => colLabels[`${p}Value`])
+                                .filter(Boolean);
+
+                            if (combinedValues.length > 0) {
+                                const combinedVal = combinedValues.join(" ");
+                                const combinedLabel = combinedLabels.join(" / ");
+                                detailInsertPromises.push(
+                                    dbHots.promise().execute(
+                                        `INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, order_col)
+                               VALUES (?, ?, ?, ?)`,
+                                        [ticket_id, combinedVal, combinedLabel, orderCounter]
+                                    )
+                                );
+                                orderCounter++;
+                            }
+                        }
+                    }
                 }
             }
+
+
             await Promise.all(detailInsertPromises);
+
 
 
             // Approval events
@@ -4058,8 +4135,8 @@ module.exports = {
                     approvalPromises.push(dbHots.promise().execute(`
                         INSERT INTO t_approval_event (
                             approval_id, approver_id, approval_order, approval_status,
-                            step_type, assigned_value
-                        ) VALUES (?, ?, ?, 0, 'user', ?)
+                            step_type, assigned_value, approver_leader
+                        ) VALUES (?, ?, ?, 0, 'user', ?, 1)
                     `, [ticket_id, step.assigned_value, step.step_order, step.assigned_value]));
 
                 } else if (step.step_type === 'team') {
@@ -4087,8 +4164,8 @@ module.exports = {
                         approvalPromises.push(dbHots.promise().execute(`
                             INSERT INTO t_approval_event (
                                 approval_id, approver_id, approval_order, approval_status,
-                                step_type, assigned_value
-                            ) VALUES (?, ?, ?, 0, 'role', ?)
+                                step_type, assigned_value, approver_leader
+                            ) VALUES (?, ?, ?, 0, 'role', ?, 1)
                         `, [ticket_id, user.user_id, step.step_order, step.assigned_value]));
                     }
 
@@ -4110,8 +4187,8 @@ module.exports = {
                         approvalPromises.push(dbHots.promise().execute(`
                             INSERT INTO t_approval_event (
                                 approval_id, approver_id, approval_order, approval_status,
-                                step_type, assigned_value
-                            ) VALUES (?, ?, ?, 0, 'superior', ?)
+                                step_type, assigned_value, approver_leader
+                            ) VALUES (?, ?, ?, 0, 'superior', ?, 1)
                         `, [ticket_id, approverId, step.step_order, approverId]));
                     }
                 }
@@ -5090,7 +5167,7 @@ module.exports = {
 
             console.log(timestamp, `Step ${current_step} approved for ticket ${ticket_id}`);
 
-           
+
 
             // Check for next pending step
             const [nextStepCheck] = await conn.query(`
@@ -5118,7 +5195,7 @@ module.exports = {
 
                 console.log(timestamp, `Ticket ${ticket_id} moved to step ${nextStep}`);
             } else {
-               
+
 
                 console.log(timestamp, `Ticket ${ticket_id} fully approved`);
 
@@ -5237,7 +5314,7 @@ module.exports = {
                     resolve();
                     return;
                 }
-                console.log("customFunctions",customFunctions)
+                console.log("customFunctions", customFunctions)
                 // Get complete ticket data
                 const getTicketDataQuery = `
                 SELECT 
@@ -5271,23 +5348,23 @@ module.exports = {
                         // Execute each custom function
                         for (const customFunction of customFunctions) {
                             console.log(`Executing function: ${customFunction.name} (ID: ${customFunction.id})`);
-                            
+
                             let functionData = {};
 
                             if (typeof customFunction.config === 'string') {
-                              try {
-                                functionData = JSON.parse(customFunction.config);
-                              } catch (err) {
-                                console.error('Invalid JSON in customFunction.config:', err);
-                                functionData = {};
-                              }
+                                try {
+                                    functionData = JSON.parse(customFunction.config);
+                                } catch (err) {
+                                    console.error('Invalid JSON in customFunction.config:', err);
+                                    functionData = {};
+                                }
                             } else if (typeof customFunction.config === 'object' && customFunction.config !== null) {
-                              functionData = { ...customFunction.config };
+                                functionData = { ...customFunction.config };
                             }
-                            
+
                             functionData.function_id = customFunction.id;
                             functionData.trigger_event = customFunction.trigger_event;
-                            
+
                             // Map ticket data to template variables
                             const variables = module.exports.mapTicketDataToVariables(ticket, ticketData);
 
@@ -5311,7 +5388,7 @@ module.exports = {
                                 ticketId,
                                 customFunction.name,
                                 triggerEvent,
-                                
+
                                 ticketData.created_by,
                                 serviceId
                             ], (logErr, logResult) => {
