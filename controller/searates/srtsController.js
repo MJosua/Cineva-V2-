@@ -261,7 +261,7 @@ module.exports = {
         }
     },
 
-  
+
 
     GetSeaRatesTrackNumber: async (req, res) => {
 
@@ -484,7 +484,7 @@ module.exports = {
             }
             const routepod = record.data?.route;
 
-            if (routepod.pod.actual === true) {
+            if (routepod?.pod?.actual === true) {
 
 
 
@@ -852,7 +852,6 @@ module.exports = {
                         data: searatesRes.data
                     });
                 } catch (err) {
-                    console.error("Error calling Searates fallback:", err);
                     return res.status(500).send({ error: "Fallback API failed", details: err });
 
                     console.warn("⚠️ SeaRates timeout. Retrying...");
@@ -1069,8 +1068,10 @@ module.exports = {
         let so_id
         so_id = req.params.so_id ? req.params.so_id.toLocaleString() : "0";
 
+        console.log("number", number)
+        console.log("so_id", so_id)
+        console.log("req.query", req.query)
 
-        console.log("so_id dari GetSeaRatesTrackNumberandsoid", so_id)
         const sealine = req.params?.sealine?.toLocaleString() || "auto";
         const refresh = req.query?.refresh === "true" ? true : false;
 
@@ -1081,7 +1082,7 @@ module.exports = {
             console.log("record", record)
             const metadata = record.data.metadata;
             connection = await dbConf.promise().getConnection();
-            console.log("record", record)
+            console.log("metadata", record.data.metadata)
             // 🟢 Save shipment (UPSERT)
             const shipmentQuery = `
                 INSERT INTO shipments(
@@ -1281,7 +1282,8 @@ module.exports = {
             }
             const routepod = record.data?.route;
 
-            if (routepod.pod.actual === true) {
+            console.log("routepod", routepod)
+            if (routepod?.pod?.actual === true) {
 
 
 
@@ -1484,9 +1486,19 @@ module.exports = {
                         left join sea_rates.pol pol 
                             on
                             s.shipment_id = pol.shipment_id
+                        left join iod.trs_invoice ti 
+                        	on
+                        	s.number = ti.bl_no
+                        left join iod.trs_realization tr 
+                        	on
+                        	tr.invoice_id  = ti.invoice_id 
                         where
                             (
-                                cast(s.so_id as CHAR) = ?
+                                cast(tr.so_id as CHAR) = ?
+                            )
+                            or
+                               (
+                                cast(ti.invoice_id  as CHAR) = ?
                             )
                             or (
                                 s.number = ?
@@ -1510,24 +1522,31 @@ module.exports = {
                             )
                         order by
                             e.date desc;
-            `
+                    `
                 ;
-            const results = await dbQuerySR(query, [so_id, number, number]);
+            const results = await dbQuerySR(query, [so_id, so_id, number, number]);
             let reload = false; // default q
+
+
             if (refresh && results) {
                 const lastUpdate = new Date(results[0].last_updated_date);
                 const now = new Date();
                 const diffMs = now - lastUpdate;
                 const diffHours = diffMs / (1000 * 60 * 60);
 
+
+
                 if (diffHours >= 5) {
+                    reload = true;
+                } else if (results[0].so_id === null || results[0].so_id === 0 || results[0].so_id === "0") {
+                    console.log("results[0].so_id", results[0].so_id)
                     reload = true;
                 }
 
             }
+            console.log("reload", reload.toLocaleString())
 
-
-            if (results.length < 1 || reload.toLocaleString() === "true") {
+            if (results.length < 1 || reload === true) {
 
                 try {
 
@@ -1649,7 +1668,6 @@ module.exports = {
                         data: searatesRes.data
                     });
                 } catch (err) {
-                    console.error("Error calling Searates fallback:", err);
                     return res.status(500).send({ error: "Fallback API failed", details: err });
 
                     console.warn("⚠️ SeaRates timeout. Retrying...");
@@ -1657,11 +1675,12 @@ module.exports = {
                     return axios.get(url, { timeout: 5000 }); // one retry
 
                 }
-            } else {
+            }
+            else {
 
+                console.log("Call Searates Success using backend for SO ID : ", results[0])
 
                 const shipmentData = {};
-                console.log("Call Searates Success using backend for SO ID : ", results[0].so_id)
                 results.forEach(row => {
                     const shipmentId = row.shipments_id;
                     if (!shipmentData[shipmentId]) {
@@ -2258,7 +2277,6 @@ module.exports = {
                         data: searatesRes.data
                     });
                 } catch (err) {
-                    console.error("Error calling Searates fallback:", err);
                     return res.status(500).send({ error: "Fallback API failed", details: err });
                 }
             } else {
