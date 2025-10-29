@@ -588,17 +588,11 @@ module.exports = {
 
         let user_id = req.dataToken.user_id
 
-        const queryGetData = `
-        SELECT distinct mc.company_id company_id, upper(mc.company_name) company_name FROM iod.map_resp_for_dist md LEFT JOIN iod.mst_team mt ON md.team_id = mt.team_id AND md.company_id = mt.company_id  
-        LEFT JOIN iod.mst_team_member mtm ON mtm.team_id = mt.team_id AND mtm.company_id = mt.company_id LEFT JOIN iod.mst_employee me ON mtm.employee_id = me.employee_id
-        LEFT JOIN user u ON me.employee_id = u.employee_id 
-        LEFT JOIN iod.mst_company mc ON md.distributor_id = mc.company_id 
-        WHERE u.user_id = ${user_id}
-        UNION 
-        SELECT 999998, 'SPIT IOD - Lt. 23' company_name
-        UNION 
-        SELECT 999999, upper('Kedutaan Besar Republik Indonesia (KBRI)') company_name
-        ORDER BY 1 asc 
+        const queryGetData = `              
+            select * from iod.v_hots_linked_dist vhld 
+            where vhld.user_id = ${user_id}
+            or
+            vhld.user_id = 0
         `;
 
         dbHots.execute(queryGetData, (err1, results1) => {

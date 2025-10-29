@@ -310,31 +310,13 @@ module.exports = {
             }
 
             const query = `
-                SELECT 
-                    tso.po_number,
-                    GREATEST(
-                        tsd.quantity - COALESCE(SUM(trd.qty), 0),
-                        0
-                    ) AS remaining_qty,
-                    tsd.quantity AS "quantity_dari_tsd",
-                    trd.qty AS "quantity_dari_trd",
-                    tso.so_id,
-                    tsd.sku_id                  
-                FROM trs_so_detail tsd 
-                JOIN trs_sales_order tso 
-                    ON tsd.so_id = tso.so_id AND tsd.client_id = tso.client_id 
-                JOIN dat_cwo dc 
-                    ON tsd.so_id = dc.so_id AND tsd.sku_id = dc.product_code 
-                LEFT JOIN trs_realization_detail trd 
-                    ON tsd.so_id = trd.so_id AND tsd.sku_id = trd.sku 
-                WHERE tso.client_id = ?
-                    AND dc.close = 0
-                    AND YEAR(tso.delv_date) >= ?
-                GROUP BY tsd.so_id, tsd.sku_id, tso.po_number, tsd.quantity, trd.qty, tso.so_id
-                HAVING remaining_qty > 0
+                                       
+            select * from v_hots_po_onhand vhpo
+            where client_id = ?
+
             `;
 
-            dbConf.execute(query, [company_id, deliveryYear], (err, results) => {
+            dbConf.execute(query, [company_id], (err, results) => {
                 if (err) {
                     return res.status(500).send({
                         success: false,

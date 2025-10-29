@@ -4206,6 +4206,8 @@ module.exports = {
 
             // Custom functions
             await module.exports.callexecuteCustomFunctions(service_id, ticket_id);
+
+            console.log("mailAddress",mailAddress)
             if (mailAddress && mailAddress.length > 0) {
                 hotsSubmitMailer(false, ticket_id, user_name, service.service_name, mailAddress[0].email);
             }

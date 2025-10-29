@@ -1095,7 +1095,7 @@ module.exports = {
           
                 <div class="note">
                     <strong>Request Detail:</strong>
-                    ${getByLabel('PO_Number') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${getByLabel('PO_Number')}</p>` : ''}
+                    ${getByLabel('PO Number') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${getByLabel('PO Number')}</p>` : ''}
                     ${getByLabel('Week Delivery') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>` : ''}
                     <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('Declare') === 1 ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
     
