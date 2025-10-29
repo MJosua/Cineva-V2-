@@ -1496,10 +1496,6 @@ module.exports = {
                             (
                                 cast(tr.so_id as CHAR) = ?
                             )
-                            or
-                               (
-                                cast(ti.invoice_id  as CHAR) = ?
-                            )
                             or (
                                 s.number = ?
                                 and s.shipment_id = (
@@ -1524,9 +1520,10 @@ module.exports = {
                             e.date desc;
                     `
                 ;
-            const results = await dbQuerySR(query, [so_id, so_id, number, number]);
+            const results = await dbQuerySR(query, [so_id, number, number, number]);
             let reload = false; // default q
 
+        
 
             if (refresh && results) {
                 const lastUpdate = new Date(results[0].last_updated_date);
