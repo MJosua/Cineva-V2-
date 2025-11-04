@@ -329,6 +329,7 @@ const {
   mbsettings,
   mbtimeslots,
   mbusers,
+  hotsdashboard,
 } = require("./routers");
 
 
@@ -419,6 +420,9 @@ App.use("/hots_Tps", hotsTps);
 //hots custom function
 App.use("/hots_customfunction", hotscustomfunction);
 
+
+App.use("/hotsdashboard", hotsdashboard);
+
 App.use('/public', express.static(path.join(__dirname, 'public')));
 
 
@@ -427,6 +431,19 @@ App.use(express.static(path.join(__dirname, 'public')));
 
 App.use('/public/files/hots/it_support', express.static(path.join(__dirname, 'public', 'files', 'hots', 'it_support')));
 
+
+App.use((req, res, next) => {
+  res.setTimeout(15000, () => {
+    console.warn("⏳ Timeout on request:", req.originalUrl);
+    res.status(504).send({ error: "Timeout" });
+  });
+  next();
+});
+
+setInterval(async () => {
+  const [rows] = await dbConf.promise().query("SHOW STATUS LIKE 'Threads_connected'");
+  console.log(`🔍 Active MySQL connections: ${rows[0].Value}`);
+}, 30000);
 
 App.get('/public/files/hots/it_support/:imageId', (req, res) => {
   const imageId = req.params.imageId;

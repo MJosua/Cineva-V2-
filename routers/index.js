@@ -27,15 +27,18 @@ const trademarkRouter = require('./trademark')
 const authRouterTest = require('./auth_test')
 const productRouterTest = require('./product_test')
 const cardGenerator = require('./cardGenerator')
+
+const shortener = require('./shortener')
+const srtsRouter = require('./searates/srtsRouter')
+
+// HOTS
+const hotsTps = require('./hots/hotsTps')
 const hotsAuth = require('./hots/hotsAuth')
 const hotsAdmin = require('./hots/hotsAdmin')
 const hotsTicket = require('./hots/hotsTicket')
 const hotsSettings = require('./hots/hotsSettings')
-const shortener = require('./shortener')
-const hotsTps = require('./hots/hotsTps')
-const srtsRouter = require('./searates/srtsRouter')
-
 const hotscustomfunction = require('./hots/hotscustomfunction')
+const hotsdashboard = require('./hots/hotsdashboard')
 
 // Project Manager routes
 const projectmngr = require('./project_manager/project_routes')
@@ -78,15 +81,19 @@ module.exports = {
     authRouterTest,
     productRouterTest,
     cardGenerator,
+    eventRouter,
+    shortener,
+  
+    srtsRouter,
+
+    // hots
+    hotsTps,
+    hotscustomfunction,
     hotsAuth,
     hotsAdmin,
     hotsTicket,
     hotsSettings,
-    eventRouter,
-    shortener,
-    hotsTps,
-    hotscustomfunction,
-    srtsRouter,
+    hotsdashboard,
 
     // Project Manager modules
     projectmngr,

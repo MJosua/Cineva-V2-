@@ -834,7 +834,7 @@ module.exports = {
                     // 🔥 Panggil logic UPSERT penuh
 
                     if (record.data) {
-                        saveSearatesRecord(record);
+                        await saveSearatesRecord(record);
                         return res.status(200).send({
                             message: "No data found manually on database, here is data from searates",
                             data: { data: searatesRes.data }
@@ -1043,17 +1043,26 @@ module.exports = {
         }
 
         async function callaxios(url) {
+            const controller = new AbortController();
+            const timeoutMs = 8000;
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+
             try {
-                const res = await axios.get(url, { timeout: 5000 });
+                const res = await axios.get(url, {
+                    signal: controller.signal,
+                    headers: { 'Accept': 'application/json' },
+                });
                 return res.data;
-                console.log("res.data", res.data)
             } catch (err) {
-                if (err.code === 'ECONNABORTED') {
-                    console.warn("⚠️ SeaRates timeout. Retrying...");
-                    await new Promise(r => setTimeout(r, 2000));
-                    return axios.get(url, { timeout: 5000 }); // one retry
+                if (err.name === 'AbortError' || err.code === 'ECONNABORTED') {
+                    console.warn(`⚠️ SeaRates call timeout: ${url}`);
+                    await new Promise(r => setTimeout(r, 2000)); // retry wait
+                    return await axios.get(url, { signal: controller.signal }).then(r => r.data);
                 }
+                console.error(`❌ SeaRates call failed: ${err.message}`);
                 throw err;
+            } finally {
+                clearTimeout(timer);
             }
         }
 
@@ -1079,6 +1088,7 @@ module.exports = {
         // 📌 Fungsi reusable untuk simpan data Searates ke DB
         async function saveSearatesRecord(record) {
             let connection;
+
             console.log("record", record)
             const metadata = record.data.metadata;
             connection = await dbConf.promise().getConnection();
@@ -1523,7 +1533,7 @@ module.exports = {
             const results = await dbQuerySR(query, [so_id, number, number, number]);
             let reload = false; // default q
 
-        
+
 
             if (refresh && results) {
                 const lastUpdate = new Date(results[0].last_updated_date);
@@ -1647,7 +1657,7 @@ module.exports = {
                     // 🔥 Panggil logic UPSERT penuh
 
                     if (record.data) {
-                        saveSearatesRecord(record);
+                        await saveSearatesRecord(record);
                         return res.status(200).send({
                             message: "No data found manually on database, here is data from searates",
                             data: { data: searatesRes.data }
@@ -1854,6 +1864,8 @@ module.exports = {
         } catch (error) {
             console.log(timestamp + " Error at User => GetSeaRatesTrackNumber:", error);
             return res.status(500).send({ error: "Internal Server Error", details: error });
+        } finally {
+            if (connection) connection.release();
         }
 
         async function callaxios(url) {

@@ -77,7 +77,7 @@ module.exports = {
         let service_id = 7; // IT Support Request
         const { type, issue_desc } = req.body;
 
-        if (req.dataToken.user_id) {
+        if (req.dataToken.user_type) {
             try {
                 const [resSuperior] = await dbHots.promise().query(queryCheckSuperiorRow, [req.dataToken.user_id]);
                 const { superior_id: superiorID, final_superior_id: headId } = resSuperior[0];

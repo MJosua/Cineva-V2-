@@ -5,7 +5,7 @@ const express = require('express');
 const { API_URL, PORT } = require('./index');
 const { shippingMailNotificationManual } = require('./automation/notification');
 const { stuffingWeek } = require('./controller/order');
-const { orderController, hotsSettingsController } = require('./controller');
+const { orderController, hotsSettingsController, hotsDashboardController } = require('./controller');
 
 const App = express();
 App.listen(App.get('port'), () => {
@@ -23,8 +23,17 @@ rl.prompt();
 const req = {
     dataToken: { company_id: 999 }, // fake token for testing
     query: {},
-    body: {}
+    body: {},
+    user: {
+        id: 1,
+        username: "yosuaXG",
+        role_name: "admin",         
+        department_name: "IT",      // 👈 optional: adjust to 'HR', 'Finance', etc.
+        email: "yosua.prima@gmail.com",
+    },
 };
+
+
 const res = {
     status(code) {
         this.statusCode = code;
@@ -84,7 +93,13 @@ rl.on('line', async (input) => {
 
     else if (cmd === 'cekweek') {
 
-        await hotsSettingsController.todaysweek(req,res);
+        await hotsSettingsController.todaysweek(req, res);
+
+    }
+
+    else if (cmd === "dashboardtest") {
+
+        await hotsDashboardController.getDashboardFunctions(req, res);
 
     }
 
