@@ -1,212 +1,167 @@
-// //========================= LEGACY API ===============================//
-// const mysql = require('mysql');
+//========================= DATABASE CONFIG =========================//
+const mysql = require("mysql2");
+const os = require("os");
 
-// //THE CONNECTION (API and MySQL) WILL ALWAYS OPEN
-// //THIS ONLY FOR LAPTOP OR DEVELOPMENT USE
-// //const dbConf = mysql.createConnection()
-
-
-// //THE CONNECTION (API and MySQL) WILL OPEN WHEN THERE IS A REQUEST
-// //THIS CAN BE USED ON LAPTOP OR DEVELOPMENT USE EITHER ON SERVER USE
-// const dbConf = mysql.createPool({
-//     host: process.env.DB_HOST,
-//     user: process.env.DB_USER,
-//     password: process.env.DB_PASSWORD,
-//     database: process.env.DB_NAME
-//     //noneedport cause its default
-// })
-
-// module.exports = { dbConf } 
-//========================= API FOR IOD E-ORDER =========================//
-
-
-const mysql = require('mysql2');
-const mysqlmb = require('mysql2/promise');
-
-const util = require('util');
-const os = require('os');
-
-//server status
+// =============================================================== //
+// 🔹 Server Mode Detection
 function production() {
-    function getLocalIp() {
-        const networkInterfaces = os.networkInterfaces();
-        // console.log("networkInterfaces", networkInterfaces)
-        for (const interfaceName in networkInterfaces) {
-            const addresses = networkInterfaces[interfaceName];
-            for (const address of addresses) {
-                if (address.family === 'IPv4' && !address.internal) {
-                    // console.log("address.address sss", address.address)
-                    return address.address; // Return the local IP address
-                }
-            }
-        }
-        return '127.0.0.1'; // Fallback to localhost
+  function getLocalIp() {
+    const nets = os.networkInterfaces();
+    for (const name in nets) {
+      for (const addr of nets[name]) {
+        if (addr.family === "IPv4" && !addr.internal) return addr.address;
+      }
     }
-    if (getLocalIp() == "10.126.106.105") {
-        // return "production"
-        return true;
-    } else {
-        // return "development"
-        return false;
-    }
+    return "127.0.0.1";
+  }
+  return getLocalIp() === "10.126.106.105";
 }
 
+// =============================================================== //
+// 🔹 Dynamic Configuration
 const host_config = production() ? process.env.DB_HOST : process.env.DEV_DB_HOST;
 const user_config = production() ? process.env.DB_USER : process.env.DEV_DB_USER;
 const password_config = production() ? process.env.DB_PASSWORD : process.env.DEV_DB_PASSWORD;
-const db_trademark = production() ? process.env.DB_NAME_TM : process.env.DEV_DB_NAME_TM;
 
-console.log("@db - host_config", host_config)
-console.log("@db - user_config", user_config)
-console.log("@db - password_config", password_config)
+console.log("@db - host:", host_config);
+console.log("@db - user:", user_config);
 
-
-// for default online order
-const dbConf = mysql.createPool({
-    // connectionLimit : 20, 
-    multipleStatements: true,
+// =============================================================== //
+// 🔹 Factory: Safe + Legacy-Compatible Pool
+function createSafePool(dbName, connectionLimit = 20) {
+  const pool = mysql.createPool({
     host: host_config,
     user: user_config,
     password: password_config,
-    database: process.env.DB_NAME,
-    connectTimeout: 10000, // connection timeout
-});
-const dbQuery = util.promisify(dbConf.query).bind(dbConf);
-
-// for trade mark management
-const dbTM = mysql.createPool({
-    // connectionLimit : 20, 
+    database: dbName,
     multipleStatements: true,
-    host: host_config,
-    user: user_config,
-    password: password_config,
-    database: process.env.DB_NAME_TM,
-    connectTimeout: 10000, // connection timeout
-});
-const dbTMQuery = util.promisify(dbTM.query).bind(dbTM);
+    connectionLimit,
+    connectTimeout: 10000,
+    enableKeepAlive: false,
+  });
 
-// for tester or test
-const dbIndomieku = mysql.createPool({
-    // connectionLimit : 20, 
-    multipleStatements: true,
-    host: host_config,
-    user: user_config,
-    password: password_config,
-    database: process.env.DB_NAME_INDOMIEKU
-});
-const dbQueryIndomieku = util.promisify(dbIndomieku.query).bind(dbIndomieku);
+  // Apply lower wait_timeout per connection
+  pool.on("connection", (conn) => {
+    conn.query("SET SESSION wait_timeout=30");
+    conn.query("SET SESSION interactive_timeout=30");
+  });
 
-//card generator
-const dbCardGenerator = mysql.createPool({
-    // connectionLimit : 20, 
-    multipleStatements: true,
-    host: host_config,
-    user: user_config,
-    password: password_config,
-    database: process.env.DB_NAME_CARD_GENERATOR
-});
-const dbQueryCardGenerator = util.promisify(dbCardGenerator.query).bind(dbCardGenerator);
+  const promisePool = pool.promise();
 
-//for HOTS
-const dbHots = mysql.createPool({
-    // connectionLimit : 20, 
-    multipleStatements: true,
-    host: host_config,
-    user: user_config,
-    password: password_config,
-    database: process.env.DB_NAME_HT,
-    connectTimeout: 10000, // connection timeout
-});
-const dbQueryHots = util.promisify(dbHots.query).bind(dbHots);
+  // ✅ Hybrid query function (safe, compatible with old util.promisify)
+  async function query(sql, params = [], timeoutMs = 15000, retries = 1) {
+    const start = Date.now();
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const [rows] = await promisePool.query({
+          sql,
+          values: params,
+          timeout: timeoutMs,
+        });
+        const duration = Date.now() - start;
+        if (duration > 3000)
+          console.warn(`⚠️ Slow query (${duration} ms) in ${dbName}: ${sql.split("\n")[0]}`);
 
+        // ✅ Return flat result for backward compatibility
+        return rows;
+      } catch (err) {
+        const transient =
+          ["PROTOCOL_CONNECTION_LOST", "ECONNRESET", "ER_LOCK_WAIT_TIMEOUT"].includes(err.code);
+        if (transient && attempt < retries) {
+          console.warn(`🔁 Retrying ${dbName} query (${attempt + 1}): ${err.code}`);
+          await new Promise((r) => setTimeout(r, 500));
+          continue;
+        }
+        console.error(`❌ Query error in ${dbName}:`, err.message);
+        throw err;
+      }
+    }
+  }
 
+  return { pool, query };
+}
 
-const dbPMS = mysql.createPool({
-    // connectionLimit : 20, 
-    multipleStatements: true,
-    host: host_config,
-    user: user_config,
-    password: password_config,
-    database: process.env.DB_NAME_PMS,
-    connectTimeout: 10000, // connection timeout
-});
-const dbQueryPMS = util.promisify(dbPMS.query).bind(dbPMS);
+// =============================================================== //
+// 🔹 Database Pools
+const { pool: dbConf, query: dbQuery } = createSafePool(process.env.DB_NAME);
+const { pool: dbTM, query: dbTMQuery } = createSafePool(process.env.DB_NAME_TM);
+const { pool: dbIndomieku, query: dbQueryIndomieku } = createSafePool(process.env.DB_NAME_INDOMIEKU);
+const { pool: dbCardGenerator, query: dbQueryCardGenerator } = createSafePool(process.env.DB_NAME_CARD_GENERATOR);
+const { pool: dbHots, query: dbQueryHots } = createSafePool(process.env.DB_NAME_HT);
+const { pool: dbPMS, query: dbQueryPMS } = createSafePool(process.env.DB_NAME_PMS);
+const { pool: dbClick, query: dbQueryClick } = createSafePool(process.env.DB_NAME_Click);
+const { pool: dbSR, query: dbQuerySR } = createSafePool(process.env.DB_NAME_SR);
 
+// MeetingBook (simple promise pool)
+const dbmeetingbook = mysql.createPool({
+  host: host_config,
+  user: user_config,
+  password: password_config,
+  database: "meetingbook",
+}).promise();
 
+// =============================================================== //
+// 🔹 SQL Logger
+const addSqlLogger = async (user_id, sql_parameter, message, function_name) => {
+  try {
+    await dbQuery(
+      `INSERT INTO action_logger (time_event,user_id,sql_code,message,function_name)
+       VALUES (NOW(),?,?,?,?)`,
+      [user_id, sql_parameter, message, function_name]
+    );
+  } catch (e) {
+    console.error("❌ SQL Logger failed:", e.message);
+  }
+};
 
-//for click shorten
-const dbClick = mysql.createPool({
-    // connectionLimit : 20, 
-    multipleStatements: true,
-    host: host_config,
-    user: user_config,
-    password: password_config,
-    database: process.env.DB_NAME_Click,
-    connectTimeout: 10000, // connection timeout
-});
-const dbQueryClick = util.promisify(dbClick.query).bind(dbClick);
+// =============================================================== //
+// 🔹 Health Monitor / Debug Output
+if (!production()) {
+  setInterval(async () => {
+    try {
+      await Promise.all([dbQuery("SELECT 1"), dbQuerySR("SELECT 1")]);
+      const active =
+        (dbConf._allConnections?.length || 0) +
+        (dbSR._allConnections?.length || 0);
+      console.log("💚 DB pools healthy");
+      console.log("IOD conns:", dbConf._allConnections?.length || 0);
+      console.log("SR conns:", dbSR._allConnections?.length || 0);
+      console.log("🔍 Active MySQL connections:", active);
+    } catch (e) {
+      console.error("💥 Health check failed:", e.message);
+    }
+  }, 30000);
+}
 
-//for SeaRates 
-const dbSR = mysql.createPool({
-    // connectionLimit : 20, 
-    multipleStatements: true,
-    host: host_config,
-    user: user_config,
-    password: password_config,
-    database: process.env.DB_NAME_SR,
-    connectTimeout: 10000, // connection timeout
-});
-const dbQuerySR = util.promisify(dbSR.query).bind(dbSR);
-
-// for event logger
-/**
- * 
- * @param {number} user_id -  berkaitan dengan user_id aatau yg bertanggungjawab
- * @param {string} sql_parameter - sql code yang dijalankan atau final. atau bisa berupa deskripsi dari code
- * @param {string} message - bisa berupa message, data yang dihasilkan, atau tujuan dari function, atau data dari parameter.
- * @param {string} function_name - Nama function yang dijalankan
- */
-const addSqlLogger = (user_id, sql_parameter, message, function_name) => {
-    //user_id = number, user ID yang melakukan perubahan pada SQL
-    //sql_code = SQL yang melakukan perubahan. PASTIKAN HANYA menggunakan ""
-
-    const dbLog = mysql.createPool({
-        // connectionLimit : 20, 
-        multipleStatements: true,
-        host: host_config,
-        user: user_config,
-        password: password_config,
-        database: process.env.DB_NAME
+// =============================================================== //
+// 🔹 Graceful Shutdown
+function gracefulShutdown() {
+  console.log("\n🧹 Closing all MySQL pools...");
+  const pools = [dbConf, dbTM, dbIndomieku, dbCardGenerator, dbHots, dbPMS, dbClick, dbSR];
+  Promise.all(pools.map((p) => p.end()))
+    .then(() => {
+      console.log("✅ All MySQL connections closed cleanly.");
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("⚠️ Error closing MySQL pools:", err);
+      process.exit(1);
     });
-
-    let parameter = [user_id, sql_parameter, message, function_name]
-    let query = `INSERT INTO action_logger (time_event, user_id, sql_code, message, function_name) VALUES (now(), ?, ?, ?, ?)`
-    dbLog.query(query, parameter)
-
-
 }
+process.on("SIGINT", gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
 
-//meetingbook
-const dbmeetingbook = mysqlmb.createPool({
-    host: host_config,
-    user: user_config,
-    password: password_config,
-    database: 'meetingbook',
-});
-
-
-// dbConf.connect()
-
-
-//export
+// =============================================================== //
+// 🔹 Exports
 module.exports = {
-    dbConf, dbQuery,
-    dbTM, dbTMQuery,
-    dbIndomieku, dbQueryIndomieku,
-    dbCardGenerator, dbQueryCardGenerator,
-    dbHots, dbClick, dbQueryHots, dbQueryClick,
-    dbSR, dbQuerySR,
-    dbPMS, dbQueryPMS, dbmeetingbook,
-    addSqlLogger
-
-}
+  dbConf, dbQuery,
+  dbTM, dbTMQuery,
+  dbIndomieku, dbQueryIndomieku,
+  dbCardGenerator, dbQueryCardGenerator,
+  dbHots, dbQueryHots,
+  dbPMS, dbQueryPMS,
+  dbClick, dbQueryClick,
+  dbSR, dbQuerySR,
+  dbmeetingbook,
+  addSqlLogger,
+};
