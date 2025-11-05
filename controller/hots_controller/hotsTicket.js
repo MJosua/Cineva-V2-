@@ -80,7 +80,7 @@ module.exports = {
         if (req.dataToken.user_type) {
             try {
                 const [resSuperior] = await dbHots.promise().query(queryCheckSuperiorRow, [req.dataToken.user_id]);
-                const { superior_id: superiorID, final_superior_id: headId } = resSuperior[0];
+                const { superior_id: superiorID, final_superior_id: headId } = resSuperior[0]; 
 
                 const [resTeam] = await dbHots.promise().query(queryCheckTeamRow, [service_id]);
                 const team_leader = resTeam.map(row => row.user_id); // Collects all team leaders as an array

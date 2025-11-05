@@ -24,6 +24,9 @@ const readline = require('readline');
 // const purpleColor = '\x1b[35m'; // Purple
 // const reset = '\\x1b[0m';
 
+const dotenv = require("dotenv");
+dotenv.config();
+
 const express = require("express");
 const App = express();
 
@@ -41,8 +44,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const dotenv = require("dotenv");
-dotenv.config();
+
 
 const cors = require("cors");
 

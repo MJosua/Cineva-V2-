@@ -16,7 +16,7 @@ module.exports = {
             const user = req.user || {}; // assumed populated by auth middleware
             const role = user.role_name || "guest";
             const dept = user.department_name || null;
-
+            req.dataToken.user_id
             const sql = `
       SELECT 
         f.id,
@@ -51,7 +51,7 @@ module.exports = {
                     : r.department_scope
                         ? JSON.parse(r.department_scope)
                         : [];
-            
+
                 // 🧠 Core improvements here
                 const roleAllowed =
                     roles.length === 0 ||                // no restriction
@@ -59,20 +59,20 @@ module.exports = {
                     roles.includes("all") ||             // global access
                     role === "admin" ||                  // admins see everything
                     (role === "guest" && roles.includes("guest")); // guests see guest-marked
-            
+
                 const deptAllowed =
                     depts.length === 0 ||                // no restriction
                     !dept ||                             // user has no dept
                     depts.includes(dept) ||              // matches user's dept
                     depts.includes("all");               // global dept
-            
+
                 // 🪄 Optional: default fallback for guest visibility
                 const defaultGuestVisible =
                     role === "guest" && roles.length === 0 && depts.length === 0;
-            
+
                 const isVisible = (roleAllowed && deptAllowed) || defaultGuestVisible;
-            
-            
+
+
                 return isVisible;
             });
             res.json(filtered);
