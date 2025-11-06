@@ -4214,8 +4214,6 @@ module.exports = {
 
             if (workflowSteps && workflowSteps.length > 0) {
                 hotsApproveRequest(false, ticket_id);
-
-
             }
 
             console.log("mailAddress", mailAddress)

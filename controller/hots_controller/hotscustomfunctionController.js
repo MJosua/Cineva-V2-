@@ -806,6 +806,7 @@ module.exports = {
                       t.approval_order,
                       t.approve_date, 
                       t.approver_id,
+                      u.email,
                       t.remark, 
                       CONCAT(u.firstname, ' ', u.lastname) AS fullname  
                       from 
@@ -1261,7 +1262,7 @@ module.exports = {
 
             // Generate document
             const documentPath = await module.exports.generateDocument(config, ticketData, params);
-            console.log("dataawal", ticketData)
+            // console.log("dataawal", ticketData)
             // Save generated document info
             await dbHots.promise().query(`
                 INSERT INTO t_generated_documents 
