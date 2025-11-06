@@ -17,7 +17,6 @@ let yellowTerminal = "\x1b[33m";
 
 module.exports = {
     login: async (req, res) => {
-
         let date = new Date();
 
         let current_delv_week = (await dbQuery(`SELECT day2week(NOW()) AS wikwik;`))[0].wikwik;

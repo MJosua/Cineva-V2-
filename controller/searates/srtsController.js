@@ -520,36 +520,87 @@ module.exports = {
 
         // 🟣 Main execution flow
         try {
-            const query = `
-                SELECT s.shipment_id, s.last_updated_date, s.number, s.so_id, s.sealine_name, s.status, ...
-                -- (keep your same SQL here unchanged)
-            `;
+            const results = await dbQuerySR(`
+                SELECT 
+                       s.shipment_id ,
+                       s.last_updated_date ,
+                       s.number ,
+                       s.so_id ,
+                       s.sealine_name ,
+                       s.status ,
+                       c.container_number ,
+                       e.event_id ,
+                       e.description ,
+                       e.event_type ,
+                       e.event_code ,
+                       e.date ,
+                       e.actual ,
+                       e.vessel_id ,
+                       e.voyage ,
+                       e.location_id ,
+                       e.order_id,
+                       l.name as location_name,
+                       l.lat as location_lat ,
+                       l.lng as location_lng ,
+                       v.name as vessel_name,
+                       v.imo as vessel_imo
+                   FROM sea_rates.shipments s 
+                   LEFT JOIN sea_rates.containers c 	
+                       ON s.shipment_id = c.shipment_id 
+                   LEFT JOIN sea_rates.events e 
+                       ON e.shipment_id = s.shipment_id 
+                       AND e.container_id = c.container_id 
+                   LEFT JOIN sea_rates.locations l 
+                       ON s.shipment_id = l.shipment_id 
+                       AND e.location_id = l.location_id 
+                   LEFT JOIN sea_rates.vessel v  
+                       ON s.shipment_id = v.shipment_id 
+                       AND v.vessel_id = e.vessel_id 
+                   WHERE 
+                   s.number = ?
+                   or 
+                   c.container_number = ?
+                   order by e.order_id ASC 
+           `, [number, number]);
 
-            const results = await dbQuerySR(query, [number, number, number]);
             let reload = false;
-
-            if (refresh && results?.length) {
+            if (refresh && results.length) {
                 const diffHours = (new Date() - new Date(results[0].last_updated_date)) / (1000 * 60 * 60);
-                reload = diffHours >= 5;
+                reload = diffHours >= 5 || !results[0].so_id;
             }
 
-            if (results.length < 1 || reload) {
-                // 🔥 Fetch from SeaRates API
-                const checkQuery = so_id === "0" ? querycheck_so_Id_by_number : querycheck_by_so_Id;
+            // 🔁 Fetch fresh data if missing or outdated
+            if (!results.length || reload) {
+                const checkQuery = so_id === "0" ? `
+                   SELECT ti.bl_no, tso.so_id, s.so_id, s.last_updated_date
+                   FROM trs_realization tr
+                   LEFT JOIN trs_sales_order tso ON tr.so_id = tso.so_id
+                   LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
+                   LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
+                   WHERE s.number = "${number}" ORDER BY s.last_updated_date DESC LIMIT 1
+               ` : `
+                   SELECT ti.bl_no, tso.so_id, s.so_id, s.last_updated_date
+                   FROM trs_realization tr
+                   LEFT JOIN trs_sales_order tso ON tr.so_id = tso.so_id
+                   LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
+                   LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
+                   WHERE s.so_id = "${so_id}" ORDER BY s.last_updated_date DESC LIMIT 1
+               `;
+
                 const checkresult = await dbQuery(checkQuery);
+                const bl_no = checkresult[0]?.bl_no;
                 const contIdClean = checkresult[0]?.cont_id?.replace("-", "");
-                const url = checkresult[0]?.bl_no
-                    ? `https://tracking.searates.com/tracking?api_key=${key}&number=${checkresult[0].bl_no}&sealine=${sealine}&force_update=false&type=bl&route=true&ais=false`
+              
+                const url = bl_no
+                    ? `https://tracking.searates.com/tracking?api_key=${key}&number=${bl_no}&sealine=${sealine}&force_update=false&type=bl&route=true&ais=false`
                     : `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=${sealine}&force_update=false&route=true&ais=false`;
 
                 let searatesRes = await callaxios(url);
                 if (!searatesRes.data?.data?.metadata?.sealine_name) {
-                    console.warn(`⚠️ Sealine not found for ${number}, retrying...`);
+                    console.warn(`⚠️ Missing sealine name for ${number}, retrying with auto`);
                     const fallbackUrl = `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=auto&force_update=false&route=true&ais=false`;
                     searatesRes = await callaxios(fallbackUrl);
                 }
-
-                console.log("searatesRes.data", searatesRes.data)
 
                 const record = {
                     so_id: so_id ?? checkresult[0]?.so_id ?? 0,
@@ -559,9 +610,11 @@ module.exports = {
                 };
 
                 if (record.data) {
+
+                    
                     await saveSearatesRecord(record);
                     return res.status(200).send({
-                        message: "Data refreshed from SeaRates",
+                        message: "Fetched from SeaRates and saved",
                         data: searatesRes.data
                     });
                 } else {

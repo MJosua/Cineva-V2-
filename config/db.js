@@ -38,7 +38,6 @@ function createSafePool(dbName, connectionLimit = 20) {
         connectionLimit,
 
         connectTimeout: 20000,
-        acquireTimeout: 20000,
         
         waitForConnections: true,
         enableKeepAlive: true,

@@ -80,7 +80,7 @@ module.exports = {
         if (req.dataToken.user_type) {
             try {
                 const [resSuperior] = await dbHots.promise().query(queryCheckSuperiorRow, [req.dataToken.user_id]);
-                const { superior_id: superiorID, final_superior_id: headId } = resSuperior[0]; 
+                const { superior_id: superiorID, final_superior_id: headId } = resSuperior[0];
 
                 const [resTeam] = await dbHots.promise().query(queryCheckTeamRow, [service_id]);
                 const team_leader = resTeam.map(row => row.user_id); // Collects all team leaders as an array
@@ -4129,7 +4129,6 @@ module.exports = {
 
             // Approval events
             let approvalPromises = [];
-            console.log("workflowSteps", workflowSteps)
             for (const step of workflowSteps) {
                 if (step.step_type === 'user' || step.step_type === 'specific_user') {
                     approvalPromises.push(dbHots.promise().execute(`
@@ -4204,13 +4203,28 @@ module.exports = {
                 `, [ticket_id, ...upload_ids]);
             }
 
+
             // Custom functions
             await module.exports.callexecuteCustomFunctions(service_id, ticket_id);
 
-            console.log("mailAddress",mailAddress)
+
+
+            console.log("workflowSteps", workflowSteps)
+
+
+            if (workflowSteps && workflowSteps.length > 0) {
+                hotsApproveRequest(false, ticket_id);
+
+
+            }
+
+            console.log("mailAddress", mailAddress)
+
+
             if (mailAddress && mailAddress.length > 0) {
                 hotsSubmitMailer(false, ticket_id, user_name, service.service_name, mailAddress[0].email);
             }
+
 
             return res.status(200).send({
                 success: true,
@@ -5217,7 +5231,7 @@ module.exports = {
 
             await conn.commit();
 
-            hotsApproveRequest(false, ticket_id,);
+            hotsApproveRequest(false, ticket_id);
 
             return res.status(200).json({
                 success: true,
