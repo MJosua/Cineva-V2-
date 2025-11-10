@@ -365,25 +365,25 @@ module.exports = {
             console.log("html", htmlContent)
         }
 
-        // try {
-        //     const info = await transporter.sendMail({
-        //         from: mailaccount,
-        //         to: mailAddress,
-        //         subject: `[HOTS] - ${service_name} Submission Confirmation - Ticket No. ${ticket_id}`,
-        //         html: htmlContent,
-        //     });
+        try {
+            const info = await transporter.sendMail({
+                from: mailaccount,
+                to: mailAddress,
+                subject: `[HOTS] - ${service_name} Submission Confirmation - Ticket No. ${ticket_id}`,
+                html: htmlContent,
+            });
 
-        //     if (test) {
-        //         console.log("html", htmlContent)
-        //     }
+            if (test) {
+                console.log("html", htmlContent)
+            }
 
-        //     console.log(`${timestamp} ✅ Email sent to ${mailAddress} `);
-        //     console.log(`Message ID: ${info.messageId} `);
-        //     console.log(`Response: ${info.response} `);
-        // } catch (error) {
-        //     console.error(`${timestamp} ❌ ERROR sending hotsSubmitMailer mail to ${mailAddress} `);
-        //     console.error(error);
-        // }
+            console.log(`${timestamp} ✅ Email sent to ${mailAddress} `);
+            console.log(`Message ID: ${info.messageId} `);
+            console.log(`Response: ${info.response} `);
+        } catch (error) {
+            console.error(`${timestamp} ❌ ERROR sending hotsSubmitMailer mail to ${mailAddress} `);
+            console.error(error);
+        }
     },
 
     hotsApproveRequest: async (test = "false", ticket_id,) => {
@@ -648,25 +648,25 @@ module.exports = {
             console.log("html", htmlContent)
         }
 
-        // try {
-        //     const info = await transporter.sendMail({
-        //         from: mailaccount,
-        //         to: emailAddresses,
-        //         subject: `[HOTS] - ${service_name} Approval Notification - Ticket No. ${ticket_id}`,
-        //         html: htmlContent,
-        //     });
+        try {
+            const info = await transporter.sendMail({
+                from: mailaccount,
+                to: emailAddresses,
+                subject: `[HOTS] - ${service_name} Approval Notification - Ticket No. ${ticket_id}`,
+                html: htmlContent,
+            });
 
-        //     if (test) {
-        //         console.log("html", htmlContent)
-        //     }
+            if (test) {
+                console.log("html", htmlContent)
+            }
 
-        //     console.log(`${timestamp} ✅ Email sent to ${emailAddresses} `);
-        //     console.log(`Message ID: ${info.messageId} `);
-        //     console.log(`Response: ${info.response} `);
-        // } catch (error) {
-        //     console.error(`${timestamp} ❌ ERROR sending hotsApproveRequest mail to ${emailAddresses} `);
-        //     console.error(error);
-        // }
+            console.log(`${timestamp} ✅ Email sent to ${emailAddresses} `);
+            console.log(`Message ID: ${info.messageId} `);
+            console.log(`Response: ${info.response} `);
+        } catch (error) {
+            console.error(`${timestamp} ❌ ERROR sending hotsApproveRequest mail to ${emailAddresses} `);
+            console.error(error);
+        }
     },
 
 

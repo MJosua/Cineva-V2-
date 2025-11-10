@@ -8,7 +8,8 @@ const hotsDashboardController = require("../../controller/hots_controller/hotsDa
 
 // GET /hots/dashboard/functions
 route.get("/functions", decodeTokenHT, hotsDashboardController.getDashboardFunctions);
-
+route.get("/report_srf", decodeTokenHT, hotsDashboardController.srf_report);
+route.post("/report_detail/upsert", decodeTokenHT, hotsDashboardController.upsertReportDetail);
 
 
 module.exports = route

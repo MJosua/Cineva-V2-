@@ -4209,17 +4209,18 @@ module.exports = {
 
 
 
-            console.log("workflowSteps", workflowSteps)
 
 
             if (workflowSteps && workflowSteps.length > 0) {
+                console.log("workflowSteps", workflowSteps)
+
                 hotsApproveRequest(false, ticket_id);
             }
 
-            console.log("mailAddress", mailAddress)
-
 
             if (mailAddress && mailAddress.length > 0) {
+                console.log("mailAddress", mailAddress)
+
                 hotsSubmitMailer(false, ticket_id, user_name, service.service_name, mailAddress[0].email);
             }
 

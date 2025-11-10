@@ -1,11 +1,11 @@
 const readline = require('readline');
-const { hotsSubmitMailer, hotsApproveRequest } = require('./mailer/hots/hots_mailer');
 const { dbConf, dbQuery, dbTMQuery, dbHots } = require('./config/db');
 const express = require('express');
 const { API_URL, PORT } = require('./index');
 const { shippingMailNotificationManual } = require('./automation/notification');
 const { stuffingWeek } = require('./controller/order');
 const { orderController, hotsSettingsController, hotsDashboardController } = require('./controller');
+const { hotsSubmitMailer, hotsApproveRequest } = require('./mailer/hots/hots_mailer');
 
 const App = express();
 App.listen(App.get('port'), () => {
@@ -94,6 +94,19 @@ rl.on('line', async (input) => {
     else if (cmd === 'cekweek') {
 
         await hotsSettingsController.todaysweek(req, res);
+
+    }
+
+    
+    else if (cmd === 'ceklmailapprovehots') {
+
+        await hotsApproveRequest(false, 2025012310098379);
+
+    }
+
+    else if (cmd === 'ceklmailprivatehots') {
+
+        await hotsSubmitMailer(false, 2025012310098379, "yosua", "service.service_name", "josua.prima@gmail.com");
 
     }
 
