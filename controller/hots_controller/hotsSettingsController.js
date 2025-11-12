@@ -2383,13 +2383,13 @@ module.exports = {
 
         try {
             const [room] = await dbHots.promise().query(`
-               SELECT
+                     SELECT
                 t.ticket_id,
-                MAX(CASE WHEN d.lbl_col = 'Meeting Room' THEN d.cstm_col END) AS room,
-                MAX(CASE WHEN d.lbl_col = 'Time Start' THEN d.cstm_col END) AS start_time,
-                MAX(CASE WHEN d.lbl_col = 'Time End' THEN d.cstm_col END) AS end_time,
+                MAX(CASE WHEN d.lbl_col = 'room' THEN d.cstm_col END) AS room,
+                MAX(CASE WHEN d.lbl_col = 'start_time' THEN d.cstm_col END) AS start_time,
+                MAX(CASE WHEN d.lbl_col = 'end_time' THEN d.cstm_col END) AS end_time,
+                MAX(CASE WHEN d.lbl_col = 'PIC' THEN d.cstm_col END) AS PIC,
                 dpt.department_name AS booked_by,
-                MAX(CASE WHEN d.lbl_col = 'partisipan' THEN d.cstm_col END) AS attendees,
                 MAX(CASE WHEN d.lbl_col = 'date' THEN d.cstm_col END) AS date
                 FROM t_ticket t
                 LEFT JOIN t_ticket_detail d ON d.ticket_id = t.ticket_id
@@ -2409,10 +2409,10 @@ module.exports = {
             res.status(200).json({
                 success: true,
                 data: room,
-                message: "Teams retrieved successfully"
+                message: "Meeting Rooms service data retrieved successfully"
             });
         } catch (err) {
-            console.error(`Error getting teams by department: ${err.message} at ${timestamp}`);
+            console.error(`Error getting Meeting Rooms service data: ${err.message} at ${timestamp}`);
             res.status(500).json({
                 success: false,
                 message: err.message
@@ -2441,12 +2441,12 @@ module.exports = {
             const query = `
                 SELECT
                     t.ticket_id,
-                    MAX(CASE WHEN d.lbl_col = 'Meeting Room' THEN d.cstm_col END) AS room,
-                    MAX(CASE WHEN d.lbl_col = 'Time Start' THEN d.cstm_col END) AS start_time,
-                    MAX(CASE WHEN d.lbl_col = 'Time End' THEN d.cstm_col END) AS end_time,
-                    dpt.department_name AS booked_by,
-                    MAX(CASE WHEN d.lbl_col = 'partisipan' THEN d.cstm_col END) AS attendees,
-                    MAX(CASE WHEN d.lbl_col = 'date' THEN d.cstm_col END) AS date
+                   MAX(CASE WHEN d.lbl_col = 'room' THEN d.cstm_col END) AS room,
+                MAX(CASE WHEN d.lbl_col = 'start_time' THEN d.cstm_col END) AS start_time,
+                MAX(CASE WHEN d.lbl_col = 'end_time' THEN d.cstm_col END) AS end_time,
+                dpt.department_name AS booked_by,
+                MAX(CASE WHEN d.lbl_col = 'date' THEN d.cstm_col END) AS date
+                MAX(CASE WHEN d.lbl_col = 'PIC' THEN d.cstm_col END) AS PIC,
                 FROM t_ticket t
                 LEFT JOIN t_ticket_detail d ON d.ticket_id = t.ticket_id
                 LEFT JOIN user u ON u.user_id = t.created_by

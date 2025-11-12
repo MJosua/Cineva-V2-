@@ -8,10 +8,18 @@ const { dbmeetingbook } = require('../../config/db');;
 router.get('/', async (req, res) => {
     try {
         const [rows] = await dbmeetingbook.query('SELECT id, room_name FROM rooms');
-        res.json(rows); // [{ id: 1, name: "Anzpac" }, ...]
+        console.log("trying to get all rooms")
+        res.status(200).json({
+            success: true,
+            data: rows,
+            message: "Meeting Rooms list retrieved successfully"
+        });
     } catch (err) {
-        console.log("Error fetching rooms:", err);
-        res.status(500).json({ error: "Failed to fetch rooms" });
+        console.error(`Error getting Meeting Rooms list: ${err.message} at ${timestamp}`);
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
 });
 

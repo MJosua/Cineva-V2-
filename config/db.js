@@ -38,23 +38,30 @@ function createSafePool(dbName, connectionLimit = 20) {
         connectionLimit,
 
         connectTimeout: 20000,
-        
+
         waitForConnections: true,
         enableKeepAlive: true,
+        keepAliveInitialDelay: 10000,
     });
 
 
     // Apply lower wait_timeout per connection
     pool.on("connection", (conn) => {
-        conn.query("SET SESSION wait_timeout=30");
-        conn.query("SET SESSION interactive_timeout=30");
+        conn.query("SET SESSION wait_timeout=28800");
+        conn.query("SET SESSION interactive_timeout=28800");
     });
 
     // if a socket goes bad, remove it from the pool
     pool.on("error", (err) => {
         console.error(`⚠️ MySQL pool ${dbName} error:`, err.code);
-        if (["PROTOCOL_SEQUENCE_TIMEOUT", "PROTOCOL_CONNECTION_LOST"].includes(err.code)) {
-            try { pool.end(); } catch { }
+
+        if (["PROTOCOL_CONNECTION_LOST", "ECONNRESET"].includes(err.code)) {
+            console.warn(`🔁 Reconnecting pool ${dbName}...`);
+            setTimeout(() => {
+                const newPool = createSafePool(dbName);
+                module.exports[`dbQuery${dbName}`] = newPool.query;
+                module.exports[`db${dbName}`] = newPool.pool;
+            }, 2000);
         }
     });
 
@@ -94,7 +101,7 @@ function createSafePool(dbName, connectionLimit = 20) {
                 }
 
                 // drop the bad connection so the pool can create a new one
-                try { promisePool.releaseConnection && promisePool.releaseConnection(); } catch { }
+                // try { promisePool.releaseConnection && promisePool.releaseConnection(); } catch { }
                 console.error(`❌ Query error in ${dbName}:`, err.message);
                 throw err;
             }
@@ -141,17 +148,28 @@ const addSqlLogger = async (user_id, sql_parameter, message, function_name) => {
 // 🔹 Health Monitor / Debug Output
 if (!production()) {
     setInterval(async () => {
+        const pools = { IOD: dbQuery, SR: dbQuerySR, Hots: dbQueryHots };
+
         try {
-            await Promise.all([dbQuery("SELECT 1"), dbQuerySR("SELECT 1")]);
+            for (const [name, fn] of Object.entries(pools)) {
+                try {
+                    await fn("SELECT 1");
+                    const now = new Date().toLocaleTimeString('id-ID');
+                    console.log(`[${now}] 💚 ${name} pool healthy`);
+                } catch (e) {
+                    const now = new Date().toLocaleTimeString('id-ID');
+                    console.error(`[${now}]💥 ${name} pool unhealthy:`, e.message);
+                }
+            }
+
             const active =
                 (dbConf._allConnections?.length || 0) +
-                (dbSR._allConnections?.length || 0);
-            console.log("💚 DB pools healthy");
-            console.log("IOD conns:", dbConf._allConnections?.length || 0);
-            console.log("SR conns:", dbSR._allConnections?.length || 0);
+                (dbSR._allConnections?.length || 0) +
+                (dbHots._allConnections?.length || 0);
+
             console.log("🔍 Active MySQL connections:", active);
         } catch (e) {
-            console.error("💥 Health check failed:", e.message);
+            console.error("💥 Health monitor failure:", e.message);
         }
     }, 30000);
 }
@@ -173,6 +191,16 @@ function gracefulShutdown() {
 }
 process.on("SIGINT", gracefulShutdown);
 process.on("SIGTERM", gracefulShutdown);
+
+// =============================================================== //
+// 🔹 Process-Level Error Handling
+process.on('uncaughtException', (err) => {
+    console.error('💣 Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, p) => {
+    console.error('⚠️ Unhandled Promise Rejection:', reason);
+});
 
 // =============================================================== //
 // 🔹 Exports

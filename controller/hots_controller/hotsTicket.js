@@ -3991,7 +3991,8 @@ module.exports = {
             });
         }
 
-        console.log("req.body", req.body)
+        const fullJsonText = JSON.stringify(req.body, null, 2);
+        console.log("req.body for tickets (full JSON):\n", fullJsonText);
 
         try {
             // Get service details
@@ -4045,7 +4046,28 @@ module.exports = {
                 .sort(([a], [b]) => Number(a) - Number(b));
 
             for (const [index, item] of entries) {
-                const { label, value, type, rows, combinedMapping } = item;
+                const { type, label, value, rows, combinedMapping, fields } = item;
+
+
+
+                if (type === "section" && Array.isArray(fields)) {
+                    for (const field of fields) {
+                        const fieldName = field.name || field.label || "Unnamed Field";
+                        const fieldValue = field.value ?? "";
+
+                        if (fieldValue !== "" && fieldValue !== undefined && fieldValue !== null) {
+                            detailInsertPromises.push(
+                                dbHots.promise().execute(
+                                    `INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, order_col)
+                             VALUES (?, ?, ?, ?)`,
+                                    [ticket_id, fieldValue, fieldName, orderCounter]
+                                )
+                            );
+                            orderCounter++;
+                        }
+                    }
+                    continue;
+                }
 
                 // --- Handle normal fields ---
                 if (type !== "rowgroup") {
