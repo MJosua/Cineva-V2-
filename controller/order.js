@@ -1927,13 +1927,21 @@ WHERE
             });
 
             let getWeekLimit = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 9 AND mcn.company_id = ${req.dataToken.company_id}  AND mcn.active = 1;`))[0]
+            
             let getWeekBlock = await dbQuery(`
                 SELECT mcn.value 
                 FROM m_config_new mcn 
                 WHERE mcn.conditions = 21 
-                  AND mcn.company_id = ${req.dataToken.company_id}  
-                  AND mcn.active = 1;
+                  AND 
+                  mcn.company_id = ${req.dataToken.company_id}  
+                  or 
+                  mcn.company_id = 100 
+                  AND 
+                  mcn.active = 1
+                  ;
             `);
+
+            
 
             const blockedWeeks = getWeekBlock.map(row => Number(row.value));
 

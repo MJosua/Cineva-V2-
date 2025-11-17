@@ -310,7 +310,7 @@ module.exports = {
         message: " hash pass success!",
       });
     } catch (error) {
-      console.log(timestamp + "Error query SQL :", error);
+      console.log(timestamp + "Error query SQL hash password :", error);
       res.status(500).send({
         success: false,
         message: "Failed on HASH ❌",
@@ -452,12 +452,12 @@ module.exports = {
       } else {
 
         res.status(401).send([]);
-        console.log(timestamp + "! Error query SQL :", res.data);
+        console.log(timestamp + "! Error query SQL keeplogin 401 can't login :", res.data);
 
       }
 
     } catch (error) {
-      console.log(timestamp + "! Error query SQL :", error.message);
+      console.log(timestamp + "! Error query SQL  keeplogin catch:", error.message);
       res.status(500).send(error.message);
     }
   },
