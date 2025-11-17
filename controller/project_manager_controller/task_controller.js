@@ -359,7 +359,6 @@ module.exports = {
         data.due_date,
         groupId || 0
       ]);
-      console.log("result", result)
       const [newTask] = await dbPMS.promise().execute(`
         SELECT 
           t.*,

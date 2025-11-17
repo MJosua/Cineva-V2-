@@ -2016,10 +2016,7 @@ WHERE
                     deliveryYear += 1;
                 }
 
-                if (blockedWeeks.includes(deliveryWeek)) {
-                    console.log(`Skipping blocked week: ${deliveryWeek}`);
-                    continue;
-                }
+
 
                 // --- Step 6: Get First Day of Week (OPCAL for deliveryWeek) ---
                 sql = `
@@ -2106,13 +2103,20 @@ WHERE
 
 
                 // Push into weeksList
+                // SKIP BLOCKED WEEKS
+                if (blockedWeeks.includes(deliveryWeek)) {
+                    console.log(`⛔ Skip blocked week: ${deliveryWeek}`);
+                    continue;
+                }
+
+                // Push into weeksList
                 weeksList.push({
                     opcal_id: numOpcalId,
                     id: `${deliveryYear}${String(deliveryWeek).padStart(2, '0')}`,
                     year: deliveryYear,
                     week: deliveryWeek,
                     startingDate: minDate,
-                    endingDate: maxDate, // you can calculate +6 days if needed
+                    endingDate: maxDate,
                 });
             }
 
@@ -2122,8 +2126,20 @@ WHERE
                 weeksList,
             };
 
+            console.log("res", weeksList)
 
+            if (weeksList.length === 0) {
+                const msg = "No more week, please contact admin to generate calendar.";
+                const result = { success: false, message: msg };
 
+                console.warn("|WARN|", msg);
+
+                if (res) {
+                    return res.status(404).send(result);
+                } else {
+                    return result;
+                }
+            }
 
             if (res) {
                 return res.status(200).send(result);
