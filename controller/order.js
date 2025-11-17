@@ -1927,7 +1927,15 @@ WHERE
             });
 
             let getWeekLimit = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 9 AND mcn.company_id = ${req.dataToken.company_id}  AND mcn.active = 1;`))[0]
+            let getWeekBlock = await dbQuery(`
+                SELECT mcn.value 
+                FROM m_config_new mcn 
+                WHERE mcn.conditions = 21 
+                  AND mcn.company_id = ${req.dataToken.company_id}  
+                  AND mcn.active = 1;
+            `);
 
+            const blockedWeeks = getWeekBlock.map(row => Number(row.value));
 
             let weekLimit = getWeekLimit ? getWeekLimit.value : 13
             const weeksList = [];
@@ -2006,6 +2014,11 @@ WHERE
                 if (deliveryWeek > 52) {
                     deliveryWeek = deliveryWeek - 52;
                     deliveryYear += 1;
+                }
+
+                if (blockedWeeks.includes(deliveryWeek)) {
+                    console.log(`Skipping blocked week: ${deliveryWeek}`);
+                    continue;
                 }
 
                 // --- Step 6: Get First Day of Week (OPCAL for deliveryWeek) ---

@@ -1,0 +1,15 @@
+{
+  "on_submit": [
+    "send_email_requester",
+    "generate_document"
+  ],
+
+  "on_approve": [
+    "update_ticket_status",
+    "send_email_next_approver"
+  ],
+
+  "on_reject": [
+    "send_rejection_email"
+  ]
+}

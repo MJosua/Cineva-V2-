@@ -8,6 +8,10 @@ const path = require("path");
 const archiver = require("archiver");
 const { io } = require('../../index');
 
+const formEngine = require("../../core/form-engine");
+const workflowEngine = require("../../core/workflow-engine");
+const triggerEngine = require("../../core/trigger-engine");
+
 const hotsCheckApprovalLevel = require("../../config/hotsCheckApprovalLevel");
 // const { generateTokenHT, hashPasswordHT } = require("../config/encrypts"); 
 
@@ -5558,7 +5562,95 @@ module.exports = {
                 });
             });
         });
-    }
+    },
+    createTicketEngine: async (req, res) => {
+        try {
+            // Which module to load?
+            const serviceName = req.body.serviceName || "ticketing";
+            const formData = req.body;
+
+            // 1. Validate form JSON rules
+            const validation = formEngine.validateFormData(serviceName, formData);
+            if (!validation.valid){
+                return res.status(400).json({
+                    success: false,
+                    message: "Validation failed",
+                    errors: validation.errors
+                });
+            }
+
+            // 2. Create ticket ID using your existing logic
+            const user_id = req.dataToken.user_id;
+            const service_id = req.body.service_id;
+
+            const [resRow] = await dbHots.promise().query(
+                queryCheckTicketRow, [user_id, service_id]
+            );
+
+            const ticketId = generateID(
+                user_id,
+                service_id,
+                resRow[0].r_number
+            );
+
+            // Insert ticket header
+            await dbHots.promise().query(
+                `INSERT INTO t_ticket 
+            (ticket_id, service_id, status_id, created_by, assigned_team, creation_date, reason) 
+            VALUES (?, ?, 0, ?, ?, now(), ?)`,
+                [ticketId, service_id, user_id, service_id, formData.reason || ""]
+            );
+
+            // 3. Convert JSON form inputs → EAV rows
+            const eavRows = formEngine.convertToEAV(serviceName, formData, ticketId);
+
+            // 4. Insert EAV rows
+            for (let row of eavRows) {
+                await dbHots.promise().query(
+                    `INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, value)
+                VALUES (?, ?, ?, ?)`,
+                    [row.ticket_id, row.cstm_col, row.lbl_col, row.value]
+                );
+            }
+
+            // 5. Resolve approvers dynamically (workflow.json)
+            const workflowRows = await workflowEngine.resolveApprovers(user_id, serviceName);
+
+            // 6. Insert into t_approval_event
+            await workflowEngine.insertApprovalRows(ticketId, workflowRows);
+
+            // 7. Run on_submit triggers
+            await triggerEngine.run(serviceName, "on_submit", ticketId, {
+                user_id,
+                email: req.dataToken.email,
+                subject: formData.subject,
+                serviceName,
+                data: {
+                    ticket_id: ticketId,
+                    subject: formData.subject,
+                    description: formData.description,
+                    user_name: req.dataToken.full_name,
+                    creation_date: new Date().toLocaleDateString()
+                }
+            });
+
+            // Respond
+            return res.status(200).json({
+                success: true,
+                message: "Ticket Engine created successfully",
+                ticket_number: ticketId
+            });
+
+        } catch (err) {
+            console.error("ERROR in createTicketEngine:", err);
+            return res.status(500).json({
+                success: false,
+                message: err.message
+            });
+        }
+    },
+
+
 
 
 

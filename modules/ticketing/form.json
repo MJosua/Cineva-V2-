@@ -1,0 +1,17 @@
+{
+  "fields": [
+    {
+      "key": "subject",
+      "label": "Subject",
+      "type": "text",
+      "required": true,
+      "cstm_col": 1
+    },
+    {
+      "key": "description",
+      "label": "Description",
+      "type": "textarea",
+      "cstm_col": 2
+    }
+  ]
+}
