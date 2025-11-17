@@ -1,24 +1,12 @@
 /node_modules 
-
-/.zip
-
-/.jpg
-/.jpeg
-/.png
+Integrated-API.zip
 /.vscode
-
 *.jpg
 *.jpeg
 *.png
-
 *.zip
-
 /config
-
-
 /public
-
 /uploads
-
 .env
 
