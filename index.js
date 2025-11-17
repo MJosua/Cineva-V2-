@@ -332,6 +332,8 @@ const {
   mbtimeslots,
   mbusers,
   hotsdashboard,
+  hotspublic,
+
 } = require("./routers");
 
 
@@ -403,27 +405,24 @@ App.use("/card_generator", cardGenerator);
 
 //hots_auth
 App.use("/hots_auth", hotsAuth);
-
-//hots_admin
 App.use("/hots_admin", hotsAdmin);
-
-//hots_ticket
 App.use("/hots_ticket", hotsTicket);
-
-//hots_settings
 App.use("/hots_settings", hotsSettings);
+//hots pricing structure
+App.use("/hots_Tps", hotsTps);
+//hots custom function
+App.use("/hots_customfunction", hotscustomfunction);
+App.use("/hotsdashboard", hotsdashboard);
+App.use("/hots/public", hotspublic);
+
 
 //Shortener
 App.use("/shortener", shortener);
 
-//hots pricing structure
-App.use("/hots_Tps", hotsTps);
-
-//hots custom function
-App.use("/hots_customfunction", hotscustomfunction);
 
 
-App.use("/hotsdashboard", hotsdashboard);
+
+
 
 App.use('/public', express.static(path.join(__dirname, 'public')));
 

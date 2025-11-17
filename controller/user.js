@@ -1,5 +1,5 @@
 const { query } = require("express");
-const { dbConf, dbQuery, addSqlLogger } = require("../config/db");
+const { dbConf, dbQuery } = require("../config/db");
 const fs = require('fs');
 const { feedback_eorder, feedback_eorder_admin } = require("../mailer/eorder/eorder_mailer");
 
@@ -53,7 +53,6 @@ module.exports = {
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get user Port List for ${company_id} success`);
-                        addSqlLogger(req.dataToken.user_id, (query), `--getPort`, `getPort`)
                     }
 
                 })
@@ -97,7 +96,6 @@ module.exports = {
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get user Port List for ${req.dataToken.company_id} success`);
-                        addSqlLogger(req.dataToken.user_id, (query), `--getPort`, `getPort`)
                     }
 
                 })
@@ -232,7 +230,6 @@ module.exports = {
                         console.log(timestamp + "Error get company on ship to party", err);
                     } else {
                         res.status(200).send(results);
-                        addSqlLogger(req.dataToken.user_id, (query), '--data getShipToParty', `getShipToParty`)
                     }
                 })
             } else {
@@ -478,7 +475,6 @@ module.exports = {
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get user profile ${userID} success`);
-                        addSqlLogger(req.dataToken.user_id, (query), '--data getProfile', `getProfile`)
                     }
                 })
 
@@ -545,7 +541,6 @@ module.exports = {
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get user profile ${userID} success`);
-                        addSqlLogger(req.dataToken.user_id, (query), '--data getTOP', `getTOP`)
                     }
 
                 })
@@ -589,7 +584,6 @@ module.exports = {
                 } else {
                     res.status(200).send(results);
                     console.log(timestamp + `user add feedback success `);
-                    addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), `addFeedback-`)
 
                     feedback_eorder(form.title, form.feedback, imgUrl, req.dataToken.company_id, req.dataToken.user_id)
                     feedback_eorder_admin(form.title, form.feedback, imgUrl, req.dataToken.company_id, req.dataToken.user_id)
@@ -624,7 +618,6 @@ module.exports = {
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get user feedback ${userID} success`);
-                        addSqlLogger(req.dataToken.user_id, (query), `--data getFeedback-`, `getFeedback-`)
                     }
                 })
 
@@ -670,7 +663,6 @@ module.exports = {
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `user add feedback success `);
-                        addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), `addContactUs-`)
                     }
                 }
             )
@@ -742,7 +734,6 @@ module.exports = {
                         });
 
                         console.log(timestamp + `Add Reqest Data Change: SUCCESS `);
-                        addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), `addRequstDataChange-`)
                     }
                 }
             )
@@ -787,7 +778,6 @@ module.exports = {
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get user Banner ${req.dataToken.uid} success`);
-                        addSqlLogger(req.dataToken.user_id, (query), '--data getBanner', `getBanner-`)
                     }
 
                 })
@@ -830,7 +820,6 @@ module.exports = {
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get email for ${employee_id} success`);
-                        addSqlLogger(req.dataToken.user_id, (query), '--data getEmail', `getEmail-`)
                     }
                 })
 
@@ -876,7 +865,6 @@ module.exports = {
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `update user email list for ${employee_id} success`);
-                        addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), `updateEmail-`)
                     }
                 }
                 )

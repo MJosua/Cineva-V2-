@@ -15,7 +15,10 @@ router.get("/verify-token", decodeTokenHT, hotsAuth.verifyTokenForgotPassword);
 router.post("/change-forgot-password",  hotsAuth.changePasswordForgotPassword);
 router.post("/change_pass_forgot", decodeTokenHT, hotsAuth.changePasswordForgotPassword); 
 
-
+//auth register
+router.post('/register', hotsAuth.register);
+router.post('/approve-draft/:draft_id', decodeTokenHT, hotsAuth.approveDraft);
+router.get('/verify/:token', hotsAuth.verifyByEmail);
 
 router.post('/pm/login', hotsAuth.pmlogin)
 router.post('/pm/logout', decodeTokenHT, hotsAuth.pmlogout)

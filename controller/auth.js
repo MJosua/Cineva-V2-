@@ -201,7 +201,6 @@ module.exports = {
                     token,
                     message: `Wrong combination of Username or Password!`
                   });
-                  addSqlLogger((userData[0].user_id), query, 'success: false', 'login')
                   console.log(timestamp + `==> Auth Login ${userID} False`);
                 } else {
 
@@ -502,7 +501,6 @@ module.exports = {
             success: true,
             message: " Your Password has Changed!",
           });
-          addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(sqlInject)), 'changePassword')
           // }
         } else {
           res.status(200).send({
@@ -567,7 +565,6 @@ module.exports = {
         });
 
         console.log(timestamp + '##### FORGOT PASSWORD =>' + req.body.uid + "=> uid valid")
-        addSqlLogger(0, query, (JSON.stringify(sqlUpdateToken)), 'forgotPassword');
 
       } else {
 

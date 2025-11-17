@@ -2,7 +2,6 @@ const {
     dbHots,
     dbQueryHots,
     dbQuery,
-    // addSqlLogger
 } = require("../../config/db");
 // const cookieParser = require('cookie-parser');
 
@@ -103,6 +102,7 @@ module.exports = {
             }
 
             if (!results1.length) {
+                console.log(timestamp, "GET MENU Failed zero role");
                 res.status(501).send({
                     success: false,
                     message: 'Role is not set!'

@@ -103,6 +103,64 @@ module.exports = {
 
     },
 
+
+    hotsVerifyEmailMailer: async (address, token, firstname, lastname) => {
+        let date = new Date();
+        let timestamp = date.toLocaleDateString("id") + " " + date.toLocaleTimeString("id") + " : ";
+
+        // 🟢 Generate verify link
+        const verifyLink = `${process.env.FE_URL_HOTS}/verify?token=${token}`;
+
+        // 🧭 Log link to console for local/dev debugging
+        console.log("\n----------------------------------------------------");
+        console.log("📧 [HOTS Verify Email Debug Mode]");
+        console.log("Recipient:", address);
+        console.log("Verification URL:", verifyLink);
+        console.log("----------------------------------------------------\n");
+
+        // 🧩 Email HTML Template
+        const htmlContent = `
+          <div style="font-family: Arial, sans-serif; color: #333;">
+            <h2>Welcome to HOTS (Help Order Ticket System)</h2>
+            <p>Dear ${firstname} ${lastname},</p>
+            <p>Thank you for registering with the HOTS system.</p>
+            <p>Please verify your email address by clicking the button below:</p>
+    
+            <div style="margin: 20px 0;">
+              <a href="${verifyLink}" 
+                 style="background-color:#007bff; color:#fff; padding:10px 20px; text-decoration:none; border-radius:5px;">
+                 Verify My Email
+              </a>
+            </div>
+    
+            <p>If the button doesn’t work, copy this link into your browser:</p>
+            <p style="word-wrap:break-word; color:#007bff;">${verifyLink}</p>
+    
+            <p><b>Note:</b> This link expires in 30 minutes.</p>
+    
+            <p>Best regards,<br><strong>HOTS System</strong></p>
+          </div>
+        `;
+
+        try {
+            // Only send if transporter works (SMTP up)
+            const info = await transporter.sendMail({
+                from: mailaccount,
+                to: address,
+                subject: `[HOTS] Verify your email address`,
+                html: htmlContent,
+            });
+
+            console.log(`${timestamp} ✅ Verification email sent to ${address}`);
+            console.log(`Message ID: ${info.messageId}`);
+        } catch (error) {
+            // 🧩 Graceful fallback for dev/local
+            console.log(`${timestamp} ⚠️ Email sending skipped (SMTP down).`);
+            console.log(`🔗 Use this URL to manually verify: ${verifyLink}`);
+        }
+    },
+
+
     hotsForgotPasswordMailer: async (address, token) => {
         let date = new Date();
         let timestamp =
@@ -201,15 +259,15 @@ module.exports = {
             if (itemRows[i].lbl_col === 'Item Name') {
                 const itemName = itemRows[i].cstm_col;
 
-                const qty = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity + Unit')
+                const qty = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity / Unit')
                     ? itemRows[i + 1].cstm_col
                     : '';
 
-                const qtypcs = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity + Unit' && itemRows[i + 1].cstm_col.toLowerCase().includes('pcs'))
+                const qtypcs = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity / Unit' && itemRows[i + 1].cstm_col.toLowerCase().includes('pcs'))
                     ? itemRows[i + 1].cstm_col
                     : '';
 
-                const qtyctn = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity + Unit' && itemRows[i + 1].cstm_col.toLowerCase().includes('ctn'))
+                const qtyctn = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity / Unit' && itemRows[i + 1].cstm_col.toLowerCase().includes('ctn'))
                     ? itemRows[i + 1].cstm_col
                     : '';
 
@@ -279,7 +337,7 @@ module.exports = {
             day: '2-digit',
             month: 'short',
             year: 'numeric'
-          }); 
+        });
 
         const htmlContent = `
         <div>
@@ -409,7 +467,7 @@ module.exports = {
             WHERE td.ticket_id = ?`,
             [ticket_id]
         );
-        console.log("dataResult",dataResult[0])
+        console.log("dataResult", dataResult[0])
         const service_name = dataResult[0].service_name;
         const user_name = dataResult[0].user_name;
         const currentstep = dataResult[0].current_step;
@@ -493,15 +551,15 @@ module.exports = {
             if (itemRows[i].lbl_col === 'Item Name') {
                 const itemName = itemRows[i].cstm_col;
 
-                const qty = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity + Unit')
+                const qty = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity / Unit')
                     ? itemRows[i + 1].cstm_col
                     : '';
 
-                const qtypcs = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity + Unit' && itemRows[i + 1].cstm_col.toLowerCase().includes('pcs'))
+                const qtypcs = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity / Unit' && itemRows[i + 1].cstm_col.toLowerCase().includes('pcs'))
                     ? itemRows[i + 1].cstm_col
                     : '';
 
-                const qtyctn = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity + Unit' && itemRows[i + 1].cstm_col.toLowerCase().includes('ctn'))
+                const qtyctn = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity / Unit' && itemRows[i + 1].cstm_col.toLowerCase().includes('ctn'))
                     ? itemRows[i + 1].cstm_col
                     : '';
 

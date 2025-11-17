@@ -1,7 +1,6 @@
 const {
     dbHots,
     dbQueryHots,
-    // addSqlLogger
 } = require("../../config/db");
 
 const user_controller = {

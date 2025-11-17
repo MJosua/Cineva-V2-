@@ -13,6 +13,8 @@ const productControllerTest = require('./product_test')
 
 const cardGenerator = require('./cardGenerator')
 
+//hots 
+
 const hotsAuth = require('./hots_controller/hotsAuth')
 const hotsAdmin = require('./hots_controller/hotsAdmin')
 const hotsTicket = require('./hots_controller/hotsTicket')
@@ -20,6 +22,8 @@ const hotsSettingsController = require('./hots_controller/hotsSettingsController
 const hotsTps = require('./hots_controller/hotsTps')
 const hotscustomfunctionController = require('./hots_controller/hotscustomfunctionController')
 const hotsSRFController = require('./hots_controller/hotsSRFController');
+const hotsPublicController = require('./hots_controller/hotsPublicController');
+
 
 const shortenerController = require('./shortenerController')
 
@@ -66,7 +70,9 @@ module.exports = {
     hotsTicket,
     hotsSettingsController,
     hotsDashboardController,
+    hotsPublicController,
 
+    
     // searates
     srtsController,
 

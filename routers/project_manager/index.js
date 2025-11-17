@@ -14,6 +14,8 @@ const taskRoutes = require('./task_routes');
 const ganttRoutes = require('./gantt_routes');
 const kanbanRoutes = require('./kanban_routes');
 const projectCommentRoutes = require('./project_comment_routes');
+const hotspublic = require('../hots/hotsPublic');
+
 
 module.exports = {
   dashboard: dashboardRoutes,

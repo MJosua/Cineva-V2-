@@ -85,7 +85,6 @@ module.exports = {
                 results
               });
 
-              addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'addAccount')
               console.log(timestamp + `Admin create account ${userID} success`);
             }
           }
@@ -194,7 +193,6 @@ module.exports = {
             message: 'Berhasil edit akun :)',
             results
           });
-          addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'editAccount')
           console.log(timestamp + `Admin Edit Account Data ${userID} success`);
         }
       }
@@ -384,7 +382,6 @@ WHERE
               results,
             });
 
-            addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'changeActive')
             console.log(`${timestamp}Admin Active for ${username} by: ${req.dataToken.uid} success`)
           }
         })
@@ -490,7 +487,6 @@ WHERE
             results
           });
 
-          addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'addConfig')
           console.log(timestamp + "Admin addConfig by : " + req.dataToken.uid + 'success')
         }
       }
@@ -545,7 +541,6 @@ WHERE
             success: true,
             results
           });
-          addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'editConfig')
           console.log(timestamp + "Admin edit Config by : " + req.dataToken.uid + 'success')
         }
       })
@@ -590,7 +585,6 @@ WHERE
             success: true,
             results
           });
-          addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'deleteConfig')
           console.log(timestamp + "Admin edit Config by : " + req.dataToken.uid + 'success')
         }
       }
@@ -642,7 +636,6 @@ WHERE
             results
           });
 
-          addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'editConfigUser_id')
           console.log(timestamp + "Admin edit Config by : " + req.dataToken.uid + 'success')
         }
       }
@@ -694,7 +687,6 @@ WHERE
             results
           });
 
-          addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'editConfigCompany_id')
           console.log(timestamp + "Admin edit Config by : " + req.dataToken.uid + 'success')
         }
       }

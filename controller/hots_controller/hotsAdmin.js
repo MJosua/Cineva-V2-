@@ -1,7 +1,6 @@
 const {
     dbHots,
     dbQueryHots,
-    // addSqlLogger
 } = require("../../config/db");
 const { generateTokenHT, hashPasswordHT } = require("../../config/encrypts");
 const { hotsForgotPasswordMailer } = require('../../mailer/hots/hots_mailer');

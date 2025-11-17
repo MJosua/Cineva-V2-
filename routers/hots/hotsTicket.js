@@ -33,6 +33,7 @@ const dynamicUploadMiddleware = (req, res, next) => {
 
 // File uploads
 route.post('/upload/files/', decodeTokenHT, dynamicUploadMiddleware, hotsTicket.uploadFiles)
+route.post('/download/zip/', decodeTokenHT, hotsTicket.downloadzip)
 
 // Ticket creation
 route.post('/create/ticket/:service_id', decodeTokenHT, dynamicUploadMiddleware, hotsTicket.createTicket)

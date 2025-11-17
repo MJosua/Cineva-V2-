@@ -1,11 +1,11 @@
 const {
     dbHots,
     dbQueryHots,
-    addSqlLogger
 } = require("../../config/db");
 const { param } = require("../../routers/auth");
 const { uploadFile } = require("../order");
-
+const path = require("path");
+const archiver = require("archiver");
 const { io } = require('../../index');
 
 const hotsCheckApprovalLevel = require("../../config/hotsCheckApprovalLevel");
@@ -33,6 +33,31 @@ const generateID = (user_id, service_id, row_number) => {
     const formattedServiceID = String(service_id).padStart(2, '0');
 
     return parseInt(`${year}${month}${day}${user_id}${formattedServiceID}${row_number + 1}`);
+}
+
+async function generateCustomTicketID(db, service_id, user_id) {
+    const year = new Date().getFullYear().toString().slice(-2);
+    const service = String(service_id).padStart(2, "0");
+    const user = String(user_id).padStart(4, "0");
+
+    // 🧩 Check last used ticket for this pattern
+    const [rows] = await db.promise().query(
+        `SELECT ticket_id 
+         FROM t_ticket 
+         WHERE ticket_id LIKE ? 
+         ORDER BY ticket_id DESC 
+         LIMIT 1`,
+        [`${year}${service}${user}%`]
+    );
+
+    let running = "0001";
+    if (rows.length > 0) {
+        const last = rows[0].ticket_id.toString();
+        const lastRun = parseInt(last.slice(-4)) || 0;
+        running = String(lastRun + 1).padStart(4, "0");
+    }
+
+    return `${year}${service}${user}${running}`;
 }
 
 // UNTUK GENERATE NOMOR BELAKANG ID
@@ -3992,7 +4017,8 @@ module.exports = {
         }
 
         const fullJsonText = JSON.stringify(req.body, null, 2);
-        console.log("req.body for tickets (full JSON):\n", fullJsonText);
+        // console.log("req.body for tickets (full JSON):\n", fullJsonText);
+        // console.log("=================================================================");
 
         try {
             // Get service details
@@ -4028,15 +4054,18 @@ module.exports = {
                 assigned_to = user_id;
             }
 
-            const [ticketResult] = await dbHots.promise().execute(`
+            const ticket_id = await generateCustomTicketID(dbHots, service_id, user_id);
+
+            // 🧾 Log generated ID
+            console.log(timestamp, yellowTerminal, `Generated Ticket ID: ${ticket_id}`);
+
+            // 🪄 Insert with custom ticket_id
+            await dbHots.promise().execute(`
                 INSERT INTO t_ticket (
-                    service_id, status_id, created_by, assigned_team, assigned_to,
+                    ticket_id, service_id, status_id, created_by, assigned_team, assigned_to,
                     creation_date, last_update, current_step
-                ) VALUES (?, 1, ?, ?, ?, NOW(), NOW(), ?)
-            `, [service_id, user_id, assigned_team, assigned_to, current_step]);
-
-            const ticket_id = ticketResult.insertId;
-
+                ) VALUES (?, ?, 1, ?, ?, ?, NOW(), NOW(), ?)
+            `, [ticket_id, service_id, user_id, assigned_team, assigned_to, current_step]);
             // Insert ticket detail
             const detailInsertPromises = [];
             let orderCounter = 0;
@@ -4177,7 +4206,7 @@ module.exports = {
 
                 } else if (step.step_type === 'role') {
                     const [roleUsers] = await dbHots.promise().execute(
-                        `SELECT user_id FROM user WHERE user_role = ? AND is_active = 1`,
+                        `SELECT user_id FROM user WHERE role_id = ? AND active = 1`,
                         [step.assigned_value]
                     );
 
@@ -4199,7 +4228,7 @@ module.exports = {
                     let approverId = superior_id;
                     if (!approverId) {
                         const [[admin] = {}] = await dbHots.promise().execute(
-                            `SELECT user_id FROM user WHERE user_role = 1 AND is_active = 1 LIMIT 1`
+                            `SELECT user_id FROM user WHERE role_id = 1 AND active = 1 LIMIT 1`
                         );
                         approverId = admin?.user_id || null;
                     }
@@ -4234,7 +4263,6 @@ module.exports = {
 
 
             if (workflowSteps && workflowSteps.length > 0) {
-                console.log("workflowSteps", workflowSteps)
 
                 hotsApproveRequest(false, ticket_id);
             }
@@ -4270,7 +4298,7 @@ module.exports = {
     uploadFiles: (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-
+        console.log("HOTS uploadFiles called");
         let user_id = req.dataToken.user_id;
 
         if (!req.files || req.files.length === 0) {
@@ -4292,9 +4320,9 @@ module.exports = {
                     if (err) reject(err);
                     else resolve({
                         upload_id: result.insertId,
-                        file_path: file.path,
-                        filename: file.originalname,
-                        url: `/files/hots/it_support/${file.filename}` // Adjust based on your file serving setup
+                        newName: file.filename,
+                        fileUrl: `/files/hots/it_support/${file.filename}`,
+                        fileOriginalName: file.originalname,
                     });
                 });
             });
@@ -4306,7 +4334,8 @@ module.exports = {
                 return res.status(200).send({
                     success: true,
                     message: "FILES UPLOADED SUCCESSFULLY",
-                    data: results
+                    data: results,
+                    ...(results[0] || {}) // merge first item to top-level
                 });
             })
             .catch(err => {
@@ -4316,6 +4345,78 @@ module.exports = {
                     message: err
                 });
             });
+    },
+
+    downloadzip: async (req, res) => {
+        let date = new Date();
+        let timestamp =
+            yellowTerminal +
+            date.toLocaleDateString("id") +
+            " " +
+            date.toLocaleTimeString("id") +
+            " : ";
+
+        console.log(timestamp + "HOTS downloadzip called");
+
+        const { files } = req.body;
+        const user_id = req.dataToken?.user_id;
+
+        if (!Array.isArray(files) || files.length === 0) {
+            return res.status(400).send({
+                success: false,
+                message: "No files provided for zipping",
+            });
+        }
+
+        try {
+            // Create unique ZIP file path
+            const zipName = `attachments-${user_id || "anon"}-${Date.now()}.zip`;
+            const zipPath = path.join(__dirname, "../public/temp", zipName);
+
+            // Ensure temp directory exists
+            fs.mkdirSync(path.dirname(zipPath), { recursive: true });
+
+            // Stream setup
+            const output = fs.createWriteStream(zipPath);
+            const archive = archiver("zip", { zlib: { level: 9 } });
+
+            output.on("close", () => {
+                console.log(
+                    timestamp +
+                    `ZIP created (${(archive.pointer() / 1024).toFixed(2)} KB): ${zipName}`
+                );
+                res.download(zipPath, zipName, (err) => {
+                    if (err) console.error("Error sending zip:", err);
+                    fs.unlink(zipPath, () => { }); // 🧹 cleanup after sending
+                });
+            });
+
+            archive.on("error", (err) => {
+                throw err;
+            });
+
+            archive.pipe(output);
+
+            // Add each file
+            for (const f of files) {
+                const cleanPath = f.replace(/^\/+/, ""); // remove leading slashes
+                const filePath = path.join(__dirname, "../../public", cleanPath);
+                if (fs.existsSync(filePath)) {
+                    archive.file(filePath, { name: path.basename(filePath) });
+                } else {
+                    console.warn(timestamp + "File not found:", filePath);
+                }
+            }
+
+            await archive.finalize();
+        } catch (err) {
+            console.error(timestamp + "ZIP creation failed:", err);
+            return res.status(500).send({
+                success: false,
+                message: "ZIP creation failed",
+                error: err.message,
+            });
+        }
     },
 
     // 3. Get My Tickets (FIXED from your existing)
@@ -5182,19 +5283,17 @@ module.exports = {
 
             const ticket = ticketRows[0];
             const { current_step, service_id } = ticket;
-            console.log("ticket============================================")
-            console.log("ticket", ticket)
-            console.log("step_order", current_step)
-            console.log("ticket_id", ticket_id)
 
-            // Approve current approver
+            console.log("ticket", ticket);
+
+            // ✅ Approve current approver (set remark)
             await conn.query(`
             UPDATE t_approval_event 
             SET approval_status = 1, approve_date = NOW(), remark = ?
             WHERE approval_id = ? AND approver_id = ? AND approval_status = 0
           `, [comment, ticket_id, user_id]);
 
-            // Approve others in same step (parallel)
+            // ✅ Approve others in the same step (parallel)
             await conn.query(`
             UPDATE t_approval_event ae
             LEFT JOIN t_workflow_step ws ON ws.step_id = ae.step_id
@@ -5204,55 +5303,64 @@ module.exports = {
 
             console.log(timestamp, `Step ${current_step} approved for ticket ${ticket_id}`);
 
-
-
-            // Check for next pending step
+            // ✅ Check if there is a next step
             const [nextStepCheck] = await conn.query(`
             SELECT COUNT(*) as pending_count, MIN(ae.approval_order) as next_step
             FROM t_approval_event ae
             LEFT JOIN t_workflow_step ws ON ws.step_id = ae.step_id
-            WHERE ae.approval_id = ? AND ae.approval_status = 0 
+            WHERE ae.approval_id = ? AND ae.approval_status = 0
           `, [ticket_id]);
 
             const hasNext = nextStepCheck[0].pending_count > 0;
             const nextStep = nextStepCheck[0].next_step;
 
+            // ✅ Commit the approval update first
             await conn.commit();
+            conn.release(); // ✅ Release connection BEFORE doing triggers
 
+            // ✅ Wait a moment to ensure DB visibility
+            await new Promise(r => setTimeout(r, 200));
+
+            // ✅ If there is a next step → move ticket forward
             if (hasNext) {
-                await conn.query(`
+                await dbHots.promise().query(`
               UPDATE t_ticket 
               SET current_step = ?, last_update = NOW()
               WHERE ticket_id = ?
             `, [nextStep, ticket_id]);
 
-                await module.exports.executeCustomFunctionsByTrigger(service_id, ticket_id, 'on_trigger', {
-                    approver_id: user_id
-                });
+                // ✅ Trigger custom functions (like auto mail/document)
+                await module.exports.executeCustomFunctionsByTrigger(
+                    service_id,
+                    ticket_id,
+                    'on_trigger',
+                    { approver_id: user_id }
+                );
 
                 console.log(timestamp, `Ticket ${ticket_id} moved to step ${nextStep}`);
             } else {
-
-
                 console.log(timestamp, `Ticket ${ticket_id} fully approved`);
 
-                await module.exports.executeCustomFunctionsByTrigger(service_id, ticket_id, 'on_trigger', {
-                    final_approver_id: user_id,
-                    total_steps: current_step
-                });
+                await dbHots.promise().query(`
+              UPDATE t_ticket 
+              SET status_id = 3, current_step = NULL, last_update = NOW()
+              WHERE ticket_id = ?
+            `, [ticket_id]);
 
-                await conn.query(`
-                    UPDATE t_ticket 
-                    SET status_id = 3, current_step = NULL, last_update = NOW()
-                    WHERE ticket_id = ?
-                  `, [ticket_id]);
-
-
+                // ✅ Trigger final custom functions
+                await module.exports.executeCustomFunctionsByTrigger(
+                    service_id,
+                    ticket_id,
+                    'on_trigger',
+                    { final_approver_id: user_id, total_steps: current_step }
+                );
             }
 
-            await conn.commit();
+            // ✅ Wait again to ensure remark is visible before sending email
+            await new Promise(r => setTimeout(r, 150));
 
-            hotsApproveRequest(false, ticket_id);
+            // ✅ Send approval notification email safely (fresh connection)
+            await hotsApproveRequest(false, ticket_id);
 
             return res.status(200).json({
                 success: true,
@@ -5272,6 +5380,7 @@ module.exports = {
             conn.release();
         }
     },
+
 
 
     mapTicketDataToVariables: (ticketData, ticketDetail) => {

@@ -2,7 +2,6 @@
 const {
     dbHots,
     dbQueryHots,
-    addSqlLogger
 } = require("../../config/db");
 /**
  * Get dashboard functions filtered by user role & department

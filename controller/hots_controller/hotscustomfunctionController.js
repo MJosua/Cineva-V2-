@@ -3,7 +3,6 @@ const {
     dbQueryHots,
     dbQuery,
     dbConf,
-    // addSqlLogger
 } = require("../../config/db"); // Adjust path as needed
 const XLSX = require('xlsx');
 const fs = require('fs');
@@ -708,12 +707,44 @@ module.exports = {
             fs.mkdirSync(dirPath, { recursive: true });
         }
 
-        const data = !Array.isArray(ticketData) ? { ...ticketData, ...params } : { ...params };
-        const detailRows = Array.isArray(params.detail_rows) ? params.detail_rows : Array.isArray(ticketData) ? ticketData : [];
+        // const data = !Array.isArray(ticketData) ? { ...ticketData, ...params } : { ...params };
+        // const detailRows = Array.isArray(params.detail_rows) ? params.detail_rows : Array.isArray(ticketData) ? ticketData : [];
+        // 🧠 Normalize ticket data
+        let data = {};
+        let detailRows = [];
 
-        console.log("data", data)
+        // Case 1: When ticketData is an array (as in your logs)
+        if (Array.isArray(ticketData)) {
+            // Extract general ticket-level fields (from the first row)
+            const baseInfo = {
+                ticket_id: ticketData[0]?.ticket_id,
+                service_id: ticketData[0]?.service_id,
+                status_id: ticketData[0]?.status_id,
+                created_by: ticketData[0]?.created_by,
+                assigned_team: ticketData[0]?.assigned_team,
+                assigned_to: ticketData[0]?.assigned_to,
+                creation_date: ticketData[0]?.creation_date,
+                last_update: ticketData[0]?.last_update,
+                current_step: ticketData[0]?.current_step,
+            };
 
+            // Store all rows as details
+            detailRows = ticketData.map(r => ({
+                lbl_col: r.lbl_col,
+                cstm_col: r.cstm_col,
+                order_col: r.order_col,
+            }));
 
+            // Merge params (contains requester_name, service_name, etc.)
+            data = { ...baseInfo, ...params, detail_rows: detailRows };
+
+            // Case 2: When ticketData is a single object (fallback)
+        } else if (ticketData && typeof ticketData === 'object') {
+            data = { ...ticketData, ...params };
+            detailRows = params.detail_rows || ticketData.detail_rows || [];
+        }
+
+        // ✅ Final output
 
 
         let itemRowsHtml = '';
@@ -731,8 +762,6 @@ module.exports = {
             }
         };
 
-
-
         const getByLabel = (labelKeyword) => {
             const row = detailRows.find(r =>
                 r.lbl_col?.toLowerCase().includes(labelKeyword.toLowerCase())
@@ -740,17 +769,7 @@ module.exports = {
             return cleanValue(row?.cstm_col || '');
         };
 
-        const getSelectedFilterByLabel = (labelKeyword) => {
-            if (!Array.isArray(req.body)) return null;
 
-            const entry = req.body.find(
-                (item) =>
-                    item.label?.toLowerCase().includes(labelKeyword.toLowerCase()) &&
-                    item.selectedObject
-            );
-
-            return entry?.selectedObject?.filter ?? null;
-        };
 
         const getteamleaderEmail = async (teamId) => {
             try {
@@ -783,14 +802,13 @@ module.exports = {
                                     from
                                         iod.map_factory_pic
                                     where
-                                        plant_id = ${factory}
+                                        plant_id = ?
                                         and 
                                                 end_date is null
                                     order by
                                         flag
                     `;
-                const result = await dbQuery(query);
-                console.log("result", result)
+                const result = await dbQuery(query, [factory]);
                 console.log("factory", factory)
                 return (result && result.length > 0) ? result : [{ pic_name: '', flag: '1' }];
             } catch (error) {
@@ -831,88 +849,130 @@ module.exports = {
             return romans[month - 1];
         };
 
-        const getSRFNumber = async (factory, categoryName) => {
+        const getSRFNumberDynamic = async (factory, categoryName, service_id, ticket_id) => {
             const currentDate = new Date();
             const year = currentDate.getFullYear();
-            const month = monthToRoman(currentDate.getMonth() + 1);
-            const currentMonth = currentDate.getMonth() + 1;
+            const month = currentDate.getMonth() + 1;
+            const romanMonth = monthToRoman(month);
 
-            // Step 1: Get category shortname
-            const categoryQuery = await dbQueryHots(`
-                    SELECT samplecat_shortname 
-                    FROM m_sample_category 
-                    WHERE samplecat_name LIKE ${dbHots.escape('%' + categoryName + '%')}
-                `);
-            const category = categoryQuery[0]?.samplecat_shortname;
+            // ✅ Step 0: Check if SRF already exists in t_ticket_detail
+            const [existingSRF] = await dbHots.promise().query(
+                `SELECT cstm_col AS doc_no 
+               FROM t_ticket_detail 
+               WHERE ticket_id = ? AND lbl_col = 'SRF No.' 
+               LIMIT 1`,
+                [ticket_id]
+            );
 
-            if (!category || category === "NICI") return "-";
+            if (existingSRF.length > 0 && existingSRF[0].doc_no) {
+                console.log(`🔁 Using existing SRF from t_ticket_detail: ${existingSRF[0].doc_no}`);
+                return existingSRF[0].doc_no;
+            }
 
-            const factoryPart = category === "FS" ? "" : `/${factory}`;
+            // Step 1: Resolve category shortname
+            const [catQuery] = await dbHots.promise().query(`
+              SELECT samplecat_shortname 
+              FROM m_sample_category 
+              WHERE samplecat_name LIKE ${dbHots.escape('%' + categoryName + '%')}
+            `);
+            const category = catQuery?.[0]?.samplecat_shortname || "GEN";
+            if (category === "NICI") return "-";
 
-            // Step 2: Get current count
-            const runQuery = await dbQueryHots(`
-                    SELECT COUNT(ticket_id) AS total
-                    FROM t_ticket
-                    WHERE MONTH(creation_date) = ${currentMonth}
-                    AND YEAR(creation_date) = ${year}
-                `);
+            const factoryPart = category === "/FS" ? "" : `/${factory}`;
 
-            const nextNumber = String((runQuery[0]?.total || 0) + 1).padStart(3, '0');
+            // Step 2: Generate new SRF dynamically
+            const conn = await dbHots.promise().getConnection();
+            try {
+                await conn.beginTransaction();
 
-            const srfNumber = `${nextNumber}/SRF${factoryPart}/${category}/${month}/${year}`;
-            return srfNumber;
+                const [existing] = await conn.query(
+                    `
+                SELECT MAX(CAST(td.cstm_col AS UNSIGNED)) AS last_seq
+                FROM t_ticket_doc_no td
+                WHERE td.lbl_col = 'sequence'
+                AND td.service_id = ?
+                AND EXISTS (
+                  SELECT 1 FROM t_ticket_doc_no f
+                  WHERE f.doc_no = td.doc_no
+                  AND f.lbl_col = 'factory' AND f.cstm_col = ?
+                )
+                AND EXISTS (
+                  SELECT 1 FROM t_ticket_doc_no c
+                  WHERE c.doc_no = td.doc_no
+                  AND c.lbl_col = 'category' AND c.cstm_col = ?
+                )
+                AND EXISTS (
+                  SELECT 1 FROM t_ticket_doc_no m
+                  WHERE m.doc_no = td.doc_no
+                  AND m.lbl_col = 'month' AND m.cstm_col = ?
+                )
+                AND EXISTS (
+                  SELECT 1 FROM t_ticket_doc_no y
+                  WHERE y.doc_no = td.doc_no
+                  AND y.lbl_col = 'year' AND y.cstm_col = ?
+                )
+                `,
+                    [service_id, factory, category, month.toString(), year.toString()]
+                );
+
+                const nextSeq = (existing?.[0]?.last_seq || 0) + 1;
+                const paddedSeq = String(nextSeq).padStart(3, "0");
+                const srfNumber = `${paddedSeq}/SRF${factoryPart}/${category}/${romanMonth}/${year}`;
+
+                // Step 3: Insert decomposed info dynamically
+                const parts = [
+                    { lbl_col: "factory", cstm_col: factory },
+                    { lbl_col: "category", cstm_col: category },
+                    { lbl_col: "month", cstm_col: month.toString() },
+                    { lbl_col: "year", cstm_col: year.toString() },
+                    { lbl_col: "sequence", cstm_col: nextSeq.toString() },
+                ];
+
+                for (const part of parts) {
+                    await conn.query(
+                        `INSERT INTO t_ticket_doc_no (ticket_id, doc_no, lbl_col, cstm_col, service_id)
+                   VALUES (?, ?, ?, ?, ?)`,
+                        [ticket_id, srfNumber, part.lbl_col, part.cstm_col, service_id]
+                    );
+                }
+
+                // ✅ Step 4: Save SRF number into t_ticket_detail
+                await conn.query(
+                    `INSERT INTO t_ticket_detail (ticket_id, lbl_col, cstm_col)
+                 VALUES (?, 'SRF No.', ?)`,
+                    [ticket_id, srfNumber]
+                );
+
+                await conn.commit();
+
+                console.log(`✅ New SRF created and synced: ${srfNumber}`);
+                return srfNumber;
+            } catch (err) {
+                await conn.rollback();
+                console.error("❌ Error generating dynamic SRF number:", err);
+                throw err;
+            } finally {
+                conn.release();
+            }
         };
+
 
 
         const teamLeader = await getteamleaderEmail(17);
         const factoryPIC = await getFactoryPPIC(getByLabel('Factory_id'));
-        const approvallist = await getApproval(data?.ticket_id);
+        console.log("getByLabel('Factory_id')", getByLabel('Factory_id'))
+        const approvallistRaw = await getApproval(data?.ticket_id);
+        const approvallist = approvallistRaw.filter(a => a.approval_order !== 2);
         const factory = getByLabel('factory');
         const factory_id = getByLabel('Factory_id');
         const sample = getByLabel('sample');
-        const generatesrf = await getSRFNumber(factory, sample);
-
+        const generatesrf = await getSRFNumberDynamic(factory, sample, data?.service_id, data?.ticket_id);
 
         console.log("factoryPIC", factoryPIC)
 
-        const getAllEmployees = async (data, approvallist) => {
-            try {
-                // Urutkan: created_by dulu, lalu approver_id sesuai approval_order
-                const orderedUserIds = [
-                    data.created_by,
-                    ...approvallist
-                        .sort((a, b) => a.approval_order - b.approval_order)
-                        .map(item => item.approver_id)
-                ];
+        
 
-                // Hilangkan duplikat tapi pertahankan urutan (pakai Set)
-                const uniqueOrderedIds = [...new Set(orderedUserIds)];
 
-                // Query pakai IN biar lebih singkat
-                const query = `
-                    SELECT user_id, employee_id
-                    FROM user
-                    WHERE user_id IN (${uniqueOrderedIds.map(id => `'${id}'`).join(', ')})
-                  `;
-
-                const result = await dbQueryHots(query);
-
-                // Susun hasil sesuai urutan original (karena SELECT IN tidak menjamin urutan)
-                const orderedResult = uniqueOrderedIds.map(id =>
-                    result.find(user => user.user_id === id) || { user_id: id, fullname: 'Unknown' }
-                );
-
-                return orderedResult;
-            } catch (error) {
-                console.error('Error fetching employees:', error);
-                return [];
-            }
-        };
-
-        const employees = await getAllEmployees(data, approvallist);
-        console.log(employees);
-
-        console.table(approvallist)
 
 
         const itemRows = detailRows.filter(row =>
@@ -961,7 +1021,7 @@ module.exports = {
         let notesHtml = '';
 
 
-        approvallist.forEach((data, i) => {
+        approvallistRaw.forEach((data, i) => {
             if (data.remark && data.remark.trim() !== '') {
                 notesHtml += `
                 <li>${data.fullname} : ${data.remark}</li>
@@ -973,6 +1033,53 @@ module.exports = {
 
         // Group 2 (Cc)
         const ccPICs = factoryPIC.filter(p => p.flag === 2).map(p => p.pic_name);
+
+        const approvalColumnsHtml = approvallist
+            .filter(a => a.approval_order !== 2) // skip unwanted ones
+            .map((approver, index) => {
+                // Find matching employee
+
+                console.log("approver",approver)
+
+                const isApproved = !!approver.approve_date;
+
+                const signBlock = isApproved
+                    ? `
+              <div style="height: 100%; max-height:130px; display:flex; align-items:center;">
+                <img
+                  alt="sign"
+                  src="https://backend.indofoodinternational.com:2864/ttd/sign-${approver.approver_id}.jpg"
+                  style="width:120px;display:block;margin:0 auto 5px auto;"
+                />
+              </div>
+            `
+                    : `
+              <div style="height: 100%; max-height:130px; display:flex; align-items:center;"></div>
+            `;
+
+                const roleTitles = {
+                    1: "Regional Manager",
+                    3: "Logistic Manager",
+                    4: "Accounting Manager"
+                };
+
+                const positionLabel = roleTitles[approver.approval_order] || `Approver ${approver.approval_order}`;
+
+                return `
+            <td style="padding:10px;vertical-align:top;">
+              ${signBlock}
+              <br>
+              ${approver.fullname || "—"}
+              <br>
+              <span style="font-size:12px;color:#555;">${positionLabel}</span>
+            </td>
+          `;
+            })
+            .join("");
+
+
+
+
 
         const html = `
               <html>
@@ -998,13 +1105,13 @@ module.exports = {
                     <div>
                         <img
                             src="https://backend.indofoodinternational.com:2864/aset/image/indofood_header_logo.png"
-                            style="height:50px"
+                            style="height:35px"
                         />
                     </div>
                     <div style="display:flex;justify-content:flex-end;">
                         <img
                             src="https://backend.indofoodinternational.com:2864/aset/image/icbp_header_logo.png"
-                            style="height:50px"
+                            style="height:35px"
                         />
                     </div>
                 </div>
@@ -1125,7 +1232,7 @@ module.exports = {
                     
                         <img
                             alt="sign"
-                            src="https://backend.indofoodinternational.com:2864/ttd/sign-${employees[0]?.employee_id}.jpg"
+                            src="https://backend.indofoodinternational.com:2864/ttd/sign-${data.created_by}.jpg"
                             style="width:120px;display:block;margin:0 auto 5px auto;"
                         />
                         </div>
@@ -1136,83 +1243,7 @@ module.exports = {
                     </td>
                     
     
-                    <td style="padding:10px;vertical-align:top;">
-
-                        ${approvallist[1] && approvallist[1].approve_date
-                ? `
-                              <div style="height: 100%; max-height:130px; display:flex; align-items: center;">
-                                <img
-                                  alt="sign"
-                                  src="https://backend.indofoodinternational.com:2864/ttd/sign-${employees[1].employee_id}.jpg"
-                                  style="width:120px;display:block;margin:0 auto 5px auto;"
-                                />
-                              </div>
-                              `
-                :
-                `   
-                 <div style="height: 100%; max-height:130px; display:flex; align-items: center;">
-                                
-                              </div>
-                `
-
-            }    
-                   
-                        <br>
-                        ${approvallist.find(a => a.approval_order === 1)?.fullname || ''}
-                        <br>
-                        <span style="font-size:12px;color:#555;">Regional Manager</span>
-                    </td>
-    
-                    <td style="padding:10px;vertical-align:top;">
-
-                       ${approvallist[2] && approvallist[2].approve_date ?
-                `
-                            <div style="height: 100%; max-height:130px;display:flex; align-items: center;">
-
-                        <img
-                        alt="sign"
-                        src="https://backend.indofoodinternational.com:2864/ttd/sign-${employees[3].employee_id}.jpg"
-                        style="width:120px;display:block;margin:0 auto 5px auto;"
-                         />
-                         </div>
-                         `
-                :
-                `   
-                <div style="height: 100%; max-height:130px; display:flex; align-items: center;">
-                               
-                             </div>
-               `
-
-            }   
-                    
-                   
-                        <br>
-                        ${approvallist.find(a => a.approval_order === 3)?.fullname || ''}
-                        <br>
-                        <span style="font-size:12px;color:#555;">Logistic Manager</span>
-                    </td>
-
-                    <td style="padding:10px;vertical-align:top;">
-
-                       ${approvallist[3] && approvallist[3].approve_date ?
-                `
-                            <div style="height: 100%; max-height:130px;display:flex; align-items: center;">
-
-                        <img
-                        alt="sign"
-                        src="https://backend.indofoodinternational.com:2864/ttd/sign-${employees[4].employee_id}.jpg"
-                        style="width:120px;display:block;margin:0 auto 5px auto;"
-                         />
-                         </div>
-                         `
-                :
-                `   
-                <div style="height: 100%; max-height:130px; display:flex; align-items: center;">
-                               
-                             </div>
-               `
-
-            }   
+                    ${approvalColumnsHtml}
                     
                    
                         <br>

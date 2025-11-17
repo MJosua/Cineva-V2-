@@ -2,16 +2,14 @@ const {
     dbHots,
     dbQueryHots,
     dbQuery,
-    // addSqlLogger
 } = require("../../config/db");
-const { generateTokenHT, hashPasswordHT } = require("../../config/encrypts");
-const { hotsForgotPasswordMailer } = require('../../mailer/hots/hots_mailer');
+const { generateTokenHT, hashPasswordHT, createTokenHT, verifyTokenHT } = require("../../config/encrypts");
+const { hotsForgotPasswordMailer, hotsVerifyEmailMailer } = require('../../mailer/hots/hots_mailer');
 // const cookieParser = require('cookie-parser');
 const { compare } = require('bcrypt');
-
 const bcrypt = require('bcrypt'); // For password comparison
 
-
+const jwt = require('jsonwebtoken');
 
 let yellowTerminal = "\x1b[33m";
 
@@ -26,8 +24,8 @@ module.exports = {
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let { uid, asin } = req.body
-        console.log("req.body",req.body)
-        
+        console.log("req.body", req.body)
+
 
 
         // cari username dulu
@@ -533,18 +531,12 @@ module.exports = {
                                 });
                             } else {
 
-                                // let sqlResetEventLogger = await dbQueryHots(
-                                //     ` UPDATE event_logger 
-                                // SET 
-                                // login_attempt = 0
-                                // WHERE user_id = ${req.dataToken.employee_id}; 
-                                // `);
+                             
 
                                 res.status(200).send({
                                     success: true,
                                     message: "Your Password has Changed!",
                                 });
-                                // addSqlLogger(req.dataToken.employee_id, query, (JSON.stringify(sqlInject)), 'changePasswordForgotPassword');
                                 console.log(timestamp + "Auth forgot password change for email:", req.dataToken.email);
 
 
@@ -646,6 +638,341 @@ module.exports = {
                 data: results[0]
             });
         });
+    },
+
+    register: async (req, res) => {
+        const { uid, firstname, lastname, email, password, department_id } = req.body;
+        console.log("start debug register hots auth");
+        // ✅ 1. Basic Validation
+        if (!uid || !firstname || !lastname || !email || !password || !department_id) {
+            return res.status(400).json({ success: false, message: "All fields are required." });
+        }
+
+        try {
+            // ✅ 2. Check if email/username already exists in user or user_draft
+            const [existingUser] = await dbHots.promise().query(
+                "SELECT user_id FROM user WHERE email = ? OR uid = ? LIMIT 1",
+                [email, uid]
+            );
+
+            const [existingDraft] = await dbHots.promise().query(
+                "SELECT draft_id FROM user_draft WHERE email = ? OR uid = ? LIMIT 1",
+                [email, uid]
+            );
+
+            if (existingUser.length > 0 || existingDraft.length > 0) {
+                return res.status(409).json({ success: false, message: "Email or username already registered." });
+            }
+
+            // ✅ 3. Hash password securely
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            // ✅ 4. Find department leader
+            const [leader] = await dbHots.promise().query(`
+            SELECT u.user_id AS leader_id, u.firstname, u.lastname
+            FROM m_department d
+            JOIN user u ON d.department_head = u.user_id
+            WHERE d.department_id = ?
+            LIMIT 1
+          `, [department_id]);
+
+            const leader_id = leader?.[0]?.leader_id || null;
+
+            // ✅ 5. Insert new draft user
+            const [result] = await dbHots.promise().query(`
+            INSERT INTO user_draft 
+            (uid, firstname, lastname, email, password_hash, department_id, leader_id, approval_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+          `, [uid, firstname, lastname, email, password, department_id, leader_id]);
+
+            const draftId = result.insertId;
+
+            // ✅ 6. Create a verification token (valid 30 minutes)
+            const token = createTokenHT({ draft_id: draftId, email }, "30m");
+
+            // ✅ 7. Save token in registration_token column
+            await dbHots.promise().query(
+                `UPDATE user_draft SET registration_token = ? WHERE draft_id = ?`,
+                [token, draftId]
+            );
+
+            // ✅ 8. Send email verification link
+            await hotsVerifyEmailMailer(email, token, firstname, lastname);
+
+            return res.status(201).json({
+                success: true,
+                message: "Registration successful. Please verify your email address.",
+            });
+
+        } catch (err) {
+            console.error("registerUser error:", err);
+            res.status(500).json({ success: false, message: err.message });
+        }
+    },
+
+
+    verifyByEmail: async (req, res) => {
+        const { token } = req.params;
+        const date = new Date();
+        console.log("verifyEmail token:", token);
+
+        try {
+            // 🔹 Verify the JWT token
+            const data = verifyTokenHT(token);
+            const { draft_id, email } = data;
+
+            // 🔹 Find the draft record
+            const [drafts] = await dbHots.promise().query(
+                "SELECT * FROM user_draft WHERE draft_id = ? AND email = ? LIMIT 1",
+                [draft_id, email]
+            );
+
+            if (!drafts.length) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid or expired token.",
+                });
+            }
+
+            const draft = drafts[0];
+
+            if (draft.approval_status === "verified") {
+                return res.status(200).json({
+                    success: true,
+                    message: "Your email has already been verified.",
+                });
+            }
+
+            // ✅ Step 1: Mark user_draft as verified
+            await dbHots.promise().query(
+                `UPDATE user_draft 
+             SET approval_status = 'verified', approval_date = NOW()
+             WHERE draft_id = ?`,
+                [draft_id]
+            );
+
+            // ✅ Step 2: Copy data into the user table
+            const [insertResult] = await dbHots.promise().query(
+                `INSERT INTO user (
+                role_id, firstname, lastname, uid, pswd, email, 
+                superior_id, active, status, registration_date
+            ) VALUES (1, ?, ?, ?, ?, ?,  ?, 1, 'pending', NOW())`,
+                [
+                    draft.firstname,
+                    draft.lastname,
+                    draft.uid,
+                    draft.password_hash,
+                    draft.email,
+                    draft.leader_id
+                ]
+            );
+
+            const newUserId = insertResult.insertId;
+
+            // ✅ Step 3: Link user_draft → user
+            await dbHots.promise().query(
+                `UPDATE user_draft SET user_id = ? WHERE draft_id = ?`,
+                [newUserId, draft_id]
+            );
+
+            console.log(
+                `${date.toLocaleString("id")} ✅ Verified user copied to 'user' table. ID: ${newUserId}`
+            );
+
+            return res.status(200).json({
+                success: true,
+                message:
+                    "Email verified successfully. You can now log in and complete your profile.",
+                user_id: newUserId,
+            });
+        } catch (err) {
+            console.error("verifyEmail error:", err.message);
+
+            // 🧩 Handle expired token by regenerating and resending
+            try {
+                const jwt = require("jsonwebtoken");
+                const decoded = jwt.decode(token);
+
+                if (decoded?.email) {
+                    const [drafts] = await dbHots.promise().query(
+                        "SELECT * FROM user_draft WHERE email = ? AND approval_status = 'pending'",
+                        [decoded.email]
+                    );
+
+                    if (drafts.length > 0) {
+                        const draft = drafts[0];
+
+                        const newToken = createTokenHT(
+                            { draft_id: draft.draft_id, email: draft.email },
+                            "30m"
+                        );
+
+                        await dbHots.promise().query(
+                            `UPDATE user_draft SET registration_token = ? WHERE draft_id = ?`,
+                            [newToken, draft.draft_id]
+                        );
+
+                        await hotsVerifyEmailMailer(
+                            draft.email,
+                            newToken,
+                            draft.firstname,
+                            draft.lastname
+                        );
+
+                        console.log(`🟡 Resent new verification email to ${draft.email}`);
+
+                        return res.status(200).json({
+                            success: false,
+                            message:
+                                "Your verification link expired. A new one has been sent to your email.",
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("verifyEmail recovery error:", e.message);
+            }
+
+            return res.status(400).json({
+                success: false,
+                message: "Verification failed or link expired.",
+            });
+        }
+    },
+
+
+    manualVerifyAndPromoteUserByUID: async (uid) => {
+        const date = new Date();
+        const timestamp = date.toLocaleString("id");
+
+        try {
+            // 🔹 1️⃣ Find the draft by username (uid)
+            const [drafts] = await dbHots.promise().query(
+                "SELECT * FROM user_draft WHERE uid = ? LIMIT 1",
+                [uid]
+            );
+
+            if (!drafts.length) {
+                console.log(`❌ No user_draft found for username '${uid}'`);
+                return;
+            }
+
+            const draft = drafts[0];
+
+            // Check if already verified
+            if (draft.approval_status === "verified") {
+                console.log(`⚠️ User '${uid}' is already verified.`);
+                return;
+            }
+
+            // 🔹 2️⃣ Mark verified
+           
+
+            // 🔹 3️⃣ Copy to user table
+            const [result] = await dbHots.promise().query(
+                `INSERT INTO user (
+                role_id, firstname, lastname, uid, pswd, email, 
+                superior_id, active, status, registration_date
+            ) VALUES (1, ?, ?, ?, ?, ?,  ?, 1, 'pending', NOW())`,
+                [
+                    draft.firstname,
+                    draft.lastname,
+                    draft.uid,
+                    draft.password_hash,
+                    draft.email,
+                    draft.leader_id
+                ]
+            );
+
+            const newUserId = result.insertId;
+
+            // 🔹 4️⃣ Link user_draft → user
+            await dbHots.promise().query(
+                `UPDATE user_draft SET user_id = ? WHERE uid = ?`,
+                [newUserId, uid]
+            );
+
+            await dbHots.promise().query(
+                `UPDATE user_draft 
+             SET approval_status = 'verified', approval_date = NOW()
+             WHERE uid = ?`,
+                [uid]
+            );
+
+            console.log(`✅ [${timestamp}] Manual verify complete`);
+            console.log(`   → Username: ${uid}`);
+            console.log(`   → Draft ID: ${draft.draft_id}`);
+            console.log(`   → User created: ${newUserId} (${draft.email})`);
+
+            // 🔹 5️⃣ Optional: Return token for testing login
+            const token = createTokenHT(
+                { user_id: newUserId, firstname: draft.firstname, email: draft.email },
+                "4h"
+            );
+
+            console.log(`   → Token: ${token}`);
+
+            return {
+                success: true,
+                user_id: newUserId,
+                token,
+            };
+        } catch (err) {
+            console.error(`❌ manualVerifyAndPromoteUserByUID error:`, err);
+            return { success: false, error: err.message };
+        }
+    },
+
+    approveDraft: async (req, res) => {
+        const { draft_id } = req.params;
+        const { decision, reason } = req.body; // decision = 'approve' or 'reject'
+
+        try {
+            const [drafts] = await dbHots.promise().query(
+                "SELECT * FROM user_draft WHERE draft_id = ? LIMIT 1",
+                [draft_id]
+            );
+            const draft = drafts[0];
+            if (!draft) return res.status(404).json({ success: false, message: "Draft not found" });
+
+            if (decision === 'reject') {
+                await dbHots.promise().query(`
+              UPDATE user_draft 
+              SET approval_status = 'rejected', rejected_reason = ?, approval_date = NOW()
+              WHERE draft_id = ?
+            `, [reason, draft_id]);
+
+                return res.json({ success: true, message: "Draft rejected successfully." });
+            }
+
+            // 1️⃣ Insert into user table
+            const [userResult] = await dbHots.promise().query(`
+            INSERT INTO user (
+              firstname, lastname, uid, pswd, email,
+              department_id, superior_id, active, status, registration_date
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'active', NOW())
+          `, [
+                draft.firstname, draft.lastname, draft.uid, draft.password_hash,
+                draft.email, draft.department_id, draft.leader_id
+            ]);
+
+            const newUserId = userResult.insertId;
+
+            // 2️⃣ Link back to user_draft
+            await dbHots.promise().query(`
+            UPDATE user_draft 
+            SET approval_status = 'approved', approval_date = NOW(), user_id = ?
+            WHERE draft_id = ?
+          `, [newUserId, draft_id]);
+
+            res.json({
+                success: true,
+                message: "User approved and activated successfully.",
+                user_id: newUserId
+            });
+        } catch (err) {
+            console.error("approveDraft error:", err);
+            res.status(500).json({ success: false, message: err.message });
+        }
     },
 
 
@@ -1066,7 +1393,6 @@ module.exports = {
             });
         }
     },
-
 
 
 

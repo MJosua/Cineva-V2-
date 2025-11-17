@@ -133,15 +133,16 @@ const dbmeetingbook = mysql.createPool({
 // =============================================================== //
 // 🔹 SQL Logger
 const addSqlLogger = async (user_id, sql_parameter, message, function_name) => {
-    try {
-        await dbQuery(
-            `INSERT INTO action_logger (time_event,user_id,sql_code,message,function_name)
-       VALUES (NOW(),?,?,?,?)`,
-            [user_id, sql_parameter, message, function_name]
-        );
-    } catch (e) {
-        console.error("❌ SQL Logger failed:", e.message);
-    }
+   
+    // try {
+    //     await dbQuery(
+    //         `INSERT INTO action_logger (time_event,user_id,sql_code,message,function_name)
+    //    VALUES (NOW(),?,?,?,?)`,
+    //         [user_id, sql_parameter, message, function_name]
+    //     );
+    // } catch (e) {
+    //     console.error("❌ SQL Logger failed:", e.message);
+    // }
 };
 
 // =============================================================== //
