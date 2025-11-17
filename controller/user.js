@@ -1,6 +1,7 @@
 const { query } = require("express");
-const { dbConf, dbQuery, addSqlLogger } = require("../config/db");
-const fs = require('fs')
+const { dbConf, dbQuery } = require("../config/db");
+const fs = require('fs');
+const { feedback_eorder, feedback_eorder_admin } = require("../mailer/eorder/eorder_mailer");
 
 let blue = "\x1b[36m";
 
@@ -15,12 +16,35 @@ module.exports = {
                 let company_id = req.dataToken.company_id
 
                 let query = `
-                SELECT md.harbour_id, concat(h.harbour_name, ", " ,tp.txt, " - ", md.final_dest  )   harbour_name, tp.txt, md.final_dest  FROM map_port_for_dist md
-                LEFT JOIN mst_harbour h ON md.harbour_id = h.harbour_id 
-                LEFT JOIN mst_country mc on h.country_id = mc.country_id  
-                LEFT JOIN sys_text tp ON tp.text_id = mc.country_name_id  AND tp.lang_id = 1
-                WHERE md.company_id = 100 AND distributor_id = ${company_id} AND
-                now() BETWEEN md.creation_date AND COALESCE(md.finish_date, '9999-12-31') ;`
+                 select
+                    md.harbour_id,
+                    concat(h.harbour_name, ", " , tp.txt, " - ", md.final_dest , " - ", mi.incoterm_name )  
+                                harbour_name,
+                    harbour_code,
+                    tp.txt,
+                    md.final_dest,
+                    md.id as md_id,
+                    md.distributor_id,
+                    md.port_link
+                from
+                    map_port_for_dist md
+                left join mst_harbour h on
+                    md.harbour_id = h.harbour_id
+                left join mst_country mc on
+                    h.country_id = mc.country_id
+                left join mst_incoterm mi on
+                    md.incoterm_id = mi.id
+                left join sys_text tp on
+                    tp.text_id = mc.country_name_id
+                    and tp.lang_id = 1
+                where
+                    md.company_id = 100
+                    and 
+                    distributor_id = ${company_id}
+                    and
+                    now() between md.creation_date and coalesce(md.finish_date, '9999-12-31') 
+                ;
+                `
 
                 dbConf.query(query, (err, results) => {
                     if (err) {
@@ -29,7 +53,49 @@ module.exports = {
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get user Port List for ${company_id} success`);
-                        addSqlLogger(req.dataToken.user_id, (query), `--getPort`, `getPort`)
+                    }
+
+                })
+            } else {
+                res.status(401).send({
+                    success: false,
+                    message: 'error_auth'
+                })
+            }
+        } catch (error) {
+            console.log(timestamp + error);
+            res.status(500).send(error);
+        }
+
+
+    },
+    portfind: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        try {
+            if (req.dataToken.user_id) {
+
+                let query = `
+                select mpd.id, mh.harbour_code
+                    from 
+                    mst_harbour mh
+                    left join map_port_for_dist mpd
+                    on mh.harbour_id = mpd.harbour_id
+                    where
+                    mpd.finish_date is null
+                    and
+                    mpd.distributor_id = ${req.dataToken.company_id}
+                `
+
+                dbConf.query(query, (err, results) => {
+                    if (err) {
+                        res.status(500).send(err);
+                        console.log(timestamp + "Error Get port list", err);
+                    } else {
+                        res.status(200).send(results);
+                        console.log(timestamp + `get user Port List for ${req.dataToken.company_id} success`);
                     }
 
                 })
@@ -74,57 +140,76 @@ module.exports = {
 
                 let query = STP_DETAIL ? `
                 SELECT
-	LEFT(group_concat(KEYY),
-	3) keyy,
-	txt
-FROM 
-	(
-	SELECT 
-		b.company_id keyy, 
-		concat ((CASE
-			${company_id} WHEN b.company_id THEN concat(b.company_name)
-			ELSE b.company_name
-		END)," - ", COALESCE(b.company_notice, '')) txt 
-	FROM
-		mst_company a
-	LEFT JOIN mst_company b ON
-		trim(a.user_company_id) = trim(b.user_company_id)
-	WHERE
-		a.user_company_id <> 'default'
-		AND b.company_type_id IN (2,7) AND a.company_id = ${company_id}  
-	ORDER BY
-		a.company_name 
-	) a
-GROUP BY
-	TXT; `  : STP_PCL ? `SELECT * FROM 
-	 (SELECT
-		b.company_id keyy,
-		CASE
-			${company_id} WHEN b.company_id THEN concat(b.company_name)
-		ELSE b.company_name
-	END txt
-FROM
-		mst_company a
-LEFT JOIN mst_company b ON
-		trim(a.user_company_id) = trim(b.user_company_id)
-WHERE
-		a.user_company_id <> 'default'
-	AND b.company_type_id IN (2, 7)
-	AND a.company_id = ${company_id}
-ORDER BY
-		keyy DESC) a 
-		WHERE a.keyy <> ${company_id}` : ` SELECT
+                    LEFT(group_concat(KEYY),
+                    3) keyy,
+                    txt
+                FROM 
+                    (
+                    SELECT 
+                        b.company_id keyy, 
+                        concat ((CASE
+                            ${company_id} WHEN b.company_id THEN concat(b.company_name)
+                            ELSE b.company_name
+                        END)," - ", COALESCE(b.company_notice, '')) txt 
+                    FROM
+                        mst_company a
+                    LEFT JOIN mst_company b ON
+                        trim(a.user_company_id) = trim(b.user_company_id)
+                    WHERE
+                        a.user_company_id <> 'default'
+                        AND b.company_type_id IN (2,7) AND a.company_id = ${company_id}  
+                    ORDER BY
+                        a.company_name 
+                    ) a
+                GROUP BY
+                    TXT; `
+                    :
+
+                    STP_PCL
+
+                        ?
+                        `
+                    SELECT 
+                        b.company_id AS keyy, 
+                        CONCAT(
+                            CASE 
+                                WHEN b.company_id = ${company_id} THEN b.company_name 
+                                ELSE b.company_name 
+                            END, 
+                            " - ", 
+                            COALESCE(b.company_notice, '')
+                        ) AS txt 
+                    FROM mst_company a
+                    LEFT JOIN mst_company b 
+                        ON TRIM(a.user_company_id) = TRIM(b.user_company_id)
+                    WHERE 
+                        a.user_company_id <> 'default'
+                        AND b.company_type_id IN (2, 7)
+                        AND a.company_id = ${company_id}
+                        AND b.company_id <> ${company_id} -- This ensures filtering is done correctly
+                    ORDER BY keyy DESC;
+`
+
+                        :
+
+                        ` SELECT
                     LEFT(group_concat(KEYY),
                     3) keyy,
                     txt
                 FROM 
                 (
-                    SELECT
+                   SELECT 
                         b.company_id keyy, 
-                         CASE
-                            ${company_id} WHEN b.company_id THEN concat(b.company_name)
-                        ELSE b.company_name
-                        END txt 
+                            CONCAT(
+                                CASE 
+                                    WHEN ${company_id} = b.company_id THEN b.company_name 
+                                    ELSE b.company_name
+                                END,
+                                CASE 
+                                    WHEN COALESCE(b.company_notice, '') <> '' THEN CONCAT(' - ', b.company_notice) 
+                                    ELSE ''
+                                END
+                            ) txt 
                     FROM
                         mst_company a
                     LEFT JOIN mst_company b ON
@@ -145,8 +230,6 @@ ORDER BY
                         console.log(timestamp + "Error get company on ship to party", err);
                     } else {
                         res.status(200).send(results);
-                        console.log(timestamp + `get user shiptoparty for ${company_id} list success.`)
-                        addSqlLogger(req.dataToken.user_id, (query), '--data getShipToParty', `getShipToParty`)
                     }
                 })
             } else {
@@ -160,6 +243,178 @@ ORDER BY
             res.status(500).send(error);
         }
     },
+    findntp: async (req, res) => {
+        const date = new Date();
+        const timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+
+        try {
+            if (!req.dataToken?.user_id) {
+                return res.status(401).send({ success: false, message: 'error_auth' });
+            }
+
+            const company_id = req.params.company_id;
+
+            const querynotify = `
+            SELECT * FROM mst_company mc 
+            WHERE company_type_id = 7 
+            AND parent_company_id = ?
+          `;
+
+            // Use await instead of wrapping with new Promise
+            const notifyTP = await new Promise((resolve, reject) => {
+                dbConf.query(querynotify, [company_id], (err, results) => {
+                    if (err) reject(err);
+                    else resolve(results);
+                });
+            });
+
+            res.status(200).send({ Notify: notifyTP });
+            console.log("notifyTP", notifyTP)
+            console.log(timestamp + `get user findntp for ${company_id} list success.`);
+
+        } catch (error) {
+            console.error(timestamp + "Error in findntp queries:", error);
+            res.status(500).send(error);
+        }
+    }
+
+
+    , ostp: async (req, res) => {
+        let date = new Date();
+        let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+
+        try {
+            if (req.dataToken.user_id) {
+                let company_id = req.dataToken.company_id;
+
+
+
+                let checkcompanyname = `
+                        SELECT company_name FROM mst_company mcn 
+                        WHERE company_id = ${company_id}
+                    `;
+
+
+                let querynotify = `
+                    SELECT * FROM mst_company mc 
+                    WHERE company_type_id = 7 
+                    AND parent_company_id = ${company_id}
+                `;
+
+                let querybill = `
+                    SELECT * FROM mst_company mc 
+                    WHERE company_type_id = 8 
+                    AND parent_company_id = ${company_id}
+                `;
+
+
+                let checkbtpspecialconditionhidebtp = `
+                SELECT active FROM m_config_new mspc 
+                WHERE company_id = ${company_id}
+                and
+                conditions = 14
+                and
+                active = 1
+            `;
+
+                let checkbtpspecialconditionhidentp = `
+                SELECT value FROM m_config_new mspc 
+                WHERE company_id = ${company_id}
+                and
+                conditions = 18
+                and
+                active = 1
+            `;
+
+                // Run both queries in parallel
+                Promise.all([
+                    new Promise((resolve, reject) => {
+                        dbConf.query(querynotify, (err, results) => {
+                            if (err) reject(err);
+                            else resolve(results);
+                        });
+                    }),
+                    new Promise((resolve, reject) => {
+                        dbConf.query(querybill, (err, results) => {
+                            if (err) reject(err);
+                            else resolve(results);
+                        });
+                    }),
+                    new Promise((resolve, reject) => {
+                        dbConf.query(checkcompanyname, (err, results) => {
+                            if (err) reject(err);
+                            else resolve(results);
+                        });
+                    }),
+                    new Promise((resolve, reject) => {
+                        dbConf.query(checkbtpspecialconditionhidebtp, (err, results) => {
+                            if (err) reject(err);
+                            else resolve(results);
+                        });
+                    }),
+                    new Promise((resolve, reject) => {
+                        dbConf.query(checkbtpspecialconditionhidentp, (err, results) => {
+                            if (err) reject(err);
+                            else resolve(results);
+                        });
+                    }),
+
+                ])
+                    .then(([notifyTP, billTP, checkcompanyname, spcbtp, spcntp]) => {
+
+
+                        const defaultEntrybtp = {
+                            company_id,
+                            company_name: checkcompanyname[0].company_name
+                        };
+
+                        let notifyTPFinal = notifyTP;
+
+                        if (spcntp.length > 0) {
+                            const spcntpValue = spcntp[0].value;
+
+                            // Find matching company in notifyTP
+                            const specialCompany = notifyTP.find(n => n.company_id.toString() === spcntpValue.toString());
+                            console.log("spcntpValue", spcntpValue)
+                            console.log("specialCompany", specialCompany)
+
+                            if (specialCompany) {
+                                // Reorder so specialCompany is first
+                                notifyTPFinal = [
+                                    specialCompany,
+                                    ...notifyTP.filter(n => n.company_id.toString() !== spcntpValue.toString())
+                                ];
+                            }
+                        }
+
+                        // Combine the default with the first real entry (optional merging)
+
+                        // Rest of the entries, skipping the first
+                        const restEntriesbtp = billTP;
+
+
+                        res.status(200).send({
+
+                            "Notify": notifyTPFinal,
+                            "BillTP": spcbtp.length > 0 ? billTP : [defaultEntrybtp, ...restEntriesbtp]
+                        });
+
+                        console.log(timestamp + `get user shiptoparty for ${company_id} list success.`);
+                    })
+                    .catch((err) => {
+                        console.log(timestamp + "Error in ship to party queries:", err);
+                        res.status(500).send(err);
+                    });
+
+            } else {
+                res.status(401).send({ success: false, message: 'error_auth' });
+            }
+        } catch (error) {
+            console.log(timestamp + error);
+            res.status(500).send(error);
+        }
+    },
+
     profile: async (req, res) => {
 
         let date = new Date();
@@ -220,7 +475,6 @@ ORDER BY
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get user profile ${userID} success`);
-                        addSqlLogger(req.dataToken.user_id, (query), '--data getProfile', `getProfile`)
                     }
                 })
 
@@ -287,7 +541,6 @@ ORDER BY
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get user profile ${userID} success`);
-                        addSqlLogger(req.dataToken.user_id, (query), '--data getTOP', `getTOP`)
                     }
 
                 })
@@ -331,7 +584,11 @@ ORDER BY
                 } else {
                     res.status(200).send(results);
                     console.log(timestamp + `user add feedback success `);
-                    addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), `addFeedback-`)
+
+                    feedback_eorder(form.title, form.feedback, imgUrl, req.dataToken.company_id, req.dataToken.user_id)
+                    feedback_eorder_admin(form.title, form.feedback, imgUrl, req.dataToken.company_id, req.dataToken.user_id)
+
+
                 }
 
             })
@@ -361,9 +618,9 @@ ORDER BY
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get user feedback ${userID} success`);
-                        addSqlLogger(req.dataToken.user_id, (query), `--data getFeedback-`, `getFeedback-`)
                     }
                 })
+
 
             } else {
                 res.status(401).send({
@@ -406,7 +663,6 @@ ORDER BY
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `user add feedback success `);
-                        addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), `addContactUs-`)
                     }
                 }
             )
@@ -478,7 +734,6 @@ ORDER BY
                         });
 
                         console.log(timestamp + `Add Reqest Data Change: SUCCESS `);
-                        addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), `addRequstDataChange-`)
                     }
                 }
             )
@@ -523,7 +778,6 @@ ORDER BY
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get user Banner ${req.dataToken.uid} success`);
-                        addSqlLogger(req.dataToken.user_id, (query), '--data getBanner', `getBanner-`)
                     }
 
                 })
@@ -566,7 +820,6 @@ ORDER BY
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get email for ${employee_id} success`);
-                        addSqlLogger(req.dataToken.user_id, (query), '--data getEmail', `getEmail-`)
                     }
                 })
 
@@ -612,7 +865,6 @@ ORDER BY
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `update user email list for ${employee_id} success`);
-                        addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), `updateEmail-`)
                     }
                 }
                 )
@@ -631,6 +883,141 @@ ORDER BY
 
     },
 
+    GetUpdateList: async (req, res) => {
+        let date = new Date();
+        let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
+        try {
+            let query = `
+                SELECT * FROM update_event WHERE update_status = 1;
+            `;
+
+            dbConf.query(query, (err, results) => {
+                if (err) {
+                    console.log(timestamp + "Error GetLatestUpdate ", err);
+                    return res.status(500).send(err);
+                }
+                console.log(timestamp + `GetLatestUpdate success`);
+                res.status(200).send(results);
+            });
+
+        } catch (error) {
+            console.log(timestamp + "Error at User => GetLatestUpdate", error);
+            res.status(500).send(error);
+        }
+    },
+
+
+    GetLatestUpdate: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+        // timestamp + 
+
+
+        try {
+
+            let employee_id = req.dataToken.employee_id
+
+            let query = `
+                SELECT
+                    *
+                FROM
+                    update_event
+
+               `
+
+            dbConf.query(query, (err, results) => {
+                if (err) {
+                    res.status(500).send(err);
+                    console.log(timestamp + "Error GetLatestUpdate ", err);
+                } else {
+                    res.status(200).send(results);
+                    console.log(timestamp + `get GetLatestUpdate  success`);
+                }
+            })
+
+
+        } catch (error) {
+            console.log(timestamp + "Error at User => GetLatestUpdate" + error);
+            res.status(500).send(error);
+        }
+
+
+
+    },
+
+    GetUpcomingUpdate: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+        // timestamp + 
+
+
+        try {
+
+            let employee_id = req.dataToken.employee_id
+
+            let query = `
+                SELECT
+                    *
+                FROM
+                    update_event
+               `
+
+            dbConf.query(query, (err, results) => {
+                if (err) {
+                    res.status(500).send(err);
+                    console.log(timestamp + "Error GetLatestUpdate ", err);
+                } else {
+                    res.status(200).send(results);
+                    console.log(timestamp + `get GetLatestUpdate  success`);
+                }
+            })
+
+
+        } catch (error) {
+            console.log(timestamp + "Error at User => GetLatestUpdate" + error);
+            res.status(500).send(error);
+        }
+
+
+
+    },
+
+    setUpdateList: async (req, res) => {
+
+        let date = new Date();
+        let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        try {
+            let { update_description, update_status, update_date } = req.body
+
+            let query = `
+            INSERT INTO 
+            update_event 
+            (description, update_status, date)
+            VALUES
+            (?, ?, ?)
+            `
+            let parameter = [update_description, update_status, update_date]
+
+            dbConf.query(query, parameter,
+                (err, results) => {
+                    if (err) {
+                        res.status(500).send(err);
+                        console.log(timestamp + "fail setUpdateList:", err);
+                    } else {
+                        res.status(200).send(results);
+                        console.log(timestamp + `user add setUpdateList success `);
+                    }
+                }
+            )
+        } catch (error) {
+            console.log(timestamp + error);
+            res.status(500).send(error);
+        }
+
+    },
 
 }

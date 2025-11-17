@@ -1,6 +1,6 @@
-const { dbConf, dbQuery, addSqlLogger } = require("../config/db");
+const { dbConf, dbQuery } = require("../config/db");
 const fs = require('fs')
-const { orderRecievedMailSender } = require('../config/mailer')
+const { orderRecievedMailSender } = require('../mailer/eorder/eorder_mailer');
 const ejs = require('ejs');
 // const puppeteer = require('puppeteer');
 const axios = require('axios');
@@ -195,7 +195,6 @@ module.exports = {
 
                                 res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
                                 console.log(timestamp + `get getOrderAllIn EMPTY data`);
-                                addSqlLogger(req.dataToken.user_id, query, ' -- data getOrderAllIn', 'getOrderAllIn')
                             }
 
                         }
@@ -346,7 +345,6 @@ WHERE
 
                             res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
                             console.log(timestamp + `get getRealizationAllIn EMPTY data`);
-                            addSqlLogger(req.dataToken.user_id, (query), `-- data getRealizationAllIn-${req.dataToken.uid}`, `getRealizationAllIn-${req.dataToken.uid}`)
                         }
 
                     }
@@ -478,7 +476,6 @@ WHERE
 
                             res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
                             console.log(timestamp + `get getOrderHeader EMPTY data`);
-                            addSqlLogger(req.dataToken.user_id, query, '--data getOrderHeader', 'getOrderHeader')
                         }
 
                     }
@@ -573,7 +570,6 @@ WHERE
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get getOrderDetail for: ${req.dataToken.company_id} success `)
-                        addSqlLogger(req.dataToken.user_id, (query), '--data getOrderDetail', `getOrderDetail`)
                     }
                 })
             } else {
@@ -728,7 +724,6 @@ WHERE
 
                             res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
                             console.log(timestamp + `get getOrderDetail2 EMPTY data`);
-                            addSqlLogger(req.dataToken.user_id, (query), '--data getOrderDetail2', 'getOrderDetail2')
                         }
                     }
                 })
@@ -852,7 +847,6 @@ WHERE
                     } else {
                         res.status(200).send(results);
                         console.log(timestamp + `get getOneOrderDetail data`);
-                        addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), '--data getOneOrderDetail', `getOneOrderDetail-${order_id}`)
 
                     }
                 })
@@ -933,7 +927,6 @@ WHERE
 
                     setTimeout(async () => {
                         let hardDeleteOrder = await dbQuery(`CALL  delete_order(${order_id});`);
-                        addSqlLogger(req.dataToken.user_id, ` CALL  delete_order(${order_id});`, hardDeleteOrder, `CALL  delete_order(${order_id});`);
                     }, 3000)
 
                     res.status(500).send({ message: ` failed insert order ${po_buyer});` });
@@ -957,7 +950,6 @@ WHERE
                     // })
 
                     console.log(timestamp + `add Order Header ${order_id} for ${user_id} success`)
-                    addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), `addOrderHeader-${po_buyer}`)
                 }
 
             });
@@ -1911,7 +1903,6 @@ WHERE
                     //END CONNECTION
                     res.status(200).send(results);
                     console.log(timestamp + `add Order getStuffingDateTrucking  success`);
-                    addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), '--data stuffingdate trucking', `getStuffingDateTrucking-${req.dataToken.uid}`)
                 }
 
             });
@@ -2958,7 +2949,6 @@ WHERE
                     //         container_status,
                     //         container_events
                     //     })
-                    //     addSqlLogger(req.dataToken.user_id, 'container tracking', container_id, `containerTracking-${req.dataToken.uid}`)
                     //     console.log(timestamp + 'successfully send container track for ' + container_id)
 
 
@@ -3665,7 +3655,6 @@ WHERE
                             //                     console.log(timestamp, "ERROR! cannot delete order_id", id)
                             //                 } else {
 
-                            //                     addSqlLogger(req.dataToken.user_id, ` ${queryEmergencyDeleteOrder} + ${id.order_id}`, results2, `DELETE error order-${id.order_id}`);
                             //                     console.log(timestamp + " just run emergency delete order for PO_BUYER and ORDER_ID " + (data.po_buyer) + ' and ' + (id.order_id))
 
 
@@ -3682,7 +3671,6 @@ WHERE
                             //     }
 
                             // }, 2000);
-                            addSqlLogger(req.dataToken.user_id, ` ${queryEmergencyDeleteOrder} + ${order_id}`, results, `DELETE error order_id-${order_id}`);
                             // console.log(timestamp + " just run emergency delete order for PO_BUYER and ORDER_ID " + (data.po_buyer) + ' and ' + (id.order_id))
                             console.log(timestamp + " just run emergency delete order for PO_BUYER" + (order_id))
 
@@ -3811,7 +3799,6 @@ WHERE
                             emergencyDeleteOrder(order, order_id_raw);
                         }
                     });
-                    // addSqlLogger(user_id, (query.concat(parameter)), `insert query`, `addOrderHeader-${po_buyer}`);
 
                     //melakukan loop sesuai dengan jumlah  data dalam detail
                     // console.log(timestamp, "order_data.detail ", order_data.detail)
@@ -3854,7 +3841,6 @@ WHERE
                         } catch (error) {
                             console.log(timestamp, "Error addDetail on addOrder", error)
                         }
-                        // addSqlLogger(user_id, (query.concat(parameterDetail)), `insert query`, `addOrderDetail-${order_id}-${detail.detail_id}`)
 
                     }
 
@@ -3881,7 +3867,6 @@ WHERE
                         } catch (error) {
                             console.log(timestamp, "Error addSummary on addOrder", error)
                         }
-                        // addSqlLogger(user_id, (querySummary.concat(parameterSummary)), `insert query results`, `addOrderDetail-${order_id}-${summary.detail_id}`)
 
                     }
 
@@ -3921,7 +3906,6 @@ WHERE
             } catch (error) {
                 emergencyDeleteOrder(order, order_id_raw);
                 console.log(timestamp + "error at add order" + error)
-                // addSqlLogger(user_id, `no query`, `insert query results`, `FAILED addOrderDetail-${order}`)
                 res.status(500).send({
                     success: false,
                     message: 'add order failed'

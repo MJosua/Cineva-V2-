@@ -1,3 +1,5 @@
+
+
 const { dbConf, dbQuery, addSqlLogger } = require("../config/db");
 const { hashPassword } = require("../config/encrypts");
 
@@ -83,7 +85,6 @@ module.exports = {
                 results
               });
 
-              addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'addAccount')
               console.log(timestamp + `Admin create account ${userID} success`);
             }
           }
@@ -192,7 +193,6 @@ module.exports = {
             message: 'Berhasil edit akun :)',
             results
           });
-          addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'editAccount')
           console.log(timestamp + `Admin Edit Account Data ${userID} success`);
         }
       }
@@ -382,7 +382,6 @@ WHERE
               results,
             });
 
-            addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'changeActive')
             console.log(`${timestamp}Admin Active for ${username} by: ${req.dataToken.uid} success`)
           }
         })
@@ -488,7 +487,6 @@ WHERE
             results
           });
 
-          addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'addConfig')
           console.log(timestamp + "Admin addConfig by : " + req.dataToken.uid + 'success')
         }
       }
@@ -543,7 +541,6 @@ WHERE
             success: true,
             results
           });
-          addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'editConfig')
           console.log(timestamp + "Admin edit Config by : " + req.dataToken.uid + 'success')
         }
       })
@@ -588,7 +585,6 @@ WHERE
             success: true,
             results
           });
-          addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'deleteConfig')
           console.log(timestamp + "Admin edit Config by : " + req.dataToken.uid + 'success')
         }
       }
@@ -640,7 +636,6 @@ WHERE
             results
           });
 
-          addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'editConfigUser_id')
           console.log(timestamp + "Admin edit Config by : " + req.dataToken.uid + 'success')
         }
       }
@@ -692,7 +687,6 @@ WHERE
             results
           });
 
-          addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'editConfigCompany_id')
           console.log(timestamp + "Admin edit Config by : " + req.dataToken.uid + 'success')
         }
       }
@@ -1127,6 +1121,11 @@ WHERE
             console.log(timestamp + " XXXX FAILURE Admin getCompany by : " + req.dataToken.uid + 'fail:' + err)
 
           } else {
+
+            let global_parameter = { company_id: 100, company_name: 'Global Configuration' }
+
+            let injectedResults = results.unshift(global_parameter)
+
             //success
             res.status(200).send({
               message: 'berhasil get data status',
@@ -1219,7 +1218,7 @@ WHERE
           let packet = results.slice(startIndex, endIndex)
           let totalDataLength = results.length
           let totalPage = Math.round(results.length / limit)
- 
+
           res.status(200).send({ packet, totalPage, totalDataLength, page });
           console.log(timestamp + "Admin getAudit by : " + req.dataToken.uid + ' success')
         }
@@ -1234,5 +1233,97 @@ WHERE
       });
       console.log(timestamp + "!!!_Unauthorized_!!! Admin Get getAudit by : " + req.dataToken.uid)
     }
+  },
+
+
+  sys_textCallBlockingDate: async (req, res) => {
+
+    let date = new Date();
+    let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+    let query =
+      `
+    select
+        txt
+    from
+        sys_text
+    where
+        text_id = -100
+        and lang_id = 1
+    `
+    dbConf.query(query, (err, results) => {
+
+      if (err) {
+
+        res.status(500).send({ err });
+        console.log(timestamp + " XXXX FAILURE Admin sys_textCallBlockingDate by : " + req.dataToken.uid + 'fail:' + err)
+
+      } else {
+
+        res.status(200).send({ results });
+        console.log(timestamp + "Admin sys_textCallBlockingDate by : " + req.dataToken.uid + ' success')
+      }
+
+    })
+
+
+  },
+
+
+  sys_textEditBlockingDate: async (req, res) => {
+
+    let date = new Date();
+    let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+    let {
+      config_id, value
+    } = req.body
+
+    let query =
+      `
+    update 
+        sys_text
+    set
+        txt = ${value}
+    where
+        text_id = -100
+        and lang_id = 1;
+
+
+    UPDATE 
+        m_config_new 
+    SET 
+        conditions = 11,
+        value = ${value},
+        active = 1
+    WHERE 
+        id = ${config_id}; 
+
+
+    `
+
+    dbConf.query(query, (err, results) => {
+
+      if (err) {
+        res.status(500).send({
+          message: 'Terjadi kesalahan, tapi bukan salah kamu :(',
+          success: false,
+          results
+        });
+        console.log(timestamp + " XXXX FAILURE edit Get Config by : " + req.dataToken.uid + 'fail:' + err)
+
+      } else {
+        //success
+        res.status(200).send({
+          message: 'berhasil get data status',
+          success: true,
+          results
+        });
+        addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(results)), 'editConfig')
+        console.log(timestamp + "Admin edit Config by : " + req.dataToken.uid + 'success')
+      }
+    })
+
   }
+
 };

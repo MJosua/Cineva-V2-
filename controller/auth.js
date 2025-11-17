@@ -1,6 +1,6 @@
 const { dbConf, dbQuery, addSqlLogger } = require("../config/db");
 const { hashPassword, createToken } = require("../config/encrypts");
-const { forgotPasswordMailSender } = require('../config/mailer');
+const { forgotPasswordMailSender } = require('../mailer/eorder/eorder_mailer');
 
 let yellowTerminal = "\x1b[33m";
 
@@ -43,7 +43,7 @@ module.exports = {
         let query = `
         SELECT
         su.uid,
-        su. user_id,
+        su.user_id,
         su.lang_id,
         su.employee_id,
         mc.country_id,
@@ -57,8 +57,14 @@ module.exports = {
         CAST(COALESCE(pal.value, 0) AS UNSIGNED) pallet,
         CAST(COALESCE(tr.value, 1) AS UNSIGNED) transport,
         COALESCE(p.firstname, '') firstname,
+        CAST(COALESCE(maxtrck.value, 0) AS UNSIGNED) max_truck,
+        CAST(COALESCE(maxflvrtrck.value, 0) AS UNSIGNED) max_flavour_truck,
         COALESCE(p.midname, '') midname,
-        COALESCE(p.lastname, '') lastname
+        COALESCE(p.lastname, '') lastname,
+        COALESCE(
+          JSON_ARRAYAGG(mcn.conditions),
+          JSON_ARRAY()
+        ) AS spc_condition
       FROM
         sys_user su
       JOIN mst_company mc ON
@@ -73,6 +79,12 @@ module.exports = {
       LEFT JOIN m_config_new pal ON
         su.company_id = pal.company_id
         AND pal.conditions = 2
+      LEFT JOIN m_config_new maxtrck ON
+          su.company_id = maxtrck.company_id
+          AND maxtrck.conditions = 15
+        LEFT JOIN m_config_new maxflvrtrck ON
+          su.company_id = maxflvrtrck.company_id
+          AND maxflvrtrck.conditions = 16
       LEFT JOIN m_config_new top ON
         su.company_id = top.company_id
         AND top.conditions = 3
@@ -84,6 +96,8 @@ module.exports = {
         me.employee_id = su.employee_id
       LEFT JOIN person p ON
         p.person_id = me.employee_id
+      LEFT JOIN m_config_new mcn 
+        ON mcn.company_id = su.company_id  
       WHERE
         su.uid = ?
       AND 
@@ -106,19 +120,55 @@ module.exports = {
 
             } else {
 
-              let token = createToken({ ...results[0] });
+
+
+
               let userData = results;
 
               //berhasil login
-              if (userData[0]) {
+              if (results[0]) {
+
+                console.log("results[0]",results[0])
+
+                if (results[0].type_id === 1 || results[0].type_id === 2 || results[0].type_id === 4  ) {
+
+                  console.log("results[0]",results[0])
+                  res.status(200).send({
+                    message: ` Wrong username`,
+                    success: false,
+                    // userData,
+                    // token,
+                    err: ''
+                  });
+                }
+
+                let rawDataToken = results[0];
+                let dataToken = {
+                  uid: rawDataToken.uid,
+                  user_id: rawDataToken.user_id,
+                  employee_id: rawDataToken.employee_id,
+                  company_id: rawDataToken.company_id,
+                  active: rawDataToken.active,
+                  type_id: rawDataToken.type_id
+                }
+
+                //old token
+                // let token = createToken({ ...results[0] });
+
+                //new token
+                let token = createToken(dataToken);
+
+                //console.log(timestamp, "userData[0] @login", userData[0])
+                //console.log(timestamp, "dataToken @login", dataToken)
 
 
                 // UPDATE TOKEN yang disimpan di sys_user untuk proses kalibrasi validasi token existing
-                let sqlUpdateToken = dbQuery(`
-                   UPDATE sys_user 
-                   SET registration_nr = '${token}',
-                   last_login_date = now()
-                   WHERE uid = ${dbConf.escape(userID)};`);
+                const sqlUpdateToken = await dbQuery(
+                  `UPDATE sys_user 
+                   SET registration_nr = ?, last_login_date = now()
+                   WHERE uid = ?`,
+                  [token, userID]
+                );
 
                 //reset percobaan login 
                 let sqlInject = await dbQuery(
@@ -142,6 +192,16 @@ module.exports = {
                   });
                   console.log(timestamp + `==> Auth Login ${userID} UNAUTHORIZED TO LOGIN`);
 
+                } else if( userData[0].active === null || userData[0].active === undefined ){
+
+                  //login berhasil
+                  res.status(200).send({
+                    success: true,
+                    userData,
+                    token,
+                    message: `Wrong combination of Username or Password!`
+                  });
+                  console.log(timestamp + `==> Auth Login ${userID} False`);
                 } else {
 
                   //login berhasil
@@ -208,7 +268,7 @@ module.exports = {
         // token,
         err: ''
       });
-      console.log(timestamp + `==> Auth Login ${userID}: Username is not exist`);
+      console.log(timestamp + `==> Auth Login E-Order ${userID}: Username is not exist`);
     }
 
 
@@ -250,7 +310,7 @@ module.exports = {
         message: " hash pass success!",
       });
     } catch (error) {
-      console.log(timestamp + "Error query SQL :", error);
+      console.log(timestamp + "Error query SQL hash password :", error);
       res.status(500).send({
         success: false,
         message: "Failed on HASH ❌",
@@ -264,116 +324,141 @@ module.exports = {
     let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
     try {
-      let validateToken = await dbQuery(
-        `SELECT su.user_id FROM sys_user su WHERE su.user_id=${dbConf.escape(
-          req.dataToken.user_id
-        )} AND registration_nr = ${dbConf.escape(req.token)}`
-      );
+      const MAX_RETRIES = 3; // Retry up to 3 times
+      let attempt = 0;
+      let validateToken;
 
+      while (attempt < MAX_RETRIES) {
+        validateToken = await dbQuery(
+          `SELECT su.user_id FROM sys_user su WHERE su.user_id = ? AND registration_nr = ?`,
+          [req.dataToken.user_id, req.token]
+        );
+
+        if (validateToken.length > 0 && validateToken[0]) break; // Success, exit loop
+
+        console.log(`Retry attempt ${attempt + 1} failed. Retrying...`);
+        await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 500ms before retrying
+        attempt++;
+      }
       if (validateToken[0]) {
         console.log(timestamp + "=>> Auth Keep login for : " + req.dataToken.uid);
-        // console.log("Auth Keep login for : " + req.dataToken.user_id + " & token validation: " + JSON.stringify(validateToken[0].user_id));
+        // console.log("--------------------------")
+        // console.log("Auth Keep login for : " + req.dataToken.user_id)
+        // console.log("--------------------------")
         // console.log("Token : ", req.token);
-        // console.log("validateToken", validateToken);
+        // console.log("--------------------------")
 
         let userID = await dbQuery(
           `
-          SELECT
-          su.uid,
-          su. user_id,
-          su.lang_id,
-          su.employee_id,
-          mc.country_id,
-          mc.company_name,
-          mc.company_id,
-          mct.country_desc,
-          su.active,
-          su.type_id,
-          mut.user_type,
-          CAST(COALESCE(flav.value, 2) AS UNSIGNED) max_sku,
-          CAST(COALESCE(pal.value, 0) AS UNSIGNED) pallet,
-          CAST(COALESCE(tr.value, 1) AS UNSIGNED) transport,
-          COALESCE(p.firstname, '') firstname,
-          COALESCE(p.midname, '') midname,
-          COALESCE(p.lastname, '') lastname
-        FROM
-          sys_user su
-        JOIN mst_company mc ON
-          su.company_id = mc.company_id
-        JOIN mst_country mct ON
-          mct.country_id = mc.country_id
-        JOIN m_user_type mut ON
-          su.type_id = mut.type_id
-        LEFT JOIN m_config_new flav ON
-          su.company_id = flav.company_id
-          AND flav.conditions = 1
-        LEFT JOIN m_config_new pal ON
-          su.company_id = pal.company_id
-          AND pal.conditions = 2
-        LEFT JOIN m_config_new top ON
-          su.company_id = top.company_id
-          AND top.conditions = 3
-        LEFT JOIN m_config_new tr ON
-          tr.company_id = su.company_id
-          AND tr.active = 1
-          AND tr.conditions = 7
-        LEFT JOIN mst_employee me ON
-          me.employee_id = su.employee_id
-        LEFT JOIN person p ON
-          p.person_id = me.employee_id
-        WHERE
-          su.user_id = ${dbConf.escape(req.dataToken.user_id)}
-        LIMIT 1	  
+         SELECT
+            su.uid,
+            su.user_id,
+            su.lang_id,
+            su.employee_id,
+            mc.country_id,
+            mc.company_name,
+            mc.company_id,
+            mct.country_desc,
+            su.active,
+            su.type_id,
+            mut.user_type,
+            CAST(COALESCE(flav.value, 2) AS UNSIGNED) max_sku,
+            CAST(COALESCE(pal.value, 0) AS UNSIGNED) pallet,
+            CAST(COALESCE(maxtrck.value, 0) AS UNSIGNED) max_truck,
+            CAST(COALESCE(maxflvrtrck.value, 0) AS UNSIGNED) max_flavour_truck,
+            CAST(COALESCE(tr.value, 1) AS UNSIGNED) transport,
+            COALESCE(p.firstname, '') firstname,
+            COALESCE(p.midname, '') midname,
+            COALESCE(p.lastname, '') lastname,
+            COALESCE(
+                JSON_ARRAYAGG(mcn.conditions),
+                JSON_ARRAY()
+            ) AS spc_condition
+        FROM sys_user su
+        JOIN mst_company mc 
+            ON su.company_id = mc.company_id
+        JOIN mst_country mct 
+            ON mct.country_id = mc.country_id
+        JOIN m_user_type mut 
+            ON su.type_id = mut.type_id
+        LEFT JOIN m_config_new flav 
+            ON su.company_id = flav.company_id AND flav.conditions = 1
+        LEFT JOIN m_config_new pal 
+            ON su.company_id = pal.company_id AND pal.conditions = 2
+        LEFT JOIN m_config_new maxtrck 
+            ON su.company_id = maxtrck.company_id AND maxtrck.conditions = 15
+        LEFT JOIN m_config_new maxflvrtrck 
+            ON su.company_id = maxflvrtrck.company_id AND maxflvrtrck.conditions = 16
+        LEFT JOIN m_config_new top 
+            ON su.company_id = top.company_id AND top.conditions = 3
+        LEFT JOIN m_config_new tr 
+            ON tr.company_id = su.company_id AND tr.active = 1 AND tr.conditions = 7
+        LEFT JOIN mst_employee me 
+            ON me.employee_id = su.employee_id
+        LEFT JOIN person p 
+            ON p.person_id = me.employee_id
+        LEFT JOIN m_config_new mcn  -- 👈 generic join for collecting ids
+            ON mcn.company_id = su.company_id
+        WHERE su.user_id = ${dbConf.escape(req.dataToken.user_id)}
+        GROUP BY su.uid
+        LIMIT 1
+
                    
               `
         );
-        // OLD Query
-        // let userID = await dbQuery(
-        //   `
-        //           SELECT 
-        //           su.uid, su. user_id, su.lang_id, su.employee_id, 
-        //           mc.country_id, mc.company_name, mc.company_id, 
-        //           mct.country_desc, su.active, su.type_id, 
-        //           mut.user_type, COALESCE(mcg.max_sku, 2) max_sku, COALESCE(mcg.pallet, 0) pallet,
-        //   COALESCE(p.firstname, '') firstname , COALESCE(p.midname, '') midname ,COALESCE(p.lastname, '') lastname
-        //           FROM sys_user su 
-        //           JOIN mst_company mc ON su.company_id = mc.company_id 
-        //           JOIN mst_country mct ON mct.country_id = mc.country_id
-        //           join m_user_type mut on su.type_id = mut.type_id 
-        //           LEFT JOIN m_config mcg ON su.company_id = mcg.company_id
-        //   LEFT JOIN mst_employee me ON me.employee_id = su.employee_id
-        //   LEFT JOIN person p ON p.person_id = me.employee_id
-        //           WHERE su.user_id= ${dbConf.escape(req.dataToken.user_id)};
-        //       `
-        // );
-
 
         if (userID[0].active === 2) {
           let userID = []
           let token = []
           res.status(200).send([...userID, token]);
-
         } else {
-          let token = createToken(...userID);
+
+          // optimized dengan mengirim data token lebih sedikiiiiit
+          let rawDataToken = userID[0];
+          let dataToken = {
+            uid: rawDataToken.uid,
+            user_id: rawDataToken.user_id,
+            employee_id: rawDataToken.employee_id,
+            company_id: rawDataToken.company_id,
+            active: rawDataToken.active,
+            type_id: rawDataToken.type_id
+          }
+
+          //console.log(timestamp,"dataToken @keepLogin", dataToken)
+          //console.log(timestamp, "userID[0] @keepLogin", userID[0])
+
+
+          //pisahkan data yang diencrypt dan dikirim 
+          let token = createToken(dataToken, '30m');
+
+          //old token
+          // let token = createToken(...userID);
+
+
           res.status(200).send([...userID, token]);
 
           let sqlUpdateToken = await dbQuery(`UPDATE sys_user 
           SET registration_nr = '${token}'
           WHERE user_id = ${dbConf.escape(req.dataToken.user_id)};`);
 
+
           // UPDATE data kapan kali terakhir aktif login. 
           let sqlUpdateLoginLog = await dbQuery(`
-          UPDATE sys_user SET last_login_date = now() WHERE uid = '${userID}'; `);
+          UPDATE sys_user SET last_login_date = now() WHERE uid = '${req.dataToken.uid}'; `);
+
 
         }
 
       } else {
-        res.status(500).send([]);
+
+        res.status(401).send([]);
+        console.log(timestamp + "! Error query SQL keeplogin 401 can't login :", res.data);
+
       }
 
     } catch (error) {
-      console.log(timestamp + "! Error query SQL :", error);
-      res.status(500).send(error);
+      console.log(timestamp + "! Error query SQL  keeplogin catch:", error.message);
+      res.status(500).send(error.message);
     }
   },
   changePassword: async (req, res) => {
@@ -416,7 +501,6 @@ module.exports = {
             success: true,
             message: " Your Password has Changed!",
           });
-          addSqlLogger(req.dataToken.user_id, query, (JSON.stringify(sqlInject)), 'changePassword')
           // }
         } else {
           res.status(200).send({
@@ -456,10 +540,13 @@ module.exports = {
       LEFT JOIN sys_user su ON
         su.employee_id = me.employee_id
       WHERE
-        su.uid =  ${dbConf.escape(req.body.uid)};`))[0];
+        su.uid =  ${dbConf.escape(req.body.uid)}
+        AND su.type_id IN (3, 9)
+         limit 1
+        ;`))[0];
 
       //buat token
-      let token = createToken({ ...getUid })
+      let token = createToken({ ...getUid }, '5m')
 
       if (getUid) {
 
@@ -468,6 +555,7 @@ module.exports = {
         //Trigger send mail
         forgotPasswordMailSender(getUid.email, token);
 
+        //ganti tempatnya bukan di registration_nr supaya user existing bisa
         let query = `UPDATE sys_user  SET registration_nr = '${token}' WHERE uid = ${dbConf.escape(req.body.uid)};`
         let sqlUpdateToken = await dbQuery(query);
 
@@ -477,7 +565,6 @@ module.exports = {
         });
 
         console.log(timestamp + '##### FORGOT PASSWORD =>' + req.body.uid + "=> uid valid")
-        addSqlLogger(0, query, (JSON.stringify(sqlUpdateToken)), 'forgotPassword');
 
       } else {
 

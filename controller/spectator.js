@@ -30,7 +30,6 @@ module.exports = {
                     } else {
 
                         res.status(200).send(results);
-                        console.log(timestamp + `get coordinate success`);
 
                     }
 
@@ -51,7 +50,6 @@ module.exports = {
                     }
 
                     res.status(200).send(results);
-                    console.log(timestamp + `get coordinate success`);
 
                 })
         }
@@ -1018,11 +1016,13 @@ LIMIT ${limit}
                 (err, results) => {
 
                     if (err) {
+                        console.log(query)
 
                         res.status(500).send(err);
                         console.log(timestamp + `get allOrder error! ${err}`);
 
                     } else {
+                        console.log(query)
 
                         let packet = results.slice(startIndex, endIndex)
                         let totalDataLength = results.length
@@ -1038,6 +1038,7 @@ LIMIT ${limit}
             );
 
         } else {
+            console.log(query)
             res.status(401).send({
                 success: false,
                 message: "UNAUTHORIZED"

@@ -13,18 +13,28 @@ module.exports = {
     try {
       if (req.dataToken.user_id) {
 
+        //   let query = `
+        //   SELECT DISTINCT 
+        //   mo.delv_week, mo.delv_week_desc, mo.cart_id, date_format(mo.created_date,'%Y-%m-%d-%T ') created_date 
+        //   FROM 
+        //   m_cart mo
+        //   JOIN mst_company mco ON mo.company_id = mco.company_id  
+        //   LEFT JOIN map_port_for_dist mpfd ON mo.port_shipment = mpfd.harbour_id 
+        //   AND mo.company_id  = mpfd.distributor_id  
+        //   LEFT JOIN mst_company stp ON stp.company_id = mo.ship_to 
+        //   LEFT JOIN sys_user su ON su.user_id = mo.created_by  
+        //   WHERE mo.company_id = ${req.dataToken.company_id} ;
+        //  `;
+
         let query = `
         SELECT DISTINCT 
         mo.delv_week, mo.delv_week_desc, mo.cart_id, date_format(mo.created_date,'%Y-%m-%d-%T ') created_date 
         FROM 
         m_cart mo
-        JOIN mst_company mco ON mo.company_id = mco.company_id  
-        LEFT JOIN map_port_for_dist mpfd ON mo.port_shipment = mpfd.harbour_id 
-        AND mo.company_id  = mpfd.distributor_id  
-        LEFT JOIN mst_company stp ON stp.company_id = mo.ship_to 
-        LEFT JOIN sys_user su ON su.user_id = mo.created_by  
         WHERE mo.company_id = ${req.dataToken.company_id} ;
        `;
+
+
         dbConf.query(query, (err, results) => {
           if (err) {
             res.status(500).send(err);
@@ -60,30 +70,60 @@ module.exports = {
       if (req.dataToken.user_id) {
         dbConf.query(
           `
-            SELECT DISTINCT 
-            mc.cart_id, mc.ship_to , mco.company_name, mc.delv_week, mc.delv_week_desc, mc.delv_year, mc.id_year,
-            mc.po_buyer, mc.final_dest , mc.po_buyer, stp.company_name , 
-            mc.po_url, su.firstname  created_by, mcd.cont_size, 
-            mcd.cont_qty, mct.container_name, 
-            date_format(mc.created_date,'%Y-%m-%d-%T ') created_date,
-            mc.port_shipment, mpfd.harbour_id, mc.stuffing_date
-            FROM 
-                    m_cart mc
-                    JOIN mst_company mco ON mc.company_id = mco.company_id  
-                    LEFT JOIN map_port_for_dist mpfd ON mc.port_shipment = mpfd.harbour_id 
-                    AND mc.company_id  = mpfd.distributor_id  
-                    LEFT JOIN mst_company stp ON stp.company_id = mc.ship_to 
-                    LEFT JOIN sys_user su ON su.user_id = mc.created_by 
-                    LEFT JOIN m_cart_dtl mcd ON mc.cart_id = mcd.cart_id 
-                    LEFT JOIN mst_container mct ON mct.container_id = mcd.cont_size 
-                    WHERE mc.created_by  = ${req.dataToken.user_id} ;
+          select
+	          distinct 
+            mc.cart_id,
+            mc.ship_to ,
+            mco.company_name,
+            mc.delv_week,
+            mc.delv_week_desc,
+            mc.delv_year,
+            mc.id_year,
+            mc.po_buyer,
+            mc.final_dest ,
+            mc.po_buyer,
+            stp.company_name as ship_to_name,
+            mc.po_url,
+            su.firstname created_by,
+            mcd.cont_size,
+            mcd.cont_qty,
+            mct.container_name,
+            date_format(mc.created_date, '%Y-%m-%d-%T ') created_date,
+            mc.port_shipment,
+            mpfd.harbour_id,
+            date_format(mc.stuffing_date, '%Y-%m-%d') stuffing_date,
+            mh.harbour_name,
+            mc.bill_to,
+            mc.notify1,
+            mc.notify2
+          from
+            m_cart mc
+          join mst_company mco on
+            mc.company_id = mco.company_id
+          left join map_port_for_dist mpfd on
+            mc.port_shipment = mpfd.harbour_id
+            and mc.company_id = mpfd.distributor_id
+          left join mst_company stp on
+            stp.company_id = mc.ship_to
+          left join sys_user su on
+            su.user_id = mc.created_by
+          left join m_cart_dtl mcd on
+            mc.cart_id = mcd.cart_id
+          left join mst_container mct on
+            mct.container_id = mcd.cont_size
+          left join mst_harbour mh on
+            mpfd.harbour_id = mh.harbour_id
+          left join mst_company mco_stp on
+            mc.company_id = mco.company_id
+          where
+            mc.created_by = ${req.dataToken.user_id} ;
                         `,
           (err, results) => {
             if (err) {
               res.status(500).send(err);
               console.log(timestamp + "Error!", err);
             } else {
-              res.status(200).send(results); 
+              res.status(200).send(results);
               console.log(timestamp + `get cart Header success: ${req.dataToken.user_id}`);
               addSqlLogger(req.dataToken.user_id, '-- query data cart', '-- data cart', 'getCartHeader');
             }
@@ -111,6 +151,7 @@ module.exports = {
       if (req.dataToken.user_id) {
         let query = `
         SELECT 
+        det.custom,
         det.cart_id, det.company_id, mco.company_name, det.created_by, su.firstname,  
         det.detail_id, det.cont_size, mc.container_name, det.cont_qty, 
         det.sku1,COALESCE(mp1.product_name_no, mp1.product_name) product_name_1,
@@ -139,7 +180,7 @@ module.exports = {
             res.status(500).send(err);
             console.log(timestamp + "Error!", err);
           } else {
-            res.status(200).send(results); 
+            res.status(200).send(results);
             console.log(timestamp + `get cart Detail: ${req.dataToken.company_id}`);
             addSqlLogger(req.dataToken.user_id, '-- query data cart', '-- data cart', 'getCartDetail');
           }
@@ -168,13 +209,15 @@ module.exports = {
       //   let { company_id, created_date } = req.body;
       //   let rev_created_date = "'" + created_date + "'";
 
-      let cart_id = req.params.cart_id;
+      let cart_id = req.params.cart_id ? req.params.cart_id : req.query.cart_id;
+      let created_date = req.query.created_date;
 
-      console.log(timestamp, "req.params", req.params);
+      console.log(timestamp, "req.params:", req.params);
+      console.log(timestamp, "req.query:", req.query);
       console.log(timestamp, "cart_id", cart_id);
 
 
-      if (cart_id) {
+      if (cart_id && !created_date) {
 
         let query = `
         DELETE FROM m_cart WHERE cart_id = ?; 
@@ -187,15 +230,55 @@ module.exports = {
           (err, results) => {
             if (err) {
               res.status(500).send(err);
-              console.log(timestamp + "Error while deleteing cart:", err);
+              console.log(timestamp + "Error while deleteing cart using cart_id:", err);
             } else {
               res.status(200).send(results);
-              console.log(timestamp + "delete Cart for : ", req.dataToken.company_id + "| cart_id: " + cart_id);
+              console.log(timestamp + "delete Cart using cart_id for : ", req.dataToken.company_id + "| cart_id: " + cart_id);
               addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), 'deleteCart');
             }
           }
         );
 
+      } else if (!cart_id && created_date) {
+        let query = `
+        DELETE FROM m_cart WHERE created_date = ? AND created_by = ${req.dataToken.user_id}; 
+        
+        DELETE FROM m_cart_dtl WHERE created_date = ? AND created_by = ${req.dataToken.user_id}; 
+        `
+        let parameter = [created_date, created_date];
+
+        dbConf.query(query, parameter,
+          (err, results) => {
+            if (err) {
+              res.status(500).send(err);
+              console.log(timestamp + "Error while deleteing cart using created_date:", err);
+            } else {
+              res.status(200).send(results);
+              console.log(timestamp + "delete Cart using created_date for : ", req.dataToken.user_id + "| created_date: " + created_date);
+              addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), 'deleteCart');
+            }
+          }
+        );
+      } else if (cart_id && created_date) {
+        let query = `
+        DELETE FROM m_cart WHERE created_date = ? AND cart_id = ?; 
+        
+        DELETE FROM m_cart_dtl WHERE created_date = ? AND cart_id = ?; 
+        `
+        let parameter = [created_date, cart_id, created_date, cart_id];
+        console.log("Cart info before delete", created_date, cart_id)
+        dbConf.query(query, parameter,
+          (err, results) => {
+            if (err) {
+              res.status(500).send(err);
+              console.log(timestamp + "Error while deleteing cart using created_date:", err);
+            } else {
+              res.status(200).send(results);
+              console.log(timestamp + "delete Cart using created_date for : ", req.dataToken.company_id + "| created_date: " + created_date);
+              addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), 'deleteCart');
+            }
+          }
+        );
       } else {
         res.status(200).send();
         console.log(timestamp + "cart is not deleted :/ ");
@@ -290,7 +373,8 @@ module.exports = {
         bulk,
         delv_week,
         delv_year,
-        id_year
+        id_year,
+        custom
       } = req.body;
 
       let query = ` INSERT INTO m_cart_dtl
@@ -298,17 +382,20 @@ module.exports = {
                       cont_size, cont_qty, 
                       sku1, sku2, sku3, qty1, qty2, qty3, price1, price2, price3, 
                       remarks, bulk, delv_week, delv_year, id_year,
-                      created_date)
+                      created_date, custom)
                     VALUES
                     (?, ?, ?, ?, ?, ?,  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                      date_format(now(),'%Y-%m-%d-%T '));
+                      date_format(now(),'%Y-%m-%d-%T ')),
+                      ?
+                      ;
                   `;
 
       let parameter = [
         cart_id, company_id, user_id, detail_id,
         cont_size, cont_qty,
         sku1, sku2, sku3, qty1, qty2, qty3,
-        price1, price2, price3, remarks, bulk, delv_week, delv_year, id_year
+        price1, price2, price3, remarks, bulk, delv_week, delv_year, id_year,
+        custom
       ]
       dbConf.query(query, parameter,
         (err, results) => {
@@ -529,268 +616,182 @@ module.exports = {
     }
 
   },
-  addCart: async (req, res) => {
 
-    let date = new Date();
-    let timestamp = magenta + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-
-    let { user_id, company_id } = req.dataToken;
-
-    //   request bodynya jadi gini: 
-    /*
-           cart: {
-                    [
-                        {
-                            delv_week: 0,
-                            delv_week_desc: "",
-                            delv_year: 0,
-                            po_buyer: "",
-                            stuffing_date: "YYYY-MM-DD",
-                            port_shipment: 0,
-                            ship_to: 0,
-                            po_url: "",
-                            final_dest: '',
-                            tolling_id: 1,
-                            remarks: '-',
-                            detail: [{
-                                detail_id: 0,
-                                cont_size: 0,
-                                cont_qty: 0,
-                                bulk: 1,
-                                remarks: "",
-                                Flavour:
-                                    [{
-                                        sku: 0,
-                                        qty: 0,
-                                    }],
-                            }] 
-                        }
-                    ]
-                };
-    */
-
-    let cart = req.body.cart
- 
-
-    async function generate_cart_id(year) {
-
-      let selectYear = year ? year : parseInt(date.getFullYear())
-
-
-      try {
-
-        let prevOrderId = (await dbQuery(`SELECT MAX(cart_id) AS LATEST FROM m_cart WHERE created_by = ${user_id} AND delv_year = ${year};`))[0].LATEST;
-
-        // membuat kepala tahun order_id 
-        let yearOrderId = selectYear ? selectYear.toString() : date.getFullYear().toString();
-        let stringCuttedYear = yearOrderId.slice(2, 5);
-
-        if (prevOrderId === null) {
-          return (parseInt(stringCuttedYear + "00" + user_id + "00000"));
-
-        } else if (prevOrderId !== null) {
-          return (parseInt(prevOrderId))
-
-        } else if (prevOrderId == (parseInt(stringCuttedYear + "00" + user_id + "99999"))) {
-
-          res.status(200).send({
-            success: false,
-            message: 'Too many draft. Please delete the last draft order'
-          })
-
-        }
-
-      } catch (error) {
-
-        console.log(timestamp + "error get order_id: " + error)
-
-        res.status(500).send({
-          success: false,
-          message: 'add order failed'
-        })
-
-      }
-
-    }
-
-    async function emergencyDeleteOrder(cart_id) {
-
-      // const queryGetOrder_id = ' SELECT mo.order_id FROM m_order mo WHERE mo.po_buyer = ?';
-      const queryEmergencyDeleteCart = `DELETE FROM m_cart WHERE cart_id = ${cart_id}; DELETE FROM m_cart WHERE cart_id = ${cart_id};`;
-
-      setTimeout(async () => {
-
-        let parameterEmergencyDeleteCart = [cart_id];
-
-        //jalankan query untuk menghapus cart berdasarkan cart_id
-        dbConf.query(queryEmergencyDeleteCart, parameterEmergencyDeleteCart, async (err, results) => {
-
-
-          if (err) {
-
-            console.log(timestamp + " EMERGENCY DELETE ORDER FAILED cart_id " + (cart_id))
-
-          } else {
-
-            addSqlLogger(req.dataToken.user_id, ` ${queryEmergencyDeleteCart} + ${cart_id}`, results, `DELETE error cart_id-${cart_id}`);
-
-            console.log(timestamp + " just run emergency delete cart for cart_id" + (cart_id))
-
-          }
-
-        });
-
-      }, 3000);
-
-    }
-
-    if (cart) {
-
-      try {
-        let cart_id_raw = await generate_cart_id(cart[0].delv_year);
-
-        let cartIndex = 0;
-
-        for (const cart_data of cart) {
-
-          cartIndex++;
-
-          let cart_id = cart_id_raw + cartIndex; 
-
-          let {
-            po_buyer,
-            port_shipment, ship_to, po_url, final_dest
-          } = cart_data;
-
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-
-          let formattedDate = `${year}-${month}-${day}`;
-
-          let delv_year = cart_data.delv_year ? cart_data.delv_year : 0;
-
-          let delv_week = cart_data.delv_week ? cart_data.delv_week : (await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik;
-          let delv_week_desc = cart_data.delv_week_desc ? cart_data.delv_week_desc : `Week: ${(await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik} Date: ${cart_data.stuffing_date} `
-          let tolling_id = cart_data.tolling_id ? cart_data.tolling_id : 0;
-
-          let stuffing_date_rev = cart_data.stuffing_date ? cart_data.stuffing_date : formattedDate;
-          let final_dest_check = final_dest ? final_dest : 0;
-
-          let id_year = parseInt(delv_year.toString() + delv_week.toString())
-
-          let query = ` 
-          INSERT INTO m_cart 
-            (cart_id, company_id, delv_week, delv_week_desc, 
-             delv_year, id_year, po_buyer, 
-             created_date, port_shipment, ship_to, po_url, 
-             created_by, stuffing_date, final_dest, tolling_id )
-            VALUES
-            (?, ?, ?, ?, ?, ?, ?, 
-            date_format(now(),'%Y-%m-%d-%T '), ?, ?, ?, ?,
-             ?, ?, ?); 
-        `
-
-          let parameter = [
-            cart_id, company_id, delv_week, delv_week_desc, 
-            delv_year, id_year, po_buyer,
-            port_shipment, ship_to, po_url, 
-            user_id, stuffing_date_rev, final_dest_check, tolling_id
-          ]
-
-          dbConf.query(query, parameter,
-
-            (err, results) => {
-
-              if (err) {
-                emergencyDeleteOrder(cart_id)
-                console.log(timestamp + "Error Push Cart Data", err);
-                res.status(500).send({ message: `cannot insert cart po_buyer :${po_buyer} ` });
-              } else {
-                console.log(timestamp + `push cart header user_id: ${user_id} po_buyer :${po_buyer} cart_id: ${cart_id}   `);
-                addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), 'addCartHeader');
-
-
-                //memasukkan detailll
-                for (const detail of (cart_data.detail)) {
-  
-                  let queryDetail = ` INSERT INTO m_cart_dtl
-                  (cart_id, company_id, created_by, detail_id, 
-                    cont_size, cont_qty, 
-                    sku1, sku2, sku3, 
-                    qty1, qty2, qty3, 
-                    price1, price2, price3, 
-                    remarks, bulk, delv_week, delv_year, id_year,
-                    created_date)
-                  VALUES
-                  (?, ?, ?, ?, 
-                    ?, ?,  
-                    ?, ?, ?, 
-                    ?, ?, ?, 
-                    ?, ?, ?, 
-                    ?, ?, ?, ?, ?,
-                    date_format(now(),'%Y-%m-%d-%T '));
-                `;
-                  let parameterDetail = [
-                    cart_id, company_id, user_id, detail.detail_id,
-                    detail.cont_size, detail.cont_qty,
-                    (detail.Flavour[0] ? (detail.Flavour[0].sku > 1 ? detail.Flavour[0].sku : 0) : 0), (detail.Flavour[1] ? (detail.Flavour[1].sku > 1 ? detail.Flavour[1].sku : 0) : 0), (detail.Flavour[2] ? (detail.Flavour[2].sku > 1 ? detail.Flavour[2].sku : 0) : 0),
-                    (detail.Flavour[0] ? (detail.Flavour[0].qty > 1 ? detail.Flavour[0].qty : 0) : 0), (detail.Flavour[1] ? (detail.Flavour[1].qty > 1 ? detail.Flavour[1].qty : 0) : 0), (detail.Flavour[2] ? (detail.Flavour[2].qty > 1 ? detail.Flavour[2].qty : 0) : 0),
-                    0, 0, 0,
-                    cart_data.remarks, detail.bulk, delv_week, delv_year, id_year
-                  ]
-
-                  dbConf.query(queryDetail, parameterDetail,
-                    (err, results) => {
-                      if (err) {
-                        emergencyDeleteOrder(cart_id)
-                        console.log(timestamp + "Error Push Cart Data", err);
-                        res.status(500).send({ message: `cannot insert cart po_buyer :${po_buyer} ` })
-                      } else {
-                        console.log(timestamp + `push cart detail user_id:  ${user_id} po_buyer :${po_buyer} detail_id:${detail.detail_id}  `);
-                        addSqlLogger(req.dataToken.user_id, (queryDetail.concat(parameterDetail)), (JSON.stringify(results)), `addCartDetail-${detail.detail_id}`);
+  //   request bodynya jadi gini: 
+  /*
+         cart: {
+                  [
+                      {
+                          delv_week: 0,
+                          delv_week_desc: "",
+                          delv_year: 0,
+                          po_buyer: "",
+                          stuffing_date: "YYYY-MM-DD",
+                          port_shipment: 0,
+                          ship_to: 0,
+                          po_url: "",
+                          final_dest: '',
+                          tolling_id: 1,
+                          remarks: '-',
+                          detail: [{
+                              detail_id: 0,
+                              cont_size: 0,
+                              cont_qty: 0,
+                              bulk: 1,
+                              remarks: "",
+                              Flavour:
+                                  [{
+                                      sku: 0,
+                                      qty: 0,
+                                  }],
+                          }] 
                       }
-                    }
-                  );
+                  ]
+              };
+  */
+
+  addCart: async (req, res) => {
+    const timestamp = `${magenta}${new Date().toLocaleString('id')} : `;
+    const { user_id, company_id } = req.dataToken;
+    const cart = req.body.cart;
+    let formattedDate = (new Date()).toISOString().slice(0, 10);
 
 
 
-                }
-
-              }
-
-            }
-          );
-
-          
-
-        }
-        setTimeout(() => {
-          console.log(timestamp + `==========> add Cart is success`)
-          res.status(200).send({
-            success: true,
-            message: 'All cart has been added. check Draft Orders'
-          })
-        }, 2000)
-      } catch (error) {
-        res.status(500).send({
-          success: false,
-          message: "Something wrong but its not your fault "
-        });
-        console.log(timestamp + ` Error happend. cart is not inserted! message ${error}`);
-      }
-
-
-    } else {
-      res.status(401).send({
-        success: false,
-        message: "cart data is not available. cannot insert order"
-      });
-      console.log(timestamp + `add cart is unavailabe. cart is not inserted`);
-
+    if (!Array.isArray(cart) || cart.length === 0) {
+      console.log(timestamp + `Cart data is not available.`);
+      return res.status(400).send({ success: false, message: "Cart data is missing." });
     }
 
+    const generateCartId = async (year = new Date().getFullYear()) => {
+      const shortYear = year.toString().slice(2);
+      try {
+        const result = await dbQuery(`SELECT MAX(cart_id) AS LATEST FROM m_cart WHERE created_by = ${user_id} AND delv_year = ${year}`);
+        const prevOrderId = result[0].LATEST;
+        if (!prevOrderId) return parseInt(`${shortYear}00${user_id}00000`);
+        if (prevOrderId >= parseInt(`${shortYear}00${user_id}99999`)) throw new Error("Cart ID limit reached");
+        return parseInt(prevOrderId);
+      } catch (err) {
+        console.log(timestamp + "Failed to generate cart ID", err);
+        throw new Error("Cart ID generation failed");
+      }
+    };
 
+    const emergencyDeleteCart = (cart_id) => {
+      const query = `DELETE FROM m_cart WHERE cart_id = ${cart_id}; DELETE FROM m_cart_dtl WHERE cart_id = ${cart_id};`;
+      setTimeout(() => {
+        dbConf.query(query, [cart_id], (err, results) => {
+          if (err) return console.log(timestamp + `EMERGENCY DELETE FAILED for cart_id ${cart_id}`);
+          console.log(timestamp + `EMERGENCY DELETE SUCCESS for cart_id ${cart_id}`);
+          addSqlLogger(user_id, query + cart_id, results, `DELETE error cart_id-${cart_id}`);
+        });
+      }, 3000);
+    };
+
+    try {
+      let cartIndex = 0;
+
+      for (const cart_data of cart) {
+        cartIndex++;
+        const {
+          po_buyer, port_shipment, ship_to, po_url, final_dest = '-',
+          delv_year = 0, tolling_id = 0, bill_to: raw_bill_to = '',
+          notify_to_1: nt1, notify_to_2: nt2,
+          remarks = '', detail = []
+        } = cart_data;
+        let stuffing_date_rev = cart_data.stuffing_date ? cart_data.stuffing_date : formattedDate;
+
+        const notify_to_1 = nt1 && nt1 !== '' ? nt1 : 0;
+        const notify_to_2 = nt2 && nt2 !== '' ? nt2 : 0;
+
+        const bill_to = raw_bill_to !== '' ? parseInt(raw_bill_to) : 0;
+
+        const delv_week = cart_data.delv_week ? cart_data.delv_week : (await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik;
+        const delv_week_desc = cart_data.delv_week_desc ? cart_data.delv_week_desc : `Week: ${(await dbQuery(`SELECT day2week('${cart_data.stuffing_date}') AS wikwik;`))[0].wikwik} Date: ${cart_data.stuffing_date} `
+
+        console.log("delv_week", delv_week)
+
+        const id_year = parseInt(`${delv_year}${delv_week}`);
+
+        const cart_id_raw = await generateCartId(delv_year);
+        const cart_id = cart_id_raw + cartIndex;
+
+
+        const headerQuery = `
+                      INSERT INTO m_cart 
+                      (cart_id, company_id, delv_week, delv_week_desc, delv_year, id_year, po_buyer, 
+                      created_date, port_shipment, ship_to, po_url, created_by, stuffing_date, final_dest, 
+                      tolling_id, bill_to, notify1, notify2)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, 
+                      NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    `;
+        const headerParams = [
+          cart_id, company_id, delv_week, delv_week_desc, delv_year, id_year, po_buyer,
+          port_shipment, ship_to, po_url, user_id, stuffing_date_rev, final_dest,
+          tolling_id, bill_to, notify_to_1, notify_to_2
+        ];
+
+        await new Promise((resolve, reject) => {
+          dbConf.query(headerQuery, headerParams, async (err, results) => {
+            if (err) {
+              emergencyDeleteCart(cart_id);
+              console.log(timestamp + "Insert Header Error", err);
+              return reject(`Insert cart header failed for po_buyer: ${po_buyer}`);
+            }
+
+            addSqlLogger(user_id, headerQuery + JSON.stringify(headerParams), results, 'addCartHeader');
+            console.log(timestamp + `Cart header inserted: po_buyer ${po_buyer}`);
+
+            // Insert details
+            for (const dtl of detail) {
+              const custom = dtl.custom === false || dtl.custom === 0 || dtl.custom === "0" ? 0 : 1;
+              const Flavour = dtl.Flavour || [];
+
+              const detailQuery = `
+                            INSERT INTO m_cart_dtl
+                            (cart_id, company_id, created_by, detail_id, cont_size, cont_qty,
+                            sku1, sku2, sku3, qty1, qty2, qty3, price1, price2, price3,
+                            remarks, bulk, delv_week, delv_year, id_year, created_date, custom)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                          `;
+
+              const detailParams = [
+                cart_id, company_id, user_id, dtl.detail_id, dtl.cont_size, dtl.cont_qty,
+                Flavour[0]?.sku > 1 ? Flavour[0].sku : 0,
+                Flavour[1]?.sku > 1 ? Flavour[1].sku : 0,
+                Flavour[2]?.sku > 1 ? Flavour[2].sku : 0,
+                Flavour[0]?.qty > 1 ? Flavour[0].qty : 0,
+                Flavour[1]?.qty > 1 ? Flavour[1].qty : 0,
+                Flavour[2]?.qty > 1 ? Flavour[2].qty : 0,
+                0, 0, 0, remarks, dtl.bulk, delv_week, delv_year, id_year, custom
+              ];
+
+
+
+              dbConf.query(detailQuery, detailParams, (err, results) => {
+                if (err) {
+                  emergencyDeleteCart(cart_id);
+                  console.log(timestamp + "Insert Detail Error", err);
+                  return res.status(500).send({ success: false, message: `Failed to insert cart detail for po_buyer: ${po_buyer}` });
+                }
+                addSqlLogger(user_id, detailQuery + JSON.stringify(detailParams), results, `addCartDetail-${dtl.detail_id}`);
+                console.log(timestamp + `Cart detail inserted: detail_id ${dtl.detail_id}`);
+              });
+            }
+
+            resolve();
+          });
+        });
+      }
+
+      console.log(timestamp + `All carts inserted successfully.`);
+      res.status(200).send({ success: true, message: 'All carts inserted. Check draft orders.' });
+
+    } catch (err) {
+      console.log(timestamp + `Final error in addCart: ${err}`);
+
+      res.status(500).send({ success: false, message: err.message || "Unexpected error occurred." });
+    }
   }
 
 };

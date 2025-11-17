@@ -6,7 +6,7 @@ const cron = require('node-cron');
 const { dbTMQuery } = require("../config/db");
 
 // ini ambil script email
-const { NotifyTMGmailBulkMailSender1, NotifyTMGmailBulkMailSender6 } = require("../config/mailer");
+const { NotifyTMGmailBulkMailSender1, NotifyTMGmailBulkMailSender6 } = require('../mailer/eorder/eorder_mailer');
 
 //???
 const colors = {
