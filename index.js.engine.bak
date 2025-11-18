@@ -1,0 +1,671 @@
+// BISMILAHIROHMANNIROHIM
+const readline = require('readline');
+/**
+ * IOD INTEGRATED API:
+ * ADALAH API YANG MENGAKOMODASIKAN BERBAGAI WEBAPPP IOD UNTUK DIGUNAKAN SECARA BERSAMA-SAMA DAN TERINTEGRASI
+ * API INI DIBAGUN BERDASARKAN API ONLINE ORDER YANG DIKEMBANGKAN UNTUK MENYEDIAKAN BERBAGAI 
+ * APLIKASI YANG TERINTEGRASI DAN TIDAK TERINTEGRASI DENGAN BEBERAPA DATABASE MAUPUN BERDIRI SENDIRI
+ * 
+ * APLIKASI INI TIDAK DIPERKENANKAN UNTUK DIBAGIKAN MAUPUN DIGUNAKAN DALAM KEPERLUAN PENGEMBANGAN 
+ * JIKA MEMERLUKAN API MAKA GUNAKAN STAND ALONE API SEBAGAI BAHAN PENGEMBANGAN. 
+ * 
+ * API INI DIHARAPKANN DAPAT MENJALANKAN:
+ * + SATU ATAU BEBERAPA DATABASE CONNECTION
+ * + MENJALANKAN BEBERAPA ENKRIPSI SEKALIGUS. 
+ */
+
+// SEBELUM KITA MEMULAI KODINGAN INI, 
+// MARILAH KITA JALANI HIDUP SAMBIL MISHUH-MISUH
+
+// const greenColor = '\x1b[32m'; // Green
+// const blueColor = '\x1b[34m'; // Blue
+// const redColor = '\x1b[31m'; // Red
+// const yellowColor = '\x1b[33m'; // Yellow
+// const purpleColor = '\x1b[35m'; // Purple
+// const reset = '\\x1b[0m';
+
+const dotenv = require("dotenv");
+dotenv.config();
+
+const express = require("express");
+const App = express();
+
+const { Server } = require("socket.io")
+
+
+const bearerToken = require("express-bearer-token");
+const helmet = require("helmet");
+const cookieParser = require('cookie-parser');
+// API CONFIG FOR SERVER 104 (i2i join)
+const https = require('https');
+
+const http = require('http');
+
+const fs = require('fs');
+const path = require('path');
+
+
+
+const cors = require("cors");
+
+const session = require("express-session");
+
+const os = require('os');
+
+//for production
+
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+
+
+function getLocalIP() {
+  const interfaces = os.networkInterfaces();
+  for (let name in interfaces) {
+    for (let iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return null;
+}
+
+const API_URL = production() ? "backend.indofoodinternational.com" : getLocalIP();
+
+
+
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Indofood API',
+      version: '1.0.0',
+      description: 'A simple API to manage resources',
+    },
+  },
+  // Path to the API docs
+  apis: ['./controllers/*.js', './routers/*.js'], // Points to your route files where API is defined
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+/*
+
+
+
+
+let svr;
+
+if (process.env.PORT === '9999') {
+  try {
+    // Load SSL credentials
+    const SSL_LOC = path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE);
+    const SSL = {
+      key: fs.readFileSync(path.join(SSL_LOC, process.env.SSL_FILE_KEY)),
+      cert: fs.readFileSync(path.join(SSL_LOC, process.env.SSL_FILE_CERT))
+    };
+
+    svr = https.createServer(SSL, App);
+    console.log('Production server running with HTTPS');
+  } catch (err) {
+    console.error('Error loading SSL credentials:', err.message);
+    process.exit(1); // Exit if SSL files are missing or invalid
+  }
+} else {
+  svr = http.createServer(App);
+  console.log('Development server running with HTTP');
+}
+//production
+// const svr = https.createServer(SSL, App);  
+
+//development
+// const svr = createServer(App);
+
+// const PORT = process.env.PORT_SSL; // or any other port number you prefer
+*/
+
+
+//auto config
+
+
+//reading SSL certification directory
+// const SSL = {
+//   key: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_KEY)),
+//   cert: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_CERT))
+// };
+
+
+const SSL = {
+  pfx: fs.readFileSync(path.join(__dirname, process.env.SSL_LOC, process.env.SSL_TYPE, process.env.SSL_FILE_PFX)),
+  passphrase: process.env.SSL_FILE_PFX_PASSWORD
+};
+
+function production() {
+
+  function getLocalIp() {
+    const networkInterfaces = os.networkInterfaces();
+    for (const interfaceName in networkInterfaces) {
+      const addresses = networkInterfaces[interfaceName];
+      for (const address of addresses) {
+        if (address.family === 'IPv4' && !address.internal) {
+          return address.address; // Return the local IP address
+        }
+      }
+    }
+  }
+
+  if (getLocalIp() == "10.126.106.105") {
+    // return "production"
+    return true;
+  } else {
+    // return "development"
+    return false;
+
+  }
+
+
+}
+let svr = production() ? https.createServer(SSL, App) : http.createServer(App);
+let PORT = production() ? process.env.PORT_SSL : process.env.DEV_PORT;
+console.log("Server status is Production?", production())
+
+module.exports = { PORT, API_URL };
+
+
+const io = new Server(
+  svr,
+  {
+    cors: {
+      origin: "*"
+    },
+    connectionStateRecovery: {
+      // the backup duration of the sessions and the packets
+      maxDisconnectionDuration: 2 * 60 * 1000,
+      // whether to skip middlewares upon successful recovery
+      skipMiddlewares: true,
+    }
+
+  },
+
+
+);
+
+App.use(
+  session({
+    resave: false,
+    saveUninitialized: true,
+    secret: "SECRET",
+  })
+);
+
+App.use(cors({
+  origin: '*', // Specify Ionic app's origin
+}));
+
+App.use((req, res, next) => {
+  res.set({
+    'Cross-Origin-Resource-Policy': 'cross-origin',
+    'Cross-Origin-Opener-Policy': 'cross-origin', // if needed
+  });
+  next();
+});
+
+App.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },  // Override default policy
+}));
+
+
+// App.use(cors({
+//   origin: 'https://www.indofoodinternational.com/', // Sesuaikan dengan URL frontend Anda
+//   credentials: true // Izinkan pengiriman kredensial
+// }));
+// App.use(helmet());
+App.use(express.json());
+App.use(express.static("./public"));
+App.use(bearerToken());
+App.use(cookieParser());
+
+
+// API CONFIG FOR SERVER 104 (i2i join deploy)
+
+svr.listen(PORT, () => {
+  console.log(`INTEGRATED API SSL Server running on port ${PORT}`);
+});
+
+
+
+const logs = []; // Store logs globally
+const originalLog = console.log;
+
+if (!global.consoleOverridden) {
+  global.consoleOverridden = true; // Prevent multiple overrides
+
+  console.log = function (...args) {
+    originalLog.apply(console, args);
+    const logMessage = args.map(arg =>
+      typeof arg === "object" ? JSON.stringify(arg) : arg
+    ).join(" ");
+    logs.push(logMessage);
+
+    // Emit new log message to all connected clients
+    io.emit("new_log", logMessage);
+  };
+}
+
+io.on("connection", (socket) => {
+  // console.log(`Client connected: ${socket.id}`);
+
+  // Send the initial logs when a client connects
+  socket.emit("logs", logs);
+
+  socket.on("message", (msg) => {
+    io.emit("message", msg);
+  });
+
+  socket.on("broadcast", (broadcast) => {
+    io.emit("broadcast", broadcast);
+  });
+
+  socket.on("error", (err) => {
+    console.error(`Socket error on ${socket.id}: ${err.message}`);
+  });
+
+  // socket.on("disconnect", () => {
+  //   console.log(`Client disconnected: ${socket.id}`);
+  // });
+});
+
+
+// END OF API CONFIG FOR SERVER 104 (i2i join deploy)
+
+// ==> MYSQL 1
+// var connection = mysql.createConnection({ multipleStatements: true });
+
+
+
+
+
+//================================ ROUTERS =============================
+
+// CONFIGURE ROUTERS
+const {
+  authRouter,
+  authTmRouter,
+  cartRouter,
+  userRouter,
+  productRouter,
+  orderRouter,
+  adminRouter,
+  spectatorRouter,
+  trademarkRouter,
+  authRouterTest,
+  productRouterTest,
+  cardGenerator,
+  hotsAuth,
+  hotsAdmin,
+  hotsTicket,
+  hotsSettings,
+  eventRouter,
+  shortener,
+  hotsTps,
+  srtsRouter,
+  projectmngr,
+  taskmngr,
+  hotscustomfunction,
+  kanbanmngr,
+  ganttmngr,
+  approvalmngr,
+  departmentmngr,
+  teammngr,
+  taskstepsmngr,
+  pmdashboard,
+  usermngr,
+  rolemngr,
+  timetrackingmngr,
+  notificationmngr,
+  projecttemplatemngr,
+  projectcommentmngr,
+  mbbookings,
+  mbdayColors,
+  mbrooms,
+  mbsettings,
+  mbtimeslots,
+  mbusers,
+  hotsdashboard,
+  hotspublic,
+
+} = require("./routers");
+
+
+
+// Auth: 
+App.use("/auth", authRouter);
+
+
+// meeting book
+App.use("/api/bookings", mbbookings);
+App.use("/api/day-colors", mbdayColors);
+App.use("/api/rooms", mbrooms);
+App.use("/api/settings", mbsettings);
+App.use("/api/timeslots", mbtimeslots);
+App.use("/api/users", mbusers);
+
+
+
+// Project_manager: 
+App.use("/pm/project", projectmngr);
+App.use("/pm/kanban", kanbanmngr);
+App.use("/pm/gantt", ganttmngr);
+App.use("/pm/approval", approvalmngr);
+App.use("/pm/department", departmentmngr);
+App.use("/pm/team", teammngr);
+App.use("/pm/task", taskmngr); // This is the critical route
+App.use("/pm/task-steps", taskstepsmngr);
+App.use("/pm/dashboard", pmdashboard);
+App.use("/pm/user", usermngr);
+App.use("/pm/role", rolemngr);
+App.use("/pm/time-tracking", timetrackingmngr);
+App.use("/pm/notification", notificationmngr);
+App.use("/pm/project-templates", projecttemplatemngr);
+App.use("/pm/project-comments", projectcommentmngr);
+
+// Auth TM: 
+//App.use("/auth_tm", authTmRouter);
+
+// Cart: 
+App.use("/cart", cartRouter);
+
+// User: 
+App.use("/user", userRouter);
+
+//Product: 
+App.use("/product", productRouter);
+
+//Order: 
+App.use("/order", orderRouter);
+
+//additional  Indofood international
+App.use("/searates", srtsRouter);
+
+//additional  Indofood international
+App.use("/event", eventRouter);
+
+
+//admin: 
+App.use("/admin", adminRouter);
+
+//spectator:
+App.use("/spectator", spectatorRouter);
+
+//trademark:
+App.use("/tm_card", trademarkRouter);
+
+//Card Generator:
+App.use("/card_generator", cardGenerator);
+
+//hots_auth
+App.use("/hots_auth", hotsAuth);
+App.use("/hots_admin", hotsAdmin);
+App.use("/hots_ticket", hotsTicket);
+App.use("/hots_settings", hotsSettings);
+//hots pricing structure
+App.use("/hots_Tps", hotsTps);
+//hots custom function
+App.use("/hots_customfunction", hotscustomfunction);
+App.use("/hotsdashboard", hotsdashboard);
+App.use("/hots/public", hotspublic);
+
+
+//Shortener
+App.use("/shortener", shortener);
+
+
+
+
+
+
+App.use('/public', express.static(path.join(__dirname, 'public')));
+
+
+App.use(express.static(path.join(__dirname, 'public')));
+
+
+App.use('/public/files/hots/it_support', express.static(path.join(__dirname, 'public', 'files', 'hots', 'it_support')));
+
+
+App.use((req, res, next) => {
+  res.setTimeout(15000, () => {
+    console.warn("⏳ Timeout on request:", req.originalUrl);
+    res.status(504).send({ error: "Timeout" });
+  });
+  next();
+});
+
+setInterval(async () => {
+  const [rows] = await dbConf.promise().query("SHOW STATUS LIKE 'Threads_connected'");
+  console.log(`🔍 Active MySQL connections: ${rows[0].Value}`);
+}, 30000);
+
+App.get('/public/files/hots/it_support/:imageId', (req, res) => {
+  const imageId = req.params.imageId;
+  const imagePath = path.join(__dirname, 'public', 'files', 'hots', 'it_support', imageId);
+
+  // Set the required headers
+  res.set({
+    'Content-Type': 'image/jpeg',  // Adjust based on image type (png, gif, etc.)
+    'Cross-Origin-Resource-Policy': 'cross-origin',  // Allow sharing across origins
+  });
+
+  // Send the image file
+  res.sendFile(imagePath, (err) => {
+    if (err) {
+      console.error('Error serving image:', err);
+      res.status(404).send('Image not found');
+    }
+  });
+});
+
+App.use('/public/hots/generateddocuments', express.static(path.join(__dirname, 'public', 'hots', 'generateddocuments')));
+
+App.get('/public/hots/generateddocuments/:fileName', (req, res) => {
+  const fileName = req.params.fileName;
+  const filePath = path.join(__dirname, 'public', 'hots', 'generateddocuments', fileName);
+
+  // Set appropriate headers for PDF
+  res.set({
+    'Content-Type': 'application/pdf',
+    'Cross-Origin-Resource-Policy': 'cross-origin', // Optional: needed if iframe loads cross-origin
+    'Content-Disposition': 'inline', // or use 'attachment' to force download
+    'Content-Type': 'application/pdf',
+    'Cross-Origin-Resource-Policy': 'cross-origin',
+    'Cross-Origin-Embedder-Policy': 'require-corp',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Disposition': 'inline'
+  });
+
+  // Send the PDF file
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error('Error serving PDF:', err);
+      res.status(404).send('PDF not found');
+    }
+  });
+});
+
+App.use('*', (req, res) => {
+  res.status(404).send('Not Found');
+});
+
+
+// ========= for Documentation ============
+
+// App.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+//   customCss: `
+//         .response-control-media-type {
+//             display: none !important;
+//         }
+//     `,  // Inline CSS
+// }));
+
+
+
+
+//======================================================================
+
+//LISTEN TO THE PORT
+// App.listen(PORT);
+// console.log(`INTEGRATED API running at Port: ${PORT}`);
+
+//TEST and DISPLAY APP
+App.get("/", (req, res) => {
+  res
+    .status(200)
+    .send(
+      "<h1>CONNECTION BLOCKED!</h2> <br> <h2> YOU ARE NOT SUPPOSE TO ACCESS THIS SITE WITH PAGE!  </h2>"
+    );
+});
+
+
+//DB CONNECTION CHECK
+const {
+  dbConf,
+  dbTM,
+  dbIndomieku,
+  dbHots,
+  dbCardGenerator,
+  dbClick
+} = require("./config/db");
+
+
+let totalConnections = 5; // total DBs
+let doneConnections = 0;
+
+function checkDone() {
+  doneConnections++;
+  if (doneConnections === totalConnections) {
+    console.log("✅ All database connections are established!");
+    console.log("=============================================================");
+  }
+}
+
+//FOR POOLING CONNECTION
+dbConf.getConnection((error, connection) => {
+  if (error) {
+    console.log("Error DB e-Order Connection!", error.sqlMessage);
+  } else {
+    console.log(`DB e-Order has been connected ${connection.threadId}`);
+    checkDone();
+  }
+});
+
+dbTM.getConnection((error, connection) => {
+  if (error) {
+    console.log("Error DB Trademark Management Connection!", error.sqlMessage);
+  } else {
+    console.log(`DB Trademark Management has been connected ${connection.threadId}`);
+    checkDone();
+  }
+});
+
+dbCardGenerator.getConnection((error, connection) => {
+  if (error) {
+    console.log("Error DB Card Generator Connection!", error.sqlMessage);
+  } else {
+    console.log(`DB Card Generator has been connected ${connection.threadId}`);
+    checkDone();
+  }
+});
+
+dbHots.getConnection((error, connection) => {
+  if (error) {
+    console.log("Error DB HOTS Connection!", error.sqlMessage);
+  } else {
+    console.log(`DB HOTS has been connected ${connection.threadId}`);
+    checkDone();
+  }
+
+});
+
+
+dbClick.getConnection((error, connection) => {
+  if (error) {
+    console.log("Error DB Click Connection!", error.sqlMessage);
+  } else {
+    console.log(`DB Click has been connected ${connection.threadId}`);
+    checkDone();
+  }
+
+});
+
+
+
+
+/*
+dbIndomieku.getConnection((error, connection) => {
+  if (error) {
+    console.log("Error DB Trademark Management Connection!", error.sqlMessage);
+  }
+  console.log(`DB Indomieku_test Management has been connected ${connection.threadId}`);
+});
+*/
+
+
+// ============================ Automation job =========================
+/*
+  TULIS function yang akan dijalankan secara otomatis di sini.
+  Jangan lupa dideklarasikan
+*/
+const {
+  trademarkMgmtAuto,
+  notification,
+  cleanup,
+  automatemb,
+
+
+} = require('./automation');
+const { error } = require("console");
+
+trademarkMgmtAuto.runCheck();
+notification.shippingMailNotification();
+cleanup.cleanupOrphan();
+// notification.callInsertSO();
+
+// commandprompt
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+
+// ========= for test program ============
+
+// Import testing utilities
+const testingUtils = require('./testing-utils');
+
+
+// =======================================
+
+
+
+//============================= UPDATE REGISTER =============================
+/**
+ * 2024-02-22 12.07:V 2.1.1- add   : menambah fitur special treatment: complete data ship to party
+ * 2024-05-10 1907 :V 2.2.0- MAJOR : Integrasi dengan card genereator  
+ * 2024-05-10 1907 :V 2.2.1- patch : ubah posisi otomation ke bawah index.js
+ * 2024-05-10 1907 :V 2.2.2- patch : Improvement timestamp minor di cronjob
+ * 2024-05-10 1907 :V 2.2.3- add   : Menambah cron job untuk call insert_so
+ * 2024-05-17 1907 :V 2.2.4- add   : Menambah getOrderAllIn untuk query data
+ * 2024-05-20 1334 :V 2.3.1- MAJOR : Security update menambahkan escape() dan SQL Parametering
+ * 2024-05-21 1040 :V 2.3.2- patch : ganti quewry getOrderAllIn
+ * 2024-05-21 1040 :V 2.3.3- add   : nambah getRealizationAllIn di contrller dan router
+ * 2024-05-21 1040 :V 2.4.0- add   : menambah table event_logger di e-Order_iod* 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+
+
+

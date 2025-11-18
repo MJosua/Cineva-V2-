@@ -1931,7 +1931,8 @@ WHERE
             let getWeekBlock = await dbQuery(`
                 SELECT mcn.value 
                 FROM m_config_new mcn 
-                WHERE mcn.conditions = 21 
+                WHERE 
+                  mcn.conditions = 21 
                   AND 
                   mcn.company_id = ${req.dataToken.company_id}  
                   or 
