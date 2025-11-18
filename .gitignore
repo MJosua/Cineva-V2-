@@ -5,6 +5,8 @@ Integrated-API.zip
 *.jpeg
 *.png
 *.zip
+*.pdf
+*.xlsx
 /config
 /public
 /uploads
