@@ -188,7 +188,7 @@ module.exports = {
             const [pendingApprovals] = await dbPMS.promise().execute(`
             SELECT COUNT(*) as pending_count
             FROM PM.t_task_approvals 
-            WHERE workflow_id = ? AND status = 'pending'
+            WHERE workflow_id = ? AND status = 'waiting'
           `, [workflowId]);
 
           if (pendingApprovals[0].pending_count === 0) {

@@ -1,23 +1,17 @@
-/**
- * NEW HOTS ENGINE ROUTER
- * Does NOT touch old HOTS routes
- */
-
-const express = require("express");
+const express = require('express');
 const router = express.Router();
+const engineTicket = require('../../controller/engine/engineTicket');
+const { decodeTokenHT } = require('../../config/encrypts');
 
-const engineTicketController = require("../../controller/engine/engineTicket");
+router.post('/create', engineTicket.create);
+router.post('/approve', engineTicket.approve);
+router.post('/reject', engineTicket.reject);
+router.get('/status/:ticket_id', decodeTokenHT, engineTicket.status);
 
-// CREATE TICKET
-router.post("/ticket/create", engineTicketController.create);
-
-// APPROVE TICKET
-router.post("/ticket/approve", engineTicketController.approve);
-
-// REJECT TICKET
-router.post("/ticket/reject", engineTicketController.reject);
-
-// GET STATUS
-router.get("/ticket/status/:ticket_id", engineTicketController.status);
+// NEW
+router.get("/tickets", decodeTokenHT,engineTicket.list);
+router.get("/tickets/my-approvals", engineTicket.myApprovals);
+router.get("/tickets/my-requests", engineTicket.myRequests);
+router.get("/tickets/dashboard-summary", engineTicket.dashboard);
 
 module.exports = router;

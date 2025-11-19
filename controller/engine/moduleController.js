@@ -10,11 +10,11 @@ module.exports={
         'INSERT INTO m_engine_modules (module_key,module_name,module_type,form_json,active) VALUES (?,?,?,?,1)',
         [module_key,module_name,module_type,form_json?JSON.stringify(form_json):null]
       );
-      res.json({ok:true,module_id:r.insertId});
+      res.json({ok:true,service_id:r.insertId});
     }catch(e){ res.status(500).json({ok:false,message:e.message}); }
   },
   list:async(req,res)=>{
-    const rows=await dbQueryHots('SELECT module_id,module_key,module_name,active FROM m_engine_modules');
+    const rows=await dbQueryHots('SELECT service_id,module_key,module_name,active FROM m_engine_modules');
     res.json({ok:true,modules:rows});
   },
   get:async(req,res)=>{

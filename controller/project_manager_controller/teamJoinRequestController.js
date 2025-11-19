@@ -16,7 +16,7 @@ module.exports = {
       // Check if request already exists
       const [existingRequest] = await dbPMS.promise().execute(`
         SELECT * FROM pm.t_team_join_requests 
-        WHERE team_id = ? AND user_id = ? AND status = 'pending'
+        WHERE team_id = ? AND user_id = ? AND status = 'waiting'
       `, [team_id, user_id]);
 
       if (existingRequest.length > 0) {

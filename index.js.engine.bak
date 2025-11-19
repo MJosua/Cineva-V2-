@@ -84,7 +84,7 @@ const swaggerOptions = {
     },
   },
   // Path to the API docs
-  apis: ['./controllers/*.js', './routers/*.js'], // Points to your route files where API is defined
+  apis: ['./controller/*.js', './routers/*.js'], // Points to your route files where API is defined
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);

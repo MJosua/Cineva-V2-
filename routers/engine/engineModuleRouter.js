@@ -1,7 +1,7 @@
 const express=require('express');
 const router=express.Router();
-const runtime=require('../../controllers/engine/moduleRuntimeController');
-const admin=require('../../controllers/engine/moduleController');
+const runtime=require('../../controller/engine/moduleRuntimeController');
+const admin=require('../../controller/engine/moduleController');
 
 // Admin
 router.post('/admin/modules', admin.create);
