@@ -25,7 +25,7 @@ module.exports = {
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
 
-        if (req.dataToken.role_id === 4) {
+        if (req.dataToken.role_id = 4) {
 
             let queryGetAccount = ` 
             SELECT
@@ -107,7 +107,7 @@ module.exports = {
         } = req.body
 
 
-        if (req.dataToken.role_id === 4) {
+        if (req.dataToken.role_id = 4) {
 
             let queryInsert = `INSERT INTO user (
              firstname, lastname, uid, email,
@@ -158,7 +158,7 @@ module.exports = {
         let date = new Date();
         let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
-        if (req.dataToken.role_id === 4) {
+        if (req.dataToken.role_id = 4) {
 
             let queryGetAccountData = `SELECT 
             u.user_id,
@@ -271,7 +271,7 @@ module.exports = {
         let date = new Date();
         let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
         // DELETE FROM sys_user WHERE user_id = ?;
-        if (req.dataToken.role_id === 4) {
+        if (req.dataToken.role_id = 4) {
 
             if (req.params.user_id) {
 
@@ -317,7 +317,7 @@ module.exports = {
         let date = new Date();
         let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
-        if (req.dataToken.role_id === 4) {
+        if (req.dataToken.role_id = 4) {
             let queryGetAdmin = 'SELECT * FROM `m_role`'
 
             dbHots.query(queryGetAdmin, (err, results) => {
@@ -350,7 +350,7 @@ module.exports = {
         let date = new Date();
         let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
-        if (req.dataToken.role_id === 4) {
+        if (req.dataToken.role_id = 4) {
             if (req.params.user_id) {
 
                 let queryGetLatestStatus = `SELECT active, user_id  FROM  user  u WHERE user_id = ?`;
@@ -423,7 +423,7 @@ module.exports = {
         let date = new Date();
         let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
-        if (req.dataToken.role_id === 4) {
+        if (req.dataToken.role_id = 4) {
 
             queryGetDepartment = `SELECT * FROM m_department d`
 
@@ -457,7 +457,7 @@ module.exports = {
         let date = new Date();
         let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
-        if (req.dataToken.role_id === 4) {
+        if (req.dataToken.role_id = 4) {
 
             queryGetDepartment = `
                             SELECT 
@@ -519,7 +519,7 @@ module.exports = {
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
 
-        if (req.dataToken.role_id === 4) {
+        if (req.dataToken.role_id = 4) {
 
             let queryGetAccount = ` SELECT
                 t.ticket_id,
@@ -590,7 +590,7 @@ module.exports = {
         let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
 
-        if (req.dataToken.role_id === 4) {
+        if (req.dataToken.role_id = 4) {
 
             let getAllWorkFlow = ` 
             SELECT
@@ -648,7 +648,7 @@ module.exports = {
         let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
         let paramGetAccountData = [req.params.department_id]
 
-        if (req.dataToken.role_id === 4) {
+        if (req.dataToken.role_id = 4) {
 
             queryGetDepartment = `
                             SELECT 
@@ -718,7 +718,7 @@ module.exports = {
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
 
-        if (req.dataToken.role_id === 4) {
+        if (req.dataToken.role_id = 4) {
 
             let queryGetAccount = ` 
             SELECT

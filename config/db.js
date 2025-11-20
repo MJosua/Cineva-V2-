@@ -19,9 +19,9 @@ function production() {
 
 // =============================================================== //
 // 🔹 Dynamic Configuration
-const host_config = production() ? process.env.DB_HOST : process.env.DEV_DB_HOST;
-const user_config = production() ? process.env.DB_USER : process.env.DEV_DB_USER;
-const password_config = production() ? process.env.DB_PASSWORD : process.env.DEV_DB_PASSWORD;
+const host_config = !production() ? process.env.DB_HOST : process.env.DEV_DB_HOST;
+const user_config = !production() ? process.env.DB_USER : process.env.DEV_DB_USER;
+const password_config = !production() ? process.env.DB_PASSWORD : process.env.DEV_DB_PASSWORD;
 
 console.log("@db - host:", host_config);
 console.log("@db - user:", user_config);
