@@ -194,6 +194,56 @@ const {
 } = require("./routers");
 
 
+
+/* ===================================================================
+   🔥  DATABASE POOL CHECKS (kept unchanged)
+=================================================================== */
+const {
+  dbConf,
+  dbTM,
+  dbIndomieku,
+  dbHots,
+  dbQueryHots,
+  dbCardGenerator,
+  dbClick
+} = require("./config/db");
+
+let totalConnections = 5;
+let doneConnections = 0;
+
+function checkDone() {
+  doneConnections++;
+  if (doneConnections === totalConnections) {
+    console.log("✅ All database connections are established!");
+    console.log("=============================================================");
+  }
+}
+
+dbConf.getConnection((e, conn) => {
+  if (e) console.log("Error DB e-Order Connection!", e.sqlMessage);
+  else { console.log(`DB e-Order connected ${conn.threadId}`); checkDone(); }
+});
+
+dbTM.getConnection((e, conn) => {
+  if (e) console.log("Error DB Trademark Connection!", e.sqlMessage);
+  else { console.log(`DB TM connected ${conn.threadId}`); checkDone(); }
+});
+
+dbCardGenerator.getConnection((e, conn) => {
+  if (e) console.log("Error DB CardGen Connection!", e.sqlMessage);
+  else { console.log(`DB CardGen connected ${conn.threadId}`); checkDone(); }
+});
+
+dbHots.getConnection((e, conn) => {
+  if (e) console.log("Error DB HOTS Connection!", e.sqlMessage);
+  else { console.log(`DB HOTS connected ${conn.threadId}`); checkDone(); }
+});
+
+dbClick.getConnection((e, conn) => {
+  if (e) console.log("Error DB Click Connection!", e.sqlMessage);
+  else { console.log(`DB Click connected ${conn.threadId}`); checkDone(); }
+});
+
 /* -------------------------------------------------------------------
    🔥 async function start() { for engine }
 ------------------------------------------------------------------- */
@@ -201,7 +251,7 @@ const {
 (async () => {
   try {
     console.log("🔥 Initializing HOTS Engine...");
-    await initAll();
+    await initAll(dbQueryHots, dbHots);
     console.log("✅ HOTS Engine Initialized!");
   } catch (e) {
     console.error("❌ Failed to initialize HOTS Engine:", e);
@@ -285,53 +335,7 @@ svr.listen(PORT, () => {
   console.log(`INTEGRATED API SSL Server running on port ${PORT}`);
 });
 
-/* ===================================================================
-   🔥  DATABASE POOL CHECKS (kept unchanged)
-=================================================================== */
-const {
-  dbConf,
-  dbTM,
-  dbIndomieku,
-  dbHots,
-  dbCardGenerator,
-  dbClick
-} = require("./config/db");
 
-let totalConnections = 5;
-let doneConnections = 0;
-
-function checkDone() {
-  doneConnections++;
-  if (doneConnections === totalConnections) {
-    console.log("✅ All database connections are established!");
-    console.log("=============================================================");
-  }
-}
-
-dbConf.getConnection((e, conn) => {
-  if (e) console.log("Error DB e-Order Connection!", e.sqlMessage);
-  else { console.log(`DB e-Order connected ${conn.threadId}`); checkDone(); }
-});
-
-dbTM.getConnection((e, conn) => {
-  if (e) console.log("Error DB Trademark Connection!", e.sqlMessage);
-  else { console.log(`DB TM connected ${conn.threadId}`); checkDone(); }
-});
-
-dbCardGenerator.getConnection((e, conn) => {
-  if (e) console.log("Error DB CardGen Connection!", e.sqlMessage);
-  else { console.log(`DB CardGen connected ${conn.threadId}`); checkDone(); }
-});
-
-dbHots.getConnection((e, conn) => {
-  if (e) console.log("Error DB HOTS Connection!", e.sqlMessage);
-  else { console.log(`DB HOTS connected ${conn.threadId}`); checkDone(); }
-});
-
-dbClick.getConnection((e, conn) => {
-  if (e) console.log("Error DB Click Connection!", e.sqlMessage);
-  else { console.log(`DB Click connected ${conn.threadId}`); checkDone(); }
-});
 
 /* ===================================================================
    🔥 AUTOMATION (unchanged)

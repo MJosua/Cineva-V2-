@@ -6,6 +6,8 @@ const { decodeTokenHT } = require('../../config/encrypts');
 
 // protected endpoints
 router.post('/create', decodeTokenHT, engineTicket.create);
+router.post('/create/', decodeTokenHT, engineTicket.create);
+router.post('/create/:moduleKey', decodeTokenHT, engineTicket.create);
 router.post('/approve', decodeTokenHT, engineTicket.approve);
 router.post('/reject', decodeTokenHT, engineTicket.reject);
 router.get('/status/:ticket_id', decodeTokenHT, engineTicket.status);

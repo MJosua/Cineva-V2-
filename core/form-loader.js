@@ -1,150 +1,87 @@
 /**
  * core/form-loader.js
- * HOTS Engine v4 — DB-Only Form Loader + Validator
- *
- * Features:
- * - Load form structure from m_form, m_form_section, m_form_field
- * - Build full form descriptor
- * - Validate form_data input (create/resubmit)
- * - Support: required, min, max, regex, options, rowgroup validation
- * - Backward compatible with HOTS v3 form-building logic
+ * DB-Only Form Loader + Validator for HOTS v4
  */
-
-const { dbHots } = require("../config/db");
-
-function log(...a) { console.log("[FormLoader]", ...a); }
+function tryParse(str, fallback) {
+  try { return JSON.parse(str); }
+  catch { return fallback; }
+}
 
 const FormLoader = {
+  dbQuery: null,
 
-  // ========== LOAD FORM BY MODULE KEY (SERVICE NAME) ==========
-  async getFormByModuleKey(moduleKey) {
-    try {
-      const [formRows] = await dbHots.promise().query(
-        `SELECT * FROM m_form WHERE module_key = ? AND active = 1 LIMIT 1`,
-        [moduleKey]
-      );
-      if (!formRows.length) return null;
-
-      const form = formRows[0];
-
-      const [sections] = await dbHots.promise().query(
-        `SELECT * FROM m_form_section WHERE form_id = ? ORDER BY sort ASC`,
-        [form.form_id]
-      );
-
-      const [fields] = await dbHots.promise().query(
-        `SELECT * FROM m_form_field WHERE form_id = ? ORDER BY sort ASC`,
-        [form.form_id]
-      );
-
-      return buildFormDescriptor(form, sections, fields);
-    } catch (e) {
-      log("❌ getFormByModuleKey error", e);
-      return null;
-    }
+  async init(dbQuery) {
+    this.dbQuery = dbQuery;
+    return true;
   },
 
-  // ========= VALIDATE FORM INPUT (form_data) =========
+  async getFormByModuleKey(moduleKey) {
+    if (!this.dbQuery) throw new Error("FormLoader requires dbQuery via init()");
+    const rows = await this.dbQuery("SELECT * FROM m_form WHERE module_key = ? AND active = 1 LIMIT 1", [moduleKey]);
+    if (!rows || rows.length === 0) return null;
+    const form = rows[0];
+    const sections = await this.dbQuery("SELECT * FROM m_form_section WHERE form_id = ? ORDER BY sort ASC", [form.form_id]);
+    const fields = await this.dbQuery("SELECT * FROM m_form_field WHERE form_id = ? ORDER BY sort ASC", [form.form_id]);
+    return buildFormDescriptor(form, sections, fields);
+  },
+
   validate(formDesc, formData = {}) {
     const errors = [];
-
     if (!formDesc || !formDesc.fields) return errors;
-
     for (const field of formDesc.fields) {
       const key = field.key || field.field_key;
-      const value = formData[key];
-
-      // required
-      if (field.required && (value === undefined || value === null || value.value === "")) {
-        errors.push({
-          field: key,
-          message: `Field "${field.label}" is required`
-        });
+      const raw = formData[key];
+      const value = (raw && typeof raw === "object" && "value" in raw) ? raw.value : raw;
+      if (field.required && (value === undefined || value === null || value === "")) {
+        errors.push({ field: key, message: `"${field.label}" is required` });
         continue;
       }
-
-      if (value === undefined || value === null) continue; // skip optional
-
-      const v = typeof value === "object" && "value" in value ? value.value : value;
-
-      // type checks
+      if (value === undefined || value === null || value === "") continue;
       if (field.type === "number") {
-        if (isNaN(Number(v))) {
-          errors.push({ field: key, message: `Field "${field.label}" must be a number` });
-        }
+        if (isNaN(Number(value))) errors.push({ field: key, message: `"${field.label}" must be a number` });
       }
-
       if (field.type === "date") {
-        if (isNaN(Date.parse(v))) {
-          errors.push({ field: key, message: `Field "${field.label}" must be a valid date` });
-        }
+        if (isNaN(Date.parse(value))) errors.push({ field: key, message: `"${field.label}" must be a valid date` });
       }
-
-      // min / max
       if (field.min !== null && field.min !== undefined) {
-        if (Number(v) < Number(field.min))
-          errors.push({ field: key, message: `"${field.label}" must be >= ${field.min}` });
+        if (Number(value) < Number(field.min)) errors.push({ field: key, message: `"${field.label}" must be >= ${field.min}` });
       }
-
       if (field.max !== null && field.max !== undefined) {
-        if (Number(v) > Number(field.max))
-          errors.push({ field: key, message: `"${field.label}" must be <= ${field.max}` });
+        if (Number(value) > Number(field.max)) errors.push({ field: key, message: `"${field.label}" must be <= ${field.max}` });
       }
-
-      // regex validation
       if (field.regex_pattern) {
-        const pattern = new RegExp(field.regex_pattern);
-        if (!pattern.test(String(v))) {
-          errors.push({
-            field: key,
-            message: `"${field.label}" does not match expected format`
-          });
+        try {
+          const pattern = new RegExp(field.regex_pattern);
+          if (!pattern.test(String(value))) errors.push({ field: key, message: `"${field.label}" does not match expected format` });
+        } catch {}
+      }
+      if ((field.type === "select" || field.type === "dropdown") && field.options_json) {
+        const opts = tryParse(field.options_json, []);
+        const allowed = opts.map(o => o.value);
+        if (!allowed.includes(value)) {
+          errors.push({ field: key, message: `"${field.label}" must be one of: ${allowed.join(", ")}` });
         }
       }
-
-      // options validation for dropdown/select
-      if (field.type === "select" || field.type === "dropdown") {
-        if (field.options_json) {
-          const opts = tryParse(field.options_json, []);
-          const allowed = opts.map(o => o.value);
-          if (!allowed.includes(v)) {
-            errors.push({
-              field: key,
-              message: `"${field.label}" must be one of: ${allowed.join(", ")}`
-            });
-          }
-        }
-      }
-
-      // rowgroup validation
       if (field.type === "rowgroup") {
-        if (!Array.isArray(v)) {
+        if (!Array.isArray(value)) {
           errors.push({ field: key, message: `"${field.label}" must be a rowgroup array` });
           continue;
         }
-
-        for (let i = 0; i < v.length; i++) {
-          const row = v[i];
+        for (let i = 0; i < value.length; i++) {
+          const row = value[i];
           for (const col of field.rowgroup_columns || []) {
             const colVal = row[col.key];
             if (col.required && (colVal === undefined || colVal === "")) {
-              errors.push({
-                field: key,
-                message: `Rowgroup "${field.label}" row ${i + 1}: "${col.label}" is required`
-              });
+              errors.push({ field: key, message: `Row ${i+1} in "${field.label}": "${col.label}" is required` });
             }
           }
         }
       }
     }
-
     return errors;
   }
 };
 
-/* ============================================================
-   INTERNAL HELPER: BUILD FORM DESCRIPTOR
-============================================================ */
 function buildFormDescriptor(form, sections, fields) {
   const descriptor = {
     form_id: form.form_id,
@@ -153,7 +90,6 @@ function buildFormDescriptor(form, sections, fields) {
     sections: [],
     fields: []
   };
-
   const sectionMap = {};
   for (const sec of sections) {
     sectionMap[sec.section_id] = {
@@ -163,7 +99,6 @@ function buildFormDescriptor(form, sections, fields) {
       fields: []
     };
   }
-
   for (const f of fields) {
     const fieldDef = {
       field_id: f.field_id,
@@ -179,26 +114,11 @@ function buildFormDescriptor(form, sections, fields) {
       rowgroup_columns: tryParse(f.rowgroup_columns_json, null),
       meta: tryParse(f.meta_json, {})
     };
-
     descriptor.fields.push(fieldDef);
-
     if (sectionMap[f.section_id]) sectionMap[f.section_id].fields.push(fieldDef);
   }
-
-  descriptor.sections = Object.values(sectionMap).sort((a, b) => a.sort - b.sort);
-
+  descriptor.sections = Object.values(sectionMap).sort((a,b) => (a.sort||0)-(b.sort||0));
   return descriptor;
-}
-
-/* ============================================================
-   SAFE JSON PARSER
-============================================================ */
-function tryParse(str, fallback) {
-  try {
-    return JSON.parse(str);
-  } catch {
-    return fallback;
-  }
 }
 
 module.exports = FormLoader;
