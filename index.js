@@ -23,11 +23,11 @@ const path = require('path');
 const cors = require("cors");
 const session = require("express-session");
 const os = require('os');
-const { PORT, API_URL} = require("./config/env")
+const { PORT, API_URL } = require("./config/env")
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
-
+const { initAll } = require('./core/init-engines'); // path as placed above
 /* ===================================================================
    🔥  UTILITY: GET LOCAL LAN IP
 =================================================================== */
@@ -192,6 +192,22 @@ const {
   engineRouter,
   workflowadminRouter
 } = require("./routers");
+
+
+/* -------------------------------------------------------------------
+   🔥 async function start() { for engine }
+------------------------------------------------------------------- */
+
+(async () => {
+  try {
+    console.log("🔥 Initializing HOTS Engine...");
+    await initAll();
+    console.log("✅ HOTS Engine Initialized!");
+  } catch (e) {
+    console.error("❌ Failed to initialize HOTS Engine:", e);
+    process.exit(1);
+  }
+})();
 
 /* -------------------------------------------------------------------
    🔥 IMPORTANT: CMS FIRST BEFORE STATIC + OTHER ROUTERS

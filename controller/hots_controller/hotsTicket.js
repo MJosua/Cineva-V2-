@@ -6,7 +6,7 @@ const { uploadFile } = require("../order");
 const path = require("path");
 const archiver = require("archiver");
 
-const formEngine = require("../../core/form-engine");
+const FormLoader = require("../../core/form-loader");
 const workflowEngine = require("../../core/workflow-engine");
 const triggerEngine = require("../../core/trigger-engine");
 
@@ -5568,7 +5568,7 @@ module.exports = {
             const formData = req.body;
 
             // 1. Validate form JSON rules
-            const validation = formEngine.validateFormData(serviceName, formData);
+            const validation = FormLoader.validateFormData(serviceName, formData);
             if (!validation.valid){
                 return res.status(400).json({
                     success: false,
@@ -5600,7 +5600,7 @@ module.exports = {
             );
 
             // 3. Convert JSON form inputs → EAV rows
-            const eavRows = formEngine.convertToEAV(serviceName, formData, ticketId);
+            const eavRows = FormLoader.convertToEAV(serviceName, formData, ticketId);
 
             // 4. Insert EAV rows
             for (let row of eavRows) {
