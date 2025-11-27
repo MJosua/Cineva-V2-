@@ -1,7 +1,7 @@
 const { query } = require("express");
 const { dbConf, dbQuery } = require("../config/db");
 const fs = require('fs');
-const { feedback_eorder, feedback_eorder_admin } = require("../mailer/eorder/eorder_mailer");
+const { feedback_eorder, feedback_eorder_admin } = require("../service/mailer/eorder/eorder_mailer");
 
 let blue = "\x1b[36m";
 
@@ -12,6 +12,7 @@ module.exports = {
         let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         try {
+            // check auth
             if (req.dataToken.user_id) {
                 let company_id = req.dataToken.company_id
 

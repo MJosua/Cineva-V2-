@@ -1,6 +1,6 @@
 const { dbConf, dbQuery, addSqlLogger } = require("../config/db");
 const fs = require('fs')
-const { orderRecievedMailSender } = require('../mailer/eorder/eorder_mailer');
+const { orderRecievedMailSender } = require('../service/mailer/eorder/eorder_mailer');
 const ejs = require('ejs');
 // const puppeteer = require('puppeteer');
 const axios = require('axios');
@@ -1931,7 +1931,8 @@ WHERE
             let getWeekBlock = await dbQuery(`
                 SELECT mcn.value 
                 FROM m_config_new mcn 
-                WHERE mcn.conditions = 21 
+                WHERE 
+                  mcn.conditions = 21 
                   AND 
                   mcn.company_id = ${req.dataToken.company_id}  
                   or 

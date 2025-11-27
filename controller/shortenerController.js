@@ -94,7 +94,7 @@ module.exports = {
 
             });
         } catch (err) {
-            console.log(timestamp, " UPDATE t_approval_event case 7: IT Support error", err);
+            console.log(timestamp, " UPDATE t_ticket_event case 7: IT Support error", err);
             return res.status(500).send({
                 success: false,
                 message: err

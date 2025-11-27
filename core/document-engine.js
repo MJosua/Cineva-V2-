@@ -1,55 +1,40 @@
-const fs = require("fs");
-const path = require("path");
-const engineLoader = require("./engine-loader");
-const pdf = require("html-pdf-node"); // Must be installed: npm i html-pdf-node
+/**
+ * core/document-engine.js
+ * Minimal document generator adapter (placeholder)
+ *
+ * generateFromHtmlForTicket(moduleKey, ticketId, html, context)
+ * -> should return stored file path
+ *
+ * This is a thin wrapper for your existing document generation utilities.
+ * Replace implementation to call your real generator.
+ */
+
+const fs = require('fs');
+const path = require('path');
 
 class DocumentEngine {
+  constructor() {}
 
-    getTemplate(serviceName) {
-        const service = engineLoader.getServiceConfig(serviceName);
-        return service && service.document_template ? service.document_template : null;
+  init(/*opts*/) {
+    // hook if needed
+  }
+
+  /**
+   * Very small default implementation: save HTML to public/hots/generateddocuments/<ticketId>.html
+   * You should replace this with your PDF generator (wkhtmltopdf, puppeteer, etc).
+   */
+  async generateFromHtmlForTicket(moduleKey, ticketId, html, context) {
+    const folder = path.join(process.cwd(), 'public', 'hots', 'generateddocuments');
+    try {
+      if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
+      const fname = `document_${moduleKey || 'svc'}_${ticketId}_${Date.now()}.html`;
+      const fpath = path.join(folder, fname);
+      fs.writeFileSync(fpath, html, 'utf8');
+      return fpath;
+    } catch (e) {
+      throw e;
     }
-
-    injectVariables(template, data) {
-        let output = template;
-
-        for (const key in data) {
-            const token = `{{${key}}}`;
-            output = output.replace(new RegExp(token, "g"), data[key]);
-        }
-
-        return output;
-    }
-
-    async generatePDF(html, filePath) {
-        const pdfBuffer = await pdf.generatePdf(
-            { content: html },
-            { format: "A4" }
-        );
-
-        fs.writeFileSync(filePath, pdfBuffer);
-        return filePath;
-    }
-
-    async generateDocument(serviceName, ticketId, data) {
-        // 1. Load template
-        const template = this.getTemplate(serviceName);
-        if (!template) throw new Error("Template not found");
-
-        // 2. Inject variables
-        const html = this.injectVariables(template, data);
-
-        // 3. File path
-        const dir = path.join("public", "hots", "generateddocuments");
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-        const filePath = path.join(dir, `${ticketId}.pdf`);
-
-        // 4. Generate PDF
-        await this.generatePDF(html, filePath);
-
-        return filePath;
-    }
+  }
 }
 
 module.exports = new DocumentEngine();

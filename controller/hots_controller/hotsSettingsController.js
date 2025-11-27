@@ -120,7 +120,7 @@ module.exports = {
             FROM m_service s
             LEFT JOIN hots.m_workflow_groups wg 
             ON 
-            s.m_workflow_groups = wg.id
+            s.m_workflow_groups = wg.workflow_id
             `;
 
             if (role_id !== 4) {
@@ -924,7 +924,7 @@ module.exports = {
                     u.lastname as created_by_lastname,
                     mt.team_name
                 FROM hots.t_workflow_instances wi
-                LEFT JOIN hots.m_workflow_groups wg ON wi.workflow_group_id = wg.id
+                LEFT JOIN hots.m_workflow_groups wg ON wi.workflow_group_id = wg.workflow_id
                 LEFT JOIN hots.user u ON wi.created_by_user_id = u.user_id
                 LEFT JOIN hots.m_team mt ON wi.team_id = mt.team_id
                 ORDER BY wi.creation_date DESC

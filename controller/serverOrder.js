@@ -1,6 +1,6 @@
 const { dbConf, dbQuery } = require("../config/db");
 const fs = require('fs')
-const { orderRecievedMailSender } = require('../mailer/eorder/eorder_mailer');
+const { orderRecievedMailSender } = require('../service/mailer/eorder/eorder_mailer');
 const ejs = require('ejs');
 // const puppeteer = require('puppeteer');
 const axios = require('axios');

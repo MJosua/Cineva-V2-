@@ -9,8 +9,8 @@ const {
 } = require("../../config/db");
 
 const { uploadFile } = require("../order");
-const { hotsMailer } = require('../../mailer/hots/hots_mailer');
-const { ConsoleInfo } = require("../../Utility/consoleinfo");
+const { hotsMailer } = require('../../service/mailer/hots/hots_mailer');
+const { ConsoleInfo } = require("../../script/Utility/consoleinfo");
 
 
 let green = "\x1b[32m"

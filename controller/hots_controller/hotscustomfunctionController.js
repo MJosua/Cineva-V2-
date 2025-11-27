@@ -13,7 +13,10 @@ const yellowTerminal = '\x1b[33m';
 
 const puppeteer = require('puppeteer');
 const Mustache = require('mustache');
-const { PORT, API_URL } = require("../../index");
+// const { PORT, API_URL } = require("../../index");
+
+const { PORT, API_URL} = require("../../config/env")
+
 /**
  * Custom Function Controller
  * Base Path: /hots_settings/custom_functions/
@@ -725,7 +728,7 @@ module.exports = {
                 assigned_to: ticketData[0]?.assigned_to,
                 creation_date: ticketData[0]?.creation_date,
                 last_update: ticketData[0]?.last_update,
-                current_step: ticketData[0]?.current_step,
+                current_step: ticketData[0]?.workflow_step,
             };
 
             // Store all rows as details
@@ -828,7 +831,7 @@ module.exports = {
                       t.remark, 
                       CONCAT(u.firstname, ' ', u.lastname) AS fullname  
                       from 
-                      t_approval_event t 
+                      t_ticket_event t 
                         left join user u 
                         on t.approver_id = u.user_id
                         where t.approval_id = ${dataticket_id}
