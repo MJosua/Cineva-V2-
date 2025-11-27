@@ -67,16 +67,10 @@ class TriggerEngine {
     const subject = params.subject || '';
     const body = params.body || '';
     if (!to) return { ok: false, error: 'missing to' };
-
     try {
-      // Use existing hotsMailer for direct email sending
-      const { hotsMailer } = require('../mailer/hots/hots_mailer');
-      await hotsMailer(to, subject, body);
-
-      console.log(`✅ Email sent via trigger to: ${to}`);
-      return { ok: true, method: 'direct' };
+      await this.dbQuery('INSERT INTO t_email_queue (`to`, `cc`, `subject`, `body`, created_at) VALUES (?, ?, ?, ?, NOW())', [to, cc, subject, body]);
+      return { ok: true };
     } catch (e) {
-      console.error(`❌ Failed to send email via trigger to ${to}:`, e.message);
       return { ok: false, error: e.message };
     }
   }
@@ -115,7 +109,7 @@ class TriggerEngine {
           if (Array.isArray(tcfg)) triggers.push(...tcfg);
           else if (tcfg[eventName]) triggers.push(...(tcfg[eventName] || []));
         }
-      } catch (e) { }
+      } catch (e) {}
     }
 
     // execute triggers sequentially

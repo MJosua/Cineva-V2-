@@ -1,10 +1,15 @@
 /node_modules 
-Integrated-API.zip
+/.zip
+/.jpg
+/.jpeg
+/.png
 /.vscode
 *.jpg
 *.jpeg
 *.png
 *.zip
+*.pdf
+*.xlsx
 /config
 /public
 /uploads

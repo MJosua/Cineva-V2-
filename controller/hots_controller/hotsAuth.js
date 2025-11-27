@@ -202,43 +202,68 @@ module.exports = {
             }
         });
     }
-    , keepLogin: async (req, res) => {
+    , 
+    keepLogin: async (req, res) => {
+
+    
+        const date = new Date();
+        const timestamp =
+            yellowTerminal +
+            date.toLocaleDateString("id") +
+            " " +
+            date.toLocaleTimeString("id") +
+            " : ";
+    
+        // ============================
+        // Fetch current week
+        // ============================
+        let current_delv_week;
         try {
-            const date = new Date();
-            const timestamp =
-                yellowTerminal +
-                date.toLocaleDateString("id") +
-                " " +
-                date.toLocaleTimeString("id") +
-                " : ";
+            const weekRow = await dbQuery(`SELECT day2week(NOW()) AS wikwik;`);
+            current_delv_week = weekRow?.[0]?.wikwik || null;
+        } catch (e) {
+            console.error("❌ ERROR fetching week:", e);
+            return res.status(500).send({ success: false, message: "weekQuery error", details: e });
+        }
     
-            if (!req.dataToken.user_id) {
-                return res.status(401).send({
+        // ============================
+        // Token validation
+        // ============================
+        if (!req.dataToken?.user_id) {
+            console.warn("❌ Missing dataToken.user_id");
+            return res.status(401).send({
+                success: false,
+                message: `Unauthorized`
+            });
+        }
+    
+    
+        const queryValidateToken = `
+            SELECT registration_nr 
+            FROM user 
+            WHERE registration_nr = ?
+        `;
+        const paramValidateToken = [req.token];
+    
+    
+        dbHots.execute(queryValidateToken, paramValidateToken, (err1, results1) => {
+    
+    
+            if (err1) {
+                console.error("❌ SQL ERROR validateToken:", err1);
+                return res.status(500).send({
                     success: false,
-                    message: "Unauthorized",
+                    message: `error at validate token`,
+                    details: err1
                 });
             }
     
-            // =====================================================================
-            // 🔹 1. Validate token
-            // =====================================================================
-            const validateSQL = `SELECT registration_nr FROM user WHERE registration_nr = ?`;
-            const [[validToken]] = await dbHots.promise().query(validateSQL, [
-                req.token,
-            ]);
     
-            if (!validToken) {
-                return res.status(401).send({
-                    success: false,
-                    message: "Invalid token",
-                });
-            }
+            // ==========================================================
+            // USER DATA QUERY
+            // ==========================================================
     
-            // =====================================================================
-            // 🔹 2. Query user data
-            //     (fully cleaned + optimized)
-            // =====================================================================
-            const userSQL = `
+            const queryGetUserData = `
                 SELECT
                     u.user_id,
                     u.firstname,
@@ -247,83 +272,124 @@ module.exports = {
                     u.active,
                     r.role_id,
                     r.role_name,
-                    d.department_id,
                     d.department_name,
+                    d.department_id,
                     u.superior_id,
                     u.nik,
     
-                    /* All teams where user belongs */
+                    (
+                        SELECT JSON_ARRAYAGG(element)
+                        FROM (
+                            SELECT u2.superior_id AS element
+                            FROM user u2
+                            WHERE u2.superior_id IS NOT NULL
+                            
+                            UNION ALL
+                            
+                        
+
+                            SELECT tta.assigned_id AS element
+                            FROM t_ticket_assignment tta
+                            WHERE tta.assigned_id IS NOT NULL
+                            and
+                            tta.assigned_type="user"
+    
+                            UNION ALL
+    
+                            SELECT tm.user_id AS element
+                            FROM m_team_member tm
+                            WHERE tm.team_leader = 1
+                        ) AS combined
+                    ) AS team_leader_user_id,
+    
                     (
                         SELECT JSON_ARRAYAGG(tm.team_id)
-                        FROM m_team_member tm
-                        WHERE tm.user_id = u.user_id
-                    ) AS team_id_linked,
-    
-                    /* All team leaders in company (no mixing ticket assignments) */
-                    (
-                        SELECT JSON_ARRAYAGG(tm2.user_id)
-                        FROM m_team_member tm2
-                        WHERE tm2.team_leader = 1
-                    ) AS team_leader_user_id
+                        FROM m_team_member tm 
+                        WHERE tm.user_id = u.user_id 
+                    ) AS team_id_linked
     
                 FROM user u
                 LEFT JOIN m_role r ON u.role_id = r.role_id
                 LEFT JOIN m_department d ON u.department_id = d.department_id
-                WHERE u.user_id = ?
-                LIMIT 1
+    
+                WHERE user_id = ?
             `;
     
-            const [[userData]] = await dbHots.promise().query(userSQL, [
-                req.dataToken.user_id,
-            ]);
+            const paramGetUserData = [req.dataToken.user_id];
     
-            if (!userData) {
-                return res.status(200).send({
-                    success: false,
-                    message: "User not found",
+    
+            dbHots.execute(queryGetUserData, paramGetUserData, (err2, results2) => {
+    
+    
+                if (err2) {
+                    console.error("❌ SQL ERROR getUserData:", err2);
+                    return res.status(500).send({
+                        success: false,
+                        message: "error at keeplogin",
+                        details: err2
+                    });
+                }
+    
+    
+                if (!results2[0]) {
+                    console.warn("⚠ No user data found");
+                    return res.status(200).send({
+                        success: false,
+                        message: `no data`
+                    });
+                }
+    
+                const userData = results2[0];
+    
+                let tokek;
+                try {
+                    tokek = generateTokenHT(userData);
+                } catch (tokenErr) {
+                    console.error("❌ Token generation ERROR:", tokenErr);
+                    return res.status(500).send({
+                        success: false,
+                        message: "Token generation failed",
+                        details: tokenErr
+                    });
+                }
+    
+                // ============================
+                // Send final response
+                // ============================
+                res.status(200).send({
+                    success: true,
+                    userData,
+                    tokek,
+                    current_delv_week
                 });
-            }
     
-            // =====================================================================
-            // 🔹 3. Create new token & update database
-            // =====================================================================
-            const tokek = generateTokenHT(userData);
-            await dbHots
-                .promise()
-                .query(
-                    `UPDATE user SET registration_nr = ? WHERE user_id = ?`,
-                    [tokek, req.dataToken.user_id]
-                );
+                // ============================
+                // Update DB with new token
+                // ============================
+                const queryUpdateToken = `
+                    UPDATE user 
+                    SET registration_nr = ? 
+                    WHERE user_id = ?
+                `;
+                const paramUpdateToken = [tokek, req.dataToken.user_id];
     
-            // =====================================================================
-            // 🔹 4. Get current week
-            // =====================================================================
-            const [[weekRow]] = await dbQuery(
-                `SELECT day2week(NOW()) AS wikwik;`
-            );
-            const current_delv_week = weekRow?.wikwik || null;
     
-            // =====================================================================
-            // 🔹 5. Final output
-            // =====================================================================
-            console.log(timestamp, `Hots_auth KeepLogin ${req.dataToken.uid} success`);
+                dbHots.execute(queryUpdateToken, paramUpdateToken, (err3) => {
+                    if (err3) {
+                        console.error("❌ SQL ERROR updateToken:", err3);
+                    } else {
+                        console.log("🟢 Token updated successfully");
+                    }
+                });
     
-            return res.status(200).send({
-                success: true,
-                userData,
-                tokek,
-                current_delv_week,
+                console.log(timestamp, `Hots_auth KeepLogin ${req.dataToken.uid} success`);
             });
     
-        } catch (err) {
-            console.error("🔥 keepLogin error:", err);
-            return res.status(500).send({
-                success: false,
-                message: "Server error",
-                error: err.message,
-            });
-        }
+        });
+    
     }
+    
+    
     
     , forgotPassword: async (req, res) => {
 

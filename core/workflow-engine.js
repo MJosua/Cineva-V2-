@@ -29,25 +29,10 @@ class WorkflowEngine {
       const uid = context.actor && context.actor.user_id;
       if (!uid) return [];
       try {
-        const rows = await this.dbQuery('SELECT superior_id FROM user WHERE user_id = ? LIMIT 1', [uid]);
-        const mid = rows && rows[0] && rows[0].superior_id;
+        const rows = await this.dbQuery('SELECT manager_id FROM m_employee WHERE user_id = ? LIMIT 1', [uid]);
+        const mid = rows && rows[0] && rows[0].manager_id;
         return mid ? [{ type: 'user', id: mid }] : [];
       } catch (e) {
-        console.warn('⚠️ Failed to resolve direct_superior:', e.message);
-        return [];
-      }
-    });
-
-    // final supervisor/approver resolver (uses user.final_superior_id)
-    this.registerResolver('final_superior', async (context) => {
-      const uid = context.actor && context.actor.user_id;
-      if (!uid) return [];
-      try {
-        const rows = await this.dbQuery('SELECT final_superior_id FROM user WHERE user_id = ? LIMIT 1', [uid]);
-        const fid = rows && rows[0] && rows[0].final_superior_id;
-        return fid ? [{ type: 'user', id: fid }] : [];
-      } catch (e) {
-        console.warn('⚠️ Failed to resolve final_superior:', e.message);
         return [];
       }
     });
@@ -136,26 +121,17 @@ class WorkflowEngine {
           const role = approver.split(':')[1];
           // assume role is name; find users by role
           try {
-            const rows = await this.dbQuery(
-              `SELECT u.user_id 
-               FROM user u 
-               JOIN m_role r ON u.role_id = r.role_id 
-               WHERE r.role_name = ? AND u.active = 1`,
-              [role]
-            );
+            const rows = await this.dbQuery('SELECT user_id FROM m_user_role WHERE role = ?', [role]);
             ids = (rows || []).map(r => r.user_id);
-          } catch (e) {
-            console.warn(`⚠️ Failed to resolve role:${role}:`, e.message);
-            ids = [];
-          }
+          } catch (e) { ids = []; }
         } else if (approver.startsWith('user:')) {
-          ids = [approver.split(':')[1]];
+          ids = [ approver.split(':')[1] ];
         } else {
           // maybe a JSON array in string
           try {
             const parsed = JSON.parse(approver);
             if (Array.isArray(parsed)) ids = parsed;
-          } catch { }
+          } catch {}
         }
       } else if (Array.isArray(approver)) {
         ids = approver.map(x => String(x));

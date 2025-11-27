@@ -1,0 +1,469 @@
+const { dbConf, dbQuery, addSqlLogger } = require("../config/db");
+const fs = require('fs')
+const { orderRecievedMailSender } = require('../mailer/eorder/eorder_mailer');
+const ejs = require('ejs');
+// const puppeteer = require('puppeteer');
+const axios = require('axios');
+// const { time } = require("console");
+// const { json } = require("body-parser");
+// const { parse } = require("path");
+
+let green = "\x1b[32m"
+
+let date = new Date();
+let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+
+const now = new Date();
+const formattedDate = `${now.getFullYear()}-${(now.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")} ${now
+        .getHours()
+        .toString()
+        .padStart(2, "0")}:${now.getMinutes()
+            .toString()
+            .padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+
+const queryCheckTicketRow = `
+    SELECT COUNT(*) as rownumber
+    FROM 
+    cstm_form c 
+    WHERE 
+    c.country_id = ? 
+    AND 
+    c.event_id = ?
+    `
+
+const generateID = (country, event_id, rownumber) => {
+    // Ensure service_id is a two-digit string
+    const formattedEventID = String(event_id).padStart(2, '0');
+    return parseInt(`${country}${formattedEventID}${rownumber + 1}`);
+
+}
+
+module.exports = {
+    setDoorprize: async (req, res) => {
+        let {
+            Event_id, Country,
+            column_1, column_2, column_3, column_4, column_5, column_6, column_7, column_8, column_9, column_10, column_11, column_12,
+            queryUnique
+        } = req.body;
+
+
+        console.log("Form Fields:", req.body);
+        console.log("filename Fields:", req.files[0].filename);
+
+
+        if (queryUnique) {
+            let valueToCheck;
+
+            // Dynamically select the column based on queryUnique
+            switch (Number(queryUnique)) {
+                case 1:
+                    valueToCheck = column_1;
+                    break;
+                case 2:
+                    valueToCheck = column_2;
+                    break;
+                case 3:
+                    valueToCheck = column_3;
+                    break;
+                case 4:
+                    valueToCheck = column_4;
+                    break;
+                case 5:
+                    valueToCheck = column_5;
+                    break;
+                case 6:
+                    valueToCheck = column_6;
+                    break;
+                case 7:
+                    valueToCheck = column_7;
+                    break;
+                case 8:
+                    valueToCheck = column_8;
+                    break;
+                case 9:
+                    valueToCheck = column_9;
+                    break;
+                case 10:
+                    valueToCheck = column_10;
+                    break;
+                case 11:
+                    valueToCheck = column_11;
+                    break;
+                case 12:
+                    valueToCheck = column_12;
+                    break;
+                // Continue for other cases up to 12 as per your logic
+                default:
+                    return res.status(400).send({
+                        success: false,
+                        message: "Invalid queryUnique value",
+                    });
+            }
+
+
+
+
+            try {
+                // Query the database to check if the value is unique
+                const uniqueQueryResult = await dbQuery(
+                    `SELECT COUNT(*) as count FROM cstm_form WHERE column_${queryUnique} = ? AND event_id = ?`,
+                    [valueToCheck, Event_id]
+                );
+
+                if (uniqueQueryResult[0].count > 0) {
+                    return res.status(409).send({
+                        success: false,
+                        message: "The invoice already registered in the system",
+                    });
+                }
+            } catch (error) {
+                console.error("Database query failed:", error);
+                return res.status(500).send({
+                    success: false,
+                    message: "Database error while checking for unique value",
+                });
+            }
+        }
+
+
+
+        const paramTicketCheck = [Country, Event_id];
+        const queryCheckTicketRow = `
+            SELECT COUNT(*) AS rownumber FROM cstm_form WHERE country_id = ? AND event_id = ?
+        `;
+
+        dbConf.query(queryCheckTicketRow, paramTicketCheck, async (err, results) => {
+            if (err) {
+                console.error("Error executing queryCheckTicketRow:", err);
+                return res.status(500).send({
+                    success: false,
+                    message: "Ticket not created",
+                });
+            }
+
+            const rowNumber = results[0].rownumber + 1; // Increment row number
+            const formID = generateID(Country, Event_id, rowNumber); // Generate unique form ID
+
+            let file_url = `/public/files/DoorPrize/event_Form/${req.files[0].filename}`;
+            // Insert the form data into the database
+            let columns = ["column_1"];
+            let values = ["?"]; // Placeholder for prepared statements
+
+            // Dynamically add columns and placeholders
+            if (column_2) {
+                columns.push("column_2");
+                values.push("?");
+            }
+            if (column_3) {
+                columns.push("column_3");
+                values.push("?");
+            }
+            if (column_4) {
+                columns.push("column_4");
+                values.push("?");
+            }
+            if (column_5) {
+                columns.push("column_5");
+                values.push("?");
+            }
+            if (column_6) {
+                columns.push("column_6");
+                values.push("?");
+            }
+            if (column_7) {
+                columns.push("column_7");
+                values.push("?");
+            }
+            if (column_8) {
+                columns.push("column_8");
+                values.push("?");
+            }
+            if (column_9) {
+                columns.push("column_9");
+                values.push("?");
+            }
+            if (column_10) {
+                columns.push("column_10");
+                values.push("?");
+            }
+            if (column_11) {
+                columns.push("column_11");
+                values.push("?");
+            }
+            if (column_12) {
+                columns.push("column_12");
+                values.push("?");
+            }
+            // Add more columns as needed...
+
+            // Mandatory columns
+            columns.push("country_id", "attachment_id", "event_id", "file_path", "submit_date");
+            values.push("?", "?", "?", "?", "?");
+
+            let queryForm = `
+                INSERT INTO cstm_form (${columns.join(", ")})
+                VALUES (${values.join(", ")})
+            `;
+            const submitDate = formattedDate;
+            const parameterForm = [
+                column_1,
+                ...(column_2 ? [column_2] : []),
+                ...(column_3 ? [column_3] : []),
+                ...(column_4 ? [column_4] : []),
+                ...(column_5 ? [column_5] : []),
+                ...(column_6 ? [column_6] : []),
+                ...(column_7 ? [column_7] : []),
+                ...(column_8 ? [column_8] : []),
+                ...(column_9 ? [column_9] : []),
+                ...(column_10 ? [column_10] : []),
+                ...(column_11 ? [column_11] : []),
+                ...(column_12 ? [column_12] : []),
+
+                Country, formID, Event_id, file_url, submitDate
+            ];
+
+            dbConf.query(queryForm, parameterForm, (err, results) => {
+                if (err) {
+                    console.error("Error inserting form data:", err);
+                    return res.status(501).send({
+                        success: false,
+                        message: "Ticket not created",
+                    });
+                }
+                // if (req.file) {
+
+                // }
+                // else {
+                // Successful insert
+                res.status(200).send({
+                    success: true,
+                    message: "Ticket has been created",
+                });
+                // }
+            });
+        });
+    },
+
+    showticket: async (req, res) => {
+
+        const queryGetTicket = `SELECT * FROM cstm_form WHERE event_id = ? and country_id = 753;`;
+        const queryGetCount = `SELECT COUNT(*) AS total FROM cstm_form WHERE event_id = ? country_id = 753;`;
+
+        try {
+            // Use dbQuery to execute both queries
+            const tickets = await dbQuery(queryGetTicket, [1]);
+            const count = await dbQuery(queryGetCount, [1]);
+
+            if (tickets.length > 0) {
+                console.log(new Date().toISOString(), "getTicketDetail case Event TW");
+                return res.status(200).send({
+                    success: true,
+                    data: tickets,
+                    total: count[0]?.total, // Safely access count
+                });
+            } else {
+                return res.status(404).send({
+                    success: false,
+                    message: "No data found",
+                });
+            }
+        } catch (error) {
+            console.error(new Date().toISOString(), "Error fetching tickets:", error.message);
+            return res.status(500).send({
+                success: false,
+                message: "Internal server error",
+            });
+        }
+
+    },
+
+    showticketbyid: async (req, res) => {
+        const { country_id, event_id } = req.params;
+        const queryGetTicket = `SELECT * FROM cstm_form WHERE event_id = ? AND country_id = ?;`;
+        const queryGetCount = `SELECT COUNT(*) AS total FROM cstm_form WHERE event_id = ? AND country_id = ?;`;
+
+
+        try {
+            // Use dbQuery to execute both queries
+            const tickets = await dbQuery(queryGetTicket, [event_id, country_id]);
+            const count = await dbQuery(queryGetCount, [event_id, country_id]);
+
+            if (tickets.length > 0) {
+                console.log(new Date().toISOString(), "getTicketDetail case Event TW");
+                return res.status(200).send({
+                    success: true,
+                    data: tickets,
+                    total: count[0]?.total, // Safely access count
+                });
+            } else {
+                return res.status(404).send({
+                    success: false,
+                    message: "No data found",
+                });
+            }
+        } catch (error) {
+            console.error(new Date().toISOString(), "Error fetching tickets:", error.message);
+            return res.status(500).send({
+                success: false,
+                message: "Internal server error",
+            });
+        }
+
+    },
+
+    getColumn2EventTw2024: async (req, res) => {
+        console.log(new Date().toISOString(), "Trying to get data for Event TW");
+
+        const queryGetTicket = `SELECT DISTINCT column_2 FROM cstm_form WHERE event_id = 1 AND country_id = 765 ORDER BY RAND();`;
+
+        try {
+            const tickets = await dbQuery(queryGetTicket);
+
+            console.log(new Date().toISOString(), "Query executed successfully for Event TW");
+
+            return res.status(200).send({
+                success: tickets.length > 0,
+                data: tickets,
+                message: tickets.length > 0 ? "Data retrieved successfully" : "No data found",
+            });
+        } catch (error) {
+            console.error(new Date().toISOString(), "Error fetching tickets:", error.message);
+            return res.status(500).send({
+                success: false,
+                message: "Internal server error",
+            });
+        }
+    },
+
+
+    setWinningEventTw2024: async (req, res) => {
+        let { Event_id, Country, column_1, column_2 } = req.body;
+
+        console.log("Received Data:", req.body); // Debugging
+
+        const queryCheckTicketRow = `
+            SELECT COUNT(*) AS rownumber FROM cstm_form WHERE country_id = ? AND event_id = ?
+        `;
+        const paramTicketCheck = [Country, Event_id];
+
+        dbConf.query(queryCheckTicketRow, paramTicketCheck, async (err, results) => {
+            if (err) {
+                console.error("Error executing queryCheckTicketRow:", err);
+                return res.status(500).send({
+                    success: false,
+                    message: "Ticket not created",
+                });
+            }
+
+            if (results[0].rownumber >= 312) {
+                return res.status(500).send({
+                    success: false,
+                    message: "Ticket not created - Data Full",
+                });
+            }
+
+            let rowNumber = results[0].rownumber; // Start from existing count
+            const submitDate = new Date().toISOString().slice(0, 10); // Format as YYYY-MM-DD
+
+            const queryform = `
+                INSERT INTO cstm_form (column_1, column_2, column_3, attachment_id, country_id, event_id, submit_date)
+                VALUES ${column_1.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(", ")}
+            `;
+
+            const values = column_1.map((rank, index) => {
+                rowNumber++; // Increment row number for each entry
+
+                // Generate a unique formID for each entry
+                const formID = generateID(Country, Event_id, rowNumber);
+
+                return [
+                    rank,                // column_1 (prize ranking)
+                    column_2[index],     // column_2 (winner)
+                    rowNumber,           // column_3 (row number)
+                    formID,              // attachment_id (unique ID for each row)
+                    Country,             // country_id
+                    Event_id,            // event_id
+                    submitDate           // submit_date
+                ];
+            }).flat();
+
+            console.log("Final Query:", queryform);
+            console.log("Values:", values);
+
+            dbConf.query(queryform, values, (err, results) => {
+                if (err) {
+                    console.error("Error inserting form data:", err);
+                    return res.status(500).send({
+                        success: false,
+                        message: "Ticket not created",
+                    });
+                }
+
+                res.status(200).send({
+                    success: true,
+                    message: "Ticket has been created",
+                });
+            });
+        });
+    },
+
+
+
+
+
+    getWinColumn2EventTw2024: async (req, res) => {
+        const queryGetTicket = `
+        SELECT 
+            column_2, 
+            MIN(Prize) AS PrizeRank, 
+            MIN(column_1) AS column_1, 
+            MIN(column_3) AS column_3, 
+            MIN(column_4) AS column_4, 
+            MIN(column_5) AS column_5, 
+            MIN(column_6) AS column_6, 
+            MIN(column_7) AS column_7
+        FROM (
+            SELECT 
+                cf1.*, 
+                cf2.column_1 AS Prize
+            FROM cstm_form cf1
+            INNER JOIN cstm_form cf2 
+                ON cf1.column_2 = cf2.column_2
+                AND cf2.event_id = 889
+            WHERE cf1.event_id = 1
+            AND cf2.column_2 IS NOT NULL
+            AND cf2.column_2 <> ''
+        ) AS inner_table
+        GROUP BY column_2;
+
+        ;
+
+        `;
+
+        try {
+            // Execute the query
+            const tickets = await dbQuery(queryGetTicket);
+
+            console.log(new Date().toISOString(), "Win Query executed for Event TW", tickets);
+
+            return res.status(200).send({
+                success: true,
+                data: tickets,
+                message: tickets.length > 0 ? "Data retrieved successfully" : "No data found",
+            });
+
+        } catch (error) {
+            console.error(new Date().toISOString(), "Error fetching tickets:", error.message);
+            return res.status(500).send({
+                success: false,
+                message: "Internal server error",
+            });
+        }
+    },
+
+
+
+};
