@@ -701,7 +701,7 @@ module.exports = {
                 team_id,
                 api_endpoint,
                 form_json,
-                m_workflow_groups // ensure this is a column in your `m_service` table
+                m_service_workflow // ensure this is a column in your `m_service` table
             } = req.body;
 
             const finalServiceId = service_id || null;
@@ -710,7 +710,7 @@ module.exports = {
                 INSERT INTO m_service (
                     service_id, category_id, service_name, service_description,
                     approval_level, image_url, nav_link, active, team_id,
-                    api_endpoint, form_json, m_workflow_groups
+                    api_endpoint, form_json, m_service_workflow
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
@@ -724,7 +724,7 @@ module.exports = {
                     team_id = VALUES(team_id),
                     api_endpoint = VALUES(api_endpoint),
                     form_json = VALUES(form_json),
-                    m_workflow_groups = VALUES(m_workflow_groups)
+                    m_service_workflow = VALUES(m_service_workflow)
             `;
 
             const [result] = await dbHots.promise().query(query, [
@@ -739,9 +739,9 @@ module.exports = {
                 team_id,
                 api_endpoint,
                 JSON.stringify(form_json), // ensure JSON safety
-                m_workflow_groups
+                m_service_workflow
             ]);
-            console.log("m_workflow_groups", m_workflow_groups)
+            console.log("m_service_workflow", m_service_workflow)
             console.log(`${timestamp} Success insertupdateServiceCatalog for user ${user_id}`);
 
             res.status(200).json({
@@ -1694,10 +1694,10 @@ module.exports = {
            SELECT
                 hots.m_service.*,
                 hots.m_service.workflow_id AS workflow_group_id,
-                m_workflow_groups.name AS workflow_group_name
+                m_service_workflow.name AS workflow_group_name
                 FROM
                 hots.m_service
-                LEFT JOIN m_workflow_groups ON hots.m_service.workflow_id  = m_workflow_groups.id
+                LEFT JOIN m_service_workflow ON hots.m_service.workflow_id  = m_service_workflow.id
                 WHERE
                 hots.m_service.finished_date IS NULL
                 ORDER BY

@@ -3164,7 +3164,7 @@ module.exports = {
             const serviceQuery = `
                 SELECT s.*, wg.workflow_group_id
                 FROM m_service s
-                LEFT JOIN m_workflow_groups wg ON wg.workflow_group_id = s.m_workflow_groups
+                LEFT JOIN m_service_workflow wg ON wg.workflow_group_id = s.workflow_id
                 WHERE s.service_id = ?
             `;
 
@@ -3506,6 +3506,12 @@ module.exports = {
         let service_id = req.params.service_id;
         let { upload_ids, ...formData } = req.body;
 
+
+        console.log("req.body:", req.body);
+        console.log("=================================================================");
+
+        console.log("req.params:", req.params);
+
         const mailAddress = await dbQueryHots(`SELECT email  FROM USER WHERE user_id = ${req.dataToken.user_id}`);
 
         if (!service_id) {
@@ -3517,14 +3523,14 @@ module.exports = {
 
         const fullJsonText = JSON.stringify(req.body, null, 2);
         // console.log("req.body for tickets (full JSON):\n", fullJsonText);
-        // console.log("=================================================================");
+        console.log("=================================================================");
 
         try {
             // Get service details
             const [serviceResult] = await dbHots.promise().execute(`
-                SELECT s.*, wg.id
+                SELECT s.*, wg.workflow_id
                 FROM m_service s
-                LEFT JOIN m_workflow_groups wg ON wg.id = s.m_workflow_groups
+                LEFT JOIN m_service_workflow wg ON wg.workflow_id = s.workflow_id
                 WHERE s.service_id = ?
             `, [service_id]);
 
@@ -3536,13 +3542,17 @@ module.exports = {
             const service = serviceResult[0];
             const assigned_team = service?.team_id || null;
 
+
+            console.log("service",service)
+            console.log("=================================================================");
+
             // Get workflow steps
             const [workflowSteps] = await dbHots.promise().execute(`
                 SELECT ws.step_order, ws.step_type, ws.assigned_value
                 FROM t_workflow_step ws
                 WHERE ws.workflow_group_id = ? AND ws.is_active = 1
                 ORDER BY ws.step_order
-            `, [service.m_workflow_groups]);
+            `, [service.workflow_id]);
 
             // Insert ticket
             let assigned_to = null;
@@ -3561,10 +3571,9 @@ module.exports = {
             // 🪄 Insert with custom ticket_id
             await dbHots.promise().execute(`
                 INSERT INTO t_ticket (
-                    ticket_id, service_id, status_id, created_by, assigned_team, assigned_to,
-                    creation_date, last_update, current_step
+                    ticket_id, service_id, status_id, created_by,                     creation_date, last_update, current_step
                 ) VALUES (?, ?, 1, ?, ?, ?, NOW(), NOW(), ?)
-            `, [ticket_id, service_id, user_id, assigned_team, assigned_to, current_step]);
+            `, [ticket_id, service_id, user_id,  current_step]);
             // Insert ticket detail
             const detailInsertPromises = [];
             let orderCounter = 0;

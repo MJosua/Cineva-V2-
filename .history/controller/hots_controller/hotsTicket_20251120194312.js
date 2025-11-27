@@ -3676,7 +3676,7 @@ module.exports = {
             const serviceQuery = `
                 SELECT s.*, wg.workflow_group_id
                 FROM m_service s
-                LEFT JOIN m_workflow_groups wg ON wg.workflow_group_id = s.m_workflow_groups
+                LEFT JOIN m_service_workflow wg ON wg.workflow_group_id = s.m_service_workflow
                 WHERE s.service_id = ?
             `;
 
@@ -4027,9 +4027,9 @@ module.exports = {
         try {
             // Get service details
             const [serviceResult] = await dbHots.promise().execute(`
-                SELECT s.*, wg.id
+                SELECT s.*, wg.workflow_id
                 FROM m_service s
-                LEFT JOIN m_workflow_groups wg ON wg.id = s.m_workflow_groups
+                LEFT JOIN m_service_workflow wg ON wg.workflow_id = s.m_service_workflow
                 WHERE s.service_id = ?
             `, [service_id]);
 
@@ -4047,7 +4047,7 @@ module.exports = {
                 FROM t_workflow_step ws
                 WHERE ws.workflow_group_id = ? AND ws.is_active = 1
                 ORDER BY ws.step_order
-            `, [service.m_workflow_groups]);
+            `, [service.m_service_workflow]);
 
             // Insert ticket
             let assigned_to = null;

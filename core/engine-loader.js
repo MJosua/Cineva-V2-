@@ -45,7 +45,7 @@ class EngineLoader {
         module_name: r.service_name,
         form_json: tryParseJSON(r.form_json),
         workflow_id: r.workflow_id || r.m_workflow_group || null,
-        workflow_json: tryParseJSON(r.workflow_json) || tryParseJSON(r.m_workflow_groups) || null,
+        workflow_json: tryParseJSON(r.workflow_json) || tryParseJSON(r.m_service_workflow) || null,
         trigger_meta: tryParseJSON(r.trigger_meta) || tryParseJSON(r.trigger_json) || null,
         api_endpoint: r.api_endpoint || null,
         engine_version: r.engine_version || null,
