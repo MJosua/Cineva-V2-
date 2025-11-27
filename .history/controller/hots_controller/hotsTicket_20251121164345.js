@@ -141,7 +141,7 @@ module.exports = {
                 const paramInsertApproval = hotsCheckApprovalLevel(ticketId, approvalLevel, team_leader, superiorID);
 
                 if (paramInsertApproval.length > 0) {
-                    const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                    const queryInsertApproval = `INSERT INTO t_ticket_event (approval_id, approval_order, approver_id) VALUES ?`;
                     await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                 }
 
@@ -246,7 +246,7 @@ module.exports = {
                 const paramInsertApproval = hotsCheckApprovalLevel(ticketId, approvalLevel, team_leader, superiorID);
 
                 if (paramInsertApproval.length > 0) {
-                    const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                    const queryInsertApproval = `INSERT INTO t_ticket_event (approval_id, approval_order, approver_id) VALUES ?`;
                     await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                 }
 
@@ -522,7 +522,7 @@ module.exports = {
 
                         const paramInsertApproval = hotsCheckApprovalLevel(ticketId, approvalLevel, team_leader, superiorID);
                         if (paramInsertApproval.length > 0) {
-                            const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                            const queryInsertApproval = `INSERT INTO t_ticket_event (approval_id, approval_order, approver_id) VALUES ?`;
                             await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                         }
 
@@ -756,7 +756,7 @@ module.exports = {
                         }
 
                         if (paramInsertApproval.length > 0) {
-                            const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                            const queryInsertApproval = `INSERT INTO t_ticket_event (approval_id, approval_order, approver_id) VALUES ?`;
                             await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                         }
 
@@ -831,7 +831,7 @@ module.exports = {
                         }
 
                         if (paramInsertApproval.length > 0) {
-                            const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                            const queryInsertApproval = `INSERT INTO t_ticket_event (approval_id, approval_order, approver_id) VALUES ?`;
                             await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                         }
 
@@ -892,7 +892,7 @@ module.exports = {
                         // Insert Approval Events
                         const paramInsertApproval = hotsCheckApprovalLevel(ticketId, approvalLevel, team_leader, superiorID);
                         if (paramInsertApproval.length > 0) {
-                            const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                            const queryInsertApproval = `INSERT INTO t_ticket_event (approval_id, approval_order, approver_id) VALUES ?`;
                             await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                         }
 
@@ -1010,7 +1010,7 @@ module.exports = {
                         // Insert Approval Events
                         const paramInsertApproval = hotsCheckApprovalLevel(ticketId, approvalLevel, team_leader, superiorID);
                         if (paramInsertApproval.length > 0) {
-                            const queryInsertApproval = `INSERT INTO t_approval_event (approval_id, approval_order, approver_id) VALUES ?`;
+                            const queryInsertApproval = `INSERT INTO t_ticket_event (approval_id, approval_order, approver_id) VALUES ?`;
                             await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                         }
 
@@ -1137,7 +1137,7 @@ module.exports = {
                             )
                         )
                     FROM
-                        t_approval_event a
+                        t_ticket_event a
                     LEFT JOIN
                         user u ON u.user_id = a.approver_id
                     WHERE
@@ -1164,7 +1164,7 @@ module.exports = {
                     ts.status_id = t.status_id
                 left join m_team tm on
                     t.assigned_team = tm.team_id
-                left join t_approval_event ae on
+                left join t_ticket_event ae on
                     t.ticket_id = ae.approval_id
                 where
                 t.created_by = ${req.dataToken.user_id}
@@ -1352,7 +1352,7 @@ module.exports = {
             //                             )
             //                         )
             //     from
-            //         t_approval_event a
+            //         t_ticket_event a
             //     left join
             //                         user u on
             //         u.user_id = a.approver_id
@@ -1450,7 +1450,7 @@ module.exports = {
             //                     )
             //                 )
             //             FROM
-            //                 t_approval_event a
+            //                 t_ticket_event a
             //             LEFT JOIN
             //                 user u ON u.user_id = a.approver_id
             //             WHERE
@@ -1619,7 +1619,7 @@ module.exports = {
             //                         )
             //                     )
             //                 FROM
-            //                     t_approval_event a
+            //                     t_ticket_event a
             //                 LEFT JOIN
             //                     user u ON u.user_id = a.approver_id
             //                 WHERE
@@ -1746,7 +1746,7 @@ module.exports = {
             //                     )
             //                 )
             //             FROM
-            //                 t_approval_event a
+            //                 t_ticket_event a
             //             LEFT JOIN
             //                 user u ON u.user_id = a.approver_id
             //             WHERE
@@ -1836,7 +1836,7 @@ module.exports = {
             //                     )
             //                 )
             //             FROM
-            //                 t_approval_event a
+            //                 t_ticket_event a
             //             LEFT JOIN
             //                 user u ON u.user_id = a.approver_id
             //             WHERE
@@ -1916,7 +1916,7 @@ module.exports = {
                 case 11: // IT tech support
                     let querySetApprovalPricingstructure =
                         `
-                        UPDATE t_approval_event
+                        UPDATE t_ticket_event
                         SET 
                             approve_date = NOW(), 
                             approval_status = 1
@@ -1946,10 +1946,10 @@ module.exports = {
                         await dbHots.execute(queryUpdatePricingstructure, paramUpdatePricingstructure);
 
 
-                        console.log(timestamp, " UPDATE t_approval_event case 11: Pricing Structure");
+                        console.log(timestamp, " UPDATE t_ticket_event case 11: Pricing Structure");
                         return res.status(200).send({ success: true, message: "Approval updated successfully." });
                     } catch (err) {
-                        console.log(timestamp, " UPDATE t_approval_event case 11 : Pricing Structure error", err);
+                        console.log(timestamp, " UPDATE t_ticket_event case 11 : Pricing Structure error", err);
                         return res.status(500).send({
                             success: false,
                             message: err
@@ -1959,7 +1959,7 @@ module.exports = {
                 case 7: // IT tech support
                     let querySetApprovalITSupport =
                         `
-                        UPDATE t_approval_event
+                        UPDATE t_ticket_event
                         SET 
                             approve_date = NOW(), 
                             approval_status = 1
@@ -1989,10 +1989,10 @@ module.exports = {
                         await dbHots.execute(queryUpdateTicketITSupport, paramUpdateTicketITSupport);
 
 
-                        console.log(timestamp, " UPDATE t_approval_event case 7: IT Support");
+                        console.log(timestamp, " UPDATE t_ticket_event case 7: IT Support");
                         return res.status(200).send({ success: true, message: "Approval updated successfully." });
                     } catch (err) {
-                        console.log(timestamp, " UPDATE t_approval_event case 7: IT Support error", err);
+                        console.log(timestamp, " UPDATE t_ticket_event case 7: IT Support error", err);
                         return res.status(500).send({
                             success: false,
                             message: err
@@ -2003,7 +2003,7 @@ module.exports = {
 
                     // Update approval event
                     let querySetApprovalRequestSRF = `
-                        UPDATE t_approval_event
+                        UPDATE t_ticket_event
                         SET 
                             approve_date = NOW(), 
                             approval_status = 1
@@ -2051,7 +2051,7 @@ module.exports = {
                                 SELECT
                                     COUNT(ae.approval_order) AS Approval_unit
                                 FROM
-                                    t_approval_event ae
+                                    t_ticket_event ae
                                 WHERE
                                     ae.approval_id = ?
                             `;
@@ -2060,7 +2060,7 @@ module.exports = {
                                 SELECT
                                     COUNT(ae.approval_order) AS Approval_unit
                                 FROM
-                                    t_approval_event ae
+                                    t_ticket_event ae
                                 WHERE
                                     ae.approval_id = ?
                                     AND ae.approval_status = 1
@@ -2154,7 +2154,7 @@ module.exports = {
                     console.log("Access IT REQUEST Approval")
                     let querySetApprovalRequest =
                         `
-                        UPDATE t_approval_event
+                        UPDATE t_ticket_event
                         SET 
                             approve_date = NOW(), 
                             approval_status = 1
@@ -2183,7 +2183,7 @@ module.exports = {
                                 select
                                     COUNT(ae.approval_order) as Aproval_unit
                                 from
-                                    t_approval_event ae
+                                    t_ticket_event ae
                                 where
                                     ae.approval_id = ?
                                     
@@ -2194,7 +2194,7 @@ module.exports = {
                                 select
                                     COUNT(ae.approval_order) as Aproval_unit
                                 from
-                                    t_approval_event ae
+                                    t_ticket_event ae
                                 where
                                     ae.approval_id = ?
                                     and
@@ -2294,7 +2294,7 @@ module.exports = {
 
         let querySetApproval = `
         update
-            t_approval_event
+            t_ticket_event
         set
             approve_date = now(),
             approval_status = 2,
@@ -2434,7 +2434,7 @@ module.exports = {
                         )
                     )
                 FROM
-                    t_approval_event a
+                    t_ticket_event a
                 LEFT JOIN
                     user u ON u.user_id = a.approver_id
                 WHERE
@@ -2450,7 +2450,7 @@ module.exports = {
                 ts.status_id = t.status_id
             left join m_team tm on
                 t.assigned_team = tm.team_id
-            LEFT JOIN t_approval_event ae ON 
+            LEFT JOIN t_ticket_event ae ON 
                 t.ticket_id = ae.approval_id 
             WHERE 
             1=1
@@ -2576,7 +2576,7 @@ module.exports = {
                 t.fulfilment_comment,
                 (
                     SELECT COUNT(ae.approve_date)
-                    FROM t_approval_event ae
+                    FROM t_ticket_event ae
                     WHERE ae.approval_id = t.ticket_id
                 ) AS approval_status,
                 (
@@ -2591,7 +2591,7 @@ module.exports = {
                             )
                         )
                     FROM
-                        t_approval_event a
+                        t_ticket_event a
                     LEFT JOIN
                         user u ON u.user_id = a.approver_id
                     WHERE
@@ -2611,16 +2611,16 @@ module.exports = {
                 t.assigned_team = tm.team_id
            LEFT JOIN m_team_member tmm ON
                 tmm.team_id = tm.team_id AND tmm.user_id = ${req.dataToken.user_id}
-            LEFT JOIN t_approval_event ae ON
+            LEFT JOIN t_ticket_event ae ON
                 t.ticket_id = ae.approval_id AND ae.approver_id = ${req.dataToken.user_id} -- Left join with the approver_id condition
             WHERE
                 (
                     ae.approval_id IS NULL -- Case where there are no approval events
                     OR (
-                        ae.approval_id IS NOT NULL -- If t_approval_event exists
+                        ae.approval_id IS NOT NULL -- If t_ticket_event exists
                         AND NOT EXISTS (
                             SELECT 1
-                            FROM t_approval_event ae_prev
+                            FROM t_ticket_event ae_prev
                             WHERE ae_prev.approval_id = t.ticket_id
                             AND ae_prev.approval_order < ae.approval_order
                             AND ae_prev.approve_date IS NULL
@@ -2634,7 +2634,7 @@ module.exports = {
             SELECT COUNT(DISTINCT t.ticket_id) AS total_count 
                 FROM t_ticket t
                 LEFT JOIN m_service s ON t.service_id = s.service_id
-                LEFT JOIN t_approval_event ae ON t.ticket_id = ae.approval_id
+                LEFT JOIN t_ticket_event ae ON t.ticket_id = ae.approval_id
                 LEFT JOIN m_team tm ON t.assigned_team = tm.team_id
                 LEFT JOIN m_team_member tmm ON tmm.team_id = tm.team_id AND tmm.user_id = ${req.dataToken.user_id}
                 WHERE 
@@ -2642,7 +2642,7 @@ module.exports = {
                     (ae.approver_id = ${req.dataToken.user_id} AND 
                     NOT EXISTS (
                         SELECT 1
-                        FROM t_approval_event ae_prev
+                        FROM t_ticket_event ae_prev
                         WHERE ae_prev.approval_id = t.ticket_id
                         AND ae_prev.approval_order < ae.approval_order 
                         AND ae_prev.approve_date IS NULL 
@@ -3676,7 +3676,7 @@ module.exports = {
             const serviceQuery = `
                 SELECT s.*, wg.workflow_group_id
                 FROM m_service s
-                LEFT JOIN m_workflow_groups wg ON wg.workflow_group_id = s.m_workflow_groups
+                LEFT JOIN m_service_workflow wg ON wg.workflow_group_id = s.m_service_workflow
                 WHERE s.service_id = ?
             `;
 
@@ -4027,9 +4027,9 @@ module.exports = {
         try {
             // Get service details
             const [serviceResult] = await dbHots.promise().execute(`
-                SELECT s.*, wg.id
+                SELECT s.*, wg.workflow_id
                 FROM m_service s
-                LEFT JOIN m_workflow_groups wg ON wg.id = s.m_workflow_groups
+                LEFT JOIN m_service_workflow wg ON wg.workflow_id = s.m_service_workflow
                 WHERE s.service_id = ?
             `, [service_id]);
 
@@ -4047,7 +4047,7 @@ module.exports = {
                 FROM t_workflow_step ws
                 WHERE ws.workflow_group_id = ? AND ws.is_active = 1
                 ORDER BY ws.step_order
-            `, [service.m_workflow_groups]);
+            `, [service.m_service_workflow]);
 
             // Insert ticket
             let assigned_to = null;
@@ -4187,7 +4187,7 @@ module.exports = {
             for (const step of workflowSteps) {
                 if (step.step_type === 'user' || step.step_type === 'specific_user') {
                     approvalPromises.push(dbHots.promise().execute(`
-                        INSERT INTO t_approval_event (
+                        INSERT INTO t_ticket_event (
                             approval_id, approver_id, approval_order, approval_status,
                             step_type, assigned_value, approver_leader
                         ) VALUES (?, ?, ?, 0, 'user', ?, 1)
@@ -4201,7 +4201,7 @@ module.exports = {
 
                     for (const member of teamMembers) {
                         approvalPromises.push(dbHots.promise().execute(`
-                            INSERT INTO t_approval_event (
+                            INSERT INTO t_ticket_event (
                                 approval_id, approver_id, approval_order, approval_status,
                                 step_type, assigned_value, approver_leader
                             ) VALUES (?, ?, ?, 0, 'team', ?, ?)
@@ -4216,7 +4216,7 @@ module.exports = {
 
                     for (const user of roleUsers) {
                         approvalPromises.push(dbHots.promise().execute(`
-                            INSERT INTO t_approval_event (
+                            INSERT INTO t_ticket_event (
                                 approval_id, approver_id, approval_order, approval_status,
                                 step_type, assigned_value, approver_leader
                             ) VALUES (?, ?, ?, 0, 'role', ?, 1)
@@ -4239,7 +4239,7 @@ module.exports = {
 
                     if (approverId) {
                         approvalPromises.push(dbHots.promise().execute(`
-                            INSERT INTO t_approval_event (
+                            INSERT INTO t_ticket_event (
                                 approval_id, approver_id, approval_order, approval_status,
                                 step_type, assigned_value, approver_leader
                             ) VALUES (?, ?, ?, 0, 'superior', ?, 1)
@@ -4471,8 +4471,8 @@ module.exports = {
                         t.fulfilment_comment,
                         1 as approval_level,
                         CASE 
-                            WHEN EXISTS(SELECT 1 FROM t_approval_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 0) THEN 0
-                            WHEN EXISTS(SELECT 1 FROM t_approval_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 2) THEN 2
+                            WHEN EXISTS(SELECT 1 FROM t_ticket_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 0) THEN 0
+                            WHEN EXISTS(SELECT 1 FROM t_ticket_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 2) THEN 2
                             ELSE 1
                         END as approval_status,
                         (
@@ -4485,7 +4485,7 @@ module.exports = {
                                     'approver_leader', ae.approver_leader
                                 )
                             )
-                            FROM t_approval_event ae
+                            FROM t_ticket_event ae
                             LEFT JOIN user u ON u.user_id = ae.approver_id
                             WHERE ae.approval_id = t.ticket_id
                             ORDER BY ae.approval_order
@@ -4568,8 +4568,8 @@ module.exports = {
                         CONCAT(u.firstname, ' ', u.lastname) as created_by_name,
                         1 as approval_level,
                         CASE 
-                            WHEN EXISTS(SELECT 1 FROM t_approval_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 0) THEN 0
-                            WHEN EXISTS(SELECT 1 FROM t_approval_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 2) THEN 2
+                            WHEN EXISTS(SELECT 1 FROM t_ticket_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 0) THEN 0
+                            WHEN EXISTS(SELECT 1 FROM t_ticket_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 2) THEN 2
                             ELSE 1
                         END as approval_status,
                         (
@@ -4581,7 +4581,7 @@ module.exports = {
                                     'approval_status', ae.approval_status
                                 )
                             )
-                            FROM t_approval_event ae
+                            FROM t_ticket_event ae
                             LEFT JOIN user u2 ON u2.user_id = ae.approver_id
                             WHERE ae.approval_id = t.ticket_id
                             ORDER BY ae.approval_order
@@ -4637,17 +4637,17 @@ module.exports = {
         let countQuery = `
         SELECT COUNT(DISTINCT t.ticket_id) as total 
         FROM t_ticket t
-        LEFT JOIN t_approval_event ae ON ae.approval_id = t.ticket_id
+        LEFT JOIN t_ticket_event ae ON ae.approval_id = t.ticket_id
         WHERE (
             (ae.approver_id = ${user_id} AND
                 ae.approval_status = 0 
-                and t.current_step = ae.approval_order
+                and t.workflow_step = ae.approval_order
                 )
                 or
             t.assigned_team IN (
                 SELECT tm.team_id FROM m_team_member tm WHERE tm.user_id = ?
             ) OR
-            (ae.approver_id = ? AND ae.approval_status = 0 AND ae.approval_order = t.current_step)
+            (ae.approver_id = ? AND ae.approval_status = 0 AND ae.approval_order = t.workflow_step)
         )
         AND t.status_id IN (1, 2)
     `;
@@ -4681,11 +4681,11 @@ module.exports = {
                 t.fulfilment_comment,
                 CONCAT(u.firstname, ' ', u.lastname) as created_by_name,
                 d.department_name as department_name,
-                t.current_step,
-                t.current_step as approval_level,
+                t.workflow_step,
+                t.workflow_step as approval_level,
                 CASE 
-                    WHEN EXISTS(SELECT 1 FROM t_approval_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 0) THEN 0
-                    WHEN EXISTS(SELECT 1 FROM t_approval_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 2) THEN 2
+                    WHEN EXISTS(SELECT 1 FROM t_ticket_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 0) THEN 0
+                    WHEN EXISTS(SELECT 1 FROM t_ticket_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 2) THEN 2
                     ELSE 1
                 END as approval_status,
                 (
@@ -4699,7 +4699,7 @@ module.exports = {
                             'approver_leader', ae.approver_leader
                         )
                     )
-                    FROM t_approval_event ae
+                    FROM t_ticket_event ae
                     LEFT JOIN user u2 ON u2.user_id = ae.approver_id
                     WHERE ae.approval_id = t.ticket_id
                     ORDER BY ae.approval_order
@@ -4716,7 +4716,7 @@ module.exports = {
             LEFT JOIN m_team tm ON tm.team_id = t.assigned_team
             LEFT JOIN user u ON u.user_id = t.created_by
             LEFT JOIN m_department d ON d.department_id = u.department_id
-            LEFT JOIN t_approval_event ae ON ae.approval_id = t.ticket_id
+            LEFT JOIN t_ticket_event ae ON ae.approval_id = t.ticket_id
             WHERE (
                 (ae.approver_id = ${user_id} 
                )
@@ -4724,7 +4724,7 @@ module.exports = {
                     t.assigned_team IN (
                         SELECT tm.team_id FROM m_team_member tm WHERE tm.user_id = ${user_id}
                     ) OR
-                    (ae.approver_id = ${user_id} AND ae.approval_status = 0 AND ae.approval_order = t.current_step)
+                    (ae.approver_id = ${user_id} AND ae.approval_status = 0 AND ae.approval_order = t.workflow_step)
                 )
            ORDER BY t.creation_date DESC
             
@@ -4761,11 +4761,11 @@ module.exports = {
         let countQuery = `
             SELECT COUNT(DISTINCT t.ticket_id) as active_count
             FROM t_ticket t
-            LEFT JOIN t_approval_event ae ON ae.approval_id = t.ticket_id
+            LEFT JOIN t_ticket_event ae ON ae.approval_id = t.ticket_id
             WHERE (
                 (ae.approver_id = ? AND
                 ae.approval_status = 0 
-                and t.current_step = ae.approval_order
+                and t.workflow_step = ae.approval_order
                 )
                 or
                 t.assigned_team IN (
@@ -4773,7 +4773,7 @@ module.exports = {
                 ) OR
                 t.assigned_to = ?
                 or
-                (ae.approver_id = ? AND ae.approval_status = 0 AND ae.approval_order = t.current_step)
+                (ae.approver_id = ? AND ae.approval_status = 0 AND ae.approval_order = t.workflow_step)
             )
             AND t.status_id IN (1, 2, 3)
         `;
@@ -4827,7 +4827,7 @@ module.exports = {
                 t.last_update,
                 t.reject_reason as reason,
                 t.fulfilment_comment,
-                t.current_step,
+                t.workflow_step,
                 CONCAT(u.firstname, ' ', u.lastname) as created_by_name,
                 u.user_id,
                 dpt.department_id AS dept_id,
@@ -4838,10 +4838,10 @@ module.exports = {
                 -- Current approver information
                 (
                     SELECT CONCAT(u3.firstname, ' ', u3.lastname)
-                    FROM t_approval_event ae3
+                    FROM t_ticket_event ae3
                     LEFT JOIN user u3 ON u3.user_id = ae3.approver_id
                     WHERE ae3.approval_id = t.ticket_id 
-                    AND ae3.approval_order = t.current_step
+                    AND ae3.approval_order = t.workflow_step
                     LIMIT 1
                 ) as current_approver_name,
                 
@@ -4863,16 +4863,16 @@ module.exports = {
 
                 (
                     SELECT ae3.approver_id
-                    FROM t_approval_event ae3
+                    FROM t_ticket_event ae3
                     WHERE ae3.approval_id = t.ticket_id 
-                    AND ae3.approval_order = t.current_step
+                    AND ae3.approval_order = t.workflow_step
                     LIMIT 1
                 ) as current_approver_id,
                 
                 -- Approval status calculation
                 CASE 
-                    WHEN EXISTS(SELECT 1 FROM t_approval_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 0) THEN 0
-                    WHEN EXISTS(SELECT 1 FROM t_approval_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 2) THEN 2
+                    WHEN EXISTS(SELECT 1 FROM t_ticket_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 0) THEN 0
+                    WHEN EXISTS(SELECT 1 FROM t_ticket_event ae WHERE ae.approval_id = t.ticket_id AND ae.approval_status = 2) THEN 2
                     ELSE 1
                 END as approval_status,
                 
@@ -4903,7 +4903,7 @@ module.exports = {
                             'approver_leader', ae.approver_leader
                         )
                     )
-                    FROM t_approval_event ae
+                    FROM t_ticket_event ae
                     LEFT JOIN user u2 ON u2.user_id = ae.approver_id
                     WHERE ae.approval_id = t.ticket_id
                     ORDER BY ae.approval_order
@@ -5014,7 +5014,7 @@ module.exports = {
 
         // Update approval event to rejected
         let updateApprovalQuery = `
-                UPDATE t_approval_event 
+                UPDATE t_ticket_event 
                 SET approval_status = 2, approve_date = NOW(), remark = ?
                 WHERE approval_id = ? AND approver_id = ? AND approval_status = 0
             `;
@@ -5272,10 +5272,10 @@ module.exports = {
 
             const [ticketRows] = await conn.query(`
             SELECT 
-              t.ticket_id, t.current_step, t.service_id, t.status_id,
+              t.ticket_id, t.workflow_step, t.service_id, t.status_id,
               ae.approval_order, ae.step_id, ws.step_order
             FROM t_ticket t
-            LEFT JOIN t_approval_event ae ON ae.approval_id = t.ticket_id AND ae.approver_id = ?
+            LEFT JOIN t_ticket_event ae ON ae.approval_id = t.ticket_id AND ae.approver_id = ?
             LEFT JOIN t_workflow_step ws ON ws.step_id = ae.step_id
             WHERE t.ticket_id = ? AND ae.approval_status = 0
           `, [user_id, ticket_id]);
@@ -5292,14 +5292,14 @@ module.exports = {
 
             // ✅ Approve current approver (set remark)
             await conn.query(`
-            UPDATE t_approval_event 
+            UPDATE t_ticket_event 
             SET approval_status = 1, approve_date = NOW(), remark = ?
             WHERE approval_id = ? AND approver_id = ? AND approval_status = 0
           `, [comment, ticket_id, user_id]);
 
             // ✅ Approve others in the same step (parallel)
             await conn.query(`
-            UPDATE t_approval_event ae
+            UPDATE t_ticket_event ae
             LEFT JOIN t_workflow_step ws ON ws.step_id = ae.step_id
             SET ae.approval_status = 1
             WHERE ae.approval_id = ? AND ae.approval_order = ? AND ae.approval_status = 0
@@ -5310,7 +5310,7 @@ module.exports = {
             // ✅ Check if there is a next step
             const [nextStepCheck] = await conn.query(`
             SELECT COUNT(*) as pending_count, MIN(ae.approval_order) as next_step
-            FROM t_approval_event ae
+            FROM t_ticket_event ae
             LEFT JOIN t_workflow_step ws ON ws.step_id = ae.step_id
             WHERE ae.approval_id = ? AND ae.approval_status = 0
           `, [ticket_id]);
@@ -5616,7 +5616,7 @@ module.exports = {
             // 5. Resolve approvers dynamically (workflow.json)
             const workflowRows = await workflowEngine.resolveApprovers(user_id, serviceName);
 
-            // 6. Insert into t_approval_event
+            // 6. Insert into t_ticket_event
             await workflowEngine.insertApprovalRows(ticketId, workflowRows);
 
             // 7. Run on_submit triggers

@@ -202,140 +202,195 @@ module.exports = {
             }
         });
     }
-    , keepLogin: async (req, res) => {
+    , 
+    keepLogin: async (req, res) => {
 
-
-        let date = new Date();
-        let current_delv_week = (await dbQuery(`SELECT day2week(NOW()) AS wikwik;`))[0].wikwik;
-
-        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-
-        if (req.dataToken.user_id) {
-
-            // validate token first
-            let queryValidateToken = `SELECT registration_nr FROM user WHERE registration_nr = ?`
-            let paramValidateToken = [req.token]
-
-            dbHots.execute(queryValidateToken, paramValidateToken, (err1, results1) => {
-
-                if (err1) {
-                    res.status(500).send({
-                        success: false,
-                        message: `error at validate token `
-                    })
-                }
-
-                let queryGetUserData = `
-                                            select
-                                                u.user_id,
-                                                u.firstname,
-                                                u.lastname,
-                                                u.uid,
-                                                u.active,
-                                                r.role_id,
-                                                r.role_name,
-                                                d.department_name,
-                                                d.department_id,
-                                                u.superior_id,
-                                                u.nik,
-                                                (
-                                                    SELECT JSON_ARRAYAGG(element) AS combined_data
-                                                    FROM (
-                                                        SELECT u2.superior_id AS element
-                                                        FROM user u2
-                                                        WHERE u2.superior_id IS NOT NULL
-                                                    
-                                                        UNION ALL
-                                                    
-                                                        SELECT t.assigned_to  AS element
-                                                        FROM t_ticket t
-                                                        WHERE t.assigned_to  IS NOT NULL
-
-                                                        UNION ALL
-
-                                                        select tm.user_id AS element
-                                                        from m_team_member tm
-                                                        where tm.team_leader = 1
-                                                    ) AS combined
-                                                ) as team_leader_user_id,
-                                                (
-                                                select
-                                                    distinct 
-                                                                                            JSON_ARRAYAGG(tm.team_id)
-                                                from
-                                                    m_team_member tm 
-                                                where
-                                                    tm.user_id = u.user_id 
-                                                                                        ) as team_id_linked
-                                            FROM
-                                                user u
-                                            LEFT JOIN m_role r ON
-                                                u.role_id = r.role_id
-                                            LEFT JOIN m_department d ON
-                                                u.department_id = d.department_id
-                                            WHERE user_id = ?  
-                                            `
-                let paramGetUserData = [req.dataToken.user_id]
-
-                dbHots.execute(queryGetUserData, paramGetUserData, (err, results) => {
-
-                    if (err) {
-                        res.status(500).send({
-                            success: false,
-                            message: `error at keeplogin`
-                        })
-                    } else {
-                        if (results[0]) {
-                            let tokek = generateTokenHT(results[0])
-                            let userData = results[0]
-                            res.status(200).send({
-                                success: true,
-                                userData,
-                                tokek,
-                                current_delv_week
-                            })
-                            let queryUpdateToken = `UPDATE user 
-                                                        SET 
-                                                        registration_nr = ? 
-                                                        WHERE user_id = ?`
-                            let paramUpdateToken = [tokek, req.dataToken.user_id]
-
-                            dbHots.execute(queryUpdateToken, paramUpdateToken)
-                            // res.status(200).cookie('tokek', tokek, {
-                            //     httpOnly: true,
-                            //     secure: true, // Gunakan ini hanya jika menggunakan HTTPS
-                            //     maxAge: 3600000 // Cookie berlaku selama 1 jam 
-                            // }).send({
-                            //     success: true,
-                            //     userData,
-                            //     tokek
-                            console.log(timestamp, `Hots_auth KeepLogin ${req.dataToken.uid} success`)
-
-                        } else {
-                            console.log(timestamp, "Hots_auth KeepLogin No Data")
-
-                            res.status(200).send({
-                                success: false,
-                                message: `no data`
-                            })
-                        };
-
-                    }
-                })
-
-            })
-
-
-
-        } else {
-            res.status(401).send({
+    
+        const date = new Date();
+        const timestamp =
+            yellowTerminal +
+            date.toLocaleDateString("id") +
+            " " +
+            date.toLocaleTimeString("id") +
+            " : ";
+    
+        // ============================
+        // Fetch current week
+        // ============================
+        let current_delv_week;
+        try {
+            const weekRow = await dbQuery(`SELECT day2week(NOW()) AS wikwik;`);
+            current_delv_week = weekRow?.[0]?.wikwik || null;
+        } catch (e) {
+            console.error("❌ ERROR fetching week:", e);
+            return res.status(500).send({ success: false, message: "weekQuery error", details: e });
+        }
+    
+        // ============================
+        // Token validation
+        // ============================
+        if (!req.dataToken?.user_id) {
+            console.warn("❌ Missing dataToken.user_id");
+            return res.status(401).send({
                 success: false,
                 message: `Unauthorized`
-            })
+            });
         }
+    
+    
+        const queryValidateToken = `
+            SELECT registration_nr 
+            FROM user 
+            WHERE registration_nr = ?
+        `;
+        const paramValidateToken = [req.token];
+    
+    
+        dbHots.execute(queryValidateToken, paramValidateToken, (err1, results1) => {
+    
+    
+            if (err1) {
+                console.error("❌ SQL ERROR validateToken:", err1);
+                return res.status(500).send({
+                    success: false,
+                    message: `error at validate token`,
+                    details: err1
+                });
+            }
+    
+    
+            // ==========================================================
+            // USER DATA QUERY
+            // ==========================================================
+    
+            const queryGetUserData = `
+                SELECT
+                    u.user_id,
+                    u.firstname,
+                    u.lastname,
+                    u.uid,
+                    u.active,
+                    r.role_id,
+                    r.role_name,
+                    d.department_name,
+                    d.department_id,
+                    u.superior_id,
+                    u.nik,
+    
+                    (
+                        SELECT JSON_ARRAYAGG(element)
+                        FROM (
+                            SELECT u2.superior_id AS element
+                            FROM user u2
+                            WHERE u2.superior_id IS NOT NULL
+                            
+                            UNION ALL
+                            
+                        
 
-
+                            SELECT tta.assigned_id AS element
+                            FROM t_ticket_assignment tta
+                            WHERE tta.assigned_id IS NOT NULL
+                            and
+                            tta.assigned_type="user"
+    
+                            UNION ALL
+    
+                            SELECT tm.user_id AS element
+                            FROM m_team_member tm
+                            WHERE tm.team_leader = 1
+                        ) AS combined
+                    ) AS team_leader_user_id,
+    
+                    (
+                        SELECT JSON_ARRAYAGG(tm.team_id)
+                        FROM m_team_member tm 
+                        WHERE tm.user_id = u.user_id 
+                    ) AS team_id_linked
+    
+                FROM user u
+                LEFT JOIN m_role r ON u.role_id = r.role_id
+                LEFT JOIN m_department d ON u.department_id = d.department_id
+    
+                WHERE user_id = ?
+            `;
+    
+            const paramGetUserData = [req.dataToken.user_id];
+    
+    
+            dbHots.execute(queryGetUserData, paramGetUserData, (err2, results2) => {
+    
+    
+                if (err2) {
+                    console.error("❌ SQL ERROR getUserData:", err2);
+                    return res.status(500).send({
+                        success: false,
+                        message: "error at keeplogin",
+                        details: err2
+                    });
+                }
+    
+    
+                if (!results2[0]) {
+                    console.warn("⚠ No user data found");
+                    return res.status(200).send({
+                        success: false,
+                        message: `no data`
+                    });
+                }
+    
+                const userData = results2[0];
+    
+                let tokek;
+                try {
+                    tokek = generateTokenHT(userData);
+                } catch (tokenErr) {
+                    console.error("❌ Token generation ERROR:", tokenErr);
+                    return res.status(500).send({
+                        success: false,
+                        message: "Token generation failed",
+                        details: tokenErr
+                    });
+                }
+    
+                // ============================
+                // Send final response
+                // ============================
+                res.status(200).send({
+                    success: true,
+                    userData,
+                    tokek,
+                    current_delv_week
+                });
+    
+                // ============================
+                // Update DB with new token
+                // ============================
+                const queryUpdateToken = `
+                    UPDATE user 
+                    SET registration_nr = ? 
+                    WHERE user_id = ?
+                `;
+                const paramUpdateToken = [tokek, req.dataToken.user_id];
+    
+    
+                dbHots.execute(queryUpdateToken, paramUpdateToken, (err3) => {
+                    if (err3) {
+                        console.error("❌ SQL ERROR updateToken:", err3);
+                    } else {
+                        console.log("🟢 Token updated successfully");
+                    }
+                });
+    
+                console.log(timestamp, `Hots_auth KeepLogin ${req.dataToken.uid} success`);
+            });
+    
+        });
+    
     }
+    
+    
+    
     , forgotPassword: async (req, res) => {
 
         let date = new Date();

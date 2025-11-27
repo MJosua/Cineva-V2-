@@ -313,7 +313,7 @@ module.exports = {
             ` SELECT ae.approval_order, ae.approval_status, 
               CONCAT(u.firstname, ' ', u.lastname) as user_name
                 from 
-                t_approval_event ae
+                t_ticket_event ae
                 left join 
                 user u on ae.approver_id = u.user_id
                 where approval_id = ? and approver_leader = 1`,
@@ -455,7 +455,7 @@ module.exports = {
             `SELECT td.order_col, td.cstm_col, td.lbl_col,
             ms.service_name,
             CONCAT(u.firstname, ' ', u.lastname) as user_name,
-            t.current_step
+            t.workflow_step
             FROM 
             t_ticket_detail td
             LEFT JOIN
@@ -470,14 +470,14 @@ module.exports = {
         console.log("dataResult", dataResult[0])
         const service_name = dataResult[0].service_name;
         const user_name = dataResult[0].user_name;
-        const currentstep = dataResult[0].current_step;
+        const currentstep = dataResult[0].workflow_step;
 
         const [approvalResult] = await dbHots.promise().execute(
             ` SELECT ae.approval_order, ae.approval_status, 
               CONCAT(u.firstname, ' ', u.lastname) as user_name,
               u.email
                 from 
-                t_approval_event ae
+                t_ticket_event ae
                 left join 
                 user u on ae.approver_id = u.user_id
                 where approval_id = ? `,
