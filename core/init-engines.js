@@ -1,83 +1,50 @@
 /**
  * core/init-engines.js
- * HOTS v4 (DB-Only) Engine Initializer — CORRECTED CALL SIGNATURES
  *
- * Uses:
- *   - dbQueryFunc (e.g. dbQueryHots) as async function(sql, params)
- *   - dbPool (e.g. dbHots) as mysql2 pool for transactions
+ * Bootstraps engine subsystems: engine-loader, form-loader (light), workflow-engine, trigger-engine, document-engine.
+ * Usage:
+ *   const { initAll } = require('./core/init-engines');
+ *   await initAll({ dbQuery: dbQueryHots, dbPool: dbHots });
+ *
+ * If your project stores dbQuery as dbQueryHots exported in /config/db.js, call without args (it will require it).
  */
 
-const engineLoader   = require("./engine-loader");
-const formLoader     = require("./form-loader");
-const workflowEngine = require("./workflow-engine");
-const triggerEngine  = require("./trigger-engine");
-const documentEngine = require("./document-engine");
+const engineLoader = require('./engine-loader');
+const formLoader = require('./form-loader');
+const workflowEngine = require('./workflow-engine');
+const triggerEngine = require('./trigger-engine');
+const documentEngine = require('./document-engine');
 
-let initialized = false;
+const { dbQueryHots, dbHots } = require('../config/db');
 
-async function initAll(dbQueryFunc, dbPool) {
-  if (initialized) {
-    console.log("⚠️ HOTS Engine already initialized — skipped.");
-    return true;
+let _inited = false;
+
+async function initAll(opts = {}) {
+  if (_inited) return;
+  const dbQuery = opts.dbQuery || dbQueryHots;
+  const dbPool = opts.dbPool || dbHots;
+
+  if (!dbQuery || typeof dbQuery !== 'function') {
+    throw new Error('initAll requires dbQueryFunc');
   }
 
-  if (!dbQueryFunc) throw new Error("initAll requires dbQueryFunc");
-  if (!dbPool)      throw new Error("initAll requires dbPool");
+  // init engine loader
+  await engineLoader.init({ dbQuery });
 
-  console.log("🔥 Initializing HOTS Engine...");
+  // form loader uses engineLoader (no db needed)
+  // (form-loader module uses engineLoader internally)
 
-  try {
-    // -------------------------
-    // EngineLoader (expects function)
-    // -------------------------
-    // engineLoader.init(dbQuery)   <-- accept a function
-    await engineLoader.init(dbQueryFunc);
-    console.log("✔ EngineLoader loaded modules");
+  // init workflow engine
+  workflowEngine.init({ engineLoader, dbQuery, resolverFns: {} });
 
-    // -------------------------
-    // FormLoader (expects function)
-    // -------------------------
-    await formLoader.init(dbQueryFunc);
-    console.log("✔ FormLoader loaded form definitions");
+  // init trigger engine
+  triggerEngine.init({ dbQuery, engineLoader, documentEngine });
 
-    // -------------------------
-    // WorkflowEngine (expects object with dbQuery and dbHots)
-    // -------------------------
-    workflowEngine.init({
-      engineLoader,
-      formLoader,
-      dbQuery: dbQueryFunc,
-      dbHots: dbPool
-    });
-    console.log("✔ WorkflowEngine initialized");
+  // document engine (no DB)
+  documentEngine.init({});
 
-    // -------------------------
-    // TriggerEngine (expects object)
-    // -------------------------
-    triggerEngine.init({
-      dbQuery: dbQueryFunc,
-      engineLoader,
-      documentEngine
-    });
-    console.log("✔ TriggerEngine initialized");
-
-    // -------------------------
-    // DocumentEngine (init accepts object: at minimum dbQuery and engineLoader)
-    // -------------------------
-    // some doc engine implementations accept engineLoader too
-    documentEngine.init({
-      dbQuery: dbQueryFunc,
-      engineLoader
-    });
-    console.log("✔ DocumentEngine initialized");
-
-    initialized = true;
-    console.log("✅ HOTS Engine Initialized!");
-    return true;
-  } catch (e) {
-    console.error("❌ Failed to initialize HOTS Engine:", e);
-    throw e;
-  }
+  _inited = true;
+  console.log('✅ HOTS Engine Initialized!');
 }
 
-module.exports = { initAll };
+module.exports = { initAll, engineLoader, formLoader, workflowEngine, triggerEngine, documentEngine };

@@ -115,12 +115,11 @@ module.exports = {
             let queryGetMenu = `
             SELECT 
                 s.*,
-                wg.name as workflow_group_name,
-                wg.description as workflow_group_description
+                wg.name as workflow_group_name
             FROM m_service s
-            LEFT JOIN hots.m_workflow_groups wg 
+            LEFT JOIN hots.m_service_workflow wg 
             ON 
-            s.m_workflow_groups = wg.id
+            s.workflow_id = wg.workflow_id
             `;
 
             if (role_id !== 4) {
@@ -863,7 +862,7 @@ module.exports = {
             const [result] = await dbHots.promise().query(`
                SELECT 
                   *
-                FROM hots.m_workflow_groups
+                FROM hots.m_service_workflow
                 ORDER BY name
             `);
 
@@ -890,7 +889,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-                INSERT INTO hots.m_workflow_groups 
+                INSERT INTO hots.m_service_workflow 
                 (name, description, category_ids, created_date, updated_date, is_active)
                 VALUES (?, ?, ?, NOW(), NOW(), 1)
             `, [name, description, JSON.stringify(category_ids)]);
@@ -919,12 +918,11 @@ module.exports = {
                 SELECT 
                     wi.*,
                     wg.name as workflow_group_name,
-                    wg.description as workflow_group_description,
                     u.firstname as created_by_firstname,
                     u.lastname as created_by_lastname,
                     mt.team_name
                 FROM hots.t_workflow_instances wi
-                LEFT JOIN hots.m_workflow_groups wg ON wi.workflow_group_id = wg.id
+                LEFT JOIN hots.m_service_workflow wg ON wi.workflow_group_id = wg.workflow_id
                 LEFT JOIN hots.user u ON wi.created_by_user_id = u.user_id
                 LEFT JOIN hots.m_team mt ON wi.team_id = mt.team_id
                 ORDER BY wi.creation_date DESC
@@ -1385,7 +1383,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-            UPDATE hots.m_workflow_groups
+            UPDATE hots.m_service_workflow
             SET name = ?, description = ?, category_ids = ?
             WHERE id = ?
         `, [name, description, JSON.stringify(category_ids), id]);
@@ -1415,7 +1413,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-          UPDATE hots.m_workflow_groups 
+          UPDATE hots.m_service_workflow 
             SET 
             finished_date = NOW(),
             is_active = 0
@@ -1695,11 +1693,11 @@ module.exports = {
             const [services] = await dbHots.promise().query(`
            SELECT
                 hots.m_service.*,
-                hots.m_service.m_workflow_groups AS workflow_group_id,
+                hots.m_service.workflow_id AS workflow_group_id,
                 m_workflow_groups.name AS workflow_group_name
                 FROM
                 hots.m_service
-                LEFT JOIN m_workflow_groups ON hots.m_service.m_workflow_groups  = m_workflow_groups.id
+                LEFT JOIN m_workflow_groups ON hots.m_service.workflow_id  = m_workflow_groups.id
                 WHERE
                 hots.m_service.finished_date IS NULL
                 ORDER BY

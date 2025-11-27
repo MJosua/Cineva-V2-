@@ -1,124 +1,69 @@
 /**
  * core/form-loader.js
- * DB-Only Form Loader + Validator for HOTS v4
+ * Loads dynamic form definitions (from m_service.form_json) and validates submitted form_data.
+ *
+ * Minimal, pluggable validation: ensures required fields exist and basic type checks.
  */
-function tryParse(str, fallback) {
-  try { return JSON.parse(str); }
-  catch { return fallback; }
-}
 
-const FormLoader = {
-  dbQuery: null,
+const engineLoader = require('./engine-loader');
 
-  async init(dbQuery) {
-    this.dbQuery = dbQuery;
-    return true;
-  },
+class FormLoader {
+  constructor() {}
 
+  /**
+   * getFormByModuleKey(moduleKey)
+   * Returns parsed form descriptor or null
+   */
   async getFormByModuleKey(moduleKey) {
-    if (!this.dbQuery) throw new Error("FormLoader requires dbQuery via init()");
-    const rows = await this.dbQuery("SELECT * FROM m_form WHERE module_key = ? AND active = 1 LIMIT 1", [moduleKey]);
-    if (!rows || rows.length === 0) return null;
-    const form = rows[0];
-    const sections = await this.dbQuery("SELECT * FROM m_form_section WHERE form_id = ? ORDER BY sort ASC", [form.form_id]);
-    const fields = await this.dbQuery("SELECT * FROM m_form_field WHERE form_id = ? ORDER BY sort ASC", [form.form_id]);
-    return buildFormDescriptor(form, sections, fields);
-  },
+    const svc = engineLoader.getServiceConfig(moduleKey);
+    if (!svc) return null;
+    return svc.form_json || null;
+  }
 
+  /**
+   * validate(formDesc, formData)
+   * Basic validator. Returns array of errors: [{field, message}]
+   *
+   * formDesc format: assumed to be your front-end schema (items array).
+   */
   validate(formDesc, formData = {}) {
+    if (!formDesc || !formDesc.items) return [];
     const errors = [];
-    if (!formDesc || !formDesc.fields) return errors;
-    for (const field of formDesc.fields) {
-      const key = field.key || field.field_key;
-      const raw = formData[key];
-      const value = (raw && typeof raw === "object" && "value" in raw) ? raw.value : raw;
-      if (field.required && (value === undefined || value === null || value === "")) {
-        errors.push({ field: key, message: `"${field.label}" is required` });
-        continue;
-      }
-      if (value === undefined || value === null || value === "") continue;
-      if (field.type === "number") {
-        if (isNaN(Number(value))) errors.push({ field: key, message: `"${field.label}" must be a number` });
-      }
-      if (field.type === "date") {
-        if (isNaN(Date.parse(value))) errors.push({ field: key, message: `"${field.label}" must be a valid date` });
-      }
-      if (field.min !== null && field.min !== undefined) {
-        if (Number(value) < Number(field.min)) errors.push({ field: key, message: `"${field.label}" must be >= ${field.min}` });
-      }
-      if (field.max !== null && field.max !== undefined) {
-        if (Number(value) > Number(field.max)) errors.push({ field: key, message: `"${field.label}" must be <= ${field.max}` });
-      }
-      if (field.regex_pattern) {
-        try {
-          const pattern = new RegExp(field.regex_pattern);
-          if (!pattern.test(String(value))) errors.push({ field: key, message: `"${field.label}" does not match expected format` });
-        } catch {}
-      }
-      if ((field.type === "select" || field.type === "dropdown") && field.options_json) {
-        const opts = tryParse(field.options_json, []);
-        const allowed = opts.map(o => o.value);
-        if (!allowed.includes(value)) {
-          errors.push({ field: key, message: `"${field.label}" must be one of: ${allowed.join(", ")}` });
+
+    for (const item of (formDesc.items || [])) {
+      if (item.type === 'field') {
+        const key = item.data && item.data.name;
+        if (!key) continue;
+        const required = item.data && item.data.required;
+        const label = item.data && item.data.label || key;
+
+        const value = formData[key];
+        if (required) {
+          const empty = (value === null || typeof value === 'undefined' || (typeof value === 'string' && value.trim() === ''));
+          if (empty) errors.push({ field: key, message: `${label} is required` });
         }
-      }
-      if (field.type === "rowgroup") {
-        if (!Array.isArray(value)) {
-          errors.push({ field: key, message: `"${field.label}" must be a rowgroup array` });
-          continue;
-        }
-        for (let i = 0; i < value.length; i++) {
-          const row = value[i];
-          for (const col of field.rowgroup_columns || []) {
-            const colVal = row[col.key];
-            if (col.required && (colVal === undefined || colVal === "")) {
-              errors.push({ field: key, message: `Row ${i+1} in "${field.label}": "${col.label}" is required` });
-            }
+
+        // simple type checks (number/select/file)
+        if (value != null && item.data && item.data.type) {
+          const t = item.data.type;
+          if (t === 'number') {
+            if (value !== '' && isNaN(Number(value))) errors.push({ field: key, message: `${label} must be a number` });
           }
         }
       }
+
+      // rowgroup -> ensure arrays etc.
+      if (item.type === 'rowgroup' && item.data && item.data.structure) {
+        const key = item.id || item.data.title || 'rowgroup';
+        const rows = formData[key];
+        if (item.data.required && (!Array.isArray(rows) || !rows.length)) {
+          errors.push({ field: key, message: `${item.data.title || key} requires at least one row` });
+        }
+      }
     }
+
     return errors;
   }
-};
-
-function buildFormDescriptor(form, sections, fields) {
-  const descriptor = {
-    form_id: form.form_id,
-    module_key: form.module_key,
-    title: form.title,
-    sections: [],
-    fields: []
-  };
-  const sectionMap = {};
-  for (const sec of sections) {
-    sectionMap[sec.section_id] = {
-      section_id: sec.section_id,
-      label: sec.label,
-      sort: sec.sort,
-      fields: []
-    };
-  }
-  for (const f of fields) {
-    const fieldDef = {
-      field_id: f.field_id,
-      key: f.field_key,
-      label: f.label,
-      type: f.type,
-      required: f.required === 1,
-      min: f.min_value,
-      max: f.max_value,
-      placeholder: f.placeholder || "",
-      regex_pattern: f.regex_pattern || null,
-      options_json: f.options_json || null,
-      rowgroup_columns: tryParse(f.rowgroup_columns_json, null),
-      meta: tryParse(f.meta_json, {})
-    };
-    descriptor.fields.push(fieldDef);
-    if (sectionMap[f.section_id]) sectionMap[f.section_id].fields.push(fieldDef);
-  }
-  descriptor.sections = Object.values(sectionMap).sort((a,b) => (a.sort||0)-(b.sort||0));
-  return descriptor;
 }
 
-module.exports = FormLoader;
+module.exports = new FormLoader();

@@ -1,102 +1,81 @@
 /**
  * core/engine-loader.js
- * DB-first module registry — uses m_engine_modules as canonical store
+ * Loads service/module definitions from DB (m_service).
+ *
+ * Usage:
+ *   const engineLoader = require('./core/engine-loader');
+ *   await engineLoader.init({ dbQuery: dbQueryHots });
+ *   const svc = engineLoader.getServiceConfig('it-support');
  */
-function safeParseJSON(val) {
-    if (!val) return null;
-    if (typeof val === 'object') return val;
-    try { return JSON.parse(val); }
-    catch (e) { return null; }
+
+const assert = require('assert');
+
+class EngineLoader {
+  constructor() {
+    this.dbQuery = null;
+    this.servicesByKey = new Map();   // key -> module object
+    this.servicesById = new Map();    // id  -> module object
   }
-  class EngineLoader {
-    constructor() {
-      this.modules = {};
-      this.dbQuery = null; // function(sql, params) => Promise<rows>
-    }
-    async init(dbQuery) {
-      if (!dbQuery || typeof dbQuery !== 'function') {
-        throw new Error('EngineLoader.init requires dbQuery(sql, params) function');
-      }
-      this.dbQuery = dbQuery;
-      await this.reloadAll();
-      return this.modules;
-    }
-    async reloadAll() {
-      const sql = `
-        SELECT
-          service_id, module_key, module_name,
-          form_json, workflow_json, triggers_json,
-          document_html, theme_json, version, active,
-          created_by, updated_by, created_at, updated_at
-        FROM m_engine_modules
-        WHERE active = 1
-      `;
-      let rows = [];
-      try {
-        rows = await this.dbQuery(sql, []);
-      } catch (err) {
-        this.modules = {};
-        return this.modules;
-      }
-      const modules = {};
-      for (const r of rows) {
-        const key = r.module_key || r.module_name || `module_${r.service_id}`;
-        modules[key] = {
-          service_id: r.service_id,
-          module_key: key,
-          module_name: r.module_name,
-          version: r.version,
-          active: r.active === 1 || r.active === '1' || r.active === true,
-          created_by: r.created_by,
-          updated_by: r.updated_by,
-          created_at: r.created_at,
-          updated_at: r.updated_at,
-          form_json: safeParseJSON(r.form_json) || null,
-          workflow_json: safeParseJSON(r.workflow_json) || null,
-          triggers_json: safeParseJSON(r.triggers_json) || null,
-          document_html: r.document_html || null,
-          theme_json: safeParseJSON(r.theme_json) || null,
-          _meta: r
-        };
-      }
-      this.modules = modules;
-      return this.modules;
-    }
-    getServiceConfig(moduleKey) {
-      if (!moduleKey) return null;
-      return this.modules[moduleKey] || null;
-    }
-    listServices() {
-      return Object.keys(this.modules);
-    }
-    async reloadModule(moduleKey) {
-      if (!moduleKey) return null;
-      const rows = await this.dbQuery('SELECT * FROM m_engine_modules WHERE module_key = ? LIMIT 1', [moduleKey]);
-      const row = rows && rows[0];
-      if (!row) {
-        delete this.modules[moduleKey];
-        return null;
-      }
-      const modDesc = {
-        service_id: row.service_id,
-        module_key: row.module_key,
-        module_name: row.module_name,
-        version: row.version,
-        active: row.active === 1 || row.active === '1' || row.active === true,
-        created_by: row.created_by,
-        updated_by: row.updated_by,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-        form_json: safeParseJSON(row.form_json) || null,
-        workflow_json: safeParseJSON(row.workflow_json) || null,
-        triggers_json: safeParseJSON(row.triggers_json) || null,
-        document_html: row.document_html || null,
-        theme_json: safeParseJSON(row.theme_json) || null,
-        _meta: row
+
+  /**
+   * init({ dbQuery })
+   * dbQuery(sql, params) -> Promise(rows)
+   */
+  async init({ dbQuery }) {
+    assert(dbQuery && typeof dbQuery === 'function', 'EngineLoader.init requires dbQuery(sql, params) function');
+    this.dbQuery = dbQuery;
+
+    // load all services
+    await this.reloadAll();
+    console.log('✔ EngineLoader loaded modules');
+  }
+
+  async reloadAll() {
+    this.servicesByKey.clear();
+    this.servicesById.clear();
+
+    // canonical source: m_service
+    const rows = await this.dbQuery('SELECT * FROM m_service WHERE active = 1');
+
+    for (const r of rows) {
+      // Normalize parsed JSON fields
+      const moduleObj = {
+        service_id: r.service_id,
+        module_key: r.nav_link || r.service_name || String(r.service_id),
+        module_name: r.service_name,
+        form_json: tryParseJSON(r.form_json),
+        workflow_id: r.workflow_id || r.m_workflow_group || null,
+        workflow_json: tryParseJSON(r.workflow_json) || tryParseJSON(r.m_workflow_groups) || null,
+        trigger_meta: tryParseJSON(r.trigger_meta) || tryParseJSON(r.trigger_json) || null,
+        api_endpoint: r.api_endpoint || null,
+        engine_version: r.engine_version || null,
+        raw: r
       };
-      this.modules[modDesc.module_key] = modDesc;
-      return modDesc;
+
+      // prefer nav_link or url-like to be module_key, fallback to service_name
+      const key = moduleObj.module_key || moduleObj.module_name || `svc_${moduleObj.service_id}`;
+      moduleObj.module_key = key;
+
+      this.servicesByKey.set(key, moduleObj);
+      this.servicesById.set(moduleObj.service_id, moduleObj);
     }
   }
-  module.exports = new EngineLoader();
-  
+
+  getServiceConfig(moduleKeyOrId) {
+    if (moduleKeyOrId == null) return null;
+    if (typeof moduleKeyOrId === 'number') return this.servicesById.get(moduleKeyOrId) || null;
+    return this.servicesByKey.get(moduleKeyOrId) || this.servicesById.get(Number(moduleKeyOrId)) || null;
+  }
+
+  listServices() {
+    return Array.from(this.servicesByKey.values());
+  }
+}
+
+function tryParseJSON(v) {
+  if (!v) return null;
+  if (typeof v === 'object') return v;
+  try { return JSON.parse(String(v)); } catch (e) { return null; }
+}
+
+module.exports = new EngineLoader();
