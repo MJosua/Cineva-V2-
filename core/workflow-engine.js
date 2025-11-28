@@ -152,55 +152,167 @@ class WorkflowEngine {
    *
    * Returns: [{ level, approver_ids: [uid,...] }]
    */
+  /**
+     * resolveApprovers(workflow, context)
+     * - workflow: object returned by loadWorkflow (or raw steps array)
+     * - context: { actor: { user_id }, ticket: {...}, formData: {...} }
+     *
+     * Returns: [{ level, approver_ids: [uid,...] }]
+     */
   async resolveApprovers(workflowOrSteps, context = {}) {
-    const steps = Array.isArray(workflowOrSteps) ? workflowOrSteps : (workflowOrSteps && workflowOrSteps.steps) ? workflowOrSteps.steps : [];
+
+    const steps = Array.isArray(workflowOrSteps)
+      ? workflowOrSteps
+      : (workflowOrSteps && workflowOrSteps.steps)
+        ? workflowOrSteps.steps
+        : [];
     const output = [];
 
     for (const sRaw of steps) {
       const step = (typeof sRaw === 'object') ? sRaw : { approver: sRaw };
       const level = step.level || step.order || step.step_order || (step.step || 1);
+
       let ids = [];
 
-      // Approver can be:
-      // - "resolver:direct_superior"
-      // - "role:ROLE_NAME" or numeric role id
-      // - "user:123" or numeric id
-      // - array of ids
+      // Prefer explicit step_type (team/department/role/user/superior/etc)
+      const stepType = (step.step_type || step.type || null);
+      // candidate approver value (legacy)
       const approver = step.approver || step.assigned_value || step.assigned;
+      const leader = step.leader || 1;
 
-      if (typeof approver === 'string') {
-        if (approver.startsWith('resolver:')) {
+      console.log(`🟦 [WF][RESOLVE] Step level=${level} step_type=${stepType} approverRaw=`, approver);
+
+      try {
+        // ------------------------
+        // 1) If step_type === 'team'
+        // ------------------------
+        if (stepType === 'team' || (stepType === null && step.assigned_value && step.assigned_value_type === 'team')) {
+          // assigned_value is expected to be team_id
+          const teamId = (step.assigned_value !== undefined) ? step.assigned_value : approver;
+          if (teamId) {
+            const rows = await this.dbQuery('SELECT user_id FROM m_team_member WHERE team_id = ?', [teamId]);
+            ids = (rows || []).map(r => String(r.user_id)).filter(Boolean);
+          }
+        }
+
+        // ------------------------
+        // 2) department -> from user.department_id (you confirmed)
+        // ------------------------
+        else if (stepType === 'department' || (stepType === null && step.assigned_value_type === 'department')) {
+          const deptId = (step.assigned_value !== undefined) ? step.assigned_value : approver;
+          if (deptId) {
+            const rows = await this.dbQuery('SELECT user_id FROM `user` WHERE department_id = ? AND active = 1', [deptId]);
+            ids = (rows || []).map(r => String(r.user_id)).filter(Boolean);
+          }
+        }
+
+        // ------------------------
+        // 3) role step_type OR approver starts with "role:"
+        // ------------------------
+        else if (stepType === 'role' || (typeof approver === 'string' && approver.startsWith('role:'))) {
+          // if stepType === 'role' we expect assigned_value to be role id or role name
+          if (stepType === 'role') {
+            const val = step.assigned_value !== undefined ? step.assigned_value : approver;
+            // numeric role id
+            if (typeof val === 'number' || (!isNaN(Number(val)) && String(val).trim() !== '')) {
+              const rows = await this.dbQuery('SELECT user_id FROM `user` WHERE role_id = ? AND active = 1', [Number(val)]);
+              ids = (rows || []).map(r => String(r.user_id)).filter(Boolean);
+            } else if (typeof val === 'string') {
+              // role name mapping table (legacy)
+              const rows = await this.dbQuery('SELECT user_id FROM m_user_role WHERE role = ?', [val.split(':').pop()]);
+              ids = (rows || []).map(r => String(r.user_id)).filter(Boolean);
+            }
+          } else {
+            // approver string like 'role:FINANCE_MANAGER'
+            const roleName = approver.split(':')[1];
+            if (roleName) {
+              const rows = await this.dbQuery('SELECT user_id FROM m_user_role WHERE role = ?', [roleName]);
+              ids = (rows || []).map(r => String(r.user_id)).filter(Boolean);
+            }
+          }
+        }
+
+        // ------------------------
+        // 4) superior (direct superior)
+        // ------------------------
+        else if (stepType === 'superior' || (typeof approver === 'string' && approver === 'superior') || (typeof approver === 'string' && approver.startsWith('resolver:superior'))) {
+          // first try resolver if exists
+          if (this.resolvers['direct_superior']) {
+            try {
+              const res = await this.resolvers['direct_superior'](context);
+              ids = (res || []).map(x => String(x.id)).filter(Boolean);
+            } catch (e) { ids = []; }
+          } else {
+            // fallback: check user.superior_id in user table
+            const uid = context.actor && context.actor.user_id;
+            if (uid) {
+              const rows = await this.dbQuery('SELECT superior_id FROM `user` WHERE user_id = ? LIMIT 1', [uid]);
+              const sup = rows && rows[0] && rows[0].superior_id;
+              if (sup) ids = [String(sup)];
+            }
+          }
+        }
+
+        // ------------------------
+        // 5) resolver:NAME (custom resolvers)
+        // ------------------------
+        else if (typeof approver === 'string' && approver.startsWith('resolver:')) {
           const rname = approver.split(':')[1];
           const fn = this.resolvers[rname];
           if (fn) {
             try {
               const res = await fn(context);
-              ids = (res || []).map(x => x.id).filter(Boolean);
+              ids = (res || []).map(x => String(x.id)).filter(Boolean);
             } catch (e) { ids = []; }
           }
-        } else if (approver.startsWith('role:')) {
-          const role = approver.split(':')[1];
-          // assume role is name; find users by role
-          try {
-            const rows = await this.dbQuery('SELECT user_id FROM m_user_role WHERE role = ?', [role]);
-            ids = (rows || []).map(r => r.user_id);
-          } catch (e) { ids = []; }
-        } else if (approver.startsWith('user:')) {
+        }
+
+        // ------------------------
+        // 6) explicit user or specific_user
+        // ------------------------
+        else if (stepType === 'user' || stepType === 'specific_user') {
+          const uid = (step.assigned_value !== undefined) ? step.assigned_value : approver;
+          if (Array.isArray(uid)) {
+            ids = uid.map(x => String(x));
+          } else if (uid !== undefined && uid !== null) {
+            ids = [String(uid)];
+          }
+        }
+
+        // ------------------------
+        // 7) approver string 'user:123' OR 'user' numeric direct
+        // ------------------------
+        else if (typeof approver === 'string' && approver.startsWith('user:')) {
           ids = [approver.split(':')[1]];
-        } else {
-          // maybe a JSON array in string
+        } else if (Array.isArray(approver)) {
+          ids = approver.map(x => String(x));
+        } else if (typeof approver === 'number') {
+          // ambiguous numeric — if step_type exists it was handled earlier; otherwise treat as user id
+          ids = [String(approver)];
+        } else if (step.approver_ids) {
+          ids = (step.approver_ids || []).map(x => String(x));
+        }
+
+        // ------------------------
+        // 8) As a last attempt: if no ids found but step has assigned_value and it's a JSON string array
+        // ------------------------
+        if ((!ids || ids.length === 0) && typeof approver === 'string') {
           try {
             const parsed = JSON.parse(approver);
-            if (Array.isArray(parsed)) ids = parsed;
-          } catch { }
+            if (Array.isArray(parsed)) ids = parsed.map(x => String(x));
+          } catch (e) {
+            // ignore
+          }
         }
-      } else if (Array.isArray(approver)) {
-        ids = approver.map(x => String(x));
-      } else if (typeof approver === 'number') {
-        ids = [String(approver)];
-      } else if (step.approver_ids) {
-        ids = step.approver_ids.map(x => String(x));
+      } catch (err) {
+        console.error(`❌ [WF][RESOLVE] Error resolving step level=${level}:`, err);
+        ids = [];
       }
+
+      // ensure uniqueness & filter
+      ids = Array.from(new Set((ids || []).filter(Boolean)));
+
+      console.log(`🟩 [WF][RESOLVE] Resolved level=${level} -> approver_ids=`, ids);
 
       output.push({ level, approver_ids: ids });
     }
