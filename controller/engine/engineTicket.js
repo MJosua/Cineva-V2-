@@ -157,9 +157,18 @@ const EngineController = {
                 // For now, let's use 0 for all pending/waiting.
                 const status = 0;
                 if (firstPending === null && step.level === 1) firstPending = uid;
+                const leader = step.approver_leaders?.[uid] ?? 0;
 
-                console.log(`🔍 Creating approval event: ticket=${ticket_id}, level=${step.level}, approver=${uid}, status=${status}`);
-                await p.query('INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, approver_id, approval_status, created_at) VALUES (?, "approve", ?, ?, ?, NOW())', [ticket_id, step.level, uid, status]);
+                console.log("step", step)
+
+                console.log(`🔍 Creating approval event: ticket=${ticket_id}, level=${step.level}, approver=${uid}, status=${status}, leader=${leader}`);
+                await p.query(
+                  `INSERT INTO t_ticket_event
+                (ticket_id, event_type, approval_order, approver_id, approval_status, approver_leader, created_at)
+                VALUES (?, "approve", ?, ?, ?, ?, NOW())`,
+                  [ticket_id, step.level, uid, status, leader]
+                );
+
               }
             }
 

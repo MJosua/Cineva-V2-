@@ -166,6 +166,7 @@ class WorkflowEngine {
       : (workflowOrSteps && workflowOrSteps.steps)
         ? workflowOrSteps.steps
         : [];
+
     const output = [];
 
     for (const sRaw of steps) {
@@ -173,152 +174,204 @@ class WorkflowEngine {
       const level = step.level || step.order || step.step_order || (step.step || 1);
 
       let ids = [];
+      let approver_leaders = {};   // 🔥 ALWAYS INITIALIZE
 
-      // Prefer explicit step_type (team/department/role/user/superior/etc)
       const stepType = (step.step_type || step.type || null);
-      // candidate approver value (legacy)
       const approver = step.approver || step.assigned_value || step.assigned;
-      const leader = step.leader || 1;
 
+      console.log("step inside workflow-engine", step)
       console.log(`🟦 [WF][RESOLVE] Step level=${level} step_type=${stepType} approverRaw=`, approver);
 
       try {
-        // ------------------------
-        // 1) If step_type === 'team'
-        // ------------------------
-        if (stepType === 'team' || (stepType === null && step.assigned_value && step.assigned_value_type === 'team')) {
-          // assigned_value is expected to be team_id
+        // ---------------------------------------------
+        // 1) TEAM
+        // ---------------------------------------------
+        if (stepType === 'team') {
           const teamId = (step.assigned_value !== undefined) ? step.assigned_value : approver;
+
           if (teamId) {
-            const rows = await this.dbQuery('SELECT user_id FROM m_team_member WHERE team_id = ?', [teamId]);
-            ids = (rows || []).map(r => String(r.user_id)).filter(Boolean);
+            const rows = await this.dbQuery(
+              'SELECT user_id, team_leader FROM m_team_member WHERE team_id = ?',
+              [teamId]
+            );
+
+            ids = rows.map(r => String(r.user_id));
+
+            // 🔥 Build leader map
+            rows.forEach(r => {
+              approver_leaders[String(r.user_id)] = Number(r.team_leader) || 0;
+            });
           }
         }
 
-        // ------------------------
-        // 2) department -> from user.department_id (you confirmed)
-        // ------------------------
-        else if (stepType === 'department' || (stepType === null && step.assigned_value_type === 'department')) {
+        // ---------------------------------------------
+        // 2) DEPARTMENT
+        // ---------------------------------------------
+        else if (stepType === 'department' ||
+          (stepType === null && step.assigned_value_type === 'department')) {
+
           const deptId = (step.assigned_value !== undefined) ? step.assigned_value : approver;
+
           if (deptId) {
-            const rows = await this.dbQuery('SELECT user_id FROM `user` WHERE department_id = ? AND active = 1', [deptId]);
-            ids = (rows || []).map(r => String(r.user_id)).filter(Boolean);
+            const rows = await this.dbQuery(
+              'SELECT user_id FROM `user` WHERE department_id = ? AND active = 1',
+              [deptId]
+            );
+
+            ids = rows.map(r => String(r.user_id));
+
+            // 🔥 department has no leader flag → default leader = 1
+            ids.forEach(uid => {
+              approver_leaders[uid] = 1;
+            });
           }
         }
 
-        // ------------------------
-        // 3) role step_type OR approver starts with "role:"
-        // ------------------------
+        // ---------------------------------------------
+        // 3) ROLE
+        // ---------------------------------------------
         else if (stepType === 'role' || (typeof approver === 'string' && approver.startsWith('role:'))) {
-          // if stepType === 'role' we expect assigned_value to be role id or role name
+
+          let val = step.assigned_value !== undefined ? step.assigned_value : approver;
+
           if (stepType === 'role') {
-            const val = step.assigned_value !== undefined ? step.assigned_value : approver;
-            // numeric role id
-            if (typeof val === 'number' || (!isNaN(Number(val)) && String(val).trim() !== '')) {
-              const rows = await this.dbQuery('SELECT user_id FROM `user` WHERE role_id = ? AND active = 1', [Number(val)]);
-              ids = (rows || []).map(r => String(r.user_id)).filter(Boolean);
-            } else if (typeof val === 'string') {
-              // role name mapping table (legacy)
-              const rows = await this.dbQuery('SELECT user_id FROM m_user_role WHERE role = ?', [val.split(':').pop()]);
-              ids = (rows || []).map(r => String(r.user_id)).filter(Boolean);
+            if (!isNaN(Number(val))) {
+              const rows = await this.dbQuery(
+                'SELECT user_id FROM `user` WHERE role_id = ? AND active = 1',
+                [Number(val)]
+              );
+              ids = rows.map(r => String(r.user_id));
+            } else {
+              const rows = await this.dbQuery(
+                'SELECT user_id FROM m_user_role WHERE role = ?',
+                [String(val).split(':').pop()]
+              );
+              ids = rows.map(r => String(r.user_id));
             }
           } else {
-            // approver string like 'role:FINANCE_MANAGER'
             const roleName = approver.split(':')[1];
             if (roleName) {
-              const rows = await this.dbQuery('SELECT user_id FROM m_user_role WHERE role = ?', [roleName]);
-              ids = (rows || []).map(r => String(r.user_id)).filter(Boolean);
+              const rows = await this.dbQuery(
+                'SELECT user_id FROM m_user_role WHERE role = ?',
+                [roleName]
+              );
+              ids = rows.map(r => String(r.user_id));
             }
           }
+
+          // 🔥 default leader = 1
+          ids.forEach(uid => { approver_leaders[uid] = 1; });
         }
 
-        // ------------------------
-        // 4) superior (direct superior)
-        // ------------------------
-        else if (stepType === 'superior' || (typeof approver === 'string' && approver === 'superior') || (typeof approver === 'string' && approver.startsWith('resolver:superior'))) {
-          // first try resolver if exists
+        // ---------------------------------------------
+        // 4) SUPERIOR
+        // ---------------------------------------------
+        else if (stepType === 'superior' ||
+          approver === 'superior' ||
+          (typeof approver === 'string' && approver.startsWith('resolver:superior'))) {
+
           if (this.resolvers['direct_superior']) {
             try {
               const res = await this.resolvers['direct_superior'](context);
-              ids = (res || []).map(x => String(x.id)).filter(Boolean);
-            } catch (e) { ids = []; }
-          } else {
-            // fallback: check user.superior_id in user table
+              ids = res.map(x => String(x.id));
+            } catch { ids = []; }
+          }
+
+          // fallback
+          if (!ids.length) {
             const uid = context.actor && context.actor.user_id;
             if (uid) {
-              const rows = await this.dbQuery('SELECT superior_id FROM `user` WHERE user_id = ? LIMIT 1', [uid]);
-              const sup = rows && rows[0] && rows[0].superior_id;
+              const rows = await this.dbQuery(
+                'SELECT superior_id FROM `user` WHERE user_id = ? LIMIT 1',
+                [uid]
+              );
+              const sup = rows?.[0]?.superior_id;
               if (sup) ids = [String(sup)];
             }
           }
+
+          ids.forEach(uid => { approver_leaders[uid] = 1; });
         }
 
-        // ------------------------
-        // 5) resolver:NAME (custom resolvers)
-        // ------------------------
+        // ---------------------------------------------
+        // 5) resolver:NAME custom resolvers
+        // ---------------------------------------------
         else if (typeof approver === 'string' && approver.startsWith('resolver:')) {
-          const rname = approver.split(':')[1];
-          const fn = this.resolvers[rname];
+          const fn = this.resolvers[approver.split(':')[1]];
           if (fn) {
             try {
               const res = await fn(context);
-              ids = (res || []).map(x => String(x.id)).filter(Boolean);
-            } catch (e) { ids = []; }
+              ids = res.map(x => String(x.id));
+            } catch { ids = []; }
           }
+
+          ids.forEach(uid => { approver_leaders[uid] = 1; });
         }
 
-        // ------------------------
-        // 6) explicit user or specific_user
-        // ------------------------
+        // ---------------------------------------------
+        // 6) USER / SPECIFIC USER
+        // ---------------------------------------------
         else if (stepType === 'user' || stepType === 'specific_user') {
           const uid = (step.assigned_value !== undefined) ? step.assigned_value : approver;
+
           if (Array.isArray(uid)) {
-            ids = uid.map(x => String(x));
-          } else if (uid !== undefined && uid !== null) {
+            ids = uid.map(String);
+          } else if (uid !== null && uid !== undefined) {
             ids = [String(uid)];
           }
+
+          ids.forEach(uid => { approver_leaders[uid] = 1; });
         }
 
-        // ------------------------
-        // 7) approver string 'user:123' OR 'user' numeric direct
-        // ------------------------
+        // ---------------------------------------------
+        // 7) user:123 or direct numeric
+        // ---------------------------------------------
         else if (typeof approver === 'string' && approver.startsWith('user:')) {
           ids = [approver.split(':')[1]];
-        } else if (Array.isArray(approver)) {
-          ids = approver.map(x => String(x));
+          ids.forEach(uid => { approver_leaders[uid] = 1; });
+
         } else if (typeof approver === 'number') {
-          // ambiguous numeric — if step_type exists it was handled earlier; otherwise treat as user id
           ids = [String(approver)];
+          approver_leaders[String(approver)] = 1;
+
         } else if (step.approver_ids) {
-          ids = (step.approver_ids || []).map(x => String(x));
+          ids = step.approver_ids.map(String);
+          ids.forEach(uid => { approver_leaders[uid] = 1; });
         }
 
-        // ------------------------
-        // 8) As a last attempt: if no ids found but step has assigned_value and it's a JSON string array
-        // ------------------------
-        if ((!ids || ids.length === 0) && typeof approver === 'string') {
+        // ---------------------------------------------
+        // 8) Last: Parse JSON array
+        // ---------------------------------------------
+        if (!ids.length && typeof approver === 'string') {
           try {
-            const parsed = JSON.parse(approver);
-            if (Array.isArray(parsed)) ids = parsed.map(x => String(x));
-          } catch (e) {
-            // ignore
-          }
+            const arr = JSON.parse(approver);
+            if (Array.isArray(arr)) ids = arr.map(String);
+            ids.forEach(uid => { approver_leaders[uid] = 1; });
+          } catch { }
         }
+
       } catch (err) {
         console.error(`❌ [WF][RESOLVE] Error resolving step level=${level}:`, err);
         ids = [];
       }
 
-      // ensure uniqueness & filter
-      ids = Array.from(new Set((ids || []).filter(Boolean)));
+      ids = Array.from(new Set(ids));
 
-      console.log(`🟩 [WF][RESOLVE] Resolved level=${level} -> approver_ids=`, ids);
+      console.log(`🟩 [WF][RESOLVE] Resolved level=${level} ->`, {
+        ids,
+        approver_leaders
+      });
 
-      output.push({ level, approver_ids: ids });
+      output.push({
+        level,
+        approver_ids: ids,
+        approver_leaders
+      });
     }
 
     return output;
   }
+
 
   /**
    * approve({ ticket_id, approver_id, note, module, dbHots })

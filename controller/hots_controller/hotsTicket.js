@@ -4094,7 +4094,7 @@ LEFT JOIN m_department md
 WHERE t.created_by = ?
 
 GROUP BY t.ticket_id
-ORDER BY t.creation_date DESC
+ORDER BY t.creation_date ASC
 LIMIT ${limit} OFFSET ${offset};
 
                 `;
