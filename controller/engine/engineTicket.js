@@ -21,6 +21,31 @@ const workflowEngineCore = require('../../core/workflow-engine');
 const triggerEngineCore = require('../../core/trigger-engine');
 const documentEngineCore = require('../../core/document-engine');
 
+async function generateCustomTicketID(db, service_id, user_id) {
+  const year = new Date().getFullYear().toString().slice(-2);
+  const service = String(service_id).padStart(2, "0");
+  const user = String(user_id).padStart(4, "0");
+
+  // 🧩 Check last used ticket for this pattern
+  const [rows] = await db.promise().query(
+    `SELECT ticket_id 
+         FROM t_ticket 
+         WHERE ticket_id LIKE ? 
+         ORDER BY ticket_id DESC 
+         LIMIT 1`,
+    [`${year}${service}${user}%`]
+  );
+
+  let running = "0001";
+  if (rows.length > 0) {
+    const last = rows[0].ticket_id.toString();
+    const lastRun = parseInt(last.slice(-4)) || 0;
+    running = String(lastRun + 1).padStart(4, "0");
+  }
+
+  return `${year}${service}${user}${running}`;
+}
+
 function log(...a) { console.log(...a); }
 
 async function saveEav(p, ticketId, form_data, revision = null) {
@@ -48,7 +73,13 @@ const EngineController = {
     try {
       console.log('🔥 [ENGINE][CREATE] Starting ticket creation...');
       // allow service_id or service_name/moduleKey
-      const { service_id, service_name, moduleKey } = req.body || {};
+      let { service_id, service_name, moduleKey } = req.body || {};
+
+      // Fallback: check params (e.g. POST /engine/create/:moduleKey)
+      if (!moduleKey && req.params && req.params.moduleKey) {
+        moduleKey = req.params.moduleKey;
+      }
+
       const moduleKeyResolved = moduleKey || service_name;
       let module = null;
 
@@ -64,14 +95,18 @@ const EngineController = {
       const { company_id, creator_id, creator_email, form_data, title } = req.body || {};
       console.log('🔍 Loaded module =', module.module_key || module.module_name);
 
+
       // Validate form (if form exists)
       const formDesc = await FormLoader.getFormByModuleKey(module.module_key);
       if (formDesc) {
         const errors = FormLoader.validate(formDesc, form_data || {});
-        if (errors.length) return res.status(400).json({ ok: false, errors });
+        if (errors.length) {
+          console.log('❌ Validation errors:', errors);
+          return res.status(400).json({ ok: false, errors });
+        }
       }
 
-      const ticket_id = `ENG-${Date.now()}`;
+      const ticket_id = await generateCustomTicketID(dbHots, service_id, creator_id);
 
       const result = await new Promise((resolve, reject) => {
         dbHots.getConnection(async (err, conn) => {
@@ -87,9 +122,9 @@ const EngineController = {
             await p.query(
               `INSERT INTO t_ticket
                (ticket_id, parent_ticket_id, company_id, service_id, service_name,
-                created_by, creator_email, status, workflow_level, created_at, submitted_at,
-                updated_at, engine_version, json_snapshot, title)
-               VALUES (?, NULL, ?, ?, ?, ?, ?, 'submitted', 0, NOW(), NOW(), NOW(), ?, ?, ?)`,
+                created_by, creator_email, status_id, workflow_step, creation_date, submitted_at,
+                last_update, engine_version, json_snapshot, title)
+               VALUES (?, NULL, ?, ?, ?, ?, ?, 2, 0, NOW(), NOW(), NOW(), ?, ?, ?)`,
               [
                 ticket_id,
                 company_id || null,
@@ -108,22 +143,34 @@ const EngineController = {
 
             // build workflow from DB (using module.workflow_id)
             const workflow = await workflowEngine.loadWorkflow(module);
+            console.log('🔍 Workflow loaded:', workflow);
+
             const approvers = await workflowEngine.resolveApprovers(workflow, { actor: { user_id: creator_id }, ticket: { ticket_id }, formData: form_data });
+            console.log('🔍 Approvers resolved:', approvers);
 
             let firstPending = null;
             for (const step of approvers) {
               for (const uid of step.approver_ids || []) {
-                const status = (!firstPending && step.level === 1) ? 'pending' : 'waiting';
-                if (status === 'pending') firstPending = uid;
-                await p.query('INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, actor_id, status, created_at) VALUES (?, "approve", ?, ?, ?, NOW())', [ticket_id, step.level, uid, status]);
+                // approval_status: 0=pending, 1=approved, 2=rejected
+                // We set 0 for pending. 'waiting' is not a standard status in HOTS, usually just 0.
+                // But if we want to distinguish waiting, we might need another way.
+                // For now, let's use 0 for all pending/waiting.
+                const status = 0;
+                if (firstPending === null && step.level === 1) firstPending = uid;
+
+                console.log(`🔍 Creating approval event: ticket=${ticket_id}, level=${step.level}, approver=${uid}, status=${status}`);
+                await p.query('INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, approver_id, approval_status, created_at) VALUES (?, "approve", ?, ?, ?, NOW())', [ticket_id, step.level, uid, status]);
               }
             }
 
-            // submit event
-            await p.query('INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, actor_id, status, created_at) VALUES (?, "submit", 0, ?, "completed", NOW())', [ticket_id, creator_id || null]);
+            // submit event (history/log) - HOTS usually doesn't have a 'submit' event in t_ticket_event, but we can add it if needed.
+            // Or maybe just skip it to align with HOTS strict schema.
+            // Let's keep it but use correct columns if we really want it.
+            // Actually, t_ticket_event is for APPROVALS.
+            // Let's skip inserting 'submit' event into t_ticket_event to avoid pollution.
 
             // update workflow level in header
-            await p.query('UPDATE t_ticket SET workflow_level = ?, updated_at = NOW() WHERE ticket_id = ?', [approvers.length ? approvers[0].level : 0, ticket_id]);
+            await p.query('UPDATE t_ticket SET workflow_step = ?, last_update = NOW() WHERE ticket_id = ?', [approvers.length ? approvers[0].level : 0, ticket_id]);
 
             await p.commit();
             conn.release();
@@ -133,7 +180,7 @@ const EngineController = {
 
             resolve({ ok: true, ticket_id, next_approver: firstPending, workflow_steps: approvers.length });
           } catch (e) {
-            try { await conn.promise().rollback(); } catch (_) {}
+            try { await conn.promise().rollback(); } catch (_) { }
             conn.release();
             reject(e);
           }
@@ -227,11 +274,12 @@ const EngineController = {
       const sql = `
         SELECT t.ticket_id, t.service_id, t.service_name, t.created_by,
                CONCAT(u.firstname, " ", u.lastname) creator_name,
-               t.status, t.workflow_level, t.created_at, t.updated_at
+               ts.status_name, t.workflow_step, t.creation_date, t.last_update
         FROM t_ticket t
         LEFT JOIN user u ON u.user_id = t.created_by
+        LEFT JOIN m_ticket_status ts ON ts.status_id = t.status_id
         ${conditions}
-        ORDER BY t.created_at DESC
+        ORDER BY t.creation_date DESC
         LIMIT ${startIndex}, ${limit}
       `;
       const [rows] = await dbHots.promise().query(sql);
@@ -246,7 +294,7 @@ const EngineController = {
   async myRequests(req, res) {
     try {
       const user_id = req.dataToken.user_id;
-      const [rows] = await dbHots.promise().query('SELECT t.ticket_id, t.service_name, t.status, t.workflow_level, t.created_at, t.updated_at FROM t_ticket t WHERE t.created_by = ? ORDER BY t.created_at DESC', [user_id]);
+      const [rows] = await dbHots.promise().query('SELECT t.ticket_id, t.service_name, t.status, t.workflow_level, t.creation_date, t.last_update FROM t_ticket t WHERE t.created_by = ? ORDER BY t.creation_date DESC', [user_id]);
       return res.json({ ok: true, requests: rows });
     } catch (e) {
       return res.status(500).json({ ok: false, error: e.message });
@@ -275,7 +323,7 @@ const EngineController = {
   async myApprovals(req, res) {
     try {
       const user_id = req.dataToken.user_id;
-      const [rows] = await dbHots.promise().query('SELECT t.ticket_id, t.service_name, t.status, e.approval_order, t.created_at, t.updated_at FROM t_ticket_event e INNER JOIN t_ticket t ON t.ticket_id=e.ticket_id WHERE e.actor_id = ? AND e.status = ? ORDER BY t.created_at DESC', [user_id, 'waiting']);
+      const [rows] = await dbHots.promise().query('SELECT t.ticket_id, t.service_name, t.status, e.approval_order, t.creation_date, t.last_update FROM t_ticket_event e INNER JOIN t_ticket t ON t.ticket_id=e.ticket_id WHERE e.actor_id = ? AND e.status = ? ORDER BY t.creation_date DESC', [user_id, 'waiting']);
       return res.json({ ok: true, approvals: rows });
     } catch (e) {
       return res.status(500).json({ ok: false, error: e.message });
@@ -296,7 +344,7 @@ const EngineController = {
         const header = rows[0];
         if (String(header.created_by) !== String(user_id)) throw new Error('not authorized to cancel');
         if (!['submitted', 'draft'].includes(header.status)) throw new Error('Cannot cancel ticket. It has already entered approval.');
-        await p.query('UPDATE t_ticket SET status = ?, updated_at = NOW() WHERE ticket_id = ?', ['cancelled', ticket_id]);
+        await p.query('UPDATE t_ticket SET status = ?, last_update = NOW() WHERE ticket_id = ?', ['cancelled', ticket_id]);
         await p.query('INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, actor_id, status, created_at) VALUES (?, "cancel", 0, ?, ?, NOW())', [ticket_id, user_id, 'cancelled']);
         await p.query('INSERT INTO t_ticket_history (ticket_id, actor_id, action, meta_json, created_at) VALUES (?, ?, ?, ?, NOW())', [ticket_id, user_id, 'cancelled', JSON.stringify({})]);
         await p.commit();
@@ -304,7 +352,7 @@ const EngineController = {
         await triggerEngine.runTriggersForEvent(header.service_name, 'on_cancel', { ticketId: ticket_id, actor: { user_id }, moduleKey: header.service_name });
         return res.json({ ok: true });
       } catch (e) {
-        await p.rollback().catch(() => {});
+        await p.rollback().catch(() => { });
         conn.release();
         throw e;
       }
@@ -326,8 +374,8 @@ const EngineController = {
         const [rows] = await p.query('SELECT * FROM t_ticket_event WHERE ticket_id = ? AND status IN (?,?) ORDER BY approval_order ASC LIMIT 1', [ticket_id, 'pending', 'waiting']);
         if (!rows.length) throw new Error('no pending approval');
         const pending = rows[0];
-        await p.query('UPDATE t_ticket_event SET status = ?, actor_id = ?, note = ?, updated_at = NOW() WHERE event_id = ?', ['revision_requested', approver_id || null, note || null, pending.event_id]);
-        await p.query('UPDATE t_ticket SET status = ?, workflow_level = 0, updated_at = NOW() WHERE ticket_id = ?', ['revision_requested', ticket_id]);
+        await p.query('UPDATE t_ticket_event SET status = ?, actor_id = ?, note = ?, last_update = NOW() WHERE event_id = ?', ['revision_requested', approver_id || null, note || null, pending.event_id]);
+        await p.query('UPDATE t_ticket SET status = ?, workflow_level = 0, last_update = NOW() WHERE ticket_id = ?', ['revision_requested', ticket_id]);
         await p.query('INSERT INTO t_ticket_history (ticket_id, actor_id, action, meta_json, created_at) VALUES (?, ?, ?, ?, NOW())', [ticket_id, approver_id, 'revision_requested', JSON.stringify({ note })]);
         await p.commit();
         conn.release();
@@ -335,7 +383,7 @@ const EngineController = {
         await triggerEngine.runTriggersForEvent(hdr.service_name, 'on_revision', { ticketId: ticket_id, actor: { user_id: approver_id } });
         return res.json({ ok: true });
       } catch (e) {
-        await p.rollback().catch(() => {});
+        await p.rollback().catch(() => { });
         conn.release();
         throw e;
       }
@@ -376,7 +424,7 @@ const EngineController = {
         await p.beginTransaction();
         if (eavRows.length) await p.query('INSERT INTO t_ticket_detail (ticket_id,cstm_col,lbl_col,value,field_id,field_type,row_index,column_key,revision,field_meta_json) VALUES ?', [eavRows]);
 
-        await p.query('UPDATE t_ticket SET status=?, revision=?, workflow_level=0, updated_at=NOW() WHERE ticket_id=?', ['submitted', newRevision, tid]);
+        await p.query('UPDATE t_ticket SET status=?, revision=?, workflow_level=0, last_update=NOW() WHERE ticket_id=?', ['submitted', newRevision, tid]);
 
         const workflowDef = await workflowEngine.loadWorkflow(header.service_id || header.service_name);
         const approvers = await workflowEngine.resolveApprovers(workflowDef, { actor: { user_id: header.created_by }, ticket: { ticket_id: tid }, formData: form_data });
@@ -410,7 +458,7 @@ const EngineController = {
 
         return res.json({ ok: true, ticket_id: tid, newRevision, next_approver: firstPending });
       } catch (e) {
-        await p.rollback().catch(() => {});
+        await p.rollback().catch(() => { });
         conn.release();
         throw e;
       }

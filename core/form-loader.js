@@ -8,7 +8,7 @@
 const engineLoader = require('./engine-loader');
 
 class FormLoader {
-  constructor() {}
+  constructor() { }
 
   /**
    * getFormByModuleKey(moduleKey)
@@ -37,7 +37,11 @@ class FormLoader {
         const required = item.data && item.data.required;
         const label = item.data && item.data.label || key;
 
-        const value = formData[key];
+        let value = formData[key];
+        // Extract value if it's an object wrapper (e.g. { label: '...', value: '...' })
+        if (value && typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, 'value')) {
+          value = value.value;
+        }
         if (required) {
           const empty = (value === null || typeof value === 'undefined' || (typeof value === 'string' && value.trim() === ''));
           if (empty) errors.push({ field: key, message: `${label} is required` });

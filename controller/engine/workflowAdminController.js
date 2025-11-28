@@ -40,7 +40,7 @@ module.exports = {
 
       const rows = await dbQueryHots(
         `SELECT * FROM m_service_workflow
-         WHERE service_id = ?
+         WHERE workflow_id = ?
          ORDER BY level ASC`,
         [service_id]
       );
@@ -68,7 +68,7 @@ module.exports = {
 
       const result = await dbQueryHots(
         `INSERT INTO m_service_workflow
-         (service_id, level, resolver, approver_user, is_active, created_at)
+         (workflow_id, level, resolver, approver_user, is_active, created_at)
          VALUES (?, ?, ?, ?, 1, NOW())`,
         [service_id, level, resolver, approver_user || null]
       );

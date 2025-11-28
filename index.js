@@ -269,7 +269,6 @@ App.use('/cms', cmsRouter);
    🔥 ENGINE ROUTER
 ------------------------------------------------------------------- */
 App.use("/engine", engineRouter);
-App.use("/enginemodule", engineModuleRouter);
 App.use("/workflow-engine", workflowadminRouter);
 /* -------------------------------------------------------------------
    🔥 NORMAL ROUTERS (kept exact order as yours)

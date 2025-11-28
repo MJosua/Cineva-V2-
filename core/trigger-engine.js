@@ -89,7 +89,7 @@ class TriggerEngine {
 
     // load from m_service_triggers
     try {
-      const rows = await this.dbQuery('SELECT * FROM m_service_triggers WHERE service_id = ? AND trigger_name = ? AND active = 1 ORDER BY id ASC', [serviceId, eventName]);
+      const rows = await this.dbQuery('SELECT * FROM m_service_triggers WHERE service_id = ? AND trigger_name = ? AND active = 1 ORDER BY trigger_id ASC', [serviceId, eventName]);
       for (const r of rows) {
         const cfg = tryParseJSON(r.trigger_config) || null;
         if (cfg) {
@@ -109,7 +109,7 @@ class TriggerEngine {
           if (Array.isArray(tcfg)) triggers.push(...tcfg);
           else if (tcfg[eventName]) triggers.push(...(tcfg[eventName] || []));
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // execute triggers sequentially

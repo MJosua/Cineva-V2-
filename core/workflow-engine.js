@@ -54,33 +54,94 @@ class WorkflowEngine {
    * Returns normalized workflow object { steps: [ { level, approver, step_type, assigned_value, meta } ] }
    */
   async loadWorkflow(serviceIdOrModule) {
+    console.log("🟦 [WF][LOAD] Starting workflow load...");
+
     let svc = null;
-    if (typeof serviceIdOrModule === 'object' && serviceIdOrModule !== null) svc = serviceIdOrModule;
-    else svc = this.engineLoader.getServiceConfig(serviceIdOrModule);
-
-    if (!svc) return null;
-
-    // Preferred source: m_service_workflow.definition (DB JSON)
-    let workflow = null;
-    try {
-      if (svc.workflow_id) {
-        const rows = await this.dbQuery('SELECT * FROM m_service_workflow WHERE workflow_id = ? LIMIT 1', [svc.workflow_id]);
-        if (rows && rows[0]) {
-          workflow = rows[0].definition ? (typeof rows[0].definition === 'object' ? rows[0].definition : JSON.parse(rows[0].definition)) : null;
-        }
-      }
-    } catch (e) {
-      // ignore and fallback
+    if (typeof serviceIdOrModule === 'object' && serviceIdOrModule !== null) {
+      svc = serviceIdOrModule;
+      console.log("🟦 [WF][LOAD] Input is MODULE object:", {
+        module_key: svc.module_key,
+        module_name: svc.module_name,
+        service_id: svc.service_id
+      });
+    } else {
+      svc = this.engineLoader.getServiceConfig(serviceIdOrModule);
+      console.log("🟦 [WF][LOAD] Loaded module via engineLoader:", svc);
     }
 
-    // Fallback: svc.workflow_json (legacy)
-    if (!workflow && svc.workflow_json) workflow = svc.workflow_json;
+    if (!svc) {
+      console.log("❌ [WF][LOAD] No module found.");
+      return { steps: [] };
+    }
 
-    // Final fallback: return empty
-    if (!workflow) return { steps: [] };
+    let workflow = null;
 
-    // Normalize: workflow.steps or workflow.levels
-    const steps = Array.isArray(workflow.steps) ? workflow.steps : (workflow.levels || workflow);
+    // ---------------------------------------------
+    // 1️⃣ TRY LOAD WORKFLOW FROM DB (m_service_workflow)
+    // ---------------------------------------------
+    if (svc.service_id) {
+      console.log("🟦 [WF][DB] Loading workflow from DB using workflow_id =", svc.service_id);
+
+      try {
+        const rows = await this.dbQuery(
+          'SELECT * FROM m_service_workflow WHERE workflow_id = ? LIMIT 1',
+          [svc.service_id]
+        );
+
+        console.log("🟩 [WF][DB] Query returned:", rows);
+
+        if (rows && rows[0]) {
+          const record = rows[0];
+          console.log("🟦 [WF][DB] Raw DB record:", record);
+
+          if (record.definition) {
+            try {
+              workflow = (typeof record.definition === 'object')
+                ? record.definition
+                : JSON.parse(record.definition);
+
+              console.log("🟩 [WF][DB] Parsed workflow definition:", workflow);
+            } catch (err) {
+              console.error("❌ [WF][DB] JSON parse error:", err);
+            }
+          } else {
+            console.warn("⚠️ [WF][DB] m_service_workflow.definition is empty or null");
+          }
+        }
+      } catch (err) {
+        console.error("❌ [WF][DB] Error while querying m_service_workflow:", err);
+      }
+    } else {
+      console.log("⚠️ [WF][DB] No workflow_id provided in module. Skipping DB lookup.");
+    }
+
+    // ---------------------------------------------
+    // 2️⃣ FALLBACK TO MODULE.workflow_json
+    // ---------------------------------------------
+    if (!workflow && svc.workflow_json) {
+      console.log("🟧 [WF][FALLBACK] Using module.workflow_json fallback:", svc.workflow_json);
+      workflow = svc.workflow_json;
+    }
+
+    // ---------------------------------------------
+    // 3️⃣ NO WORKFLOW FOUND → RETURN EMPTY
+    // ---------------------------------------------
+    if (!workflow) {
+      console.log("❌ [WF][EMPTY] No workflow found in DB or module. Returning empty workflow.");
+      return { steps: [] };
+    }
+
+    // ---------------------------------------------
+    // 4️⃣ NORMALIZE WORKFLOW FORMAT
+    // ---------------------------------------------
+    console.log("🟦 [WF][NORMALIZE] Raw workflow before normalization:", workflow);
+
+    const steps = Array.isArray(workflow.steps)
+      ? workflow.steps
+      : (workflow.levels || workflow);
+
+    console.log("🟩 [WF][NORMALIZE] Final normalized steps:", steps);
+
     return { steps };
   }
 
@@ -125,13 +186,13 @@ class WorkflowEngine {
             ids = (rows || []).map(r => r.user_id);
           } catch (e) { ids = []; }
         } else if (approver.startsWith('user:')) {
-          ids = [ approver.split(':')[1] ];
+          ids = [approver.split(':')[1]];
         } else {
           // maybe a JSON array in string
           try {
             const parsed = JSON.parse(approver);
             if (Array.isArray(parsed)) ids = parsed;
-          } catch {}
+          } catch { }
         }
       } else if (Array.isArray(approver)) {
         ids = approver.map(x => String(x));
@@ -160,15 +221,15 @@ class WorkflowEngine {
     const [hdrRows] = await p.query('SELECT * FROM t_ticket WHERE ticket_id = ? LIMIT 1', [ticket_id]);
     if (!hdrRows.length) return { ok: false, error: 'Ticket not found' };
     const header = hdrRows[0];
-    const currentLevel = header.workflow_level || 1;
+    const currentLevel = header.workflow_step || 1;
 
     // mark this approver's event row as approved
-    await p.query(`UPDATE t_ticket_event SET status = 'approved', note = ?, updated_at = NOW()
-                   WHERE ticket_id = ? AND actor_id = ? AND status = 'pending'`, [note || null, ticket_id, approver_id]);
+    await p.query(`UPDATE t_ticket_event SET approval_status = 1, remark = ?, updated_at = NOW()
+                   WHERE ticket_id = ? AND approver_id = ? AND approval_status = 0`, [note || null, ticket_id, approver_id]);
 
     // are there remaining pending in current level?
     const [pendingInLevel] = await p.query(
-      `SELECT * FROM t_ticket_event WHERE ticket_id = ? AND approval_order = ? AND status = 'pending'`,
+      `SELECT * FROM t_ticket_event WHERE ticket_id = ? AND approval_order = ? AND approval_status = 0`,
       [ticket_id, currentLevel]
     );
     const allLevelApproved = (pendingInLevel.length === 0);
@@ -184,9 +245,60 @@ class WorkflowEngine {
 
     const nextLevel = currentLevel + 1;
     if (nextLevel > maxLevel) {
-      // finalize
-      await p.query(`UPDATE t_ticket SET status = 'approved', workflow_level = ?, updated_at = NOW() WHERE ticket_id = ?`, [currentLevel, ticket_id]);
-      await p.query(`INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, actor_id, status, created_at) VALUES (?, 'workflow_complete', ?, ?, 'completed', NOW())`, [ticket_id, currentLevel, approver_id]);
+      // finalize approval workflow
+      await p.query(`INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, approver_id, approval_status, created_at) VALUES (?, 'workflow_complete', ?, ?, 1, NOW())`, [ticket_id, currentLevel, approver_id]);
+
+      // Check for post-approval tasks
+      const tasks = workflow.tasks || [];
+
+      if (tasks.length > 0) {
+        // Create task events
+        for (const task of tasks) {
+          const taskOrder = task.task_order || task.order || 1;
+          const assignedValue = task.assigned_value || task.assigned_id || null;
+          const taskType = task.task_type || task.type || 'manual';
+          const taskName = task.task_name || task.name || `Task ${taskOrder}`;
+
+          const taskMeta = {
+            task_name: taskName,
+            task_type: taskType,
+            depends_on: task.depends_on || [],
+            required: task.required !== false,
+            ...task.meta
+          };
+
+          await p.query(
+            `INSERT INTO t_ticket_event 
+             (ticket_id, event_type, step_type, approval_order, assigned_value, 
+              approval_status, event_meta, created_at) 
+             VALUES (?, 'task', ?, ?, ?, 0, ?, NOW())`,
+            [
+              ticket_id,
+              taskType,
+              taskOrder,
+              assignedValue,
+              JSON.stringify(taskMeta)
+            ]
+          );
+        }
+
+        // Set status to "In Fulfillment" (5) with workflow_step reset to 0
+        await p.query(
+          `UPDATE t_ticket SET status_id = 5, workflow_step = 0, updated_at = NOW() 
+           WHERE ticket_id = ?`,
+          [ticket_id]
+        );
+
+        return {
+          ok: true,
+          final: true,
+          tasks_created: tasks.length,
+          message: `Ticket approved. ${tasks.length} task(s) created for fulfillment.`
+        };
+      }
+
+      // No tasks, mark as completed
+      await p.query(`UPDATE t_ticket SET status_id = 3, workflow_step = ?, updated_at = NOW() WHERE ticket_id = ?`, [currentLevel, ticket_id]);
       return { ok: true, final: true, message: 'Ticket fully approved' };
     }
 
@@ -201,20 +313,76 @@ class WorkflowEngine {
     // insert next level rows
     for (let i = 0; i < (nextStep.approver_ids || []).length; i++) {
       const uid = nextStep.approver_ids[i];
-      const status = (i === 0) ? 'pending' : 'waiting';
-      await p.query(`INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, actor_id, status, created_at) VALUES (?, 'approve', ?, ?, ?, NOW())`, [ticket_id, nextLevel, uid, status]);
+      const approvalStatus = 0;  // All pending in HOTS
+      await p.query(`INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, approver_id, approval_status, created_at) VALUES (?, 'approve', ?, ?, ?, NOW())`, [ticket_id, nextLevel, uid, approvalStatus]);
     }
 
-    await p.query(`UPDATE t_ticket SET workflow_level = ?, updated_at = NOW() WHERE ticket_id = ?`, [nextLevel, ticket_id]);
+    await p.query(`UPDATE t_ticket SET workflow_step = ?, updated_at = NOW() WHERE ticket_id = ?`, [nextLevel, ticket_id]);
     return { ok: true, next_level: nextLevel };
   }
 
   async reject({ ticket_id, approver_id, note, module, dbHots }) {
     const p = dbHots.promise();
-    await p.query(`UPDATE t_ticket_event SET status = 'rejected', note = ?, updated_at = NOW() WHERE ticket_id = ? AND actor_id = ? AND status = 'pending'`, [note || null, ticket_id, approver_id]);
-    await p.query(`UPDATE t_ticket SET status = 'rejected', updated_at = NOW() WHERE ticket_id = ?`, [ticket_id]);
-    await p.query(`INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, actor_id, status, created_at) VALUES (?, 'reject', 0, ?, 'completed', NOW())`, [ticket_id, approver_id]);
+    await p.query(`UPDATE t_ticket_event SET approval_status = 2, remark = ?, updated_at = NOW() WHERE ticket_id = ? AND approver_id = ? AND approval_status = 0`, [note || null, ticket_id, approver_id]);
+    await p.query(`UPDATE t_ticket SET status_id = 4, updated_at = NOW() WHERE ticket_id = ?`, [ticket_id]);
+    await p.query(`INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, approver_id, approval_status, created_at) VALUES (?, 'reject', 0, ?, 2, NOW())`, [ticket_id, approver_id]);
     return { ok: true, message: 'Ticket rejected' };
+  }
+
+  /**
+   * completeTask({ ticket_id, task_order, completed_by, remark, dbHots })
+   * Mark a task as complete and check if all tasks are done
+   */
+  async completeTask({ ticket_id, task_order, completed_by, remark, dbHots }) {
+    const p = dbHots ? dbHots.promise() : null;
+    if (!p) throw new Error('completeTask requires dbHots (pool)');
+
+    // Update the task event to completed status
+    await p.query(
+      `UPDATE t_ticket_event 
+       SET approval_status = 1, approver_id = ?, remark = ?, updated_at = NOW(), approve_date = NOW()
+       WHERE ticket_id = ? AND event_type = 'task' AND approval_order = ? AND approval_status = 0`,
+      [completed_by, remark || null, ticket_id, task_order]
+    );
+
+    // Check if all tasks are completed
+    const [remainingTasks] = await p.query(
+      `SELECT COUNT(*) as remaining 
+       FROM t_ticket_event 
+       WHERE ticket_id = ? AND event_type = 'task' AND approval_status = 0`,
+      [ticket_id]
+    );
+
+    const allTasksComplete = (remainingTasks[0].remaining === 0);
+
+    if (allTasksComplete) {
+      // All tasks done, mark ticket as completed
+      await p.query(
+        `UPDATE t_ticket SET status_id = 6, updated_at = NOW() WHERE ticket_id = ?`,
+        [ticket_id]
+      );
+
+      // Log completion event
+      await p.query(
+        `INSERT INTO t_ticket_event 
+         (ticket_id, event_type, approval_order, approver_id, approval_status, created_at) 
+         VALUES (?, 'tasks_complete', 0, ?, 1, NOW())`,
+        [ticket_id, completed_by]
+      );
+
+      return {
+        ok: true,
+        all_complete: true,
+        message: 'All tasks completed. Ticket finalized.'
+      };
+    }
+
+    return {
+      ok: true,
+      all_complete: false,
+      remaining: remainingTasks[0].remaining,
+      message: `Task ${task_order} completed. ${remainingTasks[0].remaining} task(s) remaining.`
+    };
   }
 }
 

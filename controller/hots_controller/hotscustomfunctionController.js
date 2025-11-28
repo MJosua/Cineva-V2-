@@ -15,7 +15,7 @@ const puppeteer = require('puppeteer');
 const Mustache = require('mustache');
 // const { PORT, API_URL } = require("../../index");
 
-const { PORT, API_URL} = require("../../config/env")
+const { PORT, API_URL } = require("../../config/env")
 
 /**
  * Custom Function Controller
@@ -728,7 +728,7 @@ module.exports = {
                 assigned_to: ticketData[0]?.assigned_to,
                 creation_date: ticketData[0]?.creation_date,
                 last_update: ticketData[0]?.last_update,
-                current_step: ticketData[0]?.workflow_step,
+                workflow_step: ticketData[0]?.workflow_step,
             };
 
             // Store all rows as details
@@ -973,7 +973,7 @@ module.exports = {
 
         console.log("factoryPIC", factoryPIC)
 
-        
+
 
 
 
@@ -1042,7 +1042,7 @@ module.exports = {
             .map((approver, index) => {
                 // Find matching employee
 
-                console.log("approver",approver)
+                console.log("approver", approver)
 
                 const isApproved = !!approver.approve_date;
 
