@@ -49,20 +49,39 @@ async function generateCustomTicketID(db, service_id, user_id) {
 function log(...a) { console.log(...a); }
 
 async function saveEav(p, ticketId, form_data, revision = null) {
+  console.log('🔍 [SAVE_EAV] Input form_data:', JSON.stringify(form_data, null, 2));
+
   const rows = [];
   for (const key of Object.keys(form_data || {})) {
     const v = form_data[key];
+    console.log(`🔍 [SAVE_EAV] Processing field "${key}":`, v);
+
     const label = v?.label || key;
     const field_id = v?.field_id || null;
     const field_type = v?.type || null;
     let value;
-    if (v && typeof v === 'object' && Object.prototype.hasOwnProperty.call(v, 'value')) value = String(v.value ?? '');
-    else if (typeof v === 'object') value = JSON.stringify(v);
-    else value = String(v ?? '');
+
+    if (v && typeof v === 'object' && Object.prototype.hasOwnProperty.call(v, 'value')) {
+      value = String(v.value ?? '');
+      console.log(`  → Extracted value from object:`, value);
+    } else if (typeof v === 'object') {
+      value = JSON.stringify(v);
+      console.log(`  → Stringified object:`, value);
+    } else {
+      value = String(v ?? '');
+      console.log(`  → Direct value:`, value);
+    }
+
+    console.log(`  → Final: cstm_col="${key}", lbl_col="${label}", value="${value}", field_id=${field_id}, field_type=${field_type}`);
+
     rows.push([ticketId, key, label, value, field_id, field_type, null, null, revision, JSON.stringify(v?.field_meta || v?.meta || { label, type: field_type })]);
   }
+
+  console.log(`🔍 [SAVE_EAV] Prepared ${rows.length} rows for insertion`);
+
   if (rows.length) {
     await p.query('INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, value, field_id, field_type, row_index, column_key, revision, field_meta_json) VALUES ?', [rows]);
+    console.log(`🔍 [SAVE_EAV] Inserted ${rows.length} rows successfully`);
   }
 }
 
@@ -143,10 +162,10 @@ const EngineController = {
 
             // build workflow from DB (using module.workflow_id)
             const workflow = await workflowEngine.loadWorkflow(module);
-            console.log('🔍 Workflow loaded:', workflow);
+            // console.log('🔍 Workflow loaded:', workflow);
 
             const approvers = await workflowEngine.resolveApprovers(workflow, { actor: { user_id: creator_id }, ticket: { ticket_id }, formData: form_data });
-            console.log('🔍 Approvers resolved:', approvers);
+            // console.log('🔍 Approvers resolved:', approvers);
 
             let firstPending = null;
             for (const step of approvers) {
@@ -159,9 +178,8 @@ const EngineController = {
                 if (firstPending === null && step.level === 1) firstPending = uid;
                 const leader = step.approver_leaders?.[uid] ?? 0;
 
-                console.log("step", step)
 
-                console.log(`🔍 Creating approval event: ticket=${ticket_id}, level=${step.level}, approver=${uid}, status=${status}, leader=${leader}`);
+                // console.log(`🔍 Creating approval event: ticket=${ticket_id}, level=${step.level}, approver=${uid}, status=${status}, leader=${leader}`);
                 await p.query(
                   `INSERT INTO t_ticket_event
                 (ticket_id, event_type, approval_order, approver_id, approval_status, approver_leader, created_at)
@@ -222,25 +240,99 @@ const EngineController = {
   async approve(req, res) {
     try {
       const { ticket_id, approver_id, note } = req.body || {};
-      if (!ticket_id) return res.status(400).json({ ok: false, error: 'ticket_id required' });
+      if (!ticket_id)
+        return res.status(400).json({ ok: false, error: 'ticket_id required' });
 
-      const [hdrRows] = await dbHots.promise().query('SELECT * FROM t_ticket WHERE ticket_id=? LIMIT 1', [ticket_id]);
-      if (!hdrRows.length) return res.status(404).json({ ok: false, error: 'Ticket not found' });
+      const [hdrRows] = await dbHots.promise().query(
+        'SELECT * FROM t_ticket WHERE ticket_id=? LIMIT 1',
+        [ticket_id]
+      );
+      if (!hdrRows.length)
+        return res.status(404).json({ ok: false, error: 'Ticket not found' });
+
       const header = hdrRows[0];
 
-      const module = engineLoader.getServiceConfig(header.service_name) || engineLoader.getServiceConfig(header.service_id);
+      const module =
+        engineLoader.getServiceConfig(header.service_name) ||
+        engineLoader.getServiceConfig(header.service_id);
+
       if (!module) {
-        console.error('approve(): module not found for', header.service_name, header.service_id);
+        console.error('approve(): module not found', header.service_name, header.service_id);
         return res.status(500).json({ ok: false, error: 'module not found for ticket' });
       }
 
-      // call workflow engine
-      const result = await workflowEngine.approve({ ticket_id, approver_id, note, module, dbHots });
+      // 🔥 Validation: Ensure user is pending approver
+      const [valid] = await dbHots.promise().query(
+        `
+        SELECT 1 
+        FROM t_ticket_event
+        WHERE ticket_id = ?
+          AND approval_order = ?
+          AND approver_id = ?
+          AND approval_status = 0
+        LIMIT 1
+      `,
+        [ticket_id, header.workflow_step, approver_id]
+      );
 
-      // run triggers
-      await triggerEngine.runTriggersForEvent(module.module_key, 'on_approve', { ticketId: ticket_id, actor: { user_id: approver_id }, moduleKey: module.module_key });
+      if (!valid.length) {
+        return res.status(400).json({
+          ok: false,
+          error: "You are not allowed to approve this step anymore, please reload the page"
+        });
+      }
+
+      const result = await workflowEngine.approve({
+        ticket_id,
+        approver_id,
+        note,
+        module,
+        dbHots
+      });
+
+      console.log(`🔍 [APPROVE] Workflow result:`, result);
+
+      // 🔥 additional trigger for fully approved
+      if (result.final === true) {
+        // Determine status based on workflow result
+        // If tasks were created, status is 5 (In Fulfillment), otherwise 3 (Completed)
+        const newStatus = (result.tasksCreated && result.tasksCreated > 0) ? 5 : 3;
+        console.log(`🔍 [APPROVE] Final approval! tasksCreated=${result.tasksCreated}, newStatus=${newStatus}`);
+
+        await triggerEngine.runTriggersForEvent(
+          module.module_key,
+          'workflow_complete',
+          {
+            ticketId: ticket_id,
+            actor: { user_id: approver_id },
+            moduleKey: module.module_key,
+            status: newStatus // Pass status explicitly for condition checks
+          }
+        );
+      }
+
+      // Determine currentStatus to pass to on_approve trigger
+      // Priority: If final, use the determined status, otherwise query DB or pass null
+      let currentStatus = null;
+      if (result.final) {
+        currentStatus = (result.tasksCreated && result.tasksCreated > 0) ? 5 : 3;
+        console.log(`🔍 [APPROVE] Calculated currentStatus for on_approve: ${currentStatus} (tasksCreated: ${result.tasksCreated})`);
+      }
+
+      await triggerEngine.runTriggersForEvent(
+        module.module_key,
+        'on_approve',
+        {
+          ticketId: ticket_id,
+          actor: { user_id: approver_id },
+          moduleKey: module.module_key,
+          status: currentStatus, // Might be null if not final
+          isFinal: result.final
+        }
+      );
 
       return res.json(result);
+
     } catch (e) {
       log('approve error', e);
       return res.status(500).json({ ok: false, error: e.message || e });
@@ -251,39 +343,107 @@ const EngineController = {
   async reject(req, res) {
     try {
       const { ticket_id, approver_id, note } = req.body || {};
-      if (!ticket_id) return res.status(400).json({ ok: false, error: 'ticket_id required' });
+      if (!ticket_id)
+        return res.status(400).json({ ok: false, error: 'ticket_id required' });
 
-      const [hdrRows] = await dbHots.promise().query('SELECT * FROM t_ticket WHERE ticket_id=? LIMIT 1', [ticket_id]);
-      if (!hdrRows.length) return res.status(404).json({ ok: false, error: 'Ticket not found' });
+      const [hdrRows] = await dbHots.promise().query(
+        'SELECT * FROM t_ticket WHERE ticket_id=? LIMIT 1',
+        [ticket_id]
+      );
+      if (!hdrRows.length)
+        return res.status(404).json({ ok: false, error: 'Ticket not found' });
+
       const header = hdrRows[0];
-      const module = engineLoader.getServiceConfig(header.service_name) || engineLoader.getServiceConfig(header.service_id);
 
-      const result = await workflowEngine.reject({ ticket_id, approver_id, note, module, dbHots });
+      const module =
+        engineLoader.getServiceConfig(header.service_name) ||
+        engineLoader.getServiceConfig(header.service_id);
 
-      await triggerEngine.runTriggersForEvent(module.module_key, 'on_reject', { ticketId: ticket_id, actor: { user_id: approver_id }, moduleKey: module.module_key });
+      // 🔥 Validation: Ensure user is pending approver
+      const [valid] = await dbHots.promise().query(
+        `
+        SELECT 1 
+        FROM t_ticket_event
+        WHERE ticket_id = ?
+          AND approval_order = ?
+          AND approver_id = ?
+          AND approval_status = 0
+        LIMIT 1
+      `,
+        [ticket_id, header.workflow_step, approver_id]
+      );
+
+      if (!valid.length) {
+        return res.status(400).json({
+          ok: false,
+          error: "You are not allowed to reject this step anymore, please reload the page"  // ✔ Fixed here
+        });
+      }
+
+      const result = await workflowEngine.reject({
+        ticket_id,
+        approver_id,
+        note,
+        module,
+        dbHots
+      });
+
+      await triggerEngine.runTriggersForEvent(
+        module.module_key,
+        'on_reject',
+        { ticketId: ticket_id, actor: { user_id: approver_id }, moduleKey: module.module_key }
+      );
 
       return res.json(result);
+
     } catch (e) {
       log('reject error', e);
       return res.status(500).json({ ok: false, error: e.message || e });
     }
   },
 
+
   /* LIST */
   async list(req, res) {
     try {
-      const { status, mine } = req.query;
+      console.log('🔍 [LIST] Query params:', req.query);
+
+      const { status, status_id, service_id, mine } = req.query;
       const user_id = req.dataToken?.user_id || null;
       let page = parseInt(req.query.page, 10) || 1;
       let limit = parseInt(req.query.limit, 10) || 20;
       const startIndex = (page - 1) * limit;
       let conditions = 'WHERE 1=1 ';
-      if (status) conditions += ` AND t.status = ${dbHots.escape(status)} `;
-      if (mine === 'true' && user_id) conditions += ` AND t.created_by = ${dbHots.escape(user_id)} `;
+
+      // Handle service_id filter
+      if (service_id) {
+        conditions += ` AND t.service_id = ${dbHots.escape(service_id)} `;
+        console.log('🔍 [LIST] Filtering by service_id:', service_id);
+      }
+
+      // Handle legacy status filter
+      if (status) {
+        conditions += ` AND t.status = ${dbHots.escape(status)} `;
+      }
+
+      // Handle status_id filter (supports comma-separated values)
+      if (status_id) {
+        const statusIds = status_id.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
+        if (statusIds.length > 0) {
+          conditions += ` AND t.status_id IN (${statusIds.join(',')}) `;
+          console.log('🔍 [LIST] Filtering by status_id:', statusIds);
+        }
+      }
+
+      // Handle mine filter
+      if (mine === 'true' && user_id) {
+        conditions += ` AND t.created_by = ${dbHots.escape(user_id)} `;
+      }
+
       const sql = `
         SELECT t.ticket_id, t.service_id, t.service_name, t.created_by,
                CONCAT(u.firstname, " ", u.lastname) creator_name,
-               ts.status_name, t.workflow_step, t.creation_date, t.last_update
+               ts.status_name, t.status_id, t.workflow_step, t.creation_date, t.last_update
         FROM t_ticket t
         LEFT JOIN user u ON u.user_id = t.created_by
         LEFT JOIN m_ticket_status ts ON ts.status_id = t.status_id
@@ -291,7 +451,27 @@ const EngineController = {
         ORDER BY t.creation_date DESC
         LIMIT ${startIndex}, ${limit}
       `;
+
+      console.log('🔍 [LIST] Executing SQL:', sql);
       const [rows] = await dbHots.promise().query(sql);
+      console.log(`🔍 [LIST] Found ${rows.length} tickets`);
+
+      // Fetch form data for each ticket
+      for (const ticket of rows) {
+        const [eavRows] = await dbHots.promise().query(
+          'SELECT cstm_col, lbl_col, value, field_type FROM t_ticket_detail WHERE ticket_id = ? AND (revision IS NULL OR revision = (SELECT MAX(revision) FROM t_ticket_detail WHERE ticket_id = ?))',
+          [ticket.ticket_id, ticket.ticket_id]
+        );
+
+        console.log(`🔍 [LIST] Ticket ${ticket.ticket_id} has ${eavRows.length} EAV fields`);
+
+        // Convert EAV to flat object
+        eavRows.forEach(row => {
+          ticket[row.cstm_col] = row.value;
+        });
+      }
+
+      console.log('🔍 [LIST] Returning data:', JSON.stringify(rows, null, 2));
       return res.json({ ok: true, page, limit, rows });
     } catch (e) {
       log('list error', e);
@@ -543,6 +723,117 @@ const EngineController = {
       return res.json({ ok: true, form_values });
     } catch (e) {
       return res.status(500).json({ ok: false, error: e.message });
+    }
+  },
+
+  /* COMPLETE TASK */
+  async completeTask(req, res) {
+    try {
+      const { ticket_id, task_order, completed_by, remark } = req.body;
+
+      if (!ticket_id || task_order == null || !completed_by) {
+        return res.status(400).json({
+          ok: false,
+          error: 'Missing required fields: ticket_id, task_order, completed_by'
+        });
+      }
+
+      // Call workflow engine's completeTask method
+      const result = await workflowEngineCore.completeTask({
+        ticket_id,
+        task_order,
+        completed_by,
+        remark,
+        dbHots
+      });
+
+      return res.json(result);
+    } catch (err) {
+      log('completeTask error', err);
+      return res.status(500).json({ ok: false, error: err.message || err });
+    }
+  },
+
+  /* MY ASSIGNMENTS */
+  async myAssignments(req, res) {
+    try {
+      const user_id = req.dataToken.user_id;
+
+      // Fetch assignments assigned to this user or their teams
+      const [rows] = await dbHots.promise().query(`
+        SELECT 
+          a.id as assignment_id,
+          a.ticket_id,
+          a.assigned_type,
+          a.assigned_id,
+          a.assigned_at,
+          a.assignment_status,
+          a.notes,
+          t.service_id,
+          t.service_name,
+          t.status_id,
+          ts.status_name,
+          t.creation_date,
+          CONCAT(u.firstname, " ", u.lastname) as creator_name,
+          (SELECT COUNT(*) FROM t_ticket_event te 
+           WHERE te.ticket_id = t.ticket_id 
+           AND te.event_type = 'task' 
+           AND te.approval_status = 0) as pending_tasks
+        FROM t_ticket_assignment a
+        INNER JOIN t_ticket t ON t.ticket_id = a.ticket_id
+        LEFT JOIN user u ON u.user_id = t.created_by
+        LEFT JOIN m_ticket_status ts ON ts.status_id = t.status_id
+        WHERE a.assignment_status = 'active'
+          AND (
+            (a.assigned_type = 'user' AND a.assigned_id = ?)
+            OR (a.assigned_type = 'team' AND a.assigned_id IN (
+              SELECT team_id FROM m_team_member WHERE user_id = ?
+            ))
+          )
+        ORDER BY a.assigned_at DESC
+      `, [user_id, user_id]);
+
+      return res.json({ ok: true, assignments: rows });
+    } catch (e) {
+      log('myAssignments error', e);
+      return res.status(500).json({ ok: false, error: e.message });
+    }
+  },
+
+  /* COMPLETE ASSIGNMENT */
+  async completeAssignment(req, res) {
+    try {
+      const { assignment_id, ticket_id, completed_by } = req.body;
+
+      if (!assignment_id && !ticket_id) {
+        return res.status(400).json({ ok: false, error: 'assignment_id or ticket_id required' });
+      }
+
+      const query = assignment_id
+        ? 'UPDATE t_ticket_assignment SET assignment_status = ?, unassigned_at = NOW() WHERE id = ?'
+        : 'UPDATE t_ticket_assignment SET assignment_status = ?, unassigned_at = NOW() WHERE ticket_id = ? AND assignment_status = ?';
+
+      const params = assignment_id
+        ? ['completed', assignment_id]
+        : ['completed', ticket_id, 'active'];
+
+      await dbHots.promise().query(query, params);
+
+      return res.json({ ok: true, message: 'Assignment completed successfully' });
+    } catch (e) {
+      log('completeAssignment error', e);
+      return res.status(500).json({ ok: false, error: e.message });
+    }
+  },
+
+  /* RELOAD ENGINE */
+  async reload(req, res) {
+    try {
+      await engineLoader.reloadAll();
+      return res.json({ ok: true, message: 'Engine configuration reloaded' });
+    } catch (err) {
+      log('reload error', err);
+      return res.status(500).json({ ok: false, error: err.message });
     }
   }
 };

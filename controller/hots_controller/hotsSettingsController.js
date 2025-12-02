@@ -710,9 +710,9 @@ module.exports = {
                 INSERT INTO m_service (
                     service_id, category_id, service_name, service_description,
                     approval_level, image_url, nav_link, active, team_id,
-                    api_endpoint, form_json, m_service_workflow
+                    api_endpoint, form_json
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     category_id = VALUES(category_id),
                     service_name = VALUES(service_name),
@@ -723,8 +723,7 @@ module.exports = {
                     active = VALUES(active),
                     team_id = VALUES(team_id),
                     api_endpoint = VALUES(api_endpoint),
-                    form_json = VALUES(form_json),
-                    m_service_workflow = VALUES(m_service_workflow)
+                    form_json = VALUES(form_json)
             `;
 
             const [result] = await dbHots.promise().query(query, [

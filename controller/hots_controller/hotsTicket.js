@@ -3719,8 +3719,8 @@ module.exports = {
                             promises.push(dbHots.promise().execute(`
                     INSERT INTO t_ticket_event (
                       ticket_id, approver_id, approval_order, approval_status,
-                      step_type, assigned_value, approver_leader
-                    ) VALUES (?, ?, ?, 0, 'team', ?, ?)
+                      step_type, assigned_value, approver_leader, event_type
+                    ) VALUES (?, ?, ?, 0, 'team', ?, ?, 'approval')
                   `, [ticketId, member.user_id, stepOrder, assignedValue, member.team_leader]));
                         }
                         continue;
@@ -3731,8 +3731,8 @@ module.exports = {
                         promises.push(dbHots.promise().execute(`
                   INSERT INTO t_ticket_event (
                     ticket_id, approver_id, approval_order, approval_status,
-                    step_type, assigned_value, approver_leader
-                  ) VALUES (?, ?, ?, 0, ?, ?, 1)
+                    step_type, assigned_value, approver_leader, event_type
+                  ) VALUES (?, ?, ?, 0, ?, ?, 1, 'approval')
                 `, [ticketId, assignedValue, stepOrder, type, assignedValue]));
                         continue;
                     }
@@ -3747,8 +3747,8 @@ module.exports = {
                             promises.push(dbHots.promise().execute(`
                     INSERT INTO t_ticket_event (
                       ticket_id, approver_id, approval_order, approval_status,
-                      step_type, assigned_value, approver_leader
-                    ) VALUES (?, ?, ?, 0, 'role', ?, 1)
+                      step_type, assigned_value, approver_leader, event_type
+                    ) VALUES (?, ?, ?, 0, 'role', ?, 1, 'approval')
                   `, [ticketId, u.user_id, stepOrder, assignedValue]));
                         }
                         continue;
@@ -3772,8 +3772,8 @@ module.exports = {
                             promises.push(dbHots.promise().execute(`
                     INSERT INTO t_ticket_event (
                       ticket_id, approver_id, approval_order, approval_status,
-                      step_type, assigned_value, approver_leader
-                    ) VALUES (?, ?, ?, 0, 'superior', ?, 1)
+                      step_type, assigned_value, approver_leader, event_type
+                    ) VALUES (?, ?, ?, 0, 'superior', ?, 1, 'approval')
                   `, [ticketId, approverId, stepOrder, approverId]));
                         }
                         continue;
@@ -4051,6 +4051,7 @@ module.exports = {
             'step_type', ae.step_type,
             'assigned_value', ae.assigned_value,
             'approver_leader', ae.approver_leader,
+            'event_type', ae.event_type,
             'event_meta', ae.event_meta
         )
     )
@@ -4257,8 +4258,6 @@ WHERE
     -- 1. User is approver and approval is pending at current step
     (
         ae.approver_id = ?
-        AND ae.approval_status = 0
-        AND t.workflow_step = ae.approval_order
     )
 
     OR
@@ -4278,11 +4277,8 @@ WHERE
     -- 3. User is approver at current workflow step (explicit duplicate condition)
     (
         ae.approver_id = ?
-        AND ae.approval_status = 0
-        AND ae.approval_order = t.workflow_step
     )
 )
-AND t.status_id IN (1, 2);
 
     `;
 
@@ -4360,6 +4356,7 @@ AND t.status_id IN (1, 2);
                 'approval_order', ae4.approval_order,
                 'approval_status', ae4.approval_status,
                 'approval_date', ae4.approve_date,
+            'event_type', ae4.event_type,
                 'approver_leader', ae4.approver_leader
             )
         )
@@ -4651,6 +4648,7 @@ LIMIT ${limit} OFFSET ${offset};
             'approval_status', x.approval_status,
             'approval_date', x.approval_date,
             'remark', x.remark,
+            'event_type', x.event_type,
             'approver_leader', x.approver_leader
         )
     )
@@ -4662,7 +4660,8 @@ LIMIT ${limit} OFFSET ${offset};
             ae.approval_status,
             DATE_FORMAT(ae.approve_date, '%Y-%m-%d %H:%i:%s') AS approval_date,
             ae.remark,
-            ae.approver_leader
+            ae.approver_leader,
+            ae.event_type
         FROM t_ticket_event ae
         LEFT JOIN user u2 ON u2.user_id = ae.approver_id
         WHERE ae.ticket_id = t.ticket_id
@@ -4779,19 +4778,19 @@ LIMIT ${limit} OFFSET ${offset};
         const user_id = req.dataToken.user_id;
         const ticket_id = req.params.ticket_id || req.body.ticket_id;
         const { rejection_remark } = req.body;
-    
+
         if (!ticket_id || !rejection_remark) {
             return res.status(400).json({
                 success: false,
                 message: `ticket_id ${ticket_id} and reject_reason ${rejection_remark} are required`
             });
         }
-    
+
         const conn = await dbHots.promise().getConnection();
-    
+
         try {
             await conn.beginTransaction();
-    
+
             // 1️⃣ Find the approval row for this user
             const [pending] = await conn.query(`
                 SELECT approval_order
@@ -4801,7 +4800,7 @@ LIMIT ${limit} OFFSET ${offset};
                   AND approval_status = 0
                 LIMIT 1
             `, [ticket_id, user_id]);
-    
+
             if (!pending.length) {
                 await conn.rollback();
                 return res.status(400).json({
@@ -4809,9 +4808,9 @@ LIMIT ${limit} OFFSET ${offset};
                     message: "No pending approval found for this user"
                 });
             }
-    
+
             const level = pending[0].approval_order;
-    
+
             // 2️⃣ Check if the level already has a finalized status
             const [existing] = await conn.query(`
                 SELECT MAX(approval_status) as max_status
@@ -4819,7 +4818,7 @@ LIMIT ${limit} OFFSET ${offset};
                 WHERE ticket_id = ?
                   AND approval_order = ?
             `, [ticket_id, level]);
-    
+
             if (existing[0].max_status > 0) {
                 // Level already decided earlier
                 await conn.query(`
@@ -4827,17 +4826,17 @@ LIMIT ${limit} OFFSET ${offset};
                     SET approval_status = ?, remark = ?
                     WHERE ticket_id = ? AND approval_order = ?
                 `, [existing[0].max_status, rejection_remark, ticket_id, level]);
-    
+
                 await conn.commit();
                 conn.release();
-    
+
                 return res.status(200).json({
                     success: true,
                     message: "This approval level was already resolved earlier. Page refreshed.",
                     status: existing[0].max_status
                 });
             }
-    
+
             // 3️⃣ Reject this level by this user (real actor)
             await conn.query(`
                 UPDATE t_ticket_event
@@ -4848,7 +4847,7 @@ LIMIT ${limit} OFFSET ${offset};
                   AND approver_id = ?
                   AND approval_status = 0
             `, [rejection_remark, ticket_id, user_id]);
-    
+
             // 4️⃣ Mark all other approvers in same level as rejected (followers)
             await conn.query(`
                 UPDATE t_ticket_event
@@ -4858,7 +4857,7 @@ LIMIT ${limit} OFFSET ${offset};
                   AND approval_order = ?
                   AND approval_status = 0
             `, [rejection_remark, ticket_id, level]);
-    
+
             // 5️⃣ Update ticket header
             await conn.query(`
                 UPDATE t_ticket
@@ -4867,15 +4866,15 @@ LIMIT ${limit} OFFSET ${offset};
                     last_update = NOW()
                 WHERE ticket_id = ?
             `, [rejection_remark, ticket_id]);
-    
+
             await conn.commit();
             conn.release();
-    
+
             return res.status(200).json({
                 success: true,
                 message: "TICKET REJECTED SUCCESSFULLY"
             });
-    
+
         } catch (err) {
             await conn.rollback();
             conn.release();
@@ -4883,8 +4882,8 @@ LIMIT ${limit} OFFSET ${offset};
             return res.status(500).json({ success: false, message: err.message });
         }
     },
-    
-    
+
+
 
     closeTicket: (req, res) => {
         let date = new Date();
@@ -5085,16 +5084,16 @@ LIMIT ${limit} OFFSET ${offset};
         const user_id = req.dataToken.user_id;
         const ticket_id = req.params.ticket_id;
         const { comment = '' } = req.body;
-    
+
         if (!ticket_id) {
             return res.status(400).json({ success: false, message: "ticket_id is required" });
         }
-    
+
         const conn = await dbHots.promise().getConnection();
-    
+
         try {
             await conn.beginTransaction();
-    
+
             // 1️⃣ Find the pending approval row for this user
             const [pending] = await conn.query(`
                 SELECT approval_order, service_id
@@ -5105,7 +5104,7 @@ LIMIT ${limit} OFFSET ${offset};
                    AND ae.approval_status = 0
                 WHERE t.ticket_id = ?
             `, [user_id, ticket_id]);
-    
+
             if (!pending.length) {
                 await conn.rollback();
                 return res.status(400).json({
@@ -5113,17 +5112,17 @@ LIMIT ${limit} OFFSET ${offset};
                     message: "No pending approval found for this user"
                 });
             }
-    
+
             const level = pending[0].approval_order;
             const service_id = pending[0].service_id;
-    
+
             // 2️⃣ Check if current level already decided
             const [existing] = await conn.query(`
                 SELECT MAX(approval_status) AS max_status
                 FROM t_ticket_event
                 WHERE ticket_id = ? AND approval_order = ?
             `, [ticket_id, level]);
-    
+
             if (existing[0].max_status > 0) {
                 // Already approved earlier by someone else
                 await conn.query(`
@@ -5131,17 +5130,17 @@ LIMIT ${limit} OFFSET ${offset};
                     SET approval_status = ?, remark = ?
                     WHERE ticket_id = ? AND approval_order = ?
                 `, [existing[0].max_status, comment, ticket_id, level]);
-    
+
                 await conn.commit();
                 conn.release();
-    
+
                 return res.status(200).json({
                     success: true,
                     message: "This approval level was already resolved earlier. Page refreshed.",
                     status: existing[0].max_status
                 });
             }
-    
+
             // 3️⃣ Approve main approver (real actor)
             await conn.query(`
                 UPDATE t_ticket_event
@@ -5152,7 +5151,7 @@ LIMIT ${limit} OFFSET ${offset};
                   AND approver_id = ?
                   AND approval_status = 0
             `, [comment, ticket_id, user_id]);
-    
+
             // 4️⃣ Approve rest of the approvers in this level (followers)
             await conn.query(`
                 UPDATE t_ticket_event
@@ -5161,7 +5160,7 @@ LIMIT ${limit} OFFSET ${offset};
                   AND approval_order = ?
                   AND approval_status = 0
             `, [ticket_id, level]);
-    
+
             // 5️⃣ Check if more levels exist
             const [remaining] = await conn.query(`
                 SELECT MIN(approval_order) AS next_step
@@ -5169,9 +5168,9 @@ LIMIT ${limit} OFFSET ${offset};
                 WHERE ticket_id = ?
                   AND approval_status = 0
             `, [ticket_id]);
-    
+
             const nextStep = remaining[0].next_step;
-    
+
             // 6️⃣ Update ticket workflow_step or finalize
             if (nextStep) {
                 await conn.query(`
@@ -5186,27 +5185,27 @@ LIMIT ${limit} OFFSET ${offset};
                     WHERE ticket_id = ?
                 `, [ticket_id]);
             }
-    
+
             await conn.commit();
             conn.release();
-    
+
             // email notification
             await hotsApproveRequest(false, ticket_id);
-    
+
             return res.status(200).json({
                 success: true,
                 message: "APPROVED",
                 next_step: nextStep || null,
                 final: !nextStep
             });
-    
+
         } catch (err) {
             await conn.rollback();
             conn.release();
             return res.status(500).json({ success: false, message: err.message });
         }
     },
-    
+
 
 
 

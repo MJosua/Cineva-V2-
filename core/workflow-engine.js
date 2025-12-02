@@ -88,11 +88,11 @@ class WorkflowEngine {
           [svc.service_id]
         );
 
-        console.log("🟩 [WF][DB] Query returned:", rows);
+        // console.log("🟩 [WF][DB] Query returned:", rows);
 
         if (rows && rows[0]) {
           const record = rows[0];
-          console.log("🟦 [WF][DB] Raw DB record:", record);
+          // console.log("🟦 [WF][DB] Raw DB record:", record);
 
           if (record.definition) {
             try {
@@ -100,7 +100,7 @@ class WorkflowEngine {
                 ? record.definition
                 : JSON.parse(record.definition);
 
-              console.log("🟩 [WF][DB] Parsed workflow definition:", workflow);
+              // console.log("🟩 [WF][DB] Parsed workflow definition:", workflow);
             } catch (err) {
               console.error("❌ [WF][DB] JSON parse error:", err);
             }
@@ -134,15 +134,19 @@ class WorkflowEngine {
     // ---------------------------------------------
     // 4️⃣ NORMALIZE WORKFLOW FORMAT
     // ---------------------------------------------
-    console.log("🟦 [WF][NORMALIZE] Raw workflow before normalization:", workflow);
+    // console.log("🟦 [WF][NORMALIZE] Raw workflow before normalization:", workflow);
 
     const steps = Array.isArray(workflow.steps)
       ? workflow.steps
       : (workflow.levels || workflow);
 
-    console.log("🟩 [WF][NORMALIZE] Final normalized steps:", steps);
+    // console.log("🟩 [WF][NORMALIZE] Final normalized steps:", steps);
 
-    return { steps };
+    // 🔥 PRESERVE TASKS ARRAY
+    const tasks = workflow.tasks || [];
+    // console.log("🟩 [WF][NORMALIZE] Tasks preserved:", tasks);
+
+    return { steps, tasks };
   }
 
   /**
@@ -179,8 +183,8 @@ class WorkflowEngine {
       const stepType = (step.step_type || step.type || null);
       const approver = step.approver || step.assigned_value || step.assigned;
 
-      console.log("step inside workflow-engine", step)
-      console.log(`🟦 [WF][RESOLVE] Step level=${level} step_type=${stepType} approverRaw=`, approver);
+      // console.log("step inside workflow-engine", step)
+      // console.log(`🟦 [WF][RESOLVE] Step level=${level} step_type=${stepType} approverRaw=`, approver);
 
       try {
         // ---------------------------------------------
@@ -243,7 +247,7 @@ class WorkflowEngine {
               ids = rows.map(r => String(r.user_id));
             } else {
               const rows = await this.dbQuery(
-                'SELECT user_id FROM m_user_role WHERE role = ?',
+                'SELECT user_id FROM m_role WHERE role = ?',
                 [String(val).split(':').pop()]
               );
               ids = rows.map(r => String(r.user_id));
@@ -252,7 +256,7 @@ class WorkflowEngine {
             const roleName = approver.split(':')[1];
             if (roleName) {
               const rows = await this.dbQuery(
-                'SELECT user_id FROM m_user_role WHERE role = ?',
+                'SELECT user_id FROM m_role WHERE role = ?',
                 [roleName]
               );
               ids = rows.map(r => String(r.user_id));
@@ -357,10 +361,10 @@ class WorkflowEngine {
 
       ids = Array.from(new Set(ids));
 
-      console.log(`🟩 [WF][RESOLVE] Resolved level=${level} ->`, {
-        ids,
-        approver_leaders
-      });
+      // console.log(`🟩 [WF][RESOLVE] Resolved level=${level} ->`, {
+      //   ids,
+      //   approver_leaders
+      // });
 
       output.push({
         level,
@@ -388,16 +392,44 @@ class WorkflowEngine {
     const header = hdrRows[0];
     const currentLevel = header.workflow_step || 1;
 
+    const [valid] = await dbHots.promise().query(`
+      SELECT 1 
+      FROM t_ticket_event
+      WHERE ticket_id = ?
+        AND approval_order = ?
+        AND approver_id = ?
+        AND approval_status = 0
+      LIMIT 1
+    `, [ticket_id, currentLevel, approver_id]);
+
+    if (!valid.length) {
+      return { ok: false, error: "You are not allowed to approve this step anymore." };
+    }
+
     // mark this approver's event row as approved
-    await p.query(`UPDATE t_ticket_event SET approval_status = 1, remark = ?, updated_at = NOW()
-                   WHERE ticket_id = ? AND approver_id = ? AND approval_status = 0`, [note || null, ticket_id, approver_id]);
+    // 1️⃣ Approver who clicked -> approved with remark
+    await p.query(`
+    UPDATE t_ticket_event 
+    SET approval_status = 1, remark = ?
+    WHERE ticket_id = ? 
+      AND approver_id = ?
+      AND approval_status = 0
+`, [note || null, ticket_id, approver_id]);
+
+    // 2️⃣ Auto-approve EVERYONE ELSE in same level
+    await p.query(`
+    UPDATE t_ticket_event
+    SET approval_status = 1
+    WHERE ticket_id = ?
+      AND approval_order = ?
+      AND approver_id != ?
+      AND approval_status = 0
+`, [ticket_id, currentLevel, approver_id]);
+
 
     // are there remaining pending in current level?
-    const [pendingInLevel] = await p.query(
-      `SELECT * FROM t_ticket_event WHERE ticket_id = ? AND approval_order = ? AND approval_status = 0`,
-      [ticket_id, currentLevel]
-    );
-    const allLevelApproved = (pendingInLevel.length === 0);
+    // 3️⃣ FORCE all-level-approved (single approval logic)
+    const allLevelApproved = true;
 
     if (!allLevelApproved) {
       return { ok: true, message: 'Approval recorded. Waiting for other approvers.' };
@@ -409,20 +441,27 @@ class WorkflowEngine {
     const maxLevel = steps.length ? Math.max(...steps.map(s => s.level || s.order || s.step_order || 1)) : currentLevel;
 
     const nextLevel = currentLevel + 1;
+    console.log(`🔵 [WF][APPROVE] Current level: ${currentLevel}, Next level: ${nextLevel}, Max level: ${maxLevel}`);
+
     if (nextLevel > maxLevel) {
-      // finalize approval workflow
-      await p.query(`INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, approver_id, approval_status, created_at) VALUES (?, 'workflow_complete', ?, ?, 1, NOW())`, [ticket_id, currentLevel, approver_id]);
+      console.log(`🟢 [WF][FINAL] Final approval reached! nextLevel (${nextLevel}) > maxLevel (${maxLevel})`);
 
       // Check for post-approval tasks
       const tasks = workflow.tasks || [];
+      console.log(`🟡 [WF][TASKS] Found ${tasks.length} tasks in workflow definition`);
+      console.log(`🟡 [WF][TASKS] Tasks array:`, JSON.stringify(tasks, null, 2));
 
       if (tasks.length > 0) {
+        console.log(`🟢 [WF][TASKS] Creating ${tasks.length} task(s) in t_ticket_event...`);
+
         // Create task events
         for (const task of tasks) {
           const taskOrder = task.task_order || task.order || 1;
           const assignedValue = task.assigned_value || task.assigned_id || null;
           const taskType = task.task_type || task.type || 'manual';
           const taskName = task.task_name || task.name || `Task ${taskOrder}`;
+
+          console.log(`  🔹 [TASK] Creating task ${taskOrder}: "${taskName}" (type: ${taskType}, assigned: ${assignedValue})`);
 
           const taskMeta = {
             task_name: taskName,
@@ -445,11 +484,14 @@ class WorkflowEngine {
               JSON.stringify(taskMeta)
             ]
           );
+
+          console.log(`  ✅ [TASK] Task ${taskOrder} created successfully`);
         }
 
         // Set status to "In Fulfillment" (5) with workflow_step reset to 0
+        console.log(`🟢 [WF][STATUS] Setting ticket status to 5 (In Fulfillment) and workflow_step to 0`);
         await p.query(
-          `UPDATE t_ticket SET status_id = 5, workflow_step = 0, updated_at = NOW() 
+          `UPDATE t_ticket SET status_id = 5, workflow_step = 0
            WHERE ticket_id = ?`,
           [ticket_id]
         );
@@ -457,17 +499,18 @@ class WorkflowEngine {
         return {
           ok: true,
           final: true,
-          tasks_created: tasks.length,
-          message: `Ticket approved. ${tasks.length} task(s) created for fulfillment.`
+          message: 'Workflow complete. Tasks created.',
+          tasksCreated: tasks.length
         };
       }
 
       // No tasks, mark as completed
-      await p.query(`UPDATE t_ticket SET status_id = 3, workflow_step = ?, updated_at = NOW() WHERE ticket_id = ?`, [currentLevel, ticket_id]);
+      console.log(`🟡 [WF][NO_TASKS] No tasks defined, marking ticket as completed (status 3)`);
+      await p.query(`UPDATE t_ticket SET status_id = 3, workflow_step = ? WHERE ticket_id = ?`, [currentLevel, ticket_id]);
       return { ok: true, final: true, message: 'Ticket fully approved' };
     }
 
-    // resolve next step approvers and insert events
+    // resolve next step approvers 
     const ctx = { actor: { user_id: approver_id }, ticket: { ticket_id }, formData: {} };
     const resolved = await this.resolveApprovers(steps, ctx);
     const nextStep = resolved.find(s => s.level === nextLevel);
@@ -475,22 +518,54 @@ class WorkflowEngine {
       return { ok: false, error: `Workflow missing level ${nextLevel}` };
     }
 
-    // insert next level rows
-    for (let i = 0; i < (nextStep.approver_ids || []).length; i++) {
-      const uid = nextStep.approver_ids[i];
-      const approvalStatus = 0;  // All pending in HOTS
-      await p.query(`INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, approver_id, approval_status, created_at) VALUES (?, 'approve', ?, ?, ?, NOW())`, [ticket_id, nextLevel, uid, approvalStatus]);
-    }
-
-    await p.query(`UPDATE t_ticket SET workflow_step = ?, updated_at = NOW() WHERE ticket_id = ?`, [nextLevel, ticket_id]);
+    // ℹ️ No need to insert approval events here - they're already created at ticket creation time
+    // Just update the workflow step
+    await p.query(`UPDATE t_ticket SET workflow_step = ? WHERE ticket_id = ?`, [nextLevel, ticket_id]);
     return { ok: true, next_level: nextLevel };
   }
 
   async reject({ ticket_id, approver_id, note, module, dbHots }) {
     const p = dbHots.promise();
-    await p.query(`UPDATE t_ticket_event SET approval_status = 2, remark = ?, updated_at = NOW() WHERE ticket_id = ? AND approver_id = ? AND approval_status = 0`, [note || null, ticket_id, approver_id]);
-    await p.query(`UPDATE t_ticket SET status_id = 4, updated_at = NOW() WHERE ticket_id = ?`, [ticket_id]);
-    await p.query(`INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, approver_id, approval_status, created_at) VALUES (?, 'reject', 0, ?, 2, NOW())`, [ticket_id, approver_id]);
+
+    const [hdrRows] = await p.query(
+      `SELECT workflow_step FROM t_ticket WHERE ticket_id = ? LIMIT 1`,
+      [ticket_id]
+    );
+    const currentLevel = hdrRows?.[0]?.workflow_step || 1;
+
+    const [valid] = await dbHots.promise().query(`
+      SELECT 1 
+      FROM t_ticket_event
+      WHERE ticket_id = ?
+        AND approval_order = ?
+        AND approver_id = ?
+        AND approval_status = 0
+      LIMIT 1
+    `, [ticket_id, currentLevel, approver_id]);
+
+    if (!valid.length) {
+      return { ok: false, error: "You are not allowed to reject this step anymore." };
+    }
+
+    // 1️⃣ Rejecting user → remark + reject
+    await p.query(`
+  UPDATE t_ticket_event 
+  SET approval_status = 2, remark = ?, updated_at = NOW()
+  WHERE ticket_id = ? 
+    AND approver_id = ?
+`, [note || null, ticket_id, approver_id]);
+
+    // 2️⃣ Auto-reject ALL other approvers in the same level
+    await p.query(`
+  UPDATE t_ticket_event
+  SET approval_status = 2, updated_at = NOW()
+  WHERE ticket_id = ?
+    AND approval_order = ?
+    AND approver_id != ?
+    AND approval_status = 0
+`, [ticket_id, currentLevel, approver_id]);
+
+    await p.query(`UPDATE t_ticket SET status_id = 4 WHERE ticket_id = ?`, [ticket_id]);
     return { ok: true, message: 'Ticket rejected' };
   }
 
@@ -505,7 +580,7 @@ class WorkflowEngine {
     // Update the task event to completed status
     await p.query(
       `UPDATE t_ticket_event 
-       SET approval_status = 1, approver_id = ?, remark = ?, updated_at = NOW(), approve_date = NOW()
+       SET approval_status = 1, approver_id = ?, remark = ?, approve_date = NOW()
        WHERE ticket_id = ? AND event_type = 'task' AND approval_order = ? AND approval_status = 0`,
       [completed_by, remark || null, ticket_id, task_order]
     );
@@ -523,7 +598,7 @@ class WorkflowEngine {
     if (allTasksComplete) {
       // All tasks done, mark ticket as completed
       await p.query(
-        `UPDATE t_ticket SET status_id = 6, updated_at = NOW() WHERE ticket_id = ?`,
+        `UPDATE t_ticket SET status_id = 6 WHERE ticket_id = ?`,
         [ticket_id]
       );
 

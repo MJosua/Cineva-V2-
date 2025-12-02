@@ -14,7 +14,7 @@ class EngineLoader {
   constructor() {
     this.dbQuery = null;
     this.servicesByKey = new Map();   // key -> module object
-    this.servicesById = new Map();    // id  -> module object
+    this.servicesById = new Map();    // id  ->module object
   }
 
   /**
@@ -55,6 +55,34 @@ class EngineLoader {
       // prefer nav_link or url-like to be module_key, fallback to service_name
       const key = moduleObj.module_key || moduleObj.module_name || `svc_${moduleObj.service_id}`;
       moduleObj.module_key = key;
+
+      // 🎨 CMS PAGE FETCHING
+      // Scan form_json for any cms_page_id references and fetch the content
+      moduleObj.cms_pages = {};
+
+      if (moduleObj.form_json && Array.isArray(moduleObj.form_json.fields)) {
+        const pageIds = moduleObj.form_json.fields
+          .filter(f => f.cms_page_id)
+          .map(f => f.cms_page_id);
+
+        if (pageIds.length > 0) {
+          try {
+            const placeholders = pageIds.map(() => '?').join(',');
+            const cmsRows = await this.dbQuery(
+              `SELECT page_id, content_json FROM m_cms_page WHERE page_id IN (${placeholders})`,
+              pageIds
+            );
+
+            // Parse content_json and store in cms_pages map
+            cmsRows.forEach(cmsRow => {
+              const blocks = tryParseJSON(cmsRow.content_json);
+              moduleObj.cms_pages[cmsRow.page_id] = blocks || [];
+            });
+          } catch (err) {
+            console.error(`Failed to fetch CMS pages for service ${moduleObj.service_id}:`, err);
+          }
+        }
+      }
 
       this.servicesByKey.set(key, moduleObj);
       this.servicesById.set(moduleObj.service_id, moduleObj);

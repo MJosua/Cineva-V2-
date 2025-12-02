@@ -38,7 +38,8 @@ async function initAll(opts = {}) {
   workflowEngine.init({ engineLoader, dbQuery, resolverFns: {} });
 
   // init trigger engine
-  triggerEngine.init({ dbQuery, engineLoader, documentEngine });
+  triggerEngine.init({ dbQuery: dbQueryHots, engineLoader, documentEngine });
+
 
   // document engine (no DB)
   documentEngine.init({});

@@ -8,9 +8,9 @@ const { decodeTokenHT } = require('../../config/encrypts');
 router.post('/create', decodeTokenHT, engineTicket.create);
 router.post('/create/', decodeTokenHT, engineTicket.create);
 router.post('/create/:moduleKey', decodeTokenHT, engineTicket.create);
-router.post('/approve', decodeTokenHT, engineTicket.approve);
-router.post('/reject', decodeTokenHT, engineTicket.reject);
-router.get('/status/:ticket_id', decodeTokenHT, engineTicket.status);
+router.post('/ticket/approve', decodeTokenHT, engineTicket.approve);
+router.post('/ticket/reject', decodeTokenHT, engineTicket.reject);
+router.get('/ticket/status/:ticket_id', decodeTokenHT, engineTicket.status);
 
 // list / dashboards
 router.get('/tickets', decodeTokenHT, engineTicket.list);
@@ -29,5 +29,15 @@ router.post('/ticket/resubmit/:ticket_id', decodeTokenHT, engineTicket.resubmitD
 // revision endpoints
 router.get('/ticket/revisions/:ticket_id', decodeTokenHT, engineTicket.revisionList);
 router.get('/ticket/revision/:ticket_id/:rev', decodeTokenHT, engineTicket.revisionGet);
+
+// task completion endpoint
+router.post('/task/complete', decodeTokenHT, engineTicket.completeTask);
+
+// assignment endpoints
+router.get('/my-assignments', decodeTokenHT, engineTicket.myAssignments);
+router.post('/assignment/complete', decodeTokenHT, engineTicket.completeAssignment);
+
+// reload engine endpoint
+router.get('/reload', decodeTokenHT, engineTicket.reload);
 
 module.exports = router;
