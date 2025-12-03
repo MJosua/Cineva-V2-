@@ -129,7 +129,8 @@ class TriggerEngine {
 
       // Try to load the function from trigger-functions directory
       const path = require('path');
-      const functionPath = path.join(__dirname, '..', 'trigger-functions', `${functionName}.js`);
+      const functionPath = path.join(__dirname, '..', 'script', 'trigger-functions', `${functionName}.js`);
+
 
       console.log(`🔍 [TRIGGER][FUNC] Loading function from: ${functionPath}`);
 

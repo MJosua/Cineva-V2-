@@ -37,6 +37,9 @@ router.post('/task/complete', decodeTokenHT, engineTicket.completeTask);
 router.get('/my-assignments', decodeTokenHT, engineTicket.myAssignments);
 router.post('/assignment/complete', decodeTokenHT, engineTicket.completeAssignment);
 
+// apply for job endpoint
+router.post('/tickets/:ticketId/apply', decodeTokenHT, engineTicket.applyForJob);
+
 // reload engine endpoint
 router.get('/reload', decodeTokenHT, engineTicket.reload);
 

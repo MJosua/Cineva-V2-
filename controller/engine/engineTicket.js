@@ -826,6 +826,162 @@ const EngineController = {
     }
   },
 
+  /* APPLY FOR JOB */
+  async applyForJob(req, res) {
+    try {
+      const { application_data } = req.body;
+      const { ticketId } = req.params;
+      const user_id = req.dataToken?.user_id;
+
+      if (!user_id) {
+        return res.status(401).json({ ok: false, error: 'User not authenticated' });
+      }
+
+      log(`📝 [APPLY] User ${user_id} applying for job ticket ${ticketId}`);
+
+      // Get parent ticket and service info
+      const [tickets] = await dbHots.promise().query(
+        'SELECT service_id, service_name, title FROM t_ticket WHERE ticket_id = ?',
+        [ticketId]
+      );
+
+      if (!tickets.length) {
+        return res.status(404).json({ ok: false, error: 'Job posting not found' });
+      }
+
+      const parentTicket = tickets[0];
+
+      // Get service configuration
+      const [services] = await dbHots.promise().query(
+        'SELECT assignment_config FROM m_service WHERE service_id = ?',
+        [parentTicket.service_id]
+      );
+
+      const assignmentConfig = services[0]?.assignment_config
+        ? (typeof services[0].assignment_config === 'string'
+          ? JSON.parse(services[0].assignment_config)
+          : services[0].assignment_config)
+        : { mode: 'manual_review' };
+
+      log(`🔧 [APPLY] Assignment mode: ${assignmentConfig.mode}`);
+
+      if (assignmentConfig.mode === 'auto_approve') {
+        // ========== AUTO-APPROVE MODE ==========
+        log(`⚡ [APPLY] Auto-approve mode - creating assignment directly`);
+
+        // Create assignment directly
+        const [result] = await dbHots.promise().query(
+          `INSERT INTO t_ticket_assignment 
+           (ticket_id, assigned_type, assigned_id, assigned_by, assignment_status, notes, assigned_at)
+           VALUES (?, 'user', ?, ?, 'active', ?, NOW())`,
+          [ticketId, user_id, user_id, `Auto-assigned for: ${parentTicket.title}`]
+        );
+
+        const assignmentId = result.insertId;
+
+        // Store application data in work_data linked to assignment
+        if (application_data) {
+          const entityId = `APP${Date.now()}`;
+          const fields = {
+            applicant_id: user_id,
+            status: 'accepted',
+            applied_at: new Date().toISOString(),
+            ...application_data
+          };
+
+          const insertPromises = [];
+          for (const [field_name, field_value] of Object.entries(fields)) {
+            const promise = dbHots.promise().query(
+              `INSERT INTO t_ticket_work_data 
+               (assignment_id, service_id, data_type, entity_id, field_name, field_value, created_by)
+               VALUES (?, ?, 'application', ?, ?, ?, ?)`,
+              [assignmentId, parentTicket.service_id, entityId, field_name, field_value, user_id]
+            );
+            insertPromises.push(promise);
+          }
+          await Promise.all(insertPromises);
+        }
+
+        log(`✅ [APPLY] Auto-approved! Assignment ${assignmentId} created for user ${user_id}`);
+
+        return res.json({
+          ok: true,
+          mode: 'auto_approve',
+          assignment_id: assignmentId,
+          message: 'Application auto-approved! You have been assigned to this job.'
+        });
+
+      } else {
+        // ========== MANUAL REVIEW MODE ==========
+        log(`📋 [APPLY] Manual review mode - creating application ticket`);
+
+        // Generate ticket ID for application
+        const applicationTicketId = await generateCustomTicketID(
+          dbHots,
+          parentTicket.service_id,
+          user_id
+        );
+
+        // Create application ticket with parent_ticket_id link
+        await dbHots.promise().query(
+          `INSERT INTO t_ticket 
+           (ticket_id, parent_ticket_id, service_id, service_name, created_by, status_id, submitted_at, title, workflow_step)
+           VALUES (?, ?, ?, ?, ?, 1, NOW(), ?, 0)`,
+          [
+            applicationTicketId,
+            ticketId,  // parent_ticket_id
+            parentTicket.service_id,
+            parentTicket.service_name,
+            user_id,
+            `Application for: ${parentTicket.title}`,
+          ]
+        );
+
+        // Store application data in work_data linked to application ticket
+        const entityId = `APP${Date.now()}`;
+        const fields = {
+          applicant_id: user_id,
+          parent_job_ticket_id: ticketId,
+          status: 'pending',
+          applied_at: new Date().toISOString(),
+          ...application_data
+        };
+
+        const insertPromises = [];
+        for (const [field_name, field_value] of Object.entries(fields)) {
+          let field_type = 'text';
+          if (typeof field_value === 'number') field_type = 'number';
+          else if (field_value instanceof Date || /^\d{4}-\d{2}-\d{2}/.test(field_value)) field_type = 'date';
+          else if (field_name.includes('file') || field_name.includes('path') || field_name.includes('resume')) field_type = 'file';
+
+          const promise = dbHots.promise().query(
+            `INSERT INTO t_ticket_work_data 
+             (ticket_id, service_id, data_type, entity_id, field_name, field_value, field_type, created_by)
+             VALUES (?, ?, 'application', ?, ?, ?, ?, ?)`,
+            [applicationTicketId, parentTicket.service_id, entityId, field_name, field_value, field_type, user_id]
+          );
+          insertPromises.push(promise);
+        }
+        await Promise.all(insertPromises);
+
+        log(`✅ [APPLY] Application ticket ${applicationTicketId} created, awaiting HR review`);
+
+        return res.json({
+          ok: true,
+          mode: 'manual_review',
+          application_ticket_id: applicationTicketId,
+          parent_ticket_id: ticketId,
+          entity_id: entityId,
+          message: 'Application submitted successfully! HR will review your application.'
+        });
+      }
+
+    } catch (e) {
+      log('❌ [APPLY] Error:', e);
+      return res.status(500).json({ ok: false, error: e.message });
+    }
+  },
+
   /* RELOAD ENGINE */
   async reload(req, res) {
     try {

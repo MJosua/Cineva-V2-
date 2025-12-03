@@ -190,6 +190,8 @@ const {
   cmsRouter,
   engineModuleRouter,
   engineRouter,
+  engineWorkDataRouter,
+  engineAssignmentRouter,
   workflowadminRouter
 } = require("./routers");
 
@@ -269,6 +271,8 @@ App.use('/cms', cmsRouter);
    🔥 ENGINE ROUTER
 ------------------------------------------------------------------- */
 App.use("/engine", engineRouter);
+App.use("/engine", engineWorkDataRouter);
+App.use("/engine", engineAssignmentRouter);
 App.use("/workflow-engine", workflowadminRouter);
 /* -------------------------------------------------------------------
    🔥 NORMAL ROUTERS (kept exact order as yours)
