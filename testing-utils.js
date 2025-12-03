@@ -387,6 +387,327 @@ SELECT DISTINCT
 
     }
 
+    else if (cmd === 'cekweekdebug') {
+
+        console.log("🧪 Running stuffingWeek debug (readline mode)...");
+    
+        const company_id = 153;  // forced debug company
+        const user_id = 1098;    // forced debug user
+    
+        async function debugStuffingWeek() {
+            console.log("===== DEBUG stuffingWeek() =====");
+            console.log("Company:", company_id, "User:", user_id);
+    
+            try {
+                const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+                    month: "short",
+                    day: "2-digit",
+                    year: "numeric",
+                });
+    
+                // =====================================================
+                // STEP 0 — CONFIG VALUES
+                // =====================================================
+                console.log("\n[STEP 0] Fetch Config Values");
+    
+                const getWeekLimit = (await dbQuery(`
+                    SELECT value
+                    FROM m_config_new
+                    WHERE conditions = 9
+                      AND company_id = ${company_id}
+                      AND active = 1
+                `))[0];
+    
+                const getWeekBlock = await dbQuery(`
+                    SELECT value
+                    FROM m_config_new
+                    WHERE conditions = 21
+                      AND (company_id = ${company_id} OR company_id = 100)
+                      AND active = 1
+                `);
+    
+                const blockedWeeks = getWeekBlock.map(r => Number(r.value));
+                const weekLimit = getWeekLimit ? Number(getWeekLimit.value) : 13;
+    
+                console.log("- weekLimit:", weekLimit);
+                console.log("- blockedWeeks:", blockedWeeks);
+    
+                // =====================================================
+                // STEP 1 — TODAY OPCAL_ID & CURRENT WEEK
+                // =====================================================
+                console.log("\n[STEP 1] Fetch Today OPCAL_ID");
+    
+                const todayRow = await dbQuery(`
+                    SELECT opcal_id, week
+                    FROM dat_operational_calendar
+                    WHERE DATE(FROM_UNIXTIME(opcal_id * 100)) = CURDATE()
+                    LIMIT 1
+                `);
+    
+                const todayCalId = todayRow[0]?.opcal_id ?? null;
+                const currentWeek = todayRow[0]?.week ?? null;
+    
+                console.log("- today OPCAL_ID:", todayCalId);
+                console.log("- currentWeek:", currentWeek);
+    
+                // =====================================================
+                // STEP 2 — FETCH *NEXT YEAR ONLY* WEEK LIST
+                // =====================================================
+                console.log("\n[STEP 2] Fetch NEXT YEAR deliveryData");
+    
+                const nextYear = new Date().getFullYear() + 1;
+    
+                const deliveryData = await dbQuery(`
+                    SELECT 
+                        week,
+                        MIN(opcal_id) AS first_opcal
+                    FROM dat_operational_calendar
+                    WHERE year = ${nextYear}
+                      AND factory_id = 1
+                      AND product_type_id = 256
+                    GROUP BY week
+                    ORDER BY first_opcal
+                `);
+    
+                const allWeeks = deliveryData.map(r => r.week);
+    
+                console.log("- deliveryData weeks:", allWeeks);
+    
+                // =====================================================
+                // STEP 3 — TIME FENCE
+                // =====================================================
+                console.log("\n[STEP 3] Fetch timeFence");
+    
+                const timeFenceRow = (await dbQuery(`
+                    SELECT COALESCE(time_fence, 0) AS time_fence
+                    FROM map_cont_for_dist
+                    WHERE dist_id = ${company_id}
+                      AND NOW() BETWEEN start_date AND COALESCE(finish_date, '9999-12-31')
+                `))[0];
+    
+                const timeFence = timeFenceRow?.time_fence ?? 0;
+    
+                console.log("- timeFence:", timeFence);
+    
+                // =====================================================
+                // STEP 4 — ROTATE START WEEK (currentWeek + 5)
+                // =====================================================
+                console.log("\n[STEP 4] Compute Rolling Start Week");
+    
+                let startWeek = currentWeek + 5;
+                if (startWeek > 52) startWeek -= 52;
+    
+                console.log("- startWeek:", startWeek);
+    
+                // rotate weeks based on startWeek
+                let rotatedWeeks = [
+                    ...allWeeks.filter(w => w >= startWeek),
+                    ...allWeeks.filter(w => w < startWeek)
+                ];
+    
+                // remove blocked
+                rotatedWeeks = rotatedWeeks.filter(w => !blockedWeeks.includes(w));
+    
+                // apply limit
+                rotatedWeeks = rotatedWeeks.slice(0, weekLimit);
+    
+                console.log("- rotated weeks:", rotatedWeeks);
+    
+                // =====================================================
+                // STEP 5 — BUILD WEEK DATE DETAILS
+                // =====================================================
+                console.log("\n[STEP 5] Build week date details\n");
+    
+                const weeksList = [];
+    
+                for (const w of rotatedWeeks) {
+    
+                    let deliveryWeek = timeFence !== 0 ? timeFence : w;
+    
+                    console.log(`-- PROCESS WEEK ${deliveryWeek} YEAR ${nextYear}`);
+    
+                    // get opcal start
+                    const opcalStart = await dbQuery(`
+                        SELECT opcal_id
+                        FROM dat_operational_calendar
+                        WHERE year = ${nextYear}
+                          AND week = ${deliveryWeek}
+                          AND factory_id = 1
+                          AND product_type_id = 256
+                        ORDER BY opcal_id
+                        LIMIT 1
+                    `);
+    
+                    const opcal_id = opcalStart[0]?.opcal_id ?? null;
+    
+                    console.log("- opcal_id:", opcal_id);
+                    if (!opcal_id) continue;
+    
+                    let minDateObj = new Date(opcal_id * 100 * 1000);
+                    if (minDateObj.getDay() === 0) minDateObj.setDate(minDateObj.getDate() + 1);
+    
+                    const minDate = DATE_FORMATTER.format(minDateObj);
+    
+                    // compute next week
+                    const nextWeek = deliveryWeek === 52 ? 1 : deliveryWeek + 1;
+    
+                    const nextRow = await dbQuery(`
+                        SELECT opcal_id
+                        FROM dat_operational_calendar
+                        WHERE year = ${nextYear}
+                          AND week = ${nextWeek}
+                          AND factory_id = 1
+                          AND product_type_id = 256
+                        ORDER BY opcal_id
+                        LIMIT 1
+                    `);
+    
+                    const nextOpcalId = nextRow[0]?.opcal_id ?? null;
+    
+                    let maxDateObj;
+    
+                    if (nextOpcalId) {
+                        maxDateObj = new Date(nextOpcalId * 100 * 1000);
+                        maxDateObj.setDate(maxDateObj.getDate() - 1);
+                    } else {
+                        maxDateObj = new Date(minDateObj);
+                        maxDateObj.setDate(maxDateObj.getDate() + 6);
+                    }
+    
+                    const maxDate = DATE_FORMATTER.format(maxDateObj);
+    
+                    console.log("- minDate:", minDate);
+                    console.log("- maxDate:", maxDate);
+    
+                    weeksList.push({
+                        opcal_id,
+                        id: `${nextYear}${String(deliveryWeek).padStart(2, "0")}`,
+                        year: nextYear,
+                        week: deliveryWeek,
+                        startingDate: minDate,
+                        endingDate: maxDate,
+                    });
+                }
+    
+                console.log("\n🟢 FINAL WEEK LIST:");
+                console.log(weeksList);
+    
+                return { success: true, weeksList };
+    
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        }
+    
+        // =====================================
+        // RUN DEBUG PROCESS
+        // =====================================
+        try {
+            const result = await debugStuffingWeek();
+            console.log("\n🟩 DONE stuffingWeek debug.");
+            console.dir(result, { depth: 20 });
+    
+        } catch (err) {
+            console.error("❌ Error debugging stuffingWeek:", err);
+        }
+    }
+    
+    
+    
+    
+    else if (cmd.startsWith("cekoc10")) {
+
+        console.log("🧪 Debugging week 10 disappearance...");
+    
+        const year = 2026;
+        const week = 10;
+        const factory = 1;
+        const product = 256;
+    
+        // today opcal id
+        const todayRow = await dbQuery(`
+            SELECT opcal_id FROM dat_operational_calendar
+            WHERE DATE(FROM_UNIXTIME(opcal_id * 100)) = CURDATE()
+            LIMIT 1
+        `);
+        const todayCalId = todayRow[0]?.opcal_id ?? 0;
+        console.log("todayCalId:", todayCalId);
+    
+        // Stage A
+        console.log("\n--- Stage A: Base table ---");
+        let rowsA = await dbQuery(`
+            SELECT * FROM dat_operational_calendar
+            WHERE year=${year} AND week=${week}
+            AND factory_id=${factory}
+            AND product_type_id=${product}
+            ORDER BY opcal_id
+        `);
+        console.log("Rows:", rowsA.length);
+        console.dir(rowsA, { depth: 5 });
+    
+        // Stage B
+        console.log("\n--- Stage B: After opcal >= todayCalId ---");
+        let rowsB = await dbQuery(`
+            SELECT * FROM dat_operational_calendar
+            WHERE year=${year} AND week=${week}
+            AND factory_id=${factory}
+            AND product_type_id=${product}
+            AND opcal_id >= ${todayCalId}
+            ORDER BY opcal_id
+        `);
+        console.log("Rows:", rowsB.length);
+        console.dir(rowsB, { depth: 5 });
+    
+        // Stage C
+        console.log("\n--- Stage C: Grouped min/max ---");
+        let rowsC = await dbQuery(`
+            SELECT 
+                week, year,
+                MIN(opcal_id) AS min_opcal,
+                MAX(opcal_id) AS max_opcal,
+                COUNT(*) AS cnt
+            FROM dat_operational_calendar
+            WHERE year=${year} AND week=${week}
+            AND factory_id=${factory}
+            AND product_type_id=${product}
+        `);
+        console.dir(rowsC, { depth: 5 });
+    
+        // Stage D
+        console.log("\n--- Stage D: Reproduce deliveryData filtering ---");
+        let rowsD = await dbQuery(`
+            SELECT week, delivery_week, year
+            FROM dat_operational_calendar
+            WHERE 
+                opcal_id >= ${todayCalId}
+                AND year >= ${year}
+                AND factory_id=${factory}
+                AND product_type_id=${product}
+                AND week=${week}
+            GROUP BY week
+            ORDER BY opcal_id
+        `);
+        console.log("Rows:", rowsD.length);
+        console.dir(rowsD, { depth: 5 });
+    
+        // Stage E
+        console.log("\n--- Stage E: Entire delivery ordering ---");
+        let rowsE = await dbQuery(`
+            SELECT week, MIN(opcal_id) AS first_opcal
+            FROM dat_operational_calendar
+            WHERE 
+                opcal_id >= ${todayCalId}
+                AND year >= ${year}
+                AND factory_id=${factory}
+                AND product_type_id=${product}
+            GROUP BY week
+            ORDER BY first_opcal
+        `);
+        console.dir(rowsE, { depth: 5 });
+    
+        console.log("\n🟩 Debug complete.");
+    }
+    
 
     else if (cmd === 'ceklmailapprovehots') {
 
