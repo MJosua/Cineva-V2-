@@ -79,6 +79,36 @@ rl.on('line', async (input) => {
             `call insert_so [WAS DONE]: affectedRows=${affected}`
         );
     }
+
+    else if (cmd === '/ceksosingle') {
+        // ---- READ ORDER ID AS NUMBER ----
+        let order_id = Number(args[0]);  // the user enters: /ceksoSINGLE 12345
+    
+        if (!order_id || isNaN(order_id)) {
+            return bot.sendMessage(chatId, "❌ Invalid number. Example: /ceksoSINGLE 12345");
+        }
+    
+        try {
+            // ---- RUN STORED PROCEDURE ----
+            const query = `CALL insert_so_single(?)`;
+            const result = await dbQuery(query, [order_id]);
+    
+            // result[0] = rows OR ok packet depending on SP
+            let affected =
+                result?.[0]?.affectedRows ||
+                result?.[1]?.affectedRows ||
+                0;
+    
+            console.log(`CALL insert_so_single DONE: affectedRows = ${affected}`);
+    
+            bot.sendMessage(chatId, `✅ SO Inserted.\nAffected Rows: ${affected}`);
+    
+        } catch (err) {
+            console.error("Error calling insert_so_single:", err);
+            bot.sendMessage(chatId, "❌ Error processing SO.");
+        }
+    }
+
     else if (cmd === 'cekmail') {
 
         shippingMailNotificationManual()

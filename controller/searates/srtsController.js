@@ -581,7 +581,6 @@ module.exports = {
                         container_status: row.status
                     });
                 }
-                console.log("shipmentData after container", row);
                 // Events
                 if (row.event_id && !shipmentData[id].events.some(e => e.event_id === row.event_id)) {
                     shipmentData[id].events.push({
@@ -996,7 +995,6 @@ module.exports = {
                         container_status: row.status
                     });
                 }
-                console.log("shipmentData after container", row);
                 // Events
                 if (row.event_id && !shipmentData[id].events.some(e => e.event_id === row.event_id)) {
                     shipmentData[id].events.push({
