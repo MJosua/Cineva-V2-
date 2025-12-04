@@ -16,9 +16,12 @@ module.exports = {
             const { assignmentId } = req.params;
             const { data_type } = req.query;
 
-            // Get assignment details
+            // Get assignment details with service_id from ticket
             const [assignment] = await dbHots.promise().query(
-                'SELECT ticket_id, service_id FROM t_ticket_assignment WHERE id = ?',
+                `SELECT ta.ticket_id, t.service_id 
+                 FROM t_ticket_assignment ta
+                 JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                 WHERE ta.id = ?`,
                 [assignmentId]
             );
 

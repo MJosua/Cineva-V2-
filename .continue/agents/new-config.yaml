@@ -1,0 +1,62 @@
+name: My Local AI Setup
+version: 1.0.0
+schema: v1
+
+# ===========================
+# MODELS
+# ===========================
+models:
+  # Your local LM Studio model (Qwen3-Coder-30B)
+  - name: qwen3-coder-30b-local
+    provider: openai
+    apiBase: http://localhost:1234/v1
+    apiKey: ""       # no API key needed for LM Studio
+    model: qwen3-coder-30b
+
+# OPTIONAL: Add cloud fallbacks (keep if you have keys)
+  - name: claude-sonnet
+    provider: anthropic
+    model: claude-3-sonnet
+    apiKey: ${{ secrets.ANTHROPIC_API_KEY }}
+
+# Default model (IMPORTANT)
+defaultModel:
+  model: qwen3-coder-30b-local
+
+# ===========================
+# WORKSPACE / EDIT SETTINGS
+# ===========================
+workspace:
+  allowEditing: true          # allow AI to edit files
+  allowMultiFile: true        # allow AI to modify multiple files at once
+  autoSave: true              # automatically save edited files
+  writeCodeWithTools: true    # let AI apply patches like Antigravity
+
+# ===========================
+# CONTEXT PROVIDERS (RAG)
+# ===========================
+contextProviders:
+  # Enables repo tree awareness
+  - name: filetree
+    enabled: true
+
+  # Enable semantic search (embeddings)
+  - name: semantic
+    enabled: true
+
+  # Allow Continue to read surrounding code intelligently
+  - name: buffer
+    enabled: true
+
+  # Let AI read full files when relevant
+  - name: readFile
+    enabled: true
+
+# Expand the model’s context window (AI sends more code blocks)
+contextWindowExpansion: true
+
+# ===========================
+# MCP SERVERS (REMOVE THIS)
+# ===========================
+# Leave empty unless you really want MCP tools
+mcpServers: []

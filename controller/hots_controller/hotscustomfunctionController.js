@@ -700,8 +700,16 @@ module.exports = {
         }
     },
 
-    generateDocument: async (template, ticketData, params) => {
-        const fileName = `document_${template.template_name || ticketData[0]?.ticket_id}_${Date.now()}.pdf`;
+    /**
+     * SRF Document Generator
+     * Generates Sample Request Form (SRF) PDF document
+     * @param {Object} template - Template configuration
+     * @param {Array|Object} ticketData - Ticket and detail data
+     * @param {Object} params - Additional parameters
+     * @returns {string} File path of generated PDF
+     */
+    srf_document_generator: async (template, ticketData, params) => {
+        const fileName = `document_SRF_${ticketData[0]?.ticket_id || 'unknown'}_${Date.now()}.pdf`;
         const filePath = path.join('public', 'hots', 'generateddocuments', fileName);
 
 
@@ -1276,10 +1284,15 @@ module.exports = {
     },
 
 
+    /**
+     * Execute Document Generation
+     * Dynamically selects document template based on config.template
+     * @param {Object} func - Function configuration from m_custom_functions
+     * @param {string} ticketId - Ticket ID
+     * @param {Object} params - Additional parameters
+     */
     executeDocumentGeneration: async (func, ticketId, params) => {
         try {
-
-
             const config = typeof func.config === 'string' ? JSON.parse(func.config) : func.config || {};
 
             // Fetch ticket data
@@ -1293,10 +1306,29 @@ module.exports = {
                 throw new Error('Ticket not found');
             }
 
+            // ========== DYNAMIC TEMPLATE SELECTION ==========
+            const templateName = config.template || 'srf_document';
+            console.log(`📄 [DOC_GEN] Using template: ${templateName}`);
 
-            // Generate document
-            const documentPath = await module.exports.generateDocument(config, ticketData, params);
-            // console.log("dataawal", ticketData)
+            let documentPath = null;
+
+            // Select document generator based on template name
+            switch (templateName) {
+                case 'srf_document':
+                    documentPath = await module.exports.srf_document_generator(config, ticketData, params);
+                    break;
+                // Add more templates here:
+                // case 'job_offer_letter':
+                //     documentPath = await module.exports.job_offer_letter_generator(config, ticketData, params);
+                //     break;
+                // case 'approval_memo':
+                //     documentPath = await module.exports.approval_memo_generator(config, ticketData, params);
+                //     break;
+                default:
+                    console.log(`⚠️ [DOC_GEN] Unknown template: ${templateName}, falling back to srf_document`);
+                    documentPath = await module.exports.srf_document_generator(config, ticketData, params);
+            }
+
             // Save generated document info
             await dbHots.promise().query(`
                 INSERT INTO t_generated_documents 
@@ -1307,17 +1339,18 @@ module.exports = {
                 config.documentType || 'letter',
                 documentPath || '',
                 path.basename(documentPath || 'unknown.pdf'),
-                config.template || 'unknown_template'
+                templateName
             ]);
 
             return {
                 success: true,
                 documentPath,
-                documentType: config.documentType || 'letter'
+                documentType: config.documentType || 'letter',
+                template: templateName
             };
         } catch (err) {
             console.log(`[executeDocumentGeneration] Error for ticket ${ticketId}:`);
-            console.dir(err, { depth: null }); // Full object logging
+            console.dir(err, { depth: null });
 
             return {
                 success: false,

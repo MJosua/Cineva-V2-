@@ -1,0 +1,178 @@
+[
+  {
+    "from_table": "m_dashboard_function",
+    "from_columns": [
+      "category_id"
+    ],
+    "to_table": "m_dashboard_category",
+    "to_columns": [
+      "id"
+    ],
+    "constraint": "fk_dashboard_category"
+  },
+  {
+    "from_table": "m_dashboard_function",
+    "from_columns": [
+      "category_id"
+    ],
+    "to_table": "m_dashboard_category",
+    "to_columns": [
+      "id"
+    ],
+    "constraint": null
+  },
+  {
+    "from_table": "m_engine_module_revisions",
+    "from_columns": [
+      "module_id"
+    ],
+    "to_table": "m_engine_modules",
+    "to_columns": [
+      "service_id"
+    ],
+    "constraint": "m_engine_module_revisions_ibfk_1"
+  },
+  {
+    "from_table": "m_engine_module_revisions",
+    "from_columns": [
+      "module_id"
+    ],
+    "to_table": "m_engine_modules",
+    "to_columns": [
+      "service_id"
+    ],
+    "constraint": null
+  },
+  {
+    "from_table": "m_service_triggers",
+    "from_columns": [
+      "service_id"
+    ],
+    "to_table": "m_service",
+    "to_columns": [
+      "service_id"
+    ],
+    "constraint": "m_service_triggers_ibfk_1"
+  },
+  {
+    "from_table": "m_service_triggers",
+    "from_columns": [
+      "service_id"
+    ],
+    "to_table": "m_service",
+    "to_columns": [
+      "service_id"
+    ],
+    "constraint": null
+  },
+  {
+    "from_table": "m_service_workflow_resolver_params",
+    "from_columns": [
+      "workflow_id"
+    ],
+    "to_table": "m_service_workflow",
+    "to_columns": [
+      "workflow_id"
+    ],
+    "constraint": "m_service_workflow_resolver_params_ibfk_1"
+  },
+  {
+    "from_table": "m_service_workflow_resolver_params",
+    "from_columns": [
+      "workflow_id"
+    ],
+    "to_table": "m_service_workflow",
+    "to_columns": [
+      "workflow_id"
+    ],
+    "constraint": null
+  },
+  {
+    "from_table": "m_team",
+    "from_columns": [
+      "department_id"
+    ],
+    "to_table": "m_department",
+    "to_columns": [
+      "department_id"
+    ],
+    "constraint": "Team_FK"
+  },
+  {
+    "from_table": "m_team",
+    "from_columns": [
+      "department_id"
+    ],
+    "to_table": "m_department",
+    "to_columns": [
+      "department_id"
+    ],
+    "constraint": null
+  },
+  {
+    "from_table": "m_config",
+    "from_columns": [
+      "company_id"
+    ],
+    "to_table": "mst_company",
+    "to_columns": [
+      "company_id"
+    ],
+    "constraint": "m_config_FK"
+  },
+  {
+    "from_table": "m_config",
+    "from_columns": [
+      "company_id"
+    ],
+    "to_table": "mst_company",
+    "to_columns": [
+      "company_id"
+    ],
+    "constraint": null
+  },
+  {
+    "from_table": "m_feedback",
+    "from_columns": [
+      "company_id"
+    ],
+    "to_table": "mst_company",
+    "to_columns": [
+      "company_id"
+    ],
+    "constraint": "m_feedback_FK"
+  },
+  {
+    "from_table": "m_feedback",
+    "from_columns": [
+      "company_id"
+    ],
+    "to_table": "mst_company",
+    "to_columns": [
+      "company_id"
+    ],
+    "constraint": null
+  },
+  {
+    "from_table": "trs_wor",
+    "from_columns": [
+      "wor_header_id"
+    ],
+    "to_table": "trs_wor_header",
+    "to_columns": [
+      "id"
+    ],
+    "constraint": "trs_wor_trs_wor_header_FK"
+  },
+  {
+    "from_table": "trs_wor",
+    "from_columns": [
+      "wor_header_id"
+    ],
+    "to_table": "trs_wor_header",
+    "to_columns": [
+      "id"
+    ],
+    "constraint": null
+  }
+]

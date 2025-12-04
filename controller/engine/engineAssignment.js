@@ -3,6 +3,33 @@ const { dbHots } = require('../../config/db');
 const triggerEngine = require('../../core/trigger-engine');
 
 /**
+ * Helper: Generate custom ticket ID
+ */
+async function generateCustomTicketID(db, service_id, user_id) {
+    const year = new Date().getFullYear().toString().slice(-2);
+    const service = String(service_id).padStart(2, "0");
+    const user = String(user_id).padStart(4, "0");
+
+    const [rows] = await db.promise().query(
+        `SELECT ticket_id 
+         FROM t_ticket 
+         WHERE ticket_id LIKE ? 
+         ORDER BY ticket_id DESC 
+         LIMIT 1`,
+        [`${year}${service}${user}%`]
+    );
+
+    let running = "0001";
+    if (rows.length > 0) {
+        const last = rows[0].ticket_id.toString();
+        const lastRun = parseInt(last.slice(-4)) || 0;
+        running = String(lastRun + 1).padStart(4, "0");
+    }
+
+    return `${year}${service}${user}${running}`;
+}
+
+/**
  * Controller for assignment management
  */
 
@@ -12,8 +39,13 @@ module.exports = {
      * Get current user's assignments
      */
     getMyAssignments: async (req, res) => {
+
+
+
         try {
             const user_id = req.dataToken.user_id;
+            console.log("🔍 [REQUEST QUERY STATUS]", req.query.status);
+
             const { status } = req.query;
 
             let query = `
@@ -51,6 +83,7 @@ module.exports = {
 
             query += ' ORDER BY ta.assigned_at DESC';
 
+
             const [assignments] = await dbHots.promise().query(query, params);
 
             res.json({
@@ -76,8 +109,10 @@ module.exports = {
             const [rows] = await dbHots.promise().query(`
         SELECT COUNT(*) as assignment_count
         FROM t_ticket_assignment ta
-        WHERE ta.assignment_status = 'active'
-          AND (
+        WHERE
+        ta.assignment_status = 'active'  
+        AND
+        (
             (ta.assigned_type = 'user' AND ta.assigned_id = ?)
             OR (ta.assigned_type = 'team' AND ta.assigned_id IN (
               SELECT team_id FROM m_team_member WHERE user_id = ?
@@ -152,9 +187,12 @@ module.exports = {
             const { completion_note, completion_data } = req.body;
             const user_id = req.dataToken.user_id;
 
-            // Get assignment details
+            // Get assignment details with service_id
             const [assignments] = await dbHots.promise().query(
-                'SELECT * FROM t_ticket_assignment WHERE id = ?',
+                `SELECT ta.*, t.service_id 
+                 FROM t_ticket_assignment ta
+                 JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                 WHERE ta.id = ?`,
                 [assignmentId]
             );
 
@@ -210,6 +248,435 @@ module.exports = {
         } catch (error) {
             console.error('Error completing assignment:', error);
             res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * GET /engine/assignment/:assignmentId/timeline
+     * Get timeline updates for an assignment
+     */
+    getTimeline: async (req, res) => {
+        try {
+            const { assignmentId } = req.params;
+            const user_id = req.dataToken.user_id;
+
+            // Verify access to assignment
+            const [assignments] = await dbHots.promise().query(
+                'SELECT * FROM t_ticket_assignment WHERE id = ?',
+                [assignmentId]
+            );
+
+            if (!assignments.length) {
+                return res.status(404).json({ ok: false, error: 'Assignment not found' });
+            }
+
+            // Get timeline updates from work_data
+            const [workData] = await dbHots.promise().query(`
+                SELECT 
+                    twd.entity_id,
+                    twd.field_name,
+                    twd.field_value,
+                    twd.created_at,
+                    twd.created_by,
+                    CONCAT(u.firstname, ' ', u.lastname) as user_name
+                FROM t_ticket_work_data twd
+                LEFT JOIN user u ON u.user_id = twd.created_by
+                WHERE twd.assignment_id = ?
+                  AND twd.data_type = 'timeline_update'
+                ORDER BY twd.created_at DESC
+            `, [assignmentId]);
+
+            // Group by entity_id to reconstruct updates
+            const updates = {};
+            workData.forEach(row => {
+                if (!updates[row.entity_id]) {
+                    updates[row.entity_id] = {
+                        entity_id: row.entity_id,
+                        created_at: row.created_at,
+                        created_by: row.created_by,
+                        user_name: row.user_name
+                    };
+                }
+                updates[row.entity_id][row.field_name] = row.field_value;
+            });
+
+            const timelineArray = Object.values(updates).sort((a, b) =>
+                new Date(b.created_at) - new Date(a.created_at)
+            );
+
+            res.json({ ok: true, updates: timelineArray });
+
+        } catch (error) {
+            console.error('Error fetching timeline:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * POST /engine/assignment/:assignmentId/timeline
+     * Add timeline update for an assignment
+     */
+    addTimelineUpdate: async (req, res) => {
+        try {
+            const { assignmentId } = req.params;
+            const { content, images } = req.body;
+            const user_id = req.dataToken.user_id;
+
+            if (!content || content.trim().length === 0) {
+                return res.status(400).json({ ok: false, error: 'Content is required' });
+            }
+
+            // Verify assignment exists and get service_id from ticket
+            const [assignments] = await dbHots.promise().query(
+                `SELECT t.service_id 
+                 FROM t_ticket_assignment ta
+                 JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                 WHERE ta.id = ?`,
+                [assignmentId]
+            );
+
+            if (!assignments.length) {
+                return res.status(404).json({ ok: false, error: 'Assignment not found' });
+            }
+
+            const serviceId = assignments[0].service_id;
+            const entityId = `UPDATE_${Date.now()}`;
+
+            // Store timeline update in work_data
+            const fields = {
+                content: content,
+                created_at: new Date().toISOString(),
+            };
+
+            if (images && Array.isArray(images) && images.length > 0) {
+                fields.images = JSON.stringify(images);
+            }
+
+            const insertPromises = [];
+            for (const [field_name, field_value] of Object.entries(fields)) {
+                const promise = dbHots.promise().query(
+                    `INSERT INTO t_ticket_work_data 
+                     (assignment_id, service_id, data_type, entity_id, field_name, field_value, created_by)
+                     VALUES (?, ?, 'timeline_update', ?, ?, ?, ?)`,
+                    [assignmentId, serviceId, entityId, field_name, field_value, user_id]
+                );
+                insertPromises.push(promise);
+            }
+
+            await Promise.all(insertPromises);
+
+            console.log(`✅ [TIMELINE] Update ${entityId} added to assignment ${assignmentId} by user ${user_id}`);
+
+            res.json({
+                ok: true,
+                message: 'Timeline update added successfully',
+                entity_id: entityId
+            });
+
+        } catch (error) {
+            console.error('Error adding timeline update:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * POST /engine/tickets/:ticketId/assign
+     * Create assignment (for HR to assign applicant to job)
+     */
+    createAssignment: async (req, res) => {
+        try {
+            const { ticketId } = req.params;
+            const { assigned_type, assigned_id, notes } = req.body;
+            const user_id = req.dataToken?.user_id;
+
+            if (!user_id) {
+                return res.status(401).json({ ok: false, error: 'User not authenticated' });
+            }
+
+            if (!assigned_type || !assigned_id) {
+                return res.status(400).json({ ok: false, error: 'assigned_type and assigned_id are required' });
+            }
+
+            console.log(`👥 [ASSIGN] Creating assignment for ticket ${ticketId} to ${assigned_type} ${assigned_id}`);
+
+            // Verify ticket exists
+            const [tickets] = await dbHots.promise().query(
+                'SELECT ticket_id, service_id, title FROM t_ticket WHERE ticket_id = ?',
+                [ticketId]
+            );
+
+            if (!tickets.length) {
+                return res.status(404).json({ ok: false, error: 'Ticket not found' });
+            }
+
+            const ticket = tickets[0];
+
+            // Create assignment
+            const [result] = await dbHots.promise().query(
+                `INSERT INTO t_ticket_assignment 
+                 (ticket_id, assigned_type, assigned_id, assigned_by, assignment_status, notes, assigned_at)
+                 VALUES (?, ?, ?, ?, 'active', ?, NOW())`,
+                [ticketId, assigned_type, assigned_id, user_id, notes || `Assignment for: ${ticket.title}`]
+            );
+
+            const assignmentId = result.insertId;
+
+            // Run triggers for assignment creation
+            await triggerEngine.runTriggersForEvent(
+                ticket.service_id,
+                'on_assignment_create',
+                {
+                    assignmentId,
+                    ticketId,
+                    assigned_type,
+                    assigned_id,
+                    actor: { user_id }
+                }
+            );
+
+            console.log(`✅ [ASSIGN] Assignment ${assignmentId} created successfully`);
+
+            return res.json({
+                ok: true,
+                assignment_id: assignmentId,
+                message: 'Assignment created successfully'
+            });
+
+        } catch (e) {
+            console.error('❌ [ASSIGN] Error:', e);
+            return res.status(500).json({ ok: false, error: e.message });
+        }
+    },
+
+    /**
+     * POST /engine/tickets/:ticketId/apply
+     * Apply for job
+     */
+    applyForJob: async (req, res) => {
+        try {
+            const { application_data } = req.body;
+            const { ticketId } = req.params;
+            const user_id = req.dataToken?.user_id;
+
+            if (!user_id) {
+                return res.status(401).json({ ok: false, error: 'User not authenticated' });
+            }
+
+            console.log(`📝 [APPLY] User ${user_id} applying for job ticket ${ticketId}`);
+
+            // Get parent ticket and service info
+            const [tickets] = await dbHots.promise().query(
+                'SELECT service_id, service_name, title FROM t_ticket WHERE ticket_id = ?',
+                [ticketId]
+            );
+
+            if (!tickets.length) {
+                return res.status(404).json({ ok: false, error: 'Job posting not found' });
+            }
+
+            const parentTicket = tickets[0];
+
+            // Get service configuration
+            const [services] = await dbHots.promise().query(
+                'SELECT assignment_config FROM m_service WHERE service_id = ?',
+                [parentTicket.service_id]
+            );
+
+            const assignmentConfig = services[0]?.assignment_config
+                ? (typeof services[0].assignment_config === 'string'
+                    ? JSON.parse(services[0].assignment_config)
+                    : services[0].assignment_config)
+                : { mode: 'manual_review' };
+
+            console.log(`🔧 [APPLY] Assignment mode: ${assignmentConfig.mode}`);
+
+            if (assignmentConfig.mode === 'auto_approve') {
+                // ========== AUTO-APPROVE MODE ==========
+                console.log(`⚡ [APPLY] Auto-approve mode - creating assignment directly`);
+
+                // Create assignment directly
+                const [result] = await dbHots.promise().query(
+                    `INSERT INTO t_ticket_assignment 
+                     (ticket_id, assigned_type, assigned_id, assigned_by, assignment_status, notes, assigned_at)
+                     VALUES (?, 'user', ?, ?, 'active', ?, NOW())`,
+                    [ticketId, user_id, user_id, `Auto-assigned for: ${parentTicket.title}`]
+                );
+
+                const assignmentId = result.insertId;
+
+                // Store application data in work_data linked to assignment
+                if (application_data) {
+                    const entityId = `APP${Date.now()}`;
+                    const fields = {
+                        applicant_id: user_id,
+                        status: 'accepted',
+                        applied_at: new Date().toISOString(),
+                        ...application_data
+                    };
+
+                    const insertPromises = [];
+                    for (const [field_name, field_value] of Object.entries(fields)) {
+                        const promise = dbHots.promise().query(
+                            `INSERT INTO t_ticket_work_data 
+                             (assignment_id, service_id, data_type, entity_id, field_name, field_value, created_by)
+                             VALUES (?, ?, 'application', ?, ?, ?, ?)`,
+                            [assignmentId, parentTicket.service_id, entityId, field_name, field_value, user_id]
+                        );
+                        insertPromises.push(promise);
+                    }
+                    await Promise.all(insertPromises);
+                }
+
+                console.log(`✅ [APPLY] Auto-approved! Assignment ${assignmentId} created for user ${user_id}`);
+
+                return res.json({
+                    ok: true,
+                    mode: 'auto_approve',
+                    assignment_id: assignmentId,
+                    message: 'Application auto-approved! You have been assigned to this job.'
+                });
+
+            } else {
+                // ========== MANUAL REVIEW MODE ==========
+                console.log(`📋 [APPLY] Manual review mode - creating application ticket`);
+
+                // Generate ticket ID for application
+                const applicationTicketId = await generateCustomTicketID(
+                    dbHots,
+                    parentTicket.service_id,
+                    user_id
+                );
+
+                // Create application summary for description
+                const applicationSummary = `Application for: ${parentTicket.title}\nApplied by: User ID ${user_id}\nCover Letter: ${application_data?.cover_letter || 'N/A'}\nStatus: Pending HR Review`;
+
+                // Create application ticket with parent_ticket_id link
+                // Note: t_ticket table doesn't have a 'description' column
+                await dbHots.promise().query(
+                    `INSERT INTO t_ticket 
+                     (ticket_id, parent_ticket_id, service_id, service_name, created_by, status_id, 
+                      submitted_at, creation_date, last_update, title, workflow_step)
+                     VALUES (?, ?, ?, ?, ?, 1, NOW(), NOW(), NOW(), ?, 0)`,
+                    [
+                        applicationTicketId,
+                        ticketId,  // parent_ticket_id
+                        parentTicket.service_id,
+                        parentTicket.service_name,
+                        user_id,
+                        `Application for: ${parentTicket.title}`
+                    ]
+                );
+
+                // Create ticket details for better display
+                await dbHots.promise().query(
+                    `INSERT INTO t_ticket_detail (ticket_id, lbl_col, cstm_col, order_col)
+                     VALUES 
+                       (?, 'Applicant ID', ?, 1),
+                       (?, 'Applied For Job', ?, 2),
+                       (?, 'Application Status', 'Pending Review', 3),
+                       (?, 'Applied Date', DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s'), 4)`,
+                    [
+                        applicationTicketId, user_id.toString(),
+                        applicationTicketId, parentTicket.title,
+                        applicationTicketId,
+                        applicationTicketId
+                    ]
+                );
+
+                // Store application data in work_data linked to application ticket
+                const entityId = `APP${Date.now()}`;
+                const fields = {
+                    applicant_id: user_id,
+                    parent_job_ticket_id: ticketId,
+                    status: 'pending',
+                    applied_at: new Date().toISOString(),
+                    ...application_data
+                };
+
+                const insertPromises = [];
+                for (const [field_name, field_value] of Object.entries(fields)) {
+                    let field_type = 'text';
+                    if (typeof field_value === 'number') field_type = 'number';
+                    else if (field_value instanceof Date || /^\d{4}-\d{2}-\d{2}/.test(field_value)) field_type = 'date';
+                    else if (field_name.includes('file') || field_name.includes('path') || field_name.includes('resume')) field_type = 'file';
+
+                    const promise = dbHots.promise().query(
+                        `INSERT INTO t_ticket_work_data 
+                         (ticket_id, service_id, data_type, entity_id, field_name, field_value, field_type, created_by)
+                         VALUES (?, ?, 'application', ?, ?, ?, ?, ?)`,
+                        [applicationTicketId, parentTicket.service_id, entityId, field_name, field_value, field_type, user_id]
+                    );
+                    insertPromises.push(promise);
+                }
+                await Promise.all(insertPromises);
+
+                console.log(`✅ [APPLY] Application ticket ${applicationTicketId} created, awaiting HR review`);
+
+                return res.json({
+                    ok: true,
+                    mode: 'manual_review',
+                    application_ticket_id: applicationTicketId,
+                    parent_ticket_id: ticketId,
+                    entity_id: entityId,
+                    message: 'Application submitted successfully! HR will review your application.'
+                });
+            }
+
+        } catch (e) {
+            console.error('❌ [APPLY] Error:', e);
+            return res.status(500).json({ ok: false, error: e.message });
+        }
+    },
+
+    /**
+     * GET /engine/tickets/my-applications
+     * Get user's job applications
+     */
+    myApplications: async (req, res) => {
+        try {
+            const user_id = req.dataToken?.user_id;
+
+            if (!user_id) {
+                return res.status(401).json({ ok: false, error: 'User not authenticated' });
+            }
+
+            console.log(`📋 [MY_APPS] Fetching applications for user ${user_id}`);
+
+            // Get all application tickets created by this user
+            // Applications are tickets with parent_ticket_id set (child of job posting)
+            const [applications] = await dbHots.promise().query(`
+                SELECT 
+                  app_ticket.ticket_id as application_ticket_id,
+                  app_ticket.parent_ticket_id as job_ticket_id,
+                  app_ticket.status_id as application_status_id,
+                  app_ticket.submitted_at as applied_at,
+                  app_status.status_name as application_status,
+                  job_ticket.title as job_title,
+                  job_ticket.service_name,
+                  job_ticket.status_id as job_status_id,
+                  job_status.status_name as job_status,
+                  (SELECT COUNT(*) FROM t_ticket_assignment WHERE ticket_id = app_ticket.parent_ticket_id AND assigned_id = ?) as has_assignment,
+                  (SELECT id FROM t_ticket_assignment WHERE ticket_id = app_ticket.parent_ticket_id AND assigned_id = ? LIMIT 1) as assignment_id
+                FROM t_ticket app_ticket
+                LEFT JOIN t_ticket job_ticket ON job_ticket.ticket_id = app_ticket.parent_ticket_id
+                LEFT JOIN m_ticket_status app_status ON app_status.status_id = app_ticket.status_id
+                LEFT JOIN m_ticket_status job_status ON job_status.status_id = job_ticket.status_id
+                WHERE app_ticket.created_by = ?
+                  AND app_ticket.parent_ticket_id IS NOT NULL
+                  AND app_ticket.service_id = 19
+                ORDER BY app_ticket.submitted_at DESC
+            `, [user_id, user_id, user_id]);
+
+            console.log(`✅ [MY_APPS] Found ${applications.length} applications`);
+
+            return res.json({
+                ok: true,
+                applications: applications
+            });
+
+        } catch (e) {
+            console.error('❌ [MY_APPS] Error:', e);
+            return res.status(500).json({ ok: false, error: e.message });
         }
     }
 };

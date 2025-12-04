@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const engineTicket = require('../../controller/engine/engineTicket');
+const engineAssignment = require('../../controller/engine/engineAssignment');
 const { decodeTokenHT } = require('../../config/encrypts');
 
 // protected endpoints
@@ -33,14 +34,8 @@ router.get('/ticket/revision/:ticket_id/:rev', decodeTokenHT, engineTicket.revis
 // task completion endpoint
 router.post('/task/complete', decodeTokenHT, engineTicket.completeTask);
 
-// assignment endpoints
-router.get('/my-assignments', decodeTokenHT, engineTicket.myAssignments);
-router.post('/assignment/complete', decodeTokenHT, engineTicket.completeAssignment);
-
-// apply for job endpoint
-router.post('/tickets/:ticketId/apply', decodeTokenHT, engineTicket.applyForJob);
-
 // reload engine endpoint
 router.get('/reload', decodeTokenHT, engineTicket.reload);
 
 module.exports = router;
+
