@@ -678,6 +678,435 @@ module.exports = {
             console.error('❌ [MY_APPS] Error:', e);
             return res.status(500).json({ ok: false, error: e.message });
         }
+    },
+
+    // =========================================================================
+    // TASK MANAGEMENT
+    // =========================================================================
+
+    /**
+     * GET /engine/assignment/:assignmentId/tasks
+     * Get tasks and their steps for an assignment
+     */
+    getTasks: async (req, res) => {
+        try {
+            const { assignmentId } = req.params;
+
+            // Verify assignment exists and get service_id
+            const [assignment] = await dbHots.promise().query(
+                `SELECT ta.id, ta.ticket_id, t.service_id 
+                 FROM t_ticket_assignment ta
+                 JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                 WHERE ta.id = ?`,
+                [assignmentId]
+            );
+
+            if (!assignment.length) {
+                return res.status(404).json({ ok: false, error: 'Assignment not found' });
+            }
+
+            const { service_id } = assignment[0];
+
+            // Fetch tasks
+            const [taskRows] = await dbHots.promise().query(`
+                SELECT entity_id, field_name, field_value, created_at, created_by
+                FROM t_ticket_work_data
+                WHERE assignment_id = ? AND data_type = 'task'
+                ORDER BY entity_id, field_name
+            `, [assignmentId]);
+
+            // Fetch task steps
+            const [stepRows] = await dbHots.promise().query(`
+                SELECT entity_id, field_name, field_value, created_at
+                FROM t_ticket_work_data
+                WHERE assignment_id = ? AND data_type = 'task_step'
+                ORDER BY entity_id, field_name
+            `, [assignmentId]);
+
+            // Group tasks by entity_id
+            const tasksMap = {};
+            taskRows.forEach(row => {
+                if (!tasksMap[row.entity_id]) {
+                    tasksMap[row.entity_id] = {
+                        entity_id: row.entity_id,
+                        created_at: row.created_at,
+                        created_by: row.created_by,
+                        steps: []
+                    };
+                }
+                tasksMap[row.entity_id][row.field_name] = row.field_value;
+            });
+
+            // Group steps by entity_id, then attach to parent task
+            const stepsMap = {};
+            stepRows.forEach(row => {
+                if (!stepsMap[row.entity_id]) {
+                    stepsMap[row.entity_id] = { entity_id: row.entity_id };
+                }
+                stepsMap[row.entity_id][row.field_name] = row.field_value;
+            });
+
+            // Attach steps to tasks
+            Object.values(stepsMap).forEach(step => {
+                const parentTaskId = step.task_id;
+                if (tasksMap[parentTaskId]) {
+                    tasksMap[parentTaskId].steps.push(step);
+                }
+            });
+
+            // Sort steps by order
+            Object.values(tasksMap).forEach(task => {
+                task.steps.sort((a, b) => (parseInt(a.order) || 0) - (parseInt(b.order) || 0));
+            });
+
+            // Convert to array and sort by order
+            const tasks = Object.values(tasksMap).sort((a, b) =>
+                (parseInt(a.order) || 0) - (parseInt(b.order) || 0)
+            );
+
+            console.log(`📋 [TASKS] Found ${tasks.length} tasks for assignment ${assignmentId}`);
+
+            res.json({
+                ok: true,
+                assignment_id: assignmentId,
+                service_id,
+                tasks
+            });
+
+        } catch (error) {
+            console.error('Error fetching tasks:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * POST /engine/assignment/:assignmentId/tasks
+     * Create a new task
+     */
+    createTask: async (req, res) => {
+        try {
+            const { assignmentId } = req.params;
+            const { title, description, due_date, priority, steps } = req.body;
+            const user_id = req.dataToken.user_id;
+
+            if (!title) {
+                return res.status(400).json({ ok: false, error: 'Task title is required' });
+            }
+
+            // Get assignment and service_id
+            const [assignment] = await dbHots.promise().query(
+                `SELECT ta.id, ta.ticket_id, t.service_id 
+                 FROM t_ticket_assignment ta
+                 JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                 WHERE ta.id = ?`,
+                [assignmentId]
+            );
+
+            if (!assignment.length) {
+                return res.status(404).json({ ok: false, error: 'Assignment not found' });
+            }
+
+            const { ticket_id, service_id } = assignment[0];
+            const taskEntityId = `TASK_${Date.now()}`;
+
+            // Get max order for this assignment
+            const [orderResult] = await dbHots.promise().query(`
+                SELECT MAX(CAST(field_value AS UNSIGNED)) as max_order 
+                FROM t_ticket_work_data 
+                WHERE assignment_id = ? AND data_type = 'task' AND field_name = 'order'
+            `, [assignmentId]);
+            const nextOrder = (orderResult[0]?.max_order || 0) + 1;
+
+            // Insert task fields
+            const taskFields = {
+                title,
+                description: description || '',
+                due_date: due_date || null,
+                priority: priority || 'medium',
+                status: 'todo',
+                order: nextOrder.toString()
+            };
+
+            const insertPromises = [];
+            for (const [field_name, field_value] of Object.entries(taskFields)) {
+                if (field_value !== null) {
+                    insertPromises.push(
+                        dbHots.promise().query(`
+                            INSERT INTO t_ticket_work_data 
+                            (ticket_id, assignment_id, service_id, data_type, entity_id, field_name, field_value, created_by)
+                            VALUES (?, ?, ?, 'task', ?, ?, ?, ?)
+                        `, [ticket_id, assignmentId, service_id, taskEntityId, field_name, field_value, user_id])
+                    );
+                }
+            }
+
+            await Promise.all(insertPromises);
+
+            // Insert steps if provided
+            if (steps && Array.isArray(steps) && steps.length > 0) {
+                const stepPromises = [];
+                steps.forEach((step, idx) => {
+                    const stepEntityId = `STEP_${Date.now()}_${idx}`;
+                    const stepFields = {
+                        task_id: taskEntityId,
+                        label: step.label || `Step ${idx + 1}`,
+                        checked: 'false',
+                        order: (idx + 1).toString()
+                    };
+
+                    for (const [field_name, field_value] of Object.entries(stepFields)) {
+                        stepPromises.push(
+                            dbHots.promise().query(`
+                                INSERT INTO t_ticket_work_data 
+                                (ticket_id, assignment_id, service_id, data_type, entity_id, field_name, field_value, created_by)
+                                VALUES (?, ?, ?, 'task_step', ?, ?, ?, ?)
+                            `, [ticket_id, assignmentId, service_id, stepEntityId, field_name, field_value, user_id])
+                        );
+                    }
+                });
+                await Promise.all(stepPromises);
+            }
+
+            console.log(`✅ [TASKS] Created task ${taskEntityId} for assignment ${assignmentId}`);
+
+            res.json({
+                ok: true,
+                task_id: taskEntityId,
+                message: 'Task created successfully'
+            });
+
+        } catch (error) {
+            console.error('Error creating task:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * PATCH /engine/assignment/:assignmentId/tasks/:taskId
+     * Update a task (status, title, due_date, etc.)
+     */
+    updateTask: async (req, res) => {
+        try {
+            const { assignmentId, taskId } = req.params;
+            const updates = req.body; // { status: 'in_progress', title: 'New title', ... }
+
+            if (!updates || Object.keys(updates).length === 0) {
+                return res.status(400).json({ ok: false, error: 'No updates provided' });
+            }
+
+            // Verify task exists
+            const [taskCheck] = await dbHots.promise().query(`
+                SELECT 1 FROM t_ticket_work_data 
+                WHERE assignment_id = ? AND entity_id = ? AND data_type = 'task'
+                LIMIT 1
+            `, [assignmentId, taskId]);
+
+            if (!taskCheck.length) {
+                return res.status(404).json({ ok: false, error: 'Task not found' });
+            }
+
+            // Update each field
+            const updatePromises = [];
+            for (const [field_name, field_value] of Object.entries(updates)) {
+                // Use INSERT ... ON DUPLICATE KEY UPDATE pattern
+                updatePromises.push(
+                    dbHots.promise().query(`
+                        UPDATE t_ticket_work_data 
+                        SET field_value = ?, updated_at = NOW()
+                        WHERE assignment_id = ? AND entity_id = ? AND data_type = 'task' AND field_name = ?
+                    `, [field_value, assignmentId, taskId, field_name])
+                );
+            }
+
+            await Promise.all(updatePromises);
+
+            console.log(`✅ [TASKS] Updated task ${taskId} with:`, Object.keys(updates));
+
+            res.json({
+                ok: true,
+                task_id: taskId,
+                updated_fields: Object.keys(updates)
+            });
+
+        } catch (error) {
+            console.error('Error updating task:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * POST /engine/assignment/:assignmentId/tasks/:taskId/steps
+     * Create a task step
+     */
+    createTaskStep: async (req, res) => {
+        try {
+            const { assignmentId, taskId } = req.params;
+            const { label } = req.body;
+            const user_id = req.dataToken.user_id;
+
+            if (!label) {
+                return res.status(400).json({ ok: false, error: 'Step label is required' });
+            }
+
+            // Get assignment info
+            const [assignment] = await dbHots.promise().query(
+                `SELECT ta.ticket_id, t.service_id 
+                 FROM t_ticket_assignment ta
+                 JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                 WHERE ta.id = ?`,
+                [assignmentId]
+            );
+
+            if (!assignment.length) {
+                return res.status(404).json({ ok: false, error: 'Assignment not found' });
+            }
+
+            const { ticket_id, service_id } = assignment[0];
+
+            // Get max step order for this task
+            const [orderResult] = await dbHots.promise().query(`
+                SELECT MAX(CAST(field_value AS UNSIGNED)) as max_order 
+                FROM t_ticket_work_data 
+                WHERE assignment_id = ? AND data_type = 'task_step' AND field_name = 'order'
+                  AND entity_id IN (
+                    SELECT entity_id FROM t_ticket_work_data 
+                    WHERE assignment_id = ? AND data_type = 'task_step' 
+                      AND field_name = 'task_id' AND field_value = ?
+                  )
+            `, [assignmentId, assignmentId, taskId]);
+            const nextOrder = (orderResult[0]?.max_order || 0) + 1;
+
+            const stepEntityId = `STEP_${Date.now()}`;
+            const stepFields = {
+                task_id: taskId,
+                label,
+                checked: 'false',
+                order: nextOrder.toString()
+            };
+
+            const insertPromises = [];
+            for (const [field_name, field_value] of Object.entries(stepFields)) {
+                insertPromises.push(
+                    dbHots.promise().query(`
+                        INSERT INTO t_ticket_work_data 
+                        (ticket_id, assignment_id, service_id, data_type, entity_id, field_name, field_value, created_by)
+                        VALUES (?, ?, ?, 'task_step', ?, ?, ?, ?)
+                    `, [ticket_id, assignmentId, service_id, stepEntityId, field_name, field_value, user_id])
+                );
+            }
+
+            await Promise.all(insertPromises);
+
+            console.log(`✅ [TASKS] Created step ${stepEntityId} for task ${taskId}`);
+
+            res.json({
+                ok: true,
+                step_id: stepEntityId,
+                task_id: taskId
+            });
+
+        } catch (error) {
+            console.error('Error creating task step:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * PATCH /engine/assignment/:assignmentId/tasks/:taskId/steps/:stepId
+     * Toggle or update a task step (checked, label)
+     */
+    toggleTaskStep: async (req, res) => {
+        try {
+            const { assignmentId, taskId, stepId } = req.params;
+            const { checked, label } = req.body;
+
+            // Verify step exists and belongs to correct task
+            const [stepCheck] = await dbHots.promise().query(`
+                SELECT field_value FROM t_ticket_work_data 
+                WHERE assignment_id = ? AND entity_id = ? AND data_type = 'task_step' AND field_name = 'task_id'
+            `, [assignmentId, stepId]);
+
+            if (!stepCheck.length || stepCheck[0].field_value !== taskId) {
+                return res.status(404).json({ ok: false, error: 'Step not found for this task' });
+            }
+
+            const updatePromises = [];
+
+            if (checked !== undefined) {
+                updatePromises.push(
+                    dbHots.promise().query(`
+                        UPDATE t_ticket_work_data 
+                        SET field_value = ?, updated_at = NOW()
+                        WHERE assignment_id = ? AND entity_id = ? AND data_type = 'task_step' AND field_name = 'checked'
+                    `, [checked ? 'true' : 'false', assignmentId, stepId])
+                );
+            }
+
+            if (label !== undefined) {
+                updatePromises.push(
+                    dbHots.promise().query(`
+                        UPDATE t_ticket_work_data 
+                        SET field_value = ?, updated_at = NOW()
+                        WHERE assignment_id = ? AND entity_id = ? AND data_type = 'task_step' AND field_name = 'label'
+                    `, [label, assignmentId, stepId])
+                );
+            }
+
+            await Promise.all(updatePromises);
+
+            console.log(`✅ [TASKS] Updated step ${stepId}: checked=${checked}`);
+
+            res.json({
+                ok: true,
+                step_id: stepId,
+                checked: checked ? 'true' : 'false'
+            });
+
+        } catch (error) {
+            console.error('Error toggling task step:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * DELETE /engine/assignment/:assignmentId/tasks/:taskId
+     * Delete a task and its steps
+     */
+    deleteTask: async (req, res) => {
+        try {
+            const { assignmentId, taskId } = req.params;
+
+            // Delete task steps first
+            await dbHots.promise().query(`
+                DELETE FROM t_ticket_work_data 
+                WHERE assignment_id = ? AND data_type = 'task_step' 
+                  AND entity_id IN (
+                    SELECT entity_id FROM (
+                      SELECT DISTINCT entity_id FROM t_ticket_work_data 
+                      WHERE assignment_id = ? AND data_type = 'task_step' 
+                        AND field_name = 'task_id' AND field_value = ?
+                    ) as subquery
+                  )
+            `, [assignmentId, assignmentId, taskId]);
+
+            // Delete task
+            const [result] = await dbHots.promise().query(`
+                DELETE FROM t_ticket_work_data 
+                WHERE assignment_id = ? AND entity_id = ? AND data_type = 'task'
+            `, [assignmentId, taskId]);
+
+            console.log(`🗑️ [TASKS] Deleted task ${taskId}`);
+
+            res.json({
+                ok: true,
+                deleted_task_id: taskId,
+                affected_rows: result.affectedRows
+            });
+
+        } catch (error) {
+            console.error('Error deleting task:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
     }
 };
 

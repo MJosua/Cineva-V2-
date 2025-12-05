@@ -23,17 +23,60 @@ class WorkflowEngine {
     this.engineLoader = engineLoader;
     this.dbQuery = dbQuery;
 
-    // built-in resolver examples (can be extended via resolverFns)
+    // Direct superior resolver - returns superior from user table
     this.registerResolver('direct_superior', async (context) => {
-      // expects context.actor.user_id
-      const uid = context.actor && context.actor.user_id;
-      if (!uid) return [];
+      // expects context.actor.user_id (ticket creator) or context.created_by
+      const uid = context.actor?.user_id || context.created_by;
+      if (!uid) return [{ type: 'user', id: 1147 }];
       try {
-        const rows = await this.dbQuery('SELECT manager_id FROM m_employee WHERE user_id = ? LIMIT 1', [uid]);
-        const mid = rows && rows[0] && rows[0].manager_id;
-        return mid ? [{ type: 'user', id: mid }] : [];
+        // Priority: user.superior_id > user.final_superior_id > 1147
+        const rows = await this.dbQuery(
+          'SELECT superior_id, final_superior_id FROM user WHERE user_id = ? LIMIT 1',
+          [uid]
+        );
+        if (!rows || !rows[0]) return [{ type: 'user', id: 1147 }]; // Fallback
+
+        const superiorId = rows[0].superior_id || rows[0].final_superior_id || 1147;
+        return [{ type: 'user', id: superiorId }];
       } catch (e) {
-        return [];
+        console.error('Error resolving direct_superior:', e);
+        return [{ type: 'user', id: 1147 }]; // Fallback on error
+      }
+    });
+
+    // Short-name alias: superior = user.superior_id || user.final_superior_id || 1147
+    this.registerResolver('superior', async (context) => {
+      const uid = context.actor?.user_id || context.created_by;
+      if (!uid) return [{ type: 'user', id: 1147 }];
+      try {
+        const rows = await this.dbQuery(
+          'SELECT superior_id, final_superior_id FROM user WHERE user_id = ? LIMIT 1',
+          [uid]
+        );
+        if (!rows || !rows[0]) return [{ type: 'user', id: 1147 }];
+        const superiorId = rows[0].superior_id || rows[0].final_superior_id || 1147;
+        return [{ type: 'user', id: superiorId }];
+      } catch (e) {
+        console.error('Error resolving superior:', e);
+        return [{ type: 'user', id: 1147 }];
+      }
+    });
+
+    // Final superior: user.final_superior_id || 1147
+    this.registerResolver('finalsuperior', async (context) => {
+      const uid = context.actor?.user_id || context.created_by;
+      if (!uid) return [{ type: 'user', id: 1147 }];
+      try {
+        const rows = await this.dbQuery(
+          'SELECT final_superior_id FROM user WHERE user_id = ? LIMIT 1',
+          [uid]
+        );
+        if (!rows || !rows[0]) return [{ type: 'user', id: 1147 }];
+        const superiorId = rows[0].final_superior_id || 1147;
+        return [{ type: 'user', id: superiorId }];
+      } catch (e) {
+        console.error('Error resolving finalsuperior:', e);
+        return [{ type: 'user', id: 1147 }];
       }
     });
 
@@ -268,28 +311,63 @@ class WorkflowEngine {
         }
 
         // ---------------------------------------------
-        // 4) SUPERIOR
+        // 4) USER_DYNAMIC (with resolver)
+        // ---------------------------------------------
+        else if (stepType === 'user_dynamic' || step.resolver) {
+          const resolverName = step.resolver || 'superior';
+          console.log(`🟦 [WF][RESOLVE] user_dynamic step, resolver=${resolverName}`);
+
+          if (this.resolvers[resolverName]) {
+            try {
+              const res = await this.resolvers[resolverName](context);
+              ids = res.map(x => String(x.id));
+              console.log(`🟩 [WF][RESOLVE] Resolver ${resolverName} returned:`, ids);
+            } catch (e) {
+              console.error(`❌ [WF][RESOLVE] Resolver ${resolverName} failed:`, e);
+              ids = [];
+            }
+          }
+
+          // Fallback to superior_id from user table
+          if (!ids.length) {
+            const uid = context.actor?.user_id || context.created_by;
+            if (uid) {
+              const rows = await this.dbQuery(
+                'SELECT superior_id, final_superior_id FROM `user` WHERE user_id = ? LIMIT 1',
+                [uid]
+              );
+              const sup = rows?.[0]?.superior_id || rows?.[0]?.final_superior_id || 1147;
+              ids = [String(sup)];
+              console.log(`🟨 [WF][RESOLVE] Fallback superior_id:`, ids);
+            }
+          }
+
+          ids.forEach(uid => { approver_leaders[uid] = 1; });
+        }
+
+        // ---------------------------------------------
+        // 5) SUPERIOR (legacy)
         // ---------------------------------------------
         else if (stepType === 'superior' ||
           approver === 'superior' ||
           (typeof approver === 'string' && approver.startsWith('resolver:superior'))) {
 
-          if (this.resolvers['direct_superior']) {
+          if (this.resolvers['superior']) {
             try {
-              const res = await this.resolvers['direct_superior'](context);
+              const res = await this.resolvers['superior'](context);
               ids = res.map(x => String(x.id));
             } catch { ids = []; }
           }
 
           // fallback
           if (!ids.length) {
-            const uid = context.actor && context.actor.user_id;
+            const uid = context.actor?.user_id || context.created_by;
             if (uid) {
               const rows = await this.dbQuery(
-                'SELECT superior_id FROM `user` WHERE user_id = ? LIMIT 1',
+                'SELECT superior_id, final_superior_id FROM `user` WHERE user_id = ? LIMIT 1',
                 [uid]
               );
-              const sup = rows?.[0]?.superior_id;
+              const sup = rows?.[0]?.superior_id || rows?.[0]?.final_superior_id || 1147;
               if (sup) ids = [String(sup)];
             }
           }
@@ -408,13 +486,15 @@ class WorkflowEngine {
 
     // mark this approver's event row as approved
     // 1️⃣ Approver who clicked -> approved with remark
+    // 🔥 FIX: Include approval_order to only approve CURRENT step, not all steps where user appears
     await p.query(`
     UPDATE t_ticket_event 
-    SET approval_status = 1, remark = ?
+    SET approval_status = 1, remark = ?, approve_date = NOW()
     WHERE ticket_id = ? 
+      AND approval_order = ?
       AND approver_id = ?
       AND approval_status = 0
-`, [note || null, ticket_id, approver_id]);
+`, [note || null, ticket_id, currentLevel, approver_id]);
 
     // 2️⃣ Auto-approve EVERYONE ELSE in same level
     await p.query(`

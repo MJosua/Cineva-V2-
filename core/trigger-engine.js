@@ -380,6 +380,60 @@ class TriggerEngine {
       }
     }
 
+    // 🔥 NEW: workflow_step condition type
+    if (type === 'workflow_step') {
+      const targetStep = value?.step;
+      const currentStep = context.workflow_step;
+
+      console.log(`🔍 [TRIGGER][COND] workflow_step check: target=${targetStep}, current=${currentStep}`);
+
+      // Check step number
+      if (targetStep !== undefined && targetStep != currentStep) {
+        console.log(`❌ [TRIGGER][COND] Step mismatch: target ${targetStep} != current ${currentStep}`);
+        return false;
+      }
+
+      // Check has_notes condition
+      if (value?.has_notes === true) {
+        let note = context.note || '';
+
+        // 🔥 Fallback: Query t_ticket_event.remark from database if context note is empty
+        if (!note || note.trim() === '') {
+          const ticketId = context.ticketId;
+          const actorId = context.actor?.user_id;
+
+          if (ticketId && actorId && currentStep) {
+            try {
+              console.log(`🔍 [TRIGGER][COND] Context note empty, querying t_ticket_event.remark...`);
+              const rows = await this.dbQuery(
+                `SELECT remark FROM t_ticket_event 
+                 WHERE ticket_id = ? AND approval_order = ? AND approver_id = ? 
+                 AND approval_status = 1
+                 ORDER BY approve_date DESC LIMIT 1`,
+                [ticketId, currentStep, actorId]
+              );
+
+              if (rows && rows.length > 0 && rows[0].remark) {
+                note = rows[0].remark;
+                console.log(`🔍 [TRIGGER][COND] Found remark in DB: "${note.substring(0, 50)}..."`);
+              }
+            } catch (e) {
+              console.error(`❌ [TRIGGER][COND] Error querying remark:`, e);
+            }
+          }
+        }
+
+        if (!note || note.trim() === '') {
+          console.log(`❌ [TRIGGER][COND] has_notes required but note/remark is empty`);
+          return false;
+        }
+        console.log(`✅ [TRIGGER][COND] has_notes satisfied, note: "${note.substring(0, 50)}..."`);
+      }
+
+      console.log(`✅ [TRIGGER][COND] workflow_step condition passed!`);
+      return true;
+    }
+
     return true;
   }
 }

@@ -204,6 +204,7 @@ const EngineController = {
 
             // run triggers
             await triggerEngine.runTriggersForEvent(module.module_key, 'on_create', { ticketId: ticket_id, actor: { user_id: creator_id }, formData: form_data, moduleKey: module.module_key });
+            await triggerEngine.runTriggersForEvent(module.module_key, 'on_submit', { ticketId: ticket_id, actor: { user_id: creator_id }, formData: form_data, moduleKey: module.module_key });
 
             resolve({ ok: true, ticket_id, next_approver: firstPending, workflow_steps: approvers.length });
           } catch (e) {
@@ -239,7 +240,8 @@ const EngineController = {
   /* APPROVE */
   async approve(req, res) {
     try {
-      const { ticket_id, approver_id, note } = req.body || {};
+      const { ticket_id, approver_id, note, remark } = req.body || {};
+      const approvalNote = note || remark || ''; // Accept both field names
       if (!ticket_id)
         return res.status(400).json({ ok: false, error: 'ticket_id required' });
 
@@ -285,7 +287,7 @@ const EngineController = {
       const result = await workflowEngine.approve({
         ticket_id,
         approver_id,
-        note,
+        note: approvalNote,
         module,
         dbHots
       });
@@ -327,7 +329,9 @@ const EngineController = {
           actor: { user_id: approver_id },
           moduleKey: module.module_key,
           status: currentStatus, // Might be null if not final
-          isFinal: result.final
+          isFinal: result.final,
+          workflow_step: header.workflow_step, // 🔥 Add step for step-based triggers
+          note: approvalNote // 🔥 Add note for has_notes condition
         }
       );
 
@@ -406,7 +410,6 @@ const EngineController = {
   /* LIST */
   async list(req, res) {
     try {
-      console.log('🔍 [LIST] Query params:', req.query);
 
       const { status, status_id, service_id, mine } = req.query;
       const user_id = req.dataToken?.user_id || null;
@@ -418,7 +421,6 @@ const EngineController = {
       // Handle service_id filter
       if (service_id) {
         conditions += ` AND t.service_id = ${dbHots.escape(service_id)} `;
-        console.log('🔍 [LIST] Filtering by service_id:', service_id);
       }
 
       // Handle legacy status filter
@@ -431,7 +433,6 @@ const EngineController = {
         const statusIds = status_id.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
         if (statusIds.length > 0) {
           conditions += ` AND t.status_id IN (${statusIds.join(',')}) `;
-          console.log('🔍 [LIST] Filtering by status_id:', statusIds);
         }
       }
 
@@ -452,9 +453,7 @@ const EngineController = {
         LIMIT ${startIndex}, ${limit}
       `;
 
-      console.log('🔍 [LIST] Executing SQL:', sql);
       const [rows] = await dbHots.promise().query(sql);
-      console.log(`🔍 [LIST] Found ${rows.length} tickets`);
 
       // Fetch form data for each ticket
       for (const ticket of rows) {
@@ -463,7 +462,6 @@ const EngineController = {
           [ticket.ticket_id, ticket.ticket_id]
         );
 
-        console.log(`🔍 [LIST] Ticket ${ticket.ticket_id} has ${eavRows.length} EAV fields`);
 
         // Convert EAV to flat object
         eavRows.forEach(row => {
@@ -471,7 +469,6 @@ const EngineController = {
         });
       }
 
-      console.log('🔍 [LIST] Returning data:', JSON.stringify(rows, null, 2));
       return res.json({ ok: true, page, limit, rows });
     } catch (e) {
       log('list error', e);

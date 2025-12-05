@@ -32,4 +32,26 @@ router.post('/tickets/:ticketId/assign', decodeTokenHT, engineAssignment.createA
 // Apply for job
 router.post('/tickets/:ticketId/apply', decodeTokenHT, engineAssignment.applyForJob);
 
+// =========================================================================
+// TASK MANAGEMENT ROUTES
+// =========================================================================
+
+// Get all tasks for an assignment
+router.get('/assignment/:assignmentId/tasks', decodeTokenHT, engineAssignment.getTasks);
+
+// Create a new task
+router.post('/assignment/:assignmentId/tasks', decodeTokenHT, engineAssignment.createTask);
+
+// Update a task (status, title, due_date, etc.)
+router.patch('/assignment/:assignmentId/tasks/:taskId', decodeTokenHT, engineAssignment.updateTask);
+
+// Delete a task and its steps
+router.delete('/assignment/:assignmentId/tasks/:taskId', decodeTokenHT, engineAssignment.deleteTask);
+
+// Create a task step
+router.post('/assignment/:assignmentId/tasks/:taskId/steps', decodeTokenHT, engineAssignment.createTaskStep);
+
+// Toggle/update a task step (checked, label)
+router.patch('/assignment/:assignmentId/tasks/:taskId/steps/:stepId', decodeTokenHT, engineAssignment.toggleTaskStep);
+
 module.exports = router;

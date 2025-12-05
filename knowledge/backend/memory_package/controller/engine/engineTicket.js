@@ -406,7 +406,6 @@ const EngineController = {
   /* LIST */
   async list(req, res) {
     try {
-      console.log('🔍 [LIST] Query params:', req.query);
 
       const { status, status_id, service_id, mine } = req.query;
       const user_id = req.dataToken?.user_id || null;
@@ -418,7 +417,6 @@ const EngineController = {
       // Handle service_id filter
       if (service_id) {
         conditions += ` AND t.service_id = ${dbHots.escape(service_id)} `;
-        console.log('🔍 [LIST] Filtering by service_id:', service_id);
       }
 
       // Handle legacy status filter
@@ -431,7 +429,6 @@ const EngineController = {
         const statusIds = status_id.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
         if (statusIds.length > 0) {
           conditions += ` AND t.status_id IN (${statusIds.join(',')}) `;
-          console.log('🔍 [LIST] Filtering by status_id:', statusIds);
         }
       }
 
@@ -452,9 +449,7 @@ const EngineController = {
         LIMIT ${startIndex}, ${limit}
       `;
 
-      console.log('🔍 [LIST] Executing SQL:', sql);
       const [rows] = await dbHots.promise().query(sql);
-      console.log(`🔍 [LIST] Found ${rows.length} tickets`);
 
       // Fetch form data for each ticket
       for (const ticket of rows) {
@@ -463,7 +458,6 @@ const EngineController = {
           [ticket.ticket_id, ticket.ticket_id]
         );
 
-        console.log(`🔍 [LIST] Ticket ${ticket.ticket_id} has ${eavRows.length} EAV fields`);
 
         // Convert EAV to flat object
         eavRows.forEach(row => {
@@ -471,7 +465,6 @@ const EngineController = {
         });
       }
 
-      console.log('🔍 [LIST] Returning data:', JSON.stringify(rows, null, 2));
       return res.json({ ok: true, page, limit, rows });
     } catch (e) {
       log('list error', e);

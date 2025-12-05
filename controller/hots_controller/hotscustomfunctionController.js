@@ -739,9 +739,11 @@ module.exports = {
                 workflow_step: ticketData[0]?.workflow_step,
             };
 
+
             // Store all rows as details
             detailRows = ticketData.map(r => ({
                 lbl_col: r.lbl_col,
+                value: r.value,
                 cstm_col: r.cstm_col,
                 order_col: r.order_col,
             }));
@@ -773,11 +775,21 @@ module.exports = {
             }
         };
 
+        // 🔥 Support both HOTS and Core Engine field formats
+        // HOTS: lbl_col = field_id, cstm_col = value
+        // Core Engine: cstm_col = field_id, lbl_col = field_name, value = field value
         const getByLabel = (labelKeyword) => {
-            const row = detailRows.find(r =>
+            // First try Core Engine format (cstm_col contains field_id)
+            let row = detailRows.find(r =>
+                r.cstm_col?.toLowerCase().includes(labelKeyword.toLowerCase())
+            );
+            if (row) return cleanValue(row?.value || '');
+
+            // Fallback to HOTS format (lbl_col contains field_id)
+            row = detailRows.find(r =>
                 r.lbl_col?.toLowerCase().includes(labelKeyword.toLowerCase())
             );
-            return cleanValue(row?.cstm_col || '');
+            return cleanValue(row?.cstm_col || row?.value || '');
         };
 
 
@@ -820,7 +832,6 @@ module.exports = {
                                         flag
                     `;
                 const result = await dbQuery(query, [factory]);
-                console.log("factory", factory)
                 return (result && result.length > 0) ? result : [{ pic_name: '', flag: '1' }];
             } catch (error) {
                 console.error('Error fetching team leader:', error);
@@ -828,30 +839,67 @@ module.exports = {
             }
         };
 
-        const getApproval = async (dataticket_id) => {
+        const getApproval = async (ticket_id) => {
             try {
-                const query = `
-                      SELECT 
-                      t.approval_order,
-                      t.approve_date, 
-                      t.approver_id,
-                      u.email,
-                      t.remark, 
-                      CONCAT(u.firstname, ' ', u.lastname) AS fullname  
-                      from 
-                      t_ticket_event t 
-                        left join user u 
-                        on t.approver_id = u.user_id
-                        where t.approval_id = ${dataticket_id}
-                        and
-                        t.approver_leader = "1"
-    
-                    `;
-                const result = await dbQueryHots(query);
-                return (result && result.length > 0) ? result : [{ approval_order: "", approve_date: "", approver_id: "", fullname: "" }];
+                // 1. Get ticket service_id
+                const [ticket] = await dbHots.promise().query(
+                    'SELECT service_id FROM t_ticket WHERE ticket_id = ?',
+                    [ticket_id]
+                );
+                if (!ticket.length) {
+                    console.warn(`Ticket ${ticket_id} not found`);
+                    return [];
+                }
+
+                // 2. Get workflow definition
+                const [workflow] = await dbHots.promise().query(
+                    'SELECT definition FROM m_service_workflow WHERE workflow_id = ? AND is_active = 1',
+                    [ticket[0].service_id]
+                );
+                if (!workflow.length) {
+                    console.warn(`No workflow found for service ${ticket[0].service_id}`);
+                    return [];
+                }
+
+                // Parse definition - might already be object if MySQL2 auto-parsed JSON
+                const defRaw = workflow[0].definition;
+                const workflowDef = typeof defRaw === 'string' ? JSON.parse(defRaw) : defRaw;
+                const steps = workflowDef.steps || [];
+
+                // 3. Get approvals from t_ticket_event
+                const [events] = await dbHots.promise().query(`
+                    SELECT 
+                        e.approval_order,
+                        e.approve_date,
+                        e.approver_id,
+                        e.remark,
+                        CONCAT(u.firstname, ' ', u.lastname) AS fullname,
+                        u.email
+                    FROM t_ticket_event e
+                    LEFT JOIN user u ON e.approver_id = u.user_id
+                    WHERE e.ticket_id = ?
+                    AND e.event_type = 'approve'
+                    AND e.approver_leader = '1'
+                    ORDER BY e.approval_order
+                `, [ticket_id]);
+
+                // 4. Map workflow steps to actual approvals
+                return steps.map((step) => {
+                    const event = events.find(e => e.approval_order === step.level);
+
+                    return {
+                        approval_order: step.level,
+                        step_name: step.meta?.name || step.meta?.description || `Step ${step.level}`,
+                        approve_date: event?.approve_date || null,
+                        approver_id: event?.approver_id || null,
+                        fullname: event?.fullname || null,
+                        email: event?.email || null,
+                        remark: event?.remark || ''
+                    };
+                });
             } catch (error) {
-                console.error('Error fetching team leader:', error);
-                return { team_leader_name: 'Unknown', team_leader_email: '-' };
+                console.error('Error fetching approvals:', error);
+                return [];
             }
         };
 
@@ -971,7 +1019,6 @@ module.exports = {
 
         const teamLeader = await getteamleaderEmail(17);
         const factoryPIC = await getFactoryPPIC(getByLabel('Factory_id'));
-        console.log("getByLabel('Factory_id')", getByLabel('Factory_id'))
         const approvallistRaw = await getApproval(data?.ticket_id);
         const approvallist = approvallistRaw.filter(a => a.approval_order !== 2);
         const factory = getByLabel('factory');
@@ -979,63 +1026,149 @@ module.exports = {
         const sample = getByLabel('sample');
         const generatesrf = await getSRFNumberDynamic(factory, sample, data?.service_id, data?.ticket_id);
 
-        console.log("factoryPIC", factoryPIC)
+
+        // 🔥 Handle Core Engine rowgroup format (first/second/third/combined)
+        // Core Engine: lbl_col = "first", "second", "third", "combined"; value = actual data
+        // Old HOTS: lbl_col = field_id, cstm_col = value
+
+        // Check if we're using Core Engine format (has 'first' as lbl_col)
+        const isEngineFormat = detailRows.some(r => r.lbl_col?.toLowerCase() === 'quantity');
+
+        if (isEngineFormat) {
+            // Core Engine format: group by rowgroup items
+            // Find all 'first' entries (item names)
+            const quantity = detailRows.filter(r => r.lbl_col?.toLowerCase() === 'quantity');
+
+            // Use combined rows if available, otherwise pair first with second/third
+            if (quantity.length > 0) {
+                combinedRows.forEach((row, i) => {
+                    const itemName = firstRows[i]?.value || '';
+                    const combined = row.value || ''; // e.g., "125 pcs|"
 
 
+                    console.log("combined", combined);
+                    console.log("cleanCombined", cleanCombined);
 
 
+                    // Parse combined: "125 pcs|" or "125 ctn|"
+                    const cleanCombined = combined.replace(/\|/g, '').trim();
+                    let pcs = '', ctn = '';
 
+                    if (cleanCombined.toLowerCase().includes('pcs')) {
+                        pcs = cleanCombined;
+                        const val = parseInt(cleanCombined);
+                        if (!isNaN(val)) {
+                            totalPcs += val;
+                            pcs = val.toLocaleString();
+                        }
+                    }
+                    if (cleanCombined.toLowerCase().includes('ctn')) {
+                        ctn = cleanCombined;
+                        const val = parseInt(cleanCombined);
+                        if (!isNaN(val)) {
+                            totalCtn += val;
+                            ctn = val.toLocaleString();
+                        }
+                    }
 
-        const itemRows = detailRows.filter(row =>
-            row.lbl_col?.toLowerCase().includes('item')
-        );
+                    itemRowsHtml += `
+                        <tr>
+                          <td>${i + 1}</td>
+                          <td>${itemName}</td>
+                          <td>${pcs}</td>
+                          <td>${ctn}</td>
+                        </tr>`;
+                });
+            } else {
+                // Fallback: pair first with second/third
+                const secondRows = detailRows.filter(r => r.lbl_col?.toLowerCase() === 'second');
+                const thirdRows = detailRows.filter(r => r.lbl_col?.toLowerCase() === 'third');
 
-        itemRows.forEach((row, i) => {
-            const itemName = row.cstm_col || '';
+                firstRows.forEach((row, i) => {
+                    const itemName = row.value || '';
+                    const qtyValue = secondRows[i]?.value || '';
+                    const unitValue = thirdRows[i]?.value || '';
+                    const qty = `${qtyValue} ${unitValue}`.trim();
 
-            // Attempt to find the related quantity row by order_col or index
-            const qtyRow = detailRows.find(
-                r => r.lbl_col?.toLowerCase().includes('quantity') &&
-                    r.order_col === row.order_col + 1
-            ) || detailRows[i + 1];
+                    let pcs = '', ctn = '';
+                    if (unitValue.toLowerCase() === 'pcs') {
+                        const val = parseInt(qtyValue);
+                        if (!isNaN(val)) {
+                            totalPcs += val;
+                            pcs = val.toLocaleString();
+                        }
+                    }
+                    if (unitValue.toLowerCase() === 'ctn') {
+                        const val = parseInt(qtyValue);
+                        if (!isNaN(val)) {
+                            totalCtn += val;
+                            ctn = val.toLocaleString();
+                        }
+                    }
 
-            const qty = qtyRow?.cstm_col || '';
-            let pcs = '', ctn = '';
-
-            if (qty.toLowerCase().includes('pcs')) {
-                pcs = qty;
-                const val = parseInt(qty);
-                if (!isNaN(val)) {
-                    totalPcs += val;
-                    pcs = val.toLocaleString(); // 👈 format with thousand separator
-                }
+                    itemRowsHtml += `
+                        <tr>
+                          <td>${i + 1}</td>
+                          <td>${itemName}</td>
+                          <td>${pcs}</td>
+                          <td>${ctn}</td>
+                        </tr>`;
+                });
             }
+        } else {
+            // Old HOTS format
+            const itemRows = detailRows.filter(row =>
+                row.lbl_col?.toLowerCase().includes('item')
+            );
 
-            if (qty.toLowerCase().includes('ctn')) {
-                ctn = qty;
-                const val = parseInt(qty);
-                if (!isNaN(val)) {
-                    totalCtn += val;
-                    ctn = val.toLocaleString(); // 👈 format with thousand separator
+            itemRows.forEach((row, i) => {
+                const itemName = row.value || row.cstm_col || '';
+
+                // Attempt to find the related quantity row by order_col or index
+                const qtyRow = detailRows.find(
+                    r => r.lbl_col?.toLowerCase().includes('quantity') &&
+                        r.order_col === row.order_col + 1
+                ) || detailRows[i + 1];
+
+                const qty = qtyRow?.value || qtyRow?.cstm_col || '';
+                let pcs = '', ctn = '';
+
+                if (qty.toLowerCase().includes('pcs')) {
+                    pcs = qty;
+                    const val = parseInt(qty);
+                    if (!isNaN(val)) {
+                        totalPcs += val;
+                        pcs = val.toLocaleString();
+                    }
                 }
-            }
 
-            itemRowsHtml += `
-                <tr>
-                  <td>${i + 1}</td>
-                  <td>${itemName}</td>
-                  <td>${pcs}</td>
-                  <td>${ctn}</td>
-                </tr>`;
-        });
+                if (qty.toLowerCase().includes('ctn')) {
+                    ctn = qty;
+                    const val = parseInt(qty);
+                    if (!isNaN(val)) {
+                        totalCtn += val;
+                        ctn = val.toLocaleString();
+                    }
+                }
+
+                itemRowsHtml += `
+                    <tr>
+                      <td>${i + 1}</td>
+                      <td>${itemName}</td>
+                      <td>${pcs}</td>
+                      <td>${ctn}</td>
+                    </tr>`;
+            });
+        }
 
         let notesHtml = '';
 
-
+        console.log("approvallistRaw", approvallistRaw)
         approvallistRaw.forEach((data, i) => {
             if (data.remark && data.remark.trim() !== '') {
+                const stepInfo = data.step_name ? `(${data.step_name})` : '';
                 notesHtml += `
-                <li>${data.fullname} : ${data.remark}</li>
+                <li>${data.fullname} ${stepInfo}: ${data.remark}</li>
               `;
             }
         });
@@ -1046,11 +1179,8 @@ module.exports = {
         const ccPICs = factoryPIC.filter(p => p.flag === 2).map(p => p.pic_name);
 
         const approvalColumnsHtml = approvallist
-            .filter(a => a.approval_order !== 2) // skip unwanted ones
+            .filter(a => a.approval_order !== 2) // Hide Logistic Analyst (step 2) signature
             .map((approver, index) => {
-                // Find matching employee
-
-                console.log("approver", approver)
 
                 const isApproved = !!approver.approve_date;
 
@@ -1068,13 +1198,8 @@ module.exports = {
               <div style="height: 100%; max-height:130px; display:flex; align-items:center;"></div>
             `;
 
-                const roleTitles = {
-                    1: "Regional Manager",
-                    3: "Logistic Manager",
-                    4: "Accounting Manager"
-                };
-
-                const positionLabel = roleTitles[approver.approval_order] || `Approver ${approver.approval_order}`;
+                // Use dynamic step name from workflow definition
+                const positionLabel = approver.step_name || `Step ${approver.approval_order}`;
 
                 return `
             <td style="padding:10px;vertical-align:top;">
@@ -1185,9 +1310,9 @@ module.exports = {
                     </tr>
                     <tr>
                         <td class="label">Deliver to</td>
-                        <td class="content">: ${getByLabel('deliver')}</td>
+                        <td class="content">: ${getByLabel('deliver_to')}</td>
                         <td class="label">Category</td>
-                        <td class="content">: ${getByLabel('sample')}</td>
+                        <td class="content">: ${getByLabel('Category_field')}</td>
                     </tr>
                     </table>
     
@@ -1214,16 +1339,23 @@ module.exports = {
           
                 <div class="note">
                     <strong>Request Detail:</strong>
-                    ${getByLabel('PO Number') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${getByLabel('PO Number')}</p>` : ''}
-                    ${getByLabel('Week Delivery') ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>` : ''}
-                    <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('Declare') === 1 ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
-    
+                   ${(() => {
+                const po = getByLabel("PO_Number") || "";
+                return !po.toLowerCase().includes("no data found")
+                    ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${po}</p>`
+                    : "";
+            })()}
+                  }
+                    ${getByLabel('Week Delivery') && getByLabel('Week Delivery') !== "No Data Found"
+                ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>`
+                : ''}
+                    <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('field_1761105177705').toLocaleString() === `true` ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
                 </div>
     
                 <div class="note">
                     <strong>Note:</strong>
                    <br>
-                    ${getByLabel('Request Detail') ? `<p>${getByLabel('Request Detail')}</p>` : ''}
+                    ${getByLabel('field_1761105303599') ? `<p>${getByLabel('field_1761105303599')}</p>` : ''}
                      ${notesHtml}
                   <strong>Thank you</strong>
                 </div>
