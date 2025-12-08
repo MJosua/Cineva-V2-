@@ -726,7 +726,65 @@ module.exports = {
         }
     },
 
+    /**
+     * Send email when assignment is completed
+     */
+    hotsAssignmentCompleteMailer: async (test = false, ticket_id) => {
+        let date = new Date();
+        let timestamp = date.toLocaleDateString("id") + " " + date.toLocaleTimeString("id") + " : ";
 
+        try {
+            const [dataResult] = await dbHots.promise().execute(
+                `SELECT t.ticket_id, t.service_name, t.title,
+                        CONCAT(u.firstname, ' ', u.lastname) as user_name,
+                        u.email as requester_email
+                 FROM t_ticket t
+                 LEFT JOIN user u ON u.user_id = t.created_by
+                 WHERE t.ticket_id = ?`,
+                [ticket_id]
+            );
+
+            if (!dataResult || dataResult.length === 0) {
+                console.log(`${timestamp} No ticket found for ${ticket_id}`);
+                return;
+            }
+
+            const { service_name, user_name, requester_email, title } = dataResult[0];
+
+            if (!requester_email) {
+                console.log(`${timestamp} No requester email for ticket ${ticket_id}`);
+                return;
+            }
+
+            const htmlContent = `
+            <div style="font-family: Arial, sans-serif; color: #333;">
+                <h2>Your Request Has Been Completed!</h2>
+                <p>Dear ${user_name},</p>
+                <p>Great news! Your <strong>${service_name}</strong> request has been fulfilled.</p>
+                <table style="border-collapse: collapse; margin: 20px 0;">
+                    <tr><th style="text-align:left; padding: 8px;">Ticket No</th><td style="padding: 8px;">: ${ticket_id}</td></tr>
+                    <tr><th style="text-align:left; padding: 8px;">Request</th><td style="padding: 8px;">: ${title || service_name}</td></tr>
+                    <tr><th style="text-align:left; padding: 8px;">Status</th><td style="padding: 8px;">: <strong style="color: green;">Fulfilled</strong></td></tr>
+                </table>
+                <p>Thank you for using the HOTS system.</p>
+                <p>Best regards,<br><strong>HOTS System</strong></p>
+            </div>`;
+
+            if (test) console.log("html", htmlContent);
+
+            const info = await transporter.sendMail({
+                from: mailaccount,
+                to: requester_email,
+                subject: `[HOTS] - ${service_name} Request Completed - Ticket No. ${ticket_id}`,
+                html: htmlContent,
+            });
+
+            console.log(`${timestamp} Assignment complete email sent to ${requester_email}`);
+            console.log(`Message ID: ${info.messageId}`);
+        } catch (error) {
+            console.error(`${timestamp} ERROR sending assignment complete mail:`, error);
+        }
+    },
 
 
 }

@@ -35,6 +35,13 @@ export const VisualTriggerBuilder: React.FC<VisualTriggerBuilderProps> = ({
     );
     const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
 
+    // Sync selectedEvent when triggers are loaded asynchronously
+    useEffect(() => {
+        if (triggers.length > 0 && !selectedEvent) {
+            setSelectedEvent(triggers[0].trigger_name);
+        }
+    }, [triggers]);
+
     // Get current trigger for selected event
     const currentTrigger = triggers.find(t => t.trigger_name === selectedEvent);
     const actions = currentTrigger?.trigger_config?.actions || [];

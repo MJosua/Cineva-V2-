@@ -229,10 +229,10 @@ module.exports = {
                 [assignment.ticket_id]
             );
 
-            // If no more active assignments, update ticket status to completed
+            // If no more active assignments, update ticket status to Fulfilled (2)
             if (remaining[0].count === 0) {
                 await dbHots.promise().query(
-                    'UPDATE t_ticket SET status_id = 6 WHERE ticket_id = ?',
+                    'UPDATE t_ticket SET status_id = 2 WHERE ticket_id = ?',
                     [assignment.ticket_id]
                 );
             }

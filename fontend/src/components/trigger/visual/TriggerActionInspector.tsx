@@ -175,7 +175,9 @@ export const TriggerActionInspector: React.FC<TriggerActionInspectorProps> = ({
                         Condition (optional)
                     </Label>
                     <RuleBuilderInline
-                        value={selectedAction.condition || ''}
+                        value={typeof selectedAction.condition === 'object'
+                            ? JSON.stringify(selectedAction.condition)
+                            : (selectedAction.condition || '')}
                         onChange={handleConditionChange}
                     />
                 </div>

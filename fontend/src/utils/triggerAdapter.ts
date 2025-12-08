@@ -12,6 +12,7 @@ export type TriggerEvent =
     | 'on_cancel'
     | 'on_assign'
     | 'on_status_change'
+    | 'on_assignment_complete'
     | 'workflow_submit'
     | 'workflow_approve'
     | 'workflow_complete';
@@ -160,6 +161,7 @@ export const EVENT_CATALOG: { value: TriggerEvent; label: string; description: s
     { value: 'on_cancel', label: 'On Cancel', description: 'When a ticket is cancelled' },
     { value: 'on_assign', label: 'On Assign', description: 'When a ticket is assigned' },
     { value: 'on_status_change', label: 'On Status Change', description: 'When ticket status changes' },
+    { value: 'on_assignment_complete', label: 'On Assignment Complete', description: 'When assignment is completed' },
     { value: 'workflow_submit', label: 'Workflow Submit', description: 'When workflow submission occurs' },
     { value: 'workflow_approve', label: 'Workflow Approve', description: 'When workflow approval occurs' },
     { value: 'workflow_complete', label: 'Workflow Complete', description: 'When workflow reaches completion' },

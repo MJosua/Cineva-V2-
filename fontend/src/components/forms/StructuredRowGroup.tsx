@@ -56,24 +56,29 @@ export const StructuredRowGroup: React.FC<StructuredRowGroupProps> = ({
 
   const rows: RowData[] = useMemo(() => {
     const currentRows = globalValues?.[rowGroupId];
-    if (Array.isArray(currentRows)) {
+    if (Array.isArray(currentRows) && currentRows.length > 0) {
       return [...currentRows]; // Always create new reference
     }
-
-    const initialRow: RowData = {
-      id: `row_${Date.now()}`,
-      firstValue: "",
-      secondValue: "",
-      thirdValue: "",
-    };
-
-    setGlobalValues((prev) => ({
-      ...prev,
-      [rowGroupId]: [initialRow],
-    }));
-
-    return [initialRow];
+    // Return empty array if not initialized yet - useEffect will handle init
+    return [];
   }, [globalValues, rowGroupId]);
+
+  // Initialize rows in useEffect, not during render
+  useEffect(() => {
+    const currentRows = globalValues?.[rowGroupId];
+    if (!Array.isArray(currentRows) || currentRows.length === 0) {
+      const initialRow: RowData = {
+        id: `row_${Date.now()}`,
+        firstValue: "",
+        secondValue: "",
+        thirdValue: "",
+      };
+      setGlobalValues((prev) => ({
+        ...prev,
+        [rowGroupId]: [initialRow],
+      }));
+    }
+  }, [rowGroupId, setGlobalValues]);
 
   const syncToGlobal = (newRows: RowData[]) => {
     setGlobalValues((prev) => {
@@ -176,7 +181,7 @@ export const StructuredRowGroup: React.FC<StructuredRowGroupProps> = ({
     if (updated.length > 0) syncToGlobal(updated);
   };
 
- 
+
 
   const filteredFirstOptions = useMemo(() => {
     const col = structure.firstColumn;
@@ -186,7 +191,7 @@ export const StructuredRowGroup: React.FC<StructuredRowGroupProps> = ({
       selectedObjects,
     });
   }, [structure.firstColumn.options, globalValues, selectedObjects]);
-  
+
   const filteredSecondOptions = useMemo(() => {
     const col = structure.secondColumn;
     const opts = Array.isArray(col.options) ? col.options : [];
@@ -195,7 +200,7 @@ export const StructuredRowGroup: React.FC<StructuredRowGroupProps> = ({
       selectedObjects,
     });
   }, [structure.secondColumn.options, globalValues, selectedObjects]);
-  
+
   const filteredThirdOptions = useMemo(() => {
     const col = structure.thirdColumn;
     const opts = Array.isArray(col.options) ? col.options : [];

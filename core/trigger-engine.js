@@ -90,15 +90,39 @@ class TriggerEngine {
   }
 
   async _action_sendEmail(context, params) {
+    const { hotsMailer, hotsSubmitMailer, hotsApproveRequest } = require('../service/mailer/hots/hots_mailer');
+
+    const template = params.template || 'generic';
+    const ticketId = params.ticketId || context.ticketId;
     const to = params.to || context.to;
-    const cc = params.cc || null;
-    const subject = params.subject || '';
-    const body = params.body || '';
-    if (!to) return { ok: false, error: 'missing to' };
+
+    console.log(`📧 [TRIGGER][EMAIL] Sending email with template: ${template}, ticketId: ${ticketId}`);
+
     try {
-      await this.dbQuery('INSERT INTO t_email_queue (`to`, `cc`, `subject`, `body`, created_at) VALUES (?, ?, ?, ?, NOW())', [to, cc, subject, body]);
+      if (template === 'submit') {
+        // Use hotsSubmitMailer for submission confirmation
+        const userName = context.userName || context.actor?.name || 'User';
+        const serviceName = context.serviceName || context.moduleKey || 'Service';
+        const mailAddress = to || context.requesterEmail;
+        await hotsSubmitMailer(false, ticketId, userName, serviceName, mailAddress);
+      } else if (template === 'approve') {
+        // Use hotsApproveRequest for approval notifications
+        await hotsApproveRequest(false, ticketId);
+      } else if (template === 'assignment_complete') {
+        // Use hotsAssignmentCompleteMailer for assignment completion
+        const { hotsAssignmentCompleteMailer } = require('../service/mailer/hots/hots_mailer');
+        await hotsAssignmentCompleteMailer(false, ticketId);
+      } else {
+        // Generic fallback using hotsMailer
+        const subject = params.subject || `[HOTS] Notification - Ticket ${ticketId}`;
+        const body = params.body || `Ticket ${ticketId} has been updated.`;
+        await hotsMailer(to, subject, body);
+      }
+
+      console.log(`✅ [TRIGGER][EMAIL] Email sent successfully`);
       return { ok: true };
     } catch (e) {
+      console.error(`❌ [TRIGGER][EMAIL] Error sending email:`, e);
       return { ok: false, error: e.message };
     }
   }

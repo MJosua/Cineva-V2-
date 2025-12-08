@@ -87,29 +87,37 @@ const ServiceFormEditor = () => {
 
   // Load triggers from /triggers/:id endpoint (same as StudioPage)
   const loadTriggersFromAPI = async (serviceId: number) => {
+    console.log("🚀 loadTriggersFromAPI called with ID:", serviceId);
+
     try {
       const res = await axios.get(`${API_URL}/triggers/${serviceId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
       });
+
+      console.log("📥 Raw trigger API response:", res.data);
+
       if (res.data?.ok && res.data?.triggers) {
-        // Ensure each action has an ID (matching StudioPage logic)
-        const loadedTriggers = res.data.triggers.map((t: any) => ({
+        const loadedTriggers = res.data.triggers.map((t: any, idx: number) => ({
           ...t,
           trigger_config: {
             ...t.trigger_config,
-            actions: (t.trigger_config?.actions || []).map((a: any, idx: number) => ({
+            actions: (t.trigger_config?.actions || []).map((a: any, i: number) => ({
               ...a,
-              id: a.id || `action-${t.trigger_id}-${idx}`,
+              id: a.id || `action-${idx}-${i}`,
             })),
           },
         }));
-        console.log('📋 Loaded triggers from /triggers API:', loadedTriggers);
+
+        console.log("✅ Processed triggers:", loadedTriggers);
+
         setTriggers(loadedTriggers);
+
       } else {
-        console.log('ℹ️ No triggers in response from /triggers API');
+        console.log("⚠️ No triggers returned from API");
       }
+
     } catch (e: any) {
-      console.log('ℹ️ Error loading triggers:', e.message);
+      console.log("❌ Error in loadTriggersFromAPI:", e.message);
     }
   };
 
@@ -381,10 +389,18 @@ const ServiceFormEditor = () => {
 
   // Load workflow and triggers when tab changes
   useEffect(() => {
-    if ((activeTab === 'workflow' || activeTab === 'triggers') && id) {
+    console.log("🔄 activeTab changed:", activeTab);
+
+    if (activeTab === "triggers" && id) {
+      console.log("🚀 Loading triggers because user opened Triggers tab");
+      loadTriggersFromAPI(parseInt(id));
+    }
+
+    if (activeTab === "workflow" && id) {
+      console.log("🚀 Loading workflow because user opened Workflow tab");
       loadWorkflowAndTriggers();
     }
-  }, [activeTab, id, loadWorkflowAndTriggers]);
+  }, [activeTab, id]);
 
   // Canvas item renderer for visual editor
   const renderCanvasItem = useCallback((item: FormStructureItem) => {
@@ -799,11 +815,19 @@ const ServiceFormEditor = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-[calc(100%-60px)]">
-                <VisualTriggerBuilder
-                  serviceId={parseInt(id || '0')}
-                  triggers={triggers}
-                  onChange={setTriggers}
-                />
+                {id && (
+                  <div className="h-full">
+                   
+                    <VisualTriggerBuilder
+                      serviceId={parseInt(id)}
+                      triggers={triggers}
+                      onChange={(updated) => {
+                        console.log("🔄 Triggers Updated:", updated);
+                        setTriggers(updated);
+                      }}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

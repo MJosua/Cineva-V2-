@@ -416,6 +416,12 @@ const StudioPage = () => {
                 </div>
             )}
 
+            {
+                console.log("Rendering VisualTriggerBuilder with triggers:", triggers)
+            }
+
+
+
             {/* TRIGGERS MODE */}
             {mode === 'triggers' && id && id !== 'new' && (
                 <div className="h-full">

@@ -85,7 +85,9 @@ export const TriggerActionCard: React.FC<TriggerActionCardProps> = ({
 
             {action.condition && (
                 <div className="mt-2 text-xs px-2 py-1 bg-amber-50 text-amber-700 rounded border border-amber-200">
-                    ⚡ Condition: {action.condition}
+                    ⚡ Condition: {typeof action.condition === 'object'
+                        ? JSON.stringify(action.condition)
+                        : action.condition}
                 </div>
             )}
         </div>
