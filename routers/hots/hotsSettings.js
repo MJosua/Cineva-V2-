@@ -94,6 +94,7 @@ route.put('/update/widget/:service_id', decodeTokenHT, hotsSettingsController.up
 
 route.get('/get_team_member/:team_id', decodeTokenHT, hotsSettingsController.getmember)
 route.get('/get_service', decodeTokenHT, hotsSettingsController.getservice)
+route.get('/get_service/:service_id', decodeTokenHT, hotsSettingsController.getserviceById)
 route.get('/get_serviceCategory', decodeTokenHT, hotsSettingsController.getserviceCategory)
 route.get('/get_category', decodeTokenHT, hotsSettingsController.getcategory)
 route.get('/get_completionstatus', decodeTokenHT, hotsSettingsController.getcompletionstatus)

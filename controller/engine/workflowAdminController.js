@@ -195,6 +195,129 @@ module.exports = {
       logError("ADD PARAM", err);
       return res.status(500).json({ error: "Failed to add workflow param" });
     }
+  },
+
+  /* ========================================================
+     GET WORKFLOW DEFINITION (JSON)
+  ======================================================== */
+  async getDefinition(req, res) {
+    const start = Date.now();
+    const { service_id } = req.params;
+
+    try {
+      logDebug("GET DEFINITION → service_id", service_id);
+
+      // First try to get from m_service_workflow by service_id (workflow_id)
+      const rows = await dbQueryHots(
+        `SELECT workflow_id, name, definition, is_active, created_at, updated_at
+         FROM m_service_workflow
+         WHERE workflow_id = ?`,
+        [service_id]
+      );
+
+      if (rows.length > 0 && rows[0].definition) {
+        const workflow = rows[0];
+        let definition = workflow.definition;
+        if (typeof definition === 'string') {
+          try { definition = JSON.parse(definition); } catch (e) { /* keep as string */ }
+        }
+
+        logDebug("GET DEFINITION → Found", { workflow_id: workflow.workflow_id, definition });
+        logDebug("GET DEFINITION → Time", `${Date.now() - start}ms`);
+
+        return res.json({
+          ok: true,
+          workflow_id: workflow.workflow_id,
+          name: workflow.name,
+          definition,
+          is_active: workflow.is_active
+        });
+      }
+
+      // Fallback: Try to build definition from individual levels
+      const levels = await dbQueryHots(
+        `SELECT * FROM m_service_workflow
+         WHERE workflow_id = ?
+         ORDER BY level ASC`,
+        [service_id]
+      );
+
+      if (levels.length > 0) {
+        const steps = levels.map(lv => ({
+          level: lv.level,
+          step_type: lv.resolver || 'team',
+          assigned_value: lv.approver_user || '',
+          description: lv.resolver || `Level ${lv.level}`,
+        }));
+
+        logDebug("GET DEFINITION → Built from levels", { steps });
+        logDebug("GET DEFINITION → Time", `${Date.now() - start}ms`);
+
+        return res.json({
+          ok: true,
+          workflow_id: service_id,
+          definition: { steps, tasks: [] }
+        });
+      }
+
+      logDebug("GET DEFINITION → No workflow found");
+      return res.json({ ok: true, workflow_id: null, definition: null });
+
+    } catch (err) {
+      logError("GET DEFINITION", err);
+      return res.status(500).json({ error: "Failed to get workflow definition" });
+    }
+  },
+
+  /* ========================================================
+     SAVE WORKFLOW DEFINITION (JSON)
+  ======================================================== */
+  async saveDefinition(req, res) {
+    const start = Date.now();
+    const { service_id } = req.params;
+    const { definition, name } = req.body;
+
+    try {
+      logDebug("SAVE DEFINITION → service_id", service_id);
+      logDebug("SAVE DEFINITION → Body", req.body);
+
+      const definitionJson = typeof definition === 'string'
+        ? definition
+        : JSON.stringify(definition);
+
+      // Check if workflow exists
+      const existing = await dbQueryHots(
+        `SELECT workflow_id FROM m_service_workflow WHERE workflow_id = ?`,
+        [service_id]
+      );
+
+      if (existing.length > 0) {
+        // Update existing
+        await dbQueryHots(
+          `UPDATE m_service_workflow
+           SET definition = ?, name = COALESCE(?, name), updated_at = NOW()
+           WHERE workflow_id = ?`,
+          [definitionJson, name || null, service_id]
+        );
+        logDebug("SAVE DEFINITION → Updated", { workflow_id: service_id });
+      } else {
+        // Insert new
+        await dbQueryHots(
+          `INSERT INTO m_service_workflow (workflow_id, name, definition, is_active, created_at)
+           VALUES (?, ?, ?, 1, NOW())`,
+          [service_id, name || `Workflow ${service_id}`, definitionJson]
+        );
+        logDebug("SAVE DEFINITION → Inserted", { workflow_id: service_id });
+      }
+
+      logDebug("SAVE DEFINITION → Time", `${Date.now() - start}ms`);
+
+      return res.json({ ok: true, workflow_id: service_id });
+
+    } catch (err) {
+      logError("SAVE DEFINITION", err);
+      return res.status(500).json({ error: "Failed to save workflow definition" });
+    }
   }
 
 };

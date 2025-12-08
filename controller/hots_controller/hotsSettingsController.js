@@ -153,6 +153,111 @@ module.exports = {
         });
     },
 
+    // Get single service by ID with triggers and workflow
+    getserviceById: async (req, res) => {
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+
+        try {
+            const service_id = req.params.service_id;
+
+            if (!service_id) {
+                return res.status(400).send({
+                    success: false,
+                    message: 'Service ID is required'
+                });
+            }
+
+            // Get service data
+            const queryGetService = `
+                SELECT 
+                    s.*,
+                    wg.name as workflow_group_name
+                FROM m_service s
+                LEFT JOIN hots.m_service_workflow wg 
+                ON s.service_id = wg.workflow_id
+                WHERE s.service_id = ?
+            `;
+
+            const [serviceResults] = await dbHots.promise().query(queryGetService, [service_id]);
+
+            if (!serviceResults.length) {
+                return res.status(404).send({
+                    success: false,
+                    message: 'Service not found!'
+                });
+            }
+
+            const serviceData = serviceResults[0];
+
+            // Get triggers for this service
+            const queryGetTriggers = `
+                SELECT 
+                    trigger_id,
+                    service_id,
+                    trigger_name,
+                    trigger_config,
+                    is_active,
+                    created_at,
+                    updated_at
+                FROM m_service_triggers
+                WHERE service_id = ?
+            `;
+
+            const [triggersResults] = await dbHots.promise().query(queryGetTriggers, [service_id]);
+
+            // Parse trigger_config JSON for each trigger
+            const triggers = triggersResults.map(trigger => {
+                try {
+                    return {
+                        ...trigger,
+                        trigger_config: typeof trigger.trigger_config === 'string'
+                            ? JSON.parse(trigger.trigger_config)
+                            : trigger.trigger_config
+                    };
+                } catch (e) {
+                    return trigger;
+                }
+            });
+
+            // Get workflow definition if exists
+            let workflowDefinition = null;
+            try {
+                const queryGetWorkflow = `
+                    SELECT workflow_json
+                    FROM m_workflow
+                    WHERE workflow_id = ?
+                `;
+                const [workflowResults] = await dbHots.promise().query(queryGetWorkflow, [service_id]);
+                if (workflowResults.length && workflowResults[0].workflow_json) {
+                    workflowDefinition = typeof workflowResults[0].workflow_json === 'string'
+                        ? JSON.parse(workflowResults[0].workflow_json)
+                        : workflowResults[0].workflow_json;
+                }
+            } catch (e) {
+                console.log('No workflow definition found for service:', service_id);
+            }
+
+            res.status(200).send({
+                success: true,
+                message: "GET SERVICE BY ID SUCCESS",
+                data: {
+                    ...serviceData,
+                    triggers: triggers,
+                    workflow_definition: workflowDefinition
+                }
+            });
+            console.log(timestamp, `GET SERVICE BY ID SUCCESS for service_id: ${service_id}`);
+
+        } catch (err) {
+            console.error('getserviceById error:', err);
+            res.status(500).send({
+                success: false,
+                message: err.message
+            });
+        }
+    },
+
     getserviceCategory: (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';

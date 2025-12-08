@@ -9,9 +9,10 @@
 *.png
 *.zip
 *.pdf
+*.sql
 *.xlsx
 /config
 /public
 /uploads
 .env
-
+.sql

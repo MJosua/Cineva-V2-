@@ -192,7 +192,8 @@ const {
   engineRouter,
   engineWorkDataRouter,
   engineAssignmentRouter,
-  workflowadminRouter
+  workflowadminRouter,
+  triggerRouter
 } = require("./routers");
 
 
@@ -274,6 +275,7 @@ App.use("/engine", engineRouter);
 App.use("/engine", engineWorkDataRouter);
 App.use("/engine", engineAssignmentRouter);
 App.use("/workflow-engine", workflowadminRouter);
+App.use("/triggers", triggerRouter);
 /* -------------------------------------------------------------------
    🔥 NORMAL ROUTERS (kept exact order as yours)
 ------------------------------------------------------------------- */

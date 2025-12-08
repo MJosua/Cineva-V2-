@@ -70,6 +70,7 @@ const mbusers = require('./meetingbook/users')
 const engineRouter = require('./engine/engineTicket')
 const engineModuleRouter = require('./engine/engineModuleRouter')
 const workflowadminRouter = require('./engine/workflowAdminRouters')
+const triggerRouter = require('./engine/triggerRouters')
 const engineWorkDataRouter = require('./engine/engineWorkData')
 const engineAssignmentRouter = require('./engine/engineAssignment')
 const cmsRouter = require('./cms/cmsRouter');
@@ -133,6 +134,7 @@ module.exports = {
     engineRouter,
     engineModuleRouter,
     workflowadminRouter,
+    triggerRouter,
     engineWorkDataRouter,
     engineAssignmentRouter,
     cmsRouter,
