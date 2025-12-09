@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
 import { fetchDashboardFunctions } from "@/store/slices/dashboardSlice";
-import DashboardCard from "./DashboardCard";
+import DashboardCardEnhanced from "./DashboardCardEnhanced";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ArrowLeft, Database, Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,11 +36,11 @@ const DashboardPage: React.FC = () => {
                 </div>
 
                 {loading && (
-                    
-                <Skeleton className="h-48 w-full">
 
-                </Skeleton>
-                
+                    <Skeleton className="h-48 w-full">
+
+                    </Skeleton>
+
                 )}
 
 
@@ -49,14 +49,14 @@ const DashboardPage: React.FC = () => {
 
                         <div className="flex items-center space-x-3 mb-4">
                             <div className={`p-2 rounded-lg rounded-lg bg-green-100`}>
-                                <Database  className="w-6 h-6 text-green-700"/>
+                                <Database className="w-6 h-6 text-green-700" />
                             </div>
                             <h2 className="text-xl font-semibold text-green-900">{category}</h2>
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                             {functions.map((func) => (
-                                <DashboardCard key={func.id} func={func} />
+                                <DashboardCardEnhanced key={func.id} func={func} />
                             ))}
                         </div>
                     </div>

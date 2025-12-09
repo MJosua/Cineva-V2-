@@ -5,6 +5,7 @@ import { Form } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { DynamicField } from "./DynamicField";
 import { StructuredRowGroup } from "./StructuredRowGroup";
+import { SpecialFuncFactory } from "./specialFunc/SpecialFuncFactory";
 import WidgetRenderer from "@/widgets/WidgetRenderer";
 import { FormConfig, FormField, RowGroup } from "@/types/formTypes";
 import { WidgetConfig } from "@/types/widgetTypes";
@@ -263,20 +264,20 @@ export const DynamicForm: React.FC<{
   const handleSubmitEngineCore = async () => {
     try {
       setIsSubmitting(true);
-  
+
       // 1) HOTS unified mapper (correct)
       const unified = mapUnifiedForm(globalValues, config.items, selectedObjects);
-  
+
       // 2) Convert unified → CORE ENGINE EAV (FIXED)
       const engineEav = convertUnifiedToEngineEav(unified);
-  
+
       console.log("🟩 ENGINE EAV:", engineEav);
-  
+
       const upload_ids = Object.values(globalValues)
         .flat()
         .filter((x: any) => x?.upload_id)
         .map((x: any) => x.upload_id);
-  
+
       const payload = {
         company_id: user?.company_id || null,
         creator_id: user?.user_id || user?.id || null,
@@ -285,9 +286,9 @@ export const DynamicForm: React.FC<{
         upload_ids,
         form_data: engineEav
       };
-  
+
       const token = localStorage.getItem("tokek");
-  
+
       const res = await fetch(`${API_URL}/engine/create`, {
         method: "POST",
         headers: {
@@ -296,18 +297,18 @@ export const DynamicForm: React.FC<{
         },
         body: JSON.stringify(payload),
       });
-  
+
       const json = await res.json();
-  
+
       if (!json.ok) throw new Error(json.message);
-  
+
       toast({
         title: "Success",
         description: `Ticket created. ID: ${json.ticketId}`
       });
-  
+
       navigate("/my-tickets");
-  
+
     } catch (e) {
       toast({
         title: "Engine Error",
@@ -318,7 +319,7 @@ export const DynamicForm: React.FC<{
       setIsSubmitting(false);
     }
   };
-  
+
 
 
 
@@ -525,6 +526,19 @@ export const DynamicForm: React.FC<{
                                 setGlobalValues={setGlobalValues}
                                 onUpdateRowGroup={handleUpdateRowGroup}
                                 schema={normalizedSchema}
+                              />
+                            </div>
+                          );
+                        }
+
+                        if (item.type === "specialfunc") {
+                          return (
+                            <div key={item.id} className="col-span-3">
+                              <SpecialFuncFactory
+                                data={item.data as any}
+                                globalValues={globalValues}
+                                setGlobalValues={setGlobalValues}
+                                id={item.id}
                               />
                             </div>
                           );

@@ -2646,8 +2646,33 @@ module.exports = {
 
 
 
-    /* 
-     
-    */
 
+
+    getDataDiff: async (req, res) => {
+        let date = new Date();
+        let timestamp = "\x1b[33m" + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        try {
+            const { id } = req.params;
+            const category = req.query.category || 'm_product';
+
+            console.log(timestamp, `HOTS Get Data Diff: ID=${id}, Category=${category}`);
+
+            // MOCK implementation
+            const mockData = [
+                { key: "Record ID", value: id },
+                { key: "Name", value: `Item ${id}` },
+                { key: "Category", value: category },
+                { key: "Status", value: "Active" },
+                { key: "Last Updated", value: new Date().toISOString().split('T')[0] },
+                { key: "Price", value: "15000.00" }
+            ];
+
+            return res.json({ success: true, data: mockData });
+
+        } catch (e) {
+            console.log(timestamp, "HOTS Get Data Diff Error: ", e);
+            return res.status(500).json({ success: false, message: e.message });
+        }
+    }
 }

@@ -9,6 +9,7 @@ route.get('/get_menu', decodeTokenHT, hotsSettingsController.getmenu)
 route.get('/get_menu_active', decodeTokenHT, hotsSettingsController.getserviceactive)
 route.get('/get_menu_inactive', decodeTokenHT, hotsSettingsController.getserviceinactive)
 route.post('/toggle_menu', decodeTokenHT, hotsSettingsController.setserviceactivestatus)
+route.get('/get_data_diff/:id', decodeTokenHT, hotsSettingsController.getDataDiff)
 
 // User Management
 route.get('/get/user', decodeTokenHT, hotsSettingsController.getAllUser)

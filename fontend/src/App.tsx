@@ -75,6 +75,8 @@ import JobMarketplace from "./pages/JobMarketplace";
 import { MyAssignments } from "./pages/MyAssignments";
 import JobListPage from "./pages/dashboard/report/JobListPage";
 import AssignmentDetailPage from "./pages/dashboard/AssignmentDetailPage";
+import ServiceAnalyticsView from "./pages/dashboard/ServiceAnalyticsView";
+import DashboardView from "./pages/dashboard/DashboardView";
 
 
 const queryClient = new QueryClient();
@@ -137,6 +139,8 @@ const AppContentInner = () => {
           {dynamicServiceRoutes}
 
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path="/dashboard/analytics/:serviceId" element={<ProtectedRoute><ServiceAnalyticsView /></ProtectedRoute>} />
+          <Route path="/dashboard/view/:dashboardId" element={<ProtectedRoute><DashboardView /></ProtectedRoute>} />
           {dynamicDashboardRoutes}
 
           {/* Catch-all */}

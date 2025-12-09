@@ -38,6 +38,7 @@ class TriggerEngine {
     this.registerAction('execute_function', this._action_executeFunction.bind(this));
     this.registerAction('create_assignment', this._action_createAssignment.bind(this));
     this.registerAction('complete_assignment', this._action_completeAssignment.bind(this));
+    this.registerAction('log_analytics', this._action_logAnalytics.bind(this));
   }
 
   registerAction(name, fn) { this.actions[name] = fn; }
@@ -235,6 +236,64 @@ class TriggerEngine {
       console.log(`✅ [TRIGGER][ASSIGN] Completed assignment for ticket ${ticketId}`);
       return { ok: true };
     } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  }
+
+  async _action_logAnalytics(context, params) {
+    const eventType = params.event_type || 'GENERIC';
+    const ticketId = context.ticketId;
+    const serviceId = context.serviceId;
+    const userId = context.actor?.user_id;
+
+    console.log(`📊 [TRIGGER][ANALYTICS] Logging ${eventType} for Ticket ${ticketId}`);
+
+    try {
+      const values = context.values || {};
+      let diffData = [];
+
+      if (params.widget_id && Array.isArray(values[params.widget_id])) {
+        diffData = values[params.widget_id];
+      } else {
+        const potentialKey = Object.keys(values).find(k =>
+          Array.isArray(values[k]) && values[k].length > 0 && values[k][0].hasOwnProperty('old_value')
+        );
+        if (potentialKey) diffData = values[potentialKey];
+      }
+
+      if (!diffData || !diffData.length) {
+        console.log(`⚠️ [TRIGGER][ANALYTICS] No diff data found to log.`);
+        return { ok: true, message: 'No data to log' };
+      }
+
+      const refKey = values['record_id'] || values['ref_id'] || 'UNKNOWN';
+
+      for (const row of diffData) {
+        if (row.is_changed === false) continue;
+
+        await this.dbQuery(`
+                INSERT INTO t_ticket_analytics 
+                (ticket_id, service_id, event_type, ref_key, dim_1, dim_2, dim_3, val_str_old, val_str_new, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+          ticketId,
+          serviceId,
+          eventType,
+          refKey,
+          values['data_category'] || 'General',
+          row.field_name,
+          values['reason'] || '',
+          String(row.old_value).substring(0, 65000),
+          String(row.new_value).substring(0, 65000),
+          userId
+        ]);
+      }
+
+      console.log(`✅ [TRIGGER][ANALYTICS] Logged ${diffData.length} changes.`);
+      return { ok: true };
+
+    } catch (e) {
+      console.error(`❌ [TRIGGER][ANALYTICS] Error logging:`, e);
       return { ok: false, error: e.message };
     }
   }

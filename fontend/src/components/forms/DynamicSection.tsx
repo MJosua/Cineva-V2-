@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DynamicField } from "./DynamicField";
 import { StructuredRowGroup } from "./StructuredRowGroup";
+import { SpecialFuncFactory } from "./specialFunc/SpecialFuncFactory";
 import { FormField, RowGroup } from "@/types/formTypes";
 
 interface DynamicSectionProps {
@@ -118,6 +119,20 @@ export const DynamicSection: React.FC<DynamicSectionProps> = ({
                     globalValues={globalValues}
                     setGlobalValues={setGlobalValues}
                     onUpdateRowGroup={handleUpdateRowGroup || (() => { })}
+                  />
+                </div>
+              );
+            }
+
+            if ((f as any).type === "specialfunc") {
+              const spf = f as any;
+              return (
+                <div key={spf.id || `sp_${i}`} className="col-span-3">
+                  <SpecialFuncFactory
+                    data={spf.data} // DynamicSection unwraps data above, but check structure
+                    globalValues={globalValues}
+                    setGlobalValues={setGlobalValues}
+                    id={spf.id}
                   />
                 </div>
               );

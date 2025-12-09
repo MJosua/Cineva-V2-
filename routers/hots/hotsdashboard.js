@@ -11,6 +11,14 @@ route.get("/functions", decodeTokenHT, hotsDashboardController.getDashboardFunct
 route.get("/report_srf", decodeTokenHT, hotsDashboardController.srf_report);
 route.post("/report_detail/upsert", decodeTokenHT, hotsDashboardController.upsertReportDetail);
 
+// Service Analytics Endpoints
+route.get("/service_summary/:service_id", decodeTokenHT, hotsDashboardController.getServiceSummary);
+route.get("/service_analytics/:service_id", decodeTokenHT, hotsDashboardController.getServiceAnalytics);
+route.get("/service_tickets/:service_id", decodeTokenHT, hotsDashboardController.getServiceTickets);
+
+// Panel System Endpoints
+route.get("/panels/:dashboard_id", decodeTokenHT, hotsDashboardController.getDashboardPanels);
+
 
 module.exports = route
 
