@@ -1917,251 +1917,159 @@ WHERE
     stuffingWeek: async (req, res, test = false) => {
         let sql;
         try {
-            const date = new Date();
-            const timestamp = `${date.toLocaleDateString('id')} ${date.toLocaleTimeString('id')}`;
-            const IOD_TIMEZONE = 7; // GMT+7 (adjust if different)
-            const DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
-                month: 'short', // Nov
-                day: '2-digit', // 03
-                year: 'numeric' // 2025
+            const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+                month: "short",
+                day: "2-digit",
+                year: "numeric",
             });
-
-            let getWeekLimit = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 9 AND mcn.company_id = ${req.dataToken.company_id}  AND mcn.active = 1;`))[0]
-            
-            let getWeekBlock = await dbQuery(`
-                SELECT mcn.value 
-                FROM m_config_new mcn 
-                WHERE 
-                  mcn.conditions = 21 
-                  AND 
-                  mcn.company_id = ${req.dataToken.company_id}  
-                  or 
-                  mcn.company_id = 100 
-                  AND 
-                  mcn.active = 1
-                  ;
-            `);
-
-            
-
-            const blockedWeeks = getWeekBlock.map(row => Number(row.value));
-
-            let weekLimit = getWeekLimit ? getWeekLimit.value : 13
-            const weeksList = [];
-
-
-            // Mock or real token
-            const company_id = test === true ? 101 : req?.dataToken?.company_id;
-            const user_id = test === true ? 1098 : req?.dataToken?.user_id ?? 0;
-
-
-            // Unauthorized check
+    
+            // --- CONFIG ---
+            const company_id = test ? 101 : req?.dataToken?.company_id;
+            const user_id = test ? 1098 : req?.dataToken?.user_id ?? 0;
+    
             if (!req?.dataToken && !test) {
-                const msg = 'Unauthorized — missing token or company_id';
-                console.error('|ERROR|', msg);
-                return res ? res.status(401).send({ success: false, message: msg }) : { success: false, message: msg };
+                const msg = "Unauthorized — missing token or company_id";
+                return res.status(401).send({ success: false, message: msg });
             }
-
-            // --- Step 1: Determine Current Date Info ---
-            const today = new Date();
-            const todayIsSunday = today.getDay() === 0;
-            let actualWeek = 0;
-            let deliveryWeek = -1;
-            let deliveryYear = today.getFullYear();
-
-            // --- Step 2: Get OPCAL_ID equivalent ---
+    
+            const getWeekLimit = (await dbQuery(`
+                SELECT value FROM m_config_new 
+                WHERE conditions = 9 
+                  AND company_id = ${company_id}
+                  AND active = 1
+            `))[0];
+    
+            const getWeekBlock = await dbQuery(`
+                SELECT value FROM m_config_new
+                WHERE conditions = 21
+                  AND (company_id = ${company_id} OR company_id = 100)
+                  AND active = 1
+            `);
+    
+            const blockedWeeks = getWeekBlock.map(r => Number(r.value));
+            const weekLimit = getWeekLimit ? Number(getWeekLimit.value) : 13;
+    
+            // --- TODAY OPCAL ID ---
             const todayOpcal = await dbQuery(`
-                SELECT opcal_id 
-                FROM dat_operational_calendar 
+                SELECT opcal_id FROM dat_operational_calendar
                 WHERE DATE(FROM_UNIXTIME(opcal_id * 100)) = CURDATE()
                 LIMIT 1
             `);
-            const strTodayCalId = todayOpcal[0]?.opcal_id || null;
-
-            // --- Step 3: Get Delivery Week Info ---
-            sql = `
-                SELECT week, delivery_week, year 
-                FROM dat_operational_calendar 
-                WHERE 
-                  opcal_id >= ${strTodayCalId} 
-                  and YEAR >= ${deliveryYear}
-                  AND factory_id=1 
-                  AND product_type_id=256 
-                group by week
-                ORDER BY opcal_id
-                limit ${weekLimit}
-            `;
-            const deliveryData = (await dbQuery(sql)) ?? {};
-
-            actualWeek = deliveryData.week ?? 0;
-            deliveryWeek = deliveryData.delivery_week ?? -1;
-
-            // --- Step 4: Distributor Time Fence ---
-            sql = `
-                SELECT COALESCE(time_fence, 0) AS time_fence 
-                FROM map_cont_for_dist 
-                WHERE dist_id=${company_id}
-                  AND NOW() BETWEEN start_date AND COALESCE(finish_date, '9999-12-31')
-            `;
-
-            const timeFenceData = (await dbQuery(sql))[0] ?? {};
-            const timeFence = timeFenceData.time_fence ?? 0;
-            if (timeFence !== 0) deliveryWeek = timeFence;
-            // --- Step 5: Loop through deliveryRows ---
-            for (const row of deliveryData) {
-                let actualWeek = row.week ?? 0;
-                let deliveryWeek = row.delivery_week ?? -1;
-                let deliveryYear = row.year ?? new Date().getFullYear();
-
-
-                // Apply distributor time fence if any
-                if (timeFence !== 0) {
-                    deliveryWeek = timeFence;
-                }
-                // Adjust week-year overflow (week > 52)
-                deliveryWeek += actualWeek;
-                if (deliveryWeek > 52) {
-                    deliveryWeek = deliveryWeek - 52;
-                    deliveryYear += 1;
-                }
-
-
-
-                // --- Step 6: Get First Day of Week (OPCAL for deliveryWeek) ---
-                sql = `
-                    SELECT opcal_id 
-                    FROM dat_operational_calendar 
-                    WHERE 
-                    year = ${deliveryYear}
-                    and
-                    factory_id=1 
-                    AND 
-                    week=${deliveryWeek} 
-                    AND 
-                    product_type_id=256 
+            const todayCalId = todayOpcal[0]?.opcal_id ?? null;
+    
+            // --- GET CURRENT WEEK NUMBER ---
+            const todayWeekRow = await dbQuery(`
+                SELECT week FROM dat_operational_calendar
+                WHERE opcal_id = ${todayCalId}
+                LIMIT 1
+            `);
+    
+            const currentWeek = todayWeekRow[0]?.week ?? 0;
+    
+            // ===============================
+            // FIXED SQL → UNIQUE NEXT YEAR WEEKS ONLY
+            // ===============================
+            const nextYear = new Date().getFullYear() + 1;
+    
+            const deliveryData = await dbQuery(`
+                SELECT 
+                    week,
+                    MIN(opcal_id) AS first_opcal
+                FROM dat_operational_calendar
+                WHERE year = ${nextYear}
+                  AND factory_id = 1
+                  AND product_type_id = 256
+                GROUP BY week
+                ORDER BY first_opcal
+            `);
+    
+            // ===============================
+            // COMPUTE START WEEK = currentWeek + 5
+            // ===============================
+            let startWeek = currentWeek + 5;
+            if (startWeek > 52) startWeek -= 52;
+    
+            // rotate list so it starts from startWeek
+            let weeks = deliveryData.map(r => r.week);
+    
+            let rotated = [
+                ...weeks.filter(w => w >= startWeek),
+                ...weeks.filter(w => w < startWeek)
+            ];
+    
+            // remove blocked
+            rotated = rotated.filter(w => !blockedWeeks.includes(w));
+    
+            // apply weekLimit
+            rotated = rotated.slice(0, weekLimit);
+    
+            // ===============================
+            // BUILD WEEK DATE OUTPUT
+            // ===============================
+            const weeksList = [];
+    
+            for (const w of rotated) {
+                const row = await dbQuery(`
+                    SELECT opcal_id
+                    FROM dat_operational_calendar
+                    WHERE year = ${nextYear}
+                      AND week = ${w}
+                      AND factory_id = 1
+                      AND product_type_id = 256
+                    ORDER BY opcal_id
                     LIMIT 1
-                `;
-                const opcalFirstDayData = await dbQuery(sql);
-                const numOpcalId = opcalFirstDayData[0]?.opcal_id ?? null;
-
-                if (!numOpcalId) continue; // skip this week if no data found
-
-                // --- Step 7: Convert opcal_id to Date ---
-                const opcalEpochSec = Number(numOpcalId) * 100;
-                const minDateObj = new Date(opcalEpochSec * 1000);
-                const todayIsSunday = new Date().getDay() === 0;
-                if (minDateObj.getDay() === 0) {
-                    // Adjust Sunday to Monday
-                    minDateObj.setDate(minDateObj.getDate() + (todayIsSunday ? -6 : 1));
-                }
-
+                `);
+    
+                const opcal_id = row[0]?.opcal_id ?? null;
+                if (!opcal_id) continue;
+    
+                const minDateObj = new Date(opcal_id * 100 * 1000);
+                if (minDateObj.getDay() === 0) minDateObj.setDate(minDateObj.getDate() + 1);
+    
                 const minDate = DATE_FORMATTER.format(minDateObj);
-
-
-                const minDay = minDateObj.getDay(); // 0=Sunday, 1=Monday, ... 6=Saturday
-
-
-                // --- Step 8: check for max Date ---
-
-                let nextdeliverycheckyear
-                let nextdeliverycheckweek
-
-                if (deliveryWeek === 52) {
-                    nextdeliverycheckyear = deliveryYear + 1
-                    nextdeliverycheckweek = 1
-                } else {
-                    nextdeliverycheckyear = deliveryYear
-                    nextdeliverycheckweek = deliveryWeek + 1
-
-                }
-
-                sqlNextRow = `
-                    SELECT opcal_id 
-                    FROM dat_operational_calendar 
-                    WHERE 
-                    year = ${nextdeliverycheckyear}
-                    and
-                    factory_id=1 
-                    AND 
-                    week=${nextdeliverycheckweek} 
-                    AND 
-                    product_type_id=256 
+    
+                // next week
+                let nextWeek = w === 52 ? 1 : w + 1;
+    
+                const nextRow = await dbQuery(`
+                    SELECT opcal_id
+                    FROM dat_operational_calendar
+                    WHERE year = ${nextYear}
+                      AND week = ${nextWeek}
+                      AND factory_id = 1
+                      AND product_type_id = 256
+                    ORDER BY opcal_id
                     LIMIT 1
-                `;
-
-
-                const nextRow = await dbQuery(sqlNextRow);
-                const nextOpcalId = nextRow[0]?.opcal_id ?? null;
-
-
+                `);
+    
                 let maxDateObj;
-
-                if (nextOpcalId) {
-                    const nextEpochSec = Number(nextOpcalId) * 100;
-                    maxDateObj = new Date(nextEpochSec * 1000);
+                if (nextRow.length > 0) {
+                    maxDateObj = new Date(nextRow[0].opcal_id * 100 * 1000);
                     maxDateObj.setDate(maxDateObj.getDate() - 1);
-
                 } else {
-                    // if there's no next week (e.g. end of year), fallback = +6 days
-                    console.log(" Reminder sudah tidak ada opcal id untuk kalender berikutnya ")
                     maxDateObj = new Date(minDateObj);
                     maxDateObj.setDate(maxDateObj.getDate() + 6);
                 }
-
+    
                 const maxDate = DATE_FORMATTER.format(maxDateObj);
-
-
-                // Push into weeksList
-                // SKIP BLOCKED WEEKS
-                if (blockedWeeks.includes(deliveryWeek)) {
-                    console.log(`⛔ Skip blocked week: ${deliveryWeek}`);
-                    continue;
-                }
-
-                // Push into weeksList
+    
                 weeksList.push({
-                    opcal_id: numOpcalId,
-                    id: `${deliveryYear}${String(deliveryWeek).padStart(2, '0')}`,
-                    year: deliveryYear,
-                    week: deliveryWeek,
+                    opcal_id,
+                    id: `${nextYear}${String(w).padStart(2, "0")}`,
+                    year: nextYear,
+                    week: w,
                     startingDate: minDate,
-                    endingDate: maxDate,
+                    endingDate: maxDate
                 });
             }
-
-            // --- Step 8: Return Result ---
-            const result = {
-                success: true,
-                weeksList,
-            };
-
-            console.log("res", weeksList)
-
-            if (weeksList.length === 0) {
-                const msg = "No more week, please contact admin to generate calendar.";
-                const result = { success: false, message: msg };
-
-                console.warn("|WARN|", msg);
-
-                if (res) {
-                    return res.status(404).send(result);
-                } else {
-                    return result;
-                }
-            }
-
-            if (res) {
-                return res.status(200).send(result);
-            } else {
-                return result;
-            }
-
+    
+            return res.status(200).send({ success: true, weeksList });
+    
         } catch (err) {
-            console.error('|ERROR| GET STUFFINGWEEK', err);
-            const result = { success: false, message: err.message };
-            return res ? res.status(500).send(result) : result;
+            return res.status(500).send({ success: false, message: err.message });
         }
     }
+    
     , getOrder_id: async (req, res) => {
 
         let date = new Date();
