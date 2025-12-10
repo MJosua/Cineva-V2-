@@ -75,6 +75,9 @@ const engineWorkDataRouter = require('./engine/engineWorkData')
 const engineAssignmentRouter = require('./engine/engineAssignment')
 const cmsRouter = require('./cms/cmsRouter');
 
+// Coupon System
+const couponRouter = require('./coupon');
+
 module.exports = {
     authRouter,
     authTmRouter,
@@ -139,4 +142,6 @@ module.exports = {
     engineAssignmentRouter,
     cmsRouter,
 
+    // Coupon System
+    couponRouter
 }

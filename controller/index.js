@@ -42,6 +42,9 @@ const projectmngr_team = require('./project_manager_controller/team_controller')
 const projectmngr_dashboard = require('./project_manager_controller/dashboard_controller');
 const hotsDashboardController = require('./hots_controller/hotsDashboardController');
 
+// Coupon System
+const couponController = require('./couponController');
+
 
 
 module.exports = {
@@ -72,7 +75,7 @@ module.exports = {
     hotsDashboardController,
     hotsPublicController,
 
-    
+
     // searates
     srtsController,
 
@@ -84,5 +87,8 @@ module.exports = {
     projectmngr_approval,
     projectmngr_department,
     projectmngr_team,
-    projectmngr_dashboard
+    projectmngr_dashboard,
+
+    // Coupon System
+    couponController
 };

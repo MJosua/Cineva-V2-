@@ -72,7 +72,15 @@ console.log("Server status is Production?", production());
    🔥  SOCKET.IO CONFIG
 =================================================================== */
 const io = new Server(svr, {
-  cors: { origin: "*" },
+  cors: {
+    origin: (origin, callback) => {
+      // Allow all origins dynamically (works with credentials)
+      callback(null, true);
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+  },
   connectionStateRecovery: {
     maxDisconnectionDuration: 2 * 60 * 1000,
     skipMiddlewares: true,
@@ -83,24 +91,64 @@ const io = new Server(svr, {
    🔥  GLOBAL MIDDLEWARE ORDER FIXED (IMPORTANT)
 =================================================================== */
 
+// Session store using MySQL (production-safe)
+const MySQLStore = require('express-mysql-session')(session);
+const sessionStoreOptions = {
+  host: process.env.DB_HOST,
+  port: 3306,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME_HT,
+  clearExpired: true,
+  checkExpirationInterval: 900000, // 15 min
+  expiration: 86400000, // 24 hours
+  createDatabaseTable: true,
+  connectionLimit: 1,
+  endConnectionOnClose: true,
+  charset: 'utf8mb4_bin',
+  schema: {
+    tableName: 'sessions',
+    columnNames: {
+      session_id: 'session_id',
+      expires: 'expires',
+      data: 'data'
+    }
+  }
+};
+const sessionStore = new MySQLStore(sessionStoreOptions);
+
 // 1️⃣ MUST come FIRST — session + security
 App.use(
   session({
     resave: false,
-    saveUninitialized: true,
-    secret: "SECRET",
+    saveUninitialized: false,
+    secret: process.env.SESSION_SECRET || "SECRET",
+    store: sessionStore,
+    cookie: {
+      maxAge: 86400000, // 24 hours
+      secure: production(),
+      httpOnly: true
+    }
   })
 );
 
 // 2️⃣ CORS FIRST — allow headers before anything else
 App.use(cors({
-  origin: '*',
-  methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS",
-  allowedHeaders: "Content-Type, Authorization",
+  origin: (origin, callback) => {
+    // Allow all origins dynamically (required for credentials)
+    callback(null, true);
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+  credentials: true,
+  optionsSuccessStatus: 200, // Some legacy browsers choke on 204
 }));
 
 // Allow OPTIONS preflight — required for CMS admin POST
-App.options('*', cors());
+App.options('*', cors({
+  origin: (origin, callback) => callback(null, true),
+  credentials: true,
+}));
 
 // 3️⃣ JSON + Token before routers
 App.use(express.json({ limit: '10mb' }));
@@ -193,7 +241,8 @@ const {
   engineWorkDataRouter,
   engineAssignmentRouter,
   workflowadminRouter,
-  triggerRouter
+  triggerRouter,
+  couponRouter
 } = require("./routers");
 
 
@@ -320,11 +369,15 @@ App.use("/hots/public", hotspublic);
 
 App.use("/shortener", shortener);
 
+// Coupon System API
+App.use("/api", couponRouter);
+
 /* ===================================================================
    🔥 STATIC FILES (Placed AFTER routers)
 =================================================================== */
 App.use('/public/files/hots/it_support', express.static(path.join(__dirname, 'public', 'files', 'hots', 'it_support')));
 App.use('/public/hots/generateddocuments', express.static(path.join(__dirname, 'public', 'hots', 'generateddocuments')));
+App.use('/image', express.static(path.join(__dirname, 'public', 'image')));
 
 /* ===================================================================
    🔥 404 HANDLER — MUST BE LAST
