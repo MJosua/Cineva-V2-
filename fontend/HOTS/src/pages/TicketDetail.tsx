@@ -48,10 +48,11 @@ const TicketDetail = () => {
   const [selectedToEmails, setSelectedToEmails] = useState("");
 
   const { ticketDetail, isLoadingDetail, detailError, isSubmitting } = useAppSelector(state => state.tickets);
-
+  console.log('ticketdetail',ticketDetail)
 
   const [isDeleteTicketOpen, setIsDeleteTicketOpen] = useState(false);
   const [isCloseTicketOpen, setIsCloseTicketOpen] = useState(false);
+
 
   const handleDeleteTicket = async () => {
     if (!ticketDetail || !id) {
@@ -1242,14 +1243,15 @@ const TicketDetail = () => {
               defaultOpen
             >
               <CardContent className="p-0">
-                <div className="h-64 overflow-y-auto p-4 space-y-3">
+                <div
+                  className="h-64 overflow-y-auto p-4 space-y-3"
+                  ref={commentContainerRef}
+                >
 
-                  <div
-                    ref={commentContainerRef}
-                  >
+                  <div>
                     {groupedMessages && Object.entries(groupedMessages).length > 0 ? (
-                      Object.entries(groupedMessages).map(([date, messages]) => (
-                        <div key={date} className="mb-6">
+                      Object.entries(groupedMessages).map(([date, messages],idx) => (
+                        <div key={idx} className="mb-6">
                           <div className="text-center text-xs text-muted-foreground mb-2">
                             {date}
                           </div>

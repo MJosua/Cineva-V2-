@@ -335,6 +335,10 @@ const EngineController = {
         }
       );
 
+      if (global.io) {
+        global.io.emit("message", "engine_approve_" + ticket_id);
+      }
+
       return res.json(result);
 
     } catch (e) {
@@ -397,6 +401,10 @@ const EngineController = {
         'on_reject',
         { ticketId: ticket_id, actor: { user_id: approver_id }, moduleKey: module.module_key }
       );
+
+      if (global.io) {
+        global.io.emit("message", "engine_reject_" + ticket_id);
+      }
 
       return res.json(result);
 

@@ -169,7 +169,7 @@ export const mapUnifiedForm = (
 
           const isFactoryField =
             label.toLowerCase().includes("factory") || name.toLowerCase().includes("factory");
-      
+
 
           // ✅ Auto-generate `_id` field if selectedObject.filter exists
           if (isFactoryField && selectedObject?.filter !== undefined && selectedObject?.filter !== null) {
@@ -259,9 +259,15 @@ export const convertUnifiedToEngineEav = (unifiedItems) => {
 
     // ---------- NORMAL FIELD ----------
     if (item.value !== undefined && item.label) {
+      // Serialize arrays (file fields) to prevent [object Object]
+      let fieldValue = item.value;
+      if (Array.isArray(fieldValue)) {
+        fieldValue = JSON.stringify(fieldValue);
+      }
+
       eav[item.name] = {
         label: item.label,
-        value: item.value,
+        value: fieldValue,
         field_id: item.id,
         type: "field"
       };

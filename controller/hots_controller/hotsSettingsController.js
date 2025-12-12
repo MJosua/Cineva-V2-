@@ -647,6 +647,33 @@ module.exports = {
 
     },
 
+    // Get all factories from iod.mst_factory for SRF dropdown
+    getFactories: async (req, res) => {
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+
+        try {
+            const [result] = await dbHots.promise().query(`
+                SELECT factory_id, factory_name 
+                FROM iod.mst_factory 
+                ORDER BY factory_name
+            `);
+
+            res.status(200).json({
+                success: true,
+                message: "Get factories SUCCESS",
+                factories: result
+            });
+            console.log(timestamp, "Get factories SUCCESS");
+        } catch (err) {
+            console.error(timestamp, "Get factories Error:", err);
+            res.status(500).json({
+                success: false,
+                message: err.message
+            });
+        }
+    },
+
     getSRFSampleCategory: (req, res) => {
 
         let date = new Date();

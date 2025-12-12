@@ -239,6 +239,10 @@ module.exports = {
 
             console.log(`✅ [ASSIGNMENT] Assignment ${assignmentId} completed by user ${user_id}`);
 
+            if (global.io) {
+                global.io.emit("message", "assignment_complete_" + assignmentId);
+            }
+
             res.json({
                 ok: true,
                 message: 'Assignment completed successfully',
@@ -1105,6 +1109,244 @@ module.exports = {
 
         } catch (error) {
             console.error('Error deleting task:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    // =========================================================================
+    // DATA EXECUTION TOOLS
+    // =========================================================================
+
+    /**
+     * GET /engine/assignment/:assignmentId/data-rows
+     * Get all data rows for a ticket
+     */
+    getDataRows: async (req, res) => {
+        try {
+            const { assignmentId } = req.params;
+
+            // Get ticket_id from assignment
+            const [assignment] = await dbHots.promise().query(
+                'SELECT ticket_id FROM t_ticket_assignment WHERE id = ?',
+                [assignmentId]
+            );
+
+            if (!assignment.length) {
+                return res.status(404).json({ ok: false, error: 'Assignment not found' });
+            }
+
+            const ticket_id = assignment[0].ticket_id;
+
+            // Get data rows from t_ticket_detail
+            const [rows] = await dbHots.promise().query(
+                `SELECT id, cstm_col as field_key, lbl_col as label, value, 
+                        field_type, revision, created_at
+                 FROM t_ticket_detail 
+                 WHERE ticket_id = ? 
+                 AND (revision IS NULL OR revision = (SELECT MAX(revision) FROM t_ticket_detail WHERE ticket_id = ?))
+                 ORDER BY order_col ASC, id ASC`,
+                [ticket_id, ticket_id]
+            );
+
+            // Get edit history from t_ticket_work_data
+            const [history] = await dbHots.promise().query(
+                `SELECT entity_id, field_name, field_value, created_at, created_by,
+                        (SELECT CONCAT(u.firstname, ' ', u.lastname) FROM user u WHERE u.user_id = w.created_by) as user_name
+                 FROM t_ticket_work_data w
+                 WHERE assignment_id = ? AND data_type = 'data_edit_log'
+                 ORDER BY created_at DESC
+                 LIMIT 20`,
+                [assignmentId]
+            );
+
+            // Group history by entity_id
+            const historyGrouped = {};
+            history.forEach(h => {
+                if (!historyGrouped[h.entity_id]) {
+                    historyGrouped[h.entity_id] = { changes: [], created_at: h.created_at, user_name: h.user_name };
+                }
+                historyGrouped[h.entity_id].changes.push({ field: h.field_name, value: h.field_value });
+            });
+
+            res.json({
+                ok: true,
+                rows,
+                history: Object.entries(historyGrouped).map(([id, data]) => ({
+                    id,
+                    ...data
+                })),
+                ticket_id
+            });
+
+        } catch (error) {
+            console.error('Error getting data rows:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * POST /engine/assignment/:assignmentId/data-row
+     * Add a new data row
+     */
+    addDataRow: async (req, res) => {
+        try {
+            const { assignmentId } = req.params;
+            const { label, value, field_type } = req.body;
+            const user_id = req.dataToken.user_id;
+
+            if (!label) {
+                return res.status(400).json({ ok: false, error: 'Label is required' });
+            }
+
+            // Get ticket_id and service_id from assignment
+            const [assignment] = await dbHots.promise().query(
+                `SELECT ta.ticket_id, t.service_id 
+                 FROM t_ticket_assignment ta
+                 JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                 WHERE ta.id = ?`,
+                [assignmentId]
+            );
+
+            if (!assignment.length) {
+                return res.status(404).json({ ok: false, error: 'Assignment not found' });
+            }
+
+            const { ticket_id, service_id } = assignment[0];
+
+            // Get next order
+            const [orderRow] = await dbHots.promise().query(
+                'SELECT COALESCE(MAX(order_col), 0) + 1 as next_order FROM t_ticket_detail WHERE ticket_id = ?',
+                [ticket_id]
+            );
+            const order_col = orderRow[0].next_order;
+
+            // Generate field key from label
+            const field_key = label.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+
+            // Insert new row
+            const [result] = await dbHots.promise().query(
+                `INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, value, field_type, order_col)
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+                [ticket_id, field_key, label, value || '', field_type || 'text', order_col]
+            );
+
+            // Log the addition to t_ticket_work_data
+            const logEntityId = `ADD_${Date.now()}`;
+            await dbHots.promise().query(
+                `INSERT INTO t_ticket_work_data (assignment_id, service_id, data_type, entity_id, field_name, field_value, created_by)
+                 VALUES (?, ?, 'data_edit_log', ?, 'action', 'add', ?),
+                        (?, ?, 'data_edit_log', ?, 'after', ?, ?)`,
+                [assignmentId, service_id, logEntityId, user_id,
+                    assignmentId, service_id, logEntityId, JSON.stringify({ label, value, field_type }), user_id]
+            );
+
+            console.log(`✅ [DATA-ROW] Added row ${result.insertId} for ticket ${ticket_id}`);
+
+            res.json({
+                ok: true,
+                message: 'Data row added successfully',
+                row_id: result.insertId
+            });
+
+        } catch (error) {
+            console.error('Error adding data row:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * PUT /engine/assignment/:assignmentId/data-row/:rowId
+     * Update a data row (logs original data before update)
+     */
+    updateDataRow: async (req, res) => {
+        try {
+            const { assignmentId, rowId } = req.params;
+            const { label, value, field_type } = req.body;
+            const user_id = req.dataToken.user_id;
+
+            // Get current row data (for logging)
+            const [currentRow] = await dbHots.promise().query(
+                'SELECT * FROM t_ticket_detail WHERE id = ?',
+                [rowId]
+            );
+
+            if (!currentRow.length) {
+                return res.status(404).json({ ok: false, error: 'Row not found' });
+            }
+
+            const original = currentRow[0];
+
+            // Get service_id from assignment
+            const [assignment] = await dbHots.promise().query(
+                `SELECT t.service_id 
+                 FROM t_ticket_assignment ta
+                 JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                 WHERE ta.id = ?`,
+                [assignmentId]
+            );
+
+            if (!assignment.length) {
+                return res.status(404).json({ ok: false, error: 'Assignment not found' });
+            }
+
+            const service_id = assignment[0].service_id;
+
+            // Build update fields
+            const updates = [];
+            const params = [];
+
+            if (label !== undefined) {
+                updates.push('lbl_col = ?');
+                params.push(label);
+            }
+            if (value !== undefined) {
+                updates.push('value = ?');
+                params.push(value);
+            }
+            if (field_type !== undefined) {
+                updates.push('field_type = ?');
+                params.push(field_type);
+            }
+
+            if (updates.length === 0) {
+                return res.status(400).json({ ok: false, error: 'No fields to update' });
+            }
+
+            params.push(rowId);
+
+            // Update the row
+            await dbHots.promise().query(
+                `UPDATE t_ticket_detail SET ${updates.join(', ')} WHERE id = ?`,
+                params
+            );
+
+            // Log the edit to t_ticket_work_data
+            const logEntityId = `EDIT_${Date.now()}`;
+            const afterData = { label: label ?? original.lbl_col, value: value ?? original.value, field_type: field_type ?? original.field_type };
+
+            await dbHots.promise().query(
+                `INSERT INTO t_ticket_work_data (assignment_id, service_id, data_type, entity_id, field_name, field_value, created_by)
+                 VALUES (?, ?, 'data_edit_log', ?, 'action', 'edit', ?),
+                        (?, ?, 'data_edit_log', ?, 'row_id', ?, ?),
+                        (?, ?, 'data_edit_log', ?, 'before', ?, ?),
+                        (?, ?, 'data_edit_log', ?, 'after', ?, ?)`,
+                [
+                    assignmentId, service_id, logEntityId, user_id,
+                    assignmentId, service_id, logEntityId, String(rowId), user_id,
+                    assignmentId, service_id, logEntityId, JSON.stringify({ label: original.lbl_col, value: original.value, field_type: original.field_type }), user_id,
+                    assignmentId, service_id, logEntityId, JSON.stringify(afterData), user_id
+                ]
+            );
+
+            console.log(`✅ [DATA-ROW] Updated row ${rowId} by user ${user_id}`);
+
+            res.json({
+                ok: true,
+                message: 'Data row updated successfully'
+            });
+
+        } catch (error) {
+            console.error('Error updating data row:', error);
             res.status(500).json({ ok: false, error: error.message });
         }
     }

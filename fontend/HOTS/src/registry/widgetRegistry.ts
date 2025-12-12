@@ -84,9 +84,9 @@ export const widgetRegistry: Record<string, WidgetConfig> = {
 
   job_execution_tools: {
     id: "job_execution_tools",
-    name: "Job Execution Tools",
-    description: "Tools for workers to execute job assignments",
-    componentPath: "JobExecutionTools",
+    name: "Data Execution Tools",
+    description: "Manage ticket data rows with calculations and audit logging",
+    componentPath: "DataExecutionTools",
     applicableTo: ["assignment_detail"],
     dataRequirements: ["assignmentData", "workData"],
     category: "Job Marketplace"

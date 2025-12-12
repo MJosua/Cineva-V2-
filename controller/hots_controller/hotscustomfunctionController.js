@@ -839,6 +839,40 @@ module.exports = {
             }
         };
 
+        // Get factory shortname by factory_id from iod.mst_factory (for SRF number)
+        const getFactoryByFactoryId = async (factoryId) => {
+            try {
+                if (!factoryId) return '';
+                const result = await dbQuery(
+                    'SELECT factory_name, factory_sname FROM iod.mst_factory WHERE factory_id = ?',
+                    [factoryId]
+                );
+                console.log(`📍 [getFactoryByFactoryId] factory_id=${factoryId}, factory_sname=${result[0]?.factory_sname}`);
+                // Return shortname for SRF number format
+                return result[0]?.factory_sname || result[0]?.factory_name || '';
+            } catch (error) {
+                console.error('Error fetching factory by ID:', error);
+                return '';
+            }
+        };
+
+        // Get factory_id from t_ticket_work_data (set by executor)
+        const getFactoryIdFromWorkData = async (ticketId) => {
+            try {
+                const [result] = await dbHots.promise().query(
+                    `SELECT field_value FROM t_ticket_work_data 
+                     WHERE ticket_id = ? AND field_name = 'factory_id' 
+                     ORDER BY created_at DESC LIMIT 1`,
+                    [ticketId]
+                );
+                console.log(`📍 [getFactoryIdFromWorkData] ticket=${ticketId}, factory_id=${result[0]?.field_value}`);
+                return result[0]?.field_value || null;
+            } catch (error) {
+                console.error('Error fetching factory_id from work_data:', error);
+                return null;
+            }
+        };
+
         const getApproval = async (ticket_id) => {
             try {
                 // 1. Get ticket service_id
@@ -908,7 +942,7 @@ module.exports = {
             return romans[month - 1];
         };
 
-        const getSRFNumberDynamic = async (factory, categoryName, service_id, ticket_id) => {
+        const getSRFNumberDynamic = async (factory, categoryName, service_id, ticket_id, forceRegenerate = false) => {
             const currentDate = new Date();
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth() + 1;
@@ -923,9 +957,29 @@ module.exports = {
                 [ticket_id]
             );
 
-            if (existingSRF.length > 0 && existingSRF[0].doc_no) {
+            if (existingSRF.length > 0 && existingSRF[0].doc_no && !forceRegenerate) {
                 console.log(`🔁 Using existing SRF from t_ticket_detail: ${existingSRF[0].doc_no}`);
                 return existingSRF[0].doc_no;
+            }
+
+            // 🔥 If forceRegenerate and existing SRF, delete old entries first
+            if (forceRegenerate && existingSRF.length > 0) {
+                const oldDocNo = existingSRF[0].doc_no;
+                console.log(`🗑️ [REGENERATE] Deleting old SRF entries: ${oldDocNo}`);
+
+                // Delete old t_ticket_doc_no entries
+                await dbHots.promise().query(
+                    `DELETE FROM t_ticket_doc_no WHERE ticket_id = ? AND doc_no = ?`,
+                    [ticket_id, oldDocNo]
+                );
+
+                // Delete old t_ticket_detail SRF No. entry
+                await dbHots.promise().query(
+                    `DELETE FROM t_ticket_detail WHERE ticket_id = ? AND lbl_col = 'SRF No.'`,
+                    [ticket_id]
+                );
+
+                console.log(`✅ [REGENERATE] Old SRF entries deleted, creating new...`);
             }
 
             // Step 1: Resolve category shortname
@@ -1018,103 +1072,103 @@ module.exports = {
 
 
         const teamLeader = await getteamleaderEmail(17);
-        const factoryPIC = await getFactoryPPIC(getByLabel('Factory_id'));
+
+        // 📍 Factory Resolution Priority:
+        // 1. Check t_ticket_work_data (set by executor)
+        // 2. Fallback to t_ticket_detail (from form)
+        let factory_id = await getFactoryIdFromWorkData(data?.ticket_id);
+        let factory = '';
+
+        if (factory_id) {
+            // Get factory name from mst_factory
+            factory = await getFactoryByFactoryId(factory_id);
+            console.log(`📍 [SRF] Using factory from work_data: ${factory} (id: ${factory_id})`);
+        } else {
+            // Fallback to ticket_detail
+            factory_id = getByLabel('factory_id');
+            factory = getByLabel('factory');
+            console.log(`📍 [SRF] Using factory from ticket_detail: ${factory} (id: ${factory_id})`);
+        }
+
+        const factoryPIC = await getFactoryPPIC(factory_id);
         const approvallistRaw = await getApproval(data?.ticket_id);
         const approvallist = approvallistRaw.filter(a => a.approval_order !== 2);
-        const factory = getByLabel('factory');
-        const factory_id = getByLabel('Factory_id');
         const sample = getByLabel('sample');
-        const generatesrf = await getSRFNumberDynamic(factory, sample, data?.service_id, data?.ticket_id);
+
+        // Pass forceRegenerate=true when triggered manually (replaces old SRF)
+        const forceRegenerate = params?.manual_trigger === true;
+        const generatesrf = await getSRFNumberDynamic(factory, sample, data?.service_id, data?.ticket_id, forceRegenerate);
 
 
-        // 🔥 Handle Core Engine rowgroup format (first/second/third/combined)
-        // Core Engine: lbl_col = "first", "second", "third", "combined"; value = actual data
-        // Old HOTS: lbl_col = field_id, cstm_col = value
+        // 🔥 Handle Core Engine rowgroup format
+        // Core Engine: field_type = 'rowgroup_item', lbl_col = 'Item Name' or 'Quantity', value = actual data
+        // cstm_col = 'item_0', 'item_1', etc. for item index
 
-        // Check if we're using Core Engine format (has 'first' as lbl_col)
-        const isEngineFormat = detailRows.some(r => r.lbl_col?.toLowerCase() === 'quantity');
+        // Check if we're using Core Engine format (has rowgroup_item field_type)
+        const isEngineFormat = detailRows.some(r =>
+            r.field_type === 'rowgroup_item' ||
+            r.lbl_col?.toLowerCase() === 'quantity' ||
+            r.lbl_col?.toLowerCase() === 'item name'
+        );
+
+        console.log('📊 [DOC_GEN] isEngineFormat:', isEngineFormat);
+        console.log('📊 [DOC_GEN] detailRows sample:', detailRows.slice(0, 5));
 
         if (isEngineFormat) {
-            // Core Engine format: group by rowgroup items
-            // Find all 'first' entries (item names)
-            const quantity = detailRows.filter(r => r.lbl_col?.toLowerCase() === 'quantity');
+            // Core Engine format: find Item Name and Quantity rows
+            // Item rows have lbl_col = 'Item Name', cstm_col = 'item_0', 'item_1', etc.
+            const itemRows = detailRows.filter(r =>
+                r.lbl_col?.toLowerCase() === 'item name' ||
+                r.field_type === 'rowgroup_item' && r.lbl_col?.toLowerCase().includes('item')
+            );
 
-            // Use combined rows if available, otherwise pair first with second/third
-            if (quantity.length > 0) {
-                combinedRows.forEach((row, i) => {
-                    const itemName = firstRows[i]?.value || '';
-                    const combined = row.value || ''; // e.g., "125 pcs|"
+            const quantityRows = detailRows.filter(r =>
+                r.lbl_col?.toLowerCase() === 'quantity' ||
+                (r.field_type === 'rowgroup_item' && r.lbl_col?.toLowerCase().includes('quantity'))
+            );
 
+            console.log('📊 [DOC_GEN] Found item rows:', itemRows.length);
+            console.log('📊 [DOC_GEN] Found quantity rows:', quantityRows.length);
 
-                    console.log("combined", combined);
-                    console.log("cleanCombined", cleanCombined);
+            // Match items with quantities by index (item_0 with quantity_0, etc.)
+            itemRows.forEach((itemRow, i) => {
+                const itemName = itemRow.value || '';
 
+                // Try to find matching quantity by same index
+                const itemIndex = itemRow.cstm_col?.match(/\d+/)?.[0] || i.toString();
+                const qtyRow = quantityRows.find(q => q.cstm_col?.includes(itemIndex)) || quantityRows[i];
 
-                    // Parse combined: "125 pcs|" or "125 ctn|"
-                    const cleanCombined = combined.replace(/\|/g, '').trim();
-                    let pcs = '', ctn = '';
+                const qtyValue = qtyRow?.value || '';
 
-                    if (cleanCombined.toLowerCase().includes('pcs')) {
-                        pcs = cleanCombined;
-                        const val = parseInt(cleanCombined);
-                        if (!isNaN(val)) {
-                            totalPcs += val;
-                            pcs = val.toLocaleString();
-                        }
+                console.log(`📊 [DOC_GEN] Row ${i}: item="${itemName}", qty="${qtyValue}"`);
+
+                // Parse quantity: look for pcs or ctn
+                let pcs = '', ctn = '';
+                const cleanQty = qtyValue.replace(/\|/g, '').trim();
+
+                if (cleanQty.toLowerCase().includes('pcs')) {
+                    const val = parseInt(cleanQty);
+                    if (!isNaN(val)) {
+                        totalPcs += val;
+                        pcs = val.toLocaleString();
                     }
-                    if (cleanCombined.toLowerCase().includes('ctn')) {
-                        ctn = cleanCombined;
-                        const val = parseInt(cleanCombined);
-                        if (!isNaN(val)) {
-                            totalCtn += val;
-                            ctn = val.toLocaleString();
-                        }
+                }
+                if (cleanQty.toLowerCase().includes('ctn')) {
+                    const val = parseInt(cleanQty);
+                    if (!isNaN(val)) {
+                        totalCtn += val;
+                        ctn = val.toLocaleString();
                     }
+                }
 
-                    itemRowsHtml += `
-                        <tr>
-                          <td>${i + 1}</td>
-                          <td>${itemName}</td>
-                          <td>${pcs}</td>
-                          <td>${ctn}</td>
-                        </tr>`;
-                });
-            } else {
-                // Fallback: pair first with second/third
-                const secondRows = detailRows.filter(r => r.lbl_col?.toLowerCase() === 'second');
-                const thirdRows = detailRows.filter(r => r.lbl_col?.toLowerCase() === 'third');
-
-                firstRows.forEach((row, i) => {
-                    const itemName = row.value || '';
-                    const qtyValue = secondRows[i]?.value || '';
-                    const unitValue = thirdRows[i]?.value || '';
-                    const qty = `${qtyValue} ${unitValue}`.trim();
-
-                    let pcs = '', ctn = '';
-                    if (unitValue.toLowerCase() === 'pcs') {
-                        const val = parseInt(qtyValue);
-                        if (!isNaN(val)) {
-                            totalPcs += val;
-                            pcs = val.toLocaleString();
-                        }
-                    }
-                    if (unitValue.toLowerCase() === 'ctn') {
-                        const val = parseInt(qtyValue);
-                        if (!isNaN(val)) {
-                            totalCtn += val;
-                            ctn = val.toLocaleString();
-                        }
-                    }
-
-                    itemRowsHtml += `
-                        <tr>
-                          <td>${i + 1}</td>
-                          <td>${itemName}</td>
-                          <td>${pcs}</td>
-                          <td>${ctn}</td>
-                        </tr>`;
-                });
-            }
+                itemRowsHtml += `
+                    <tr>
+                      <td>${i + 1}</td>
+                      <td>${itemName}</td>
+                      <td>${pcs}</td>
+                      <td>${ctn}</td>
+                    </tr>`;
+            });
         } else {
             // Old HOTS format
             const itemRows = detailRows.filter(row =>
@@ -1345,7 +1399,7 @@ module.exports = {
                     ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${po}</p>`
                     : "";
             })()}
-                  }
+                  
                     ${getByLabel('Week Delivery') && getByLabel('Week Delivery') !== "No Data Found"
                 ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>`
                 : ''}
@@ -1566,6 +1620,66 @@ module.exports = {
 
         // Implementation for custom handlers
         throw new Error('Custom handler execution not implemented');
+    },
+
+    /**
+     * Manual Document Generation API Handler
+     * Called from frontend to manually trigger document generation
+     * Uses same approach as trigger-functions/srf_document_generator.js
+     */
+    manualGenerateDocument: async (req, res) => {
+        try {
+            const { ticketId } = req.params;
+            const { service_id, template } = req.body;
+
+            console.log(`📄 [MANUAL_DOC_GEN] ========= START =========`);
+            console.log(`📄 [MANUAL_DOC_GEN] ticketId: ${ticketId}`);
+            console.log(`📄 [MANUAL_DOC_GEN] service_id: ${service_id}`);
+            console.log(`📄 [MANUAL_DOC_GEN] template: ${template || 'srf_document (default)'}`);
+
+            // Build function config object (same as trigger does)
+            const funcConfig = {
+                config: JSON.stringify({
+                    template: template || 'srf_document',
+                    documentType: 'SRF'
+                })
+            };
+
+            // Get requester name
+            const [requesterData] = await dbHots.promise().query(`
+                SELECT CONCAT(u.firstname, ' ', u.lastname) as requester_name, u.email as requester_email
+                FROM t_ticket t
+                JOIN user u ON t.created_by = u.user_id
+                WHERE t.ticket_id = ?
+            `, [ticketId]);
+
+            console.log(`📄 [MANUAL_DOC_GEN] Requester data:`, requesterData);
+
+            const params = {
+                requester_name: requesterData[0]?.requester_name || 'Unknown',
+                requester_email: requesterData[0]?.requester_email || '',
+                manual_trigger: true
+            };
+
+            console.log(`📄 [MANUAL_DOC_GEN] Calling executeDocumentGeneration...`);
+
+            // Call the internal document generation function (same as trigger does)
+            const result = await module.exports.executeDocumentGeneration(funcConfig, ticketId, params);
+
+            console.log(`📄 [MANUAL_DOC_GEN] Result:`, result);
+
+            res.json({
+                success: true,
+                message: 'Document generated successfully',
+                document_path: result
+            });
+        } catch (error) {
+            console.error('❌ [MANUAL_DOC_GEN] Error:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Failed to generate document'
+            });
+        }
     },
 
 

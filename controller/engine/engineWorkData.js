@@ -179,5 +179,92 @@ module.exports = {
             console.error('Error updating work data:', error);
             res.status(500).json({ ok: false, error: error.message });
         }
+    },
+
+    /**
+     * GET /engine/ticket/:ticketId/work-data/:fieldName
+     * Get a specific work data field by ticket_id and field_name
+     */
+    getWorkDataField: async (req, res) => {
+        try {
+            const { ticketId, fieldName } = req.params;
+
+            const [result] = await dbHots.promise().query(
+                `SELECT field_value, field_type, created_at 
+                 FROM t_ticket_work_data 
+                 WHERE ticket_id = ? AND field_name = ? 
+                 ORDER BY created_at DESC LIMIT 1`,
+                [ticketId, fieldName]
+            );
+
+            if (!result.length) {
+                return res.json({ ok: true, value: null });
+            }
+
+            res.json({
+                ok: true,
+                value: result[0].field_value,
+                field_type: result[0].field_type,
+                created_at: result[0].created_at
+            });
+
+        } catch (error) {
+            console.error('Error getting work data field:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * POST /engine/ticket/:ticketId/work-data
+     * Save/upsert a work data field for a ticket
+     */
+    saveWorkDataField: async (req, res) => {
+        try {
+            const { ticketId } = req.params;
+            const { field_name, field_value } = req.body;
+            const user_id = req.dataToken?.user_id;
+
+            if (!field_name || field_value === undefined) {
+                return res.status(400).json({ ok: false, error: 'Missing field_name or field_value' });
+            }
+
+            // Get service_id from ticket
+            const [ticket] = await dbHots.promise().query(
+                'SELECT service_id FROM t_ticket WHERE ticket_id = ?',
+                [ticketId]
+            );
+
+            if (!ticket.length) {
+                return res.status(404).json({ ok: false, error: 'Ticket not found' });
+            }
+
+            const service_id = ticket[0].service_id;
+
+            // Upsert: delete existing and insert new
+            await dbHots.promise().query(
+                `DELETE FROM t_ticket_work_data WHERE ticket_id = ? AND field_name = ?`,
+                [ticketId, field_name]
+            );
+
+            await dbHots.promise().query(
+                `INSERT INTO t_ticket_work_data 
+                 (ticket_id, service_id, data_type, entity_id, field_name, field_value, field_type, created_by)
+                 VALUES (?, ?, 'executor_input', 'factory', ?, ?, 'text', ?)`,
+                [ticketId, service_id, field_name, field_value, user_id]
+            );
+
+            console.log(`✅ [WORK_DATA] Saved ${field_name}=${field_value} for ticket ${ticketId}`);
+
+            res.json({
+                ok: true,
+                message: 'Work data saved successfully',
+                field_name,
+                field_value
+            });
+
+        } catch (error) {
+            console.error('Error saving work data field:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
     }
 };

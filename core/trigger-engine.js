@@ -38,6 +38,7 @@ class TriggerEngine {
     this.registerAction('execute_function', this._action_executeFunction.bind(this));
     this.registerAction('create_assignment', this._action_createAssignment.bind(this));
     this.registerAction('complete_assignment', this._action_completeAssignment.bind(this));
+    this.registerAction('create_task', this._action_createTask.bind(this));
     this.registerAction('log_analytics', this._action_logAnalytics.bind(this));
   }
 
@@ -294,6 +295,94 @@ class TriggerEngine {
 
     } catch (e) {
       console.error(`❌ [TRIGGER][ANALYTICS] Error logging:`, e);
+      return { ok: false, error: e.message };
+    }
+  }
+
+
+
+  async _action_createTask(context, params) {
+    const ticketId = context.ticketId;
+    const userId = context.actor?.user_id || 0; // functional user or system
+
+    if (!ticketId) {
+      return { ok: false, error: 'missing ticketId' };
+    }
+
+    const title = params.title || 'New Task';
+    const description = params.description || '';
+    const priority = params.priority || 'medium';
+    const dueDate = params.due_date || null;
+
+    try {
+      // 1. Find active assignment for this ticket (JOIN t_ticket to get service_id)
+      const assignments = await this.dbQuery(
+        `SELECT ta.id, t.service_id 
+         FROM t_ticket_assignment ta 
+         JOIN t_ticket t ON t.ticket_id = ta.ticket_id 
+         WHERE ta.ticket_id = ? AND ta.assignment_status = ? 
+         ORDER BY ta.id DESC LIMIT 1`,
+        [ticketId, 'active']
+      );
+
+      if (!assignments.length) {
+        console.log(`⚠️ [TRIGGER][TASK] No active assignment found for ticket ${ticketId}. Cannot create task.`);
+        return { ok: false, error: 'No active assignment found' };
+      }
+
+      const assignmentId = assignments[0].id;
+      const serviceId = assignments[0].service_id;
+
+      // 2. Determine Task Entity ID
+      const taskEntityId = `TASK_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+      // 3. Determine Order
+      const orderResult = await this.dbQuery(`
+          SELECT MAX(CAST(field_value AS UNSIGNED)) as max_order 
+          FROM t_ticket_work_data 
+          WHERE assignment_id = ? AND data_type = 'task' AND field_name = 'order'
+      `, [assignmentId]);
+
+      // Handle dbQuery returning array or object depending on driver implementation, usually array of rows
+      const maxOrder = (orderResult[0] && orderResult[0].max_order) ? Number(orderResult[0].max_order) : 0;
+      const nextOrder = maxOrder + 1;
+
+      // 4. Prepare Task Fields
+      const taskFields = {
+        title,
+        description,
+        priority,
+        status: 'todo',
+        order: nextOrder.toString()
+      };
+
+      if (dueDate) taskFields.due_date = dueDate;
+
+      // 5. Insert into t_ticket_work_data
+      // We can't use db.promise().query here, we must use this.dbQuery which abstracts it.
+      // But this.dbQuery usually takes a single query string. modifying a loop to separate inserts.
+
+      console.log(`🔍 [TRIGGER][TASK] Creating task "${title}" for assignment ${assignmentId}`);
+
+      for (const [key, value] of Object.entries(taskFields)) {
+        await this.dbQuery(`
+            INSERT INTO t_ticket_work_data 
+            (ticket_id, assignment_id, service_id, data_type, entity_id, field_name, field_value, created_by, created_at)
+            VALUES (?, ?, ?, 'task', ?, ?, ?, ?, NOW())
+         `, [ticketId, assignmentId, serviceId, taskEntityId, key, String(value), userId]);
+      }
+
+      console.log(`✅ [TRIGGER][TASK] Task created successfully: ${taskEntityId}`);
+
+      // Emit socket update if global io exists
+      if (global.io) {
+        global.io.emit("message", "update_task_" + assignmentId);
+      }
+
+      return { ok: true, taskId: taskEntityId };
+
+    } catch (e) {
+      console.error(`❌ [TRIGGER][TASK] Error creating task:`, e);
       return { ok: false, error: e.message };
     }
   }

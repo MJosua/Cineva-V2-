@@ -71,27 +71,39 @@ const ServiceCatalog = () => {
     fetchData();
   }, []);
 
-  // Group services by category for rendering
-  const serviceCategories = categoryList.map(category => {
-    const categoryServices = serviceCatalog.filter(service =>
-      service.category_id === category.category_id &&
-      service.active === 1 &&
-      searchInObject(service, searchValue)
-    );
 
-    return {
-      title: category.category_name,
-      icon: categoryIcons[category.category_name] || FileText,
-      color: categoryColors[category.category_name] || 'bg-gray-100 text-gray-600',
-      services: categoryServices.map(service => ({
-        title: service.service_name,
-        description: service.service_description,
-        icon: serviceIcons[service.service_name] || FileText,
+  console.log("Category List:", categoryList);
+  // Group services by category for rendering
+  // Sort services by category ID first
+  const sortedServices = [...serviceCatalog].sort(
+    (a, b) => Number(a.category_id) - Number(b.category_id)
+  );
+
+  const serviceCategories = [...categoryList]
+    .sort((a, b) => a.category_id - b.category_id)
+    .map(category => {
+      const categoryServices = sortedServices
+        .filter(service =>
+          service.category_id === category.category_id &&
+          service.active === 1 &&
+          searchInObject(service, searchValue)
+        )
+        .sort((a, b) => a.service_id - b.service_id);
+
+      return {
+        title: category.category_name,
+        icon: categoryIcons[category.category_name] || FileText,
         color: categoryColors[category.category_name] || 'bg-gray-100 text-gray-600',
-        url: `/${service.nav_link}`
-      }))
-    };
-  }).filter(category => category.services.length > 0);
+        services: categoryServices.map(service => ({
+          title: service.service_name,
+          description: service.service_description,
+          icon: serviceIcons[service.service_name] || FileText,
+          url: `/${service.nav_link}`
+        }))
+      };
+    })
+    .filter(category => category.services.length > 0);
+
 
   const SkeletonCard = () => (
     <Card>
@@ -177,6 +189,7 @@ const ServiceCatalog = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+
                 {category.services.map((service) => (
 
 

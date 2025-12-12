@@ -124,6 +124,8 @@ route.get('/get/meetingroom', decodeTokenHT, hotsSettingsController.getmeetingro
 route.get('/get/meetingroom_static', decodeTokenHT, hotsSettingsController.getmeetingroom_static)
 
 
+// Factory list for SRF service
+route.get('/factories', decodeTokenHT, hotsSettingsController.getFactories)
 
 module.exports = route
 

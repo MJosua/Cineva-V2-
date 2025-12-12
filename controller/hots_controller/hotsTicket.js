@@ -143,12 +143,17 @@ module.exports = {
                     await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                 }
 
-                // File attachment
+                // File attachment - using unified t_file_upload
                 if (req.files && req.files.length > 0) {
-                    let queryInsertFiles = `INSERT INTO t_attachment (ticket_id, url) VALUES (?, ?);`;
+                    let queryInsertFiles = `INSERT INTO t_file_upload 
+                        (entity_type, entity_id, filename, original_name, file_path, file_size, mime_type, uploaded_by) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
                     for (let file of req.files) {
                         let file_url = `/public/files/hots/it_support/${file.filename}`;
-                        await dbHots.promise().query(queryInsertFiles, [ticketId, file_url]);
+                        await dbHots.promise().query(queryInsertFiles, [
+                            'ticket', ticketId, file.filename, file.originalname, file_url,
+                            file.size, file.mimetype, req.dataToken.user_id
+                        ]);
                     }
                 }
                 // Final response
@@ -539,12 +544,17 @@ module.exports = {
 
 
 
-                        // File Attachments
+                        // File Attachments - using unified t_file_upload
                         if (req.files && req.files.length > 0) {
-                            let queryInsertFiles = `INSERT INTO t_attachment (ticket_id, url) VALUES (?, ?);`;
+                            let queryInsertFiles = `INSERT INTO t_file_upload 
+                                (entity_type, entity_id, filename, original_name, file_path, file_size, mime_type, uploaded_by) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
                             for (let file of req.files) {
                                 let file_url = `/public/files/pricing_structure/${file.filename}`;
-                                await dbHots.promise().query(queryInsertFiles, [ticketId, file_url]);
+                                await dbHots.promise().query(queryInsertFiles, [
+                                    'ticket', ticketId, file.filename, file.originalname, file_url,
+                                    file.size, file.mimetype, req.dataToken.user_id
+                                ]);
                             }
                         }
 
@@ -760,12 +770,17 @@ module.exports = {
 
 
 
-                        // File Attachments
+                        // File Attachments - using unified t_file_upload
                         if (req.files && req.files.length > 0) {
-                            let queryInsertFiles = `INSERT INTO t_attachment (ticket_id, url) VALUES (?, ?);`;
+                            let queryInsertFiles = `INSERT INTO t_file_upload 
+                                (entity_type, entity_id, filename, original_name, file_path, file_size, mime_type, uploaded_by) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
                             for (let file of req.files) {
                                 let file_url = `/public/files/hots/it_support/${file.filename}`;
-                                await dbHots.promise().query(queryInsertFiles, [ticketId, file_url]);
+                                await dbHots.promise().query(queryInsertFiles, [
+                                    'ticket', ticketId, file.filename, file.originalname, file_url,
+                                    file.size, file.mimetype, req.dataToken.user_id
+                                ]);
                             }
                         }
 
@@ -835,12 +850,17 @@ module.exports = {
 
 
 
-                        // File Attachments
+                        // File Attachments - using unified t_file_upload
                         if (req.files && req.files.length > 0) {
-                            let queryInsertFiles = `INSERT INTO t_attachment (ticket_id, url) VALUES (?, ?);`;
+                            let queryInsertFiles = `INSERT INTO t_file_upload 
+                                (entity_type, entity_id, filename, original_name, file_path, file_size, mime_type, uploaded_by) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
                             for (let file of req.files) {
                                 let file_url = `/public/files/hots/it_support/${file.filename}`;
-                                await dbHots.promise().query(queryInsertFiles, [ticketId, file_url]);
+                                await dbHots.promise().query(queryInsertFiles, [
+                                    'ticket', ticketId, file.filename, file.originalname, file_url,
+                                    file.size, file.mimetype, req.dataToken.user_id
+                                ]);
                             }
                         }
 
@@ -894,12 +914,17 @@ module.exports = {
                             await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                         }
 
-                        // File Attachments
+                        // File Attachments - using unified t_file_upload
                         if (req.files && req.files.length > 0) {
-                            let queryInsertFiles = `INSERT INTO t_attachment (ticket_id, url) VALUES (?, ?);`;
+                            let queryInsertFiles = `INSERT INTO t_file_upload 
+                                (entity_type, entity_id, filename, original_name, file_path, file_size, mime_type, uploaded_by) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
                             for (let file of req.files) {
                                 let file_url = `/public/files/hots/it_support/${file.filename}`;
-                                await dbHots.promise().query(queryInsertFiles, [ticketId, file_url]);
+                                await dbHots.promise().query(queryInsertFiles, [
+                                    'ticket', ticketId, file.filename, file.originalname, file_url,
+                                    file.size, file.mimetype, req.dataToken.user_id
+                                ]);
                             }
                         }
 
@@ -2436,16 +2461,16 @@ module.exports = {
                         DATE_FORMAT(c.date_created, '%W, ') as day_created,
                         DATE_FORMAT(c.date_created,'%d-%b-%Y ') as date_created,
                         DATE_FORMAT(c.date_created, '%H:%i') as time_created,
-                        a.attachment_id,
-                        a.url as attachment_url,
+                        f.upload_id as attachment_id,
+                        f.file_path as attachment_url,
                         CONCAT(u.firstname, " ", u.lastname) as sender
                     from
                         t_comment c
                     left join 
-                        t_attachment a on
-                        c.ticket_id = a.ticket_id 
+                        t_file_upload f on
+                        f.entity_type = 'comment'
                     and
-                        c.comment_id = a.comment_id
+                        c.comment_id = f.entity_id
                     left join
                         user u on
                         u.user_id = c.user_id
@@ -2794,16 +2819,20 @@ module.exports = {
 
                                 if (req.files && req.files.length > 0) {
                                     let queryInsertFiles = `
-                                        INSERT INTO 
-                                        t_attachment (ticket_id, url, comment_id) 
-                                        VALUES (?, ?, ?)
+                                        INSERT INTO t_file_upload 
+                                        (entity_type, entity_id, field_name, filename, original_name, file_path, file_size, mime_type, uploaded_by) 
+                                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                                     `;
 
                                     // Iterate over the files and insert them one by one
                                     for (let file of req.files) {
                                         let file_url = `/public/files/hots/it_support/${file.filename}`;
 
-                                        dbHots.query(queryInsertFiles, [ticket_id, file_url, ticket_order], (err, results) => {
+                                        dbHots.query(queryInsertFiles, [
+                                            'comment', ticket_order, ticket_id, // entity_type=comment, entity_id=comment_order, field_name=ticket_id for reference
+                                            file.filename, file.originalname, file_url,
+                                            file.size, file.mimetype, req.dataToken.user_id
+                                        ], (err, results) => {
                                             if (err) {
                                                 console.error(timestamp, "Error inserting attachment", err);
                                                 return res.status(500).send({
@@ -4635,7 +4664,7 @@ LIMIT ${limit} OFFSET ${offset};
                         )
                     )
                     FROM t_file_upload f
-                    WHERE f.ticket_id = t.ticket_id
+                    WHERE f.entity_type = 'ticket' AND f.entity_id = t.ticket_id
                 ) AS files,
     
                 -- Approval events list
@@ -4870,6 +4899,10 @@ LIMIT ${limit} OFFSET ${offset};
             await conn.commit();
             conn.release();
 
+            if (global.io) {
+                global.io.emit("message", "update_reject_" + ticket_id);
+            }
+
             return res.status(200).json({
                 success: true,
                 message: "TICKET REJECTED SUCCESSFULLY"
@@ -4920,6 +4953,10 @@ LIMIT ${limit} OFFSET ${offset};
 
 
             console.log(timestamp, "CLOSE TICKET SUCCESS");
+            if (global.io) {
+                global.io.emit("message", "update_close_" + ticket_id);
+            }
+
             return res.status(200).send({
                 success: true,
                 message: "TICKET CLOSE SUCCESSFULLY"
@@ -4963,6 +5000,10 @@ LIMIT ${limit} OFFSET ${offset};
 
 
             console.log(timestamp, "CLOSE TICKET SUCCESS");
+            if (global.io) {
+                global.io.emit("message", "update_close_service_" + ticket_id);
+            }
+
             return res.status(200).send({
                 success: true,
                 message: "TICKET CLOSE SUCCESSFULLY"
@@ -4988,12 +5029,15 @@ LIMIT ${limit} OFFSET ${offset};
 
         let queryGetAttachments = `
                 SELECT 
-                    attachment_id,
-                    url,
+                    upload_id as attachment_id,
+                    file_path as url,
                     filename,
+                    original_name,
+                    file_size,
+                    mime_type,
                     upload_date
-                FROM t_attachment
-                WHERE ticket_id = ? AND comment_id IS NULL
+                FROM t_file_upload
+                WHERE entity_type = 'ticket' AND entity_id = ?
                 ORDER BY upload_date DESC
             `;
 
@@ -5191,6 +5235,10 @@ LIMIT ${limit} OFFSET ${offset};
 
             // email notification
             await hotsApproveRequest(false, ticket_id);
+
+            if (global.io) {
+                global.io.emit("message", "update_approve_" + ticket_id);
+            }
 
             return res.status(200).json({
                 success: true,

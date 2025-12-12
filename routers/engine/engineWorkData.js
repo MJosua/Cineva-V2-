@@ -13,4 +13,10 @@ router.post('/tickets/:ticketId/work-data', decodeTokenHT, engineWorkData.addWor
 // Update work data for a specific entity
 router.patch('/tickets/:ticketId/work-data/:entityId', decodeTokenHT, engineWorkData.updateWorkData);
 
+// Get specific work data field by ticket_id and field_name
+router.get('/ticket/:ticketId/work-data/:fieldName', decodeTokenHT, engineWorkData.getWorkDataField);
+
+// Save work data field for a ticket (upsert)
+router.post('/ticket/:ticketId/work-data', decodeTokenHT, engineWorkData.saveWorkDataField);
+
 module.exports = router;

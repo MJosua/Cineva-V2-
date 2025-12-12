@@ -54,4 +54,17 @@ router.post('/assignment/:assignmentId/tasks/:taskId/steps', decodeTokenHT, engi
 // Toggle/update a task step (checked, label)
 router.patch('/assignment/:assignmentId/tasks/:taskId/steps/:stepId', decodeTokenHT, engineAssignment.toggleTaskStep);
 
+// =========================================================================
+// DATA EXECUTION TOOLS ROUTES
+// =========================================================================
+
+// Get all data rows for assignment's ticket
+router.get('/assignment/:assignmentId/data-rows', decodeTokenHT, engineAssignment.getDataRows);
+
+// Add a new data row
+router.post('/assignment/:assignmentId/data-row', decodeTokenHT, engineAssignment.addDataRow);
+
+// Update a data row (with audit log)
+router.put('/assignment/:assignmentId/data-row/:rowId', decodeTokenHT, engineAssignment.updateDataRow);
+
 module.exports = router;

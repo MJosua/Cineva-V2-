@@ -180,8 +180,15 @@ if (!global.consoleOverridden) {
   };
 }
 
+global.io = io;
+
 io.on("connection", socket => {
   socket.emit("logs", logs);
+
+  // Relay messages for chat/updates
+  socket.on("message", (data) => {
+    io.emit("message", data);
+  });
 });
 
 
@@ -378,6 +385,7 @@ App.use("/api", couponRouter);
 App.use('/public/files/hots/it_support', express.static(path.join(__dirname, 'public', 'files', 'hots', 'it_support')));
 App.use('/public/hots/generateddocuments', express.static(path.join(__dirname, 'public', 'hots', 'generateddocuments')));
 App.use('/image', express.static(path.join(__dirname, 'public', 'image')));
+App.use('/files', express.static(path.join(__dirname, 'public', 'files')));
 
 /* ===================================================================
    🔥 404 HANDLER — MUST BE LAST

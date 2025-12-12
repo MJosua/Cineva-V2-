@@ -27,6 +27,7 @@ route.get('/excel_data/:ticketId', decodeTokenHT, hotscustomfunctionController.g
 route.get('/logs/:ticketId', decodeTokenHT, hotscustomfunctionController.getFunctionLogs);
 route.get('/documents/:ticketId', decodeTokenHT, hotscustomfunctionController.getGeneratedDocuments);
 route.get('/download/:documentId', decodeTokenHT, hotscustomfunctionController.downloadDocument);
+route.post('/execute-doc-gen/:ticketId', decodeTokenHT, hotscustomfunctionController.manualGenerateDocument);
 
 // Templates
 route.get('/templates', decodeTokenHT, hotscustomfunctionController.getFunctionTemplates);
