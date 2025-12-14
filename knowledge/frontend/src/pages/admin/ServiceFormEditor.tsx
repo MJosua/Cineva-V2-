@@ -19,6 +19,7 @@ import { API_URL } from '@/config/sourceConfig';
 import { useToast } from '@/hooks/use-toast';
 import { getMaxFormFields } from '@/utils/formFieldMapping';
 import { UnifiedFormStructureEditor, FormStructureItem } from '@/components/forms/UnifiedFormStructureEditor';
+import TriggerActionsEditor, { TriggerConfig } from '@/components/workflow/TriggerActionsEditor';
 
 const ServiceFormEditor = () => {
   const { id } = useParams();
@@ -47,6 +48,7 @@ const ServiceFormEditor = () => {
   const [activeTab, setActiveTab] = useState('basic');
 
   const [formStructure, setFormStructure] = useState<FormStructureItem[]>([]);
+  const [triggers, setTriggers] = useState<TriggerConfig[]>([]);
 
   // Calculate total field count properly
   const totalFieldCount = formStructure.reduce((acc, item) => {
@@ -109,6 +111,9 @@ const ServiceFormEditor = () => {
         if (serviceData.team_id) {
           setSelectedAssignment(serviceData.team_id)
         }
+
+        // Load triggers for this service
+        loadTriggers(serviceData.service_id);
       }
     } else if (!isEdit) {
       const defaultWorkflow = workflowGroups.find(wg => wg.name?.toLowerCase().includes('direct superior') || wg.name?.toLowerCase().includes('default'));
@@ -119,6 +124,78 @@ const ServiceFormEditor = () => {
   }, [isEdit, id, serviceCatalog, categoryList, workflowGroups]);
 
   const { toast } = useToast();
+
+  // Load triggers from database
+  const loadTriggers = async (serviceId: number) => {
+    try {
+      const response = await axios.get(`${API_URL}/hots_settings/triggers/${serviceId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+      });
+      if (response.data && Array.isArray(response.data)) {
+        const loadedTriggers: TriggerConfig[] = response.data.map((t: any) => ({
+          trigger_name: t.trigger_name,
+          trigger_type: t.trigger_type || 'event',
+          actions: t.trigger_config?.actions || [],
+          active: t.active === 1,
+        }));
+        setTriggers(loadedTriggers);
+      }
+    } catch (error) {
+      console.log('No triggers found or error loading:', error);
+    }
+  };
+
+  // Save triggers to database
+  const saveTriggers = async (serviceId: number) => {
+    // Validate triggers before saving
+    if (triggers.length > 0) {
+      try {
+        const validation = await axios.post(`${API_URL}/hots_settings/validate_triggers`, {
+          triggers: triggers.map(t => ({
+            trigger_name: t.trigger_name,
+            trigger_type: t.trigger_type,
+            trigger_config: { actions: t.actions },
+          }))
+        }, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        });
+
+        if (!validation.data.valid) {
+          const errorMessages = validation.data.errors.map((e: any) =>
+            `• ${e.message}`
+          ).join('\n');
+
+          toast({
+            title: "❌ Trigger Validation Failed",
+            description: errorMessages,
+            variant: "destructive",
+            duration: 8000
+          });
+          throw new Error('Validation failed');
+        }
+      } catch (error: any) {
+        if (error.message === 'Validation failed') throw error;
+        console.error('Validation request failed:', error);
+        // Continue saving even if validation endpoint fails
+      }
+    }
+
+    try {
+      await axios.post(`${API_URL}/hots_settings/triggers/${serviceId}`, {
+        triggers: triggers.map(t => ({
+          trigger_name: t.trigger_name,
+          trigger_type: t.trigger_type,
+          trigger_config: { actions: t.actions },
+          active: t.active ? 1 : 0,
+        }))
+      }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+      });
+    } catch (error) {
+      console.error('Error saving triggers:', error);
+      throw error;
+    }
+  };
 
   // Convert legacy structure to unified structure
 
@@ -200,6 +277,12 @@ const ServiceFormEditor = () => {
           Authorization: `Bearer ${localStorage.getItem('tokek')}`,
         }
       });
+
+      // Save triggers if we have a service ID
+      const serviceId = isEdit ? parseInt(id!) : response.data?.service_id;
+      if (serviceId && triggers.length > 0) {
+        await saveTriggers(serviceId);
+      }
 
       toast({
         title: "Success",
@@ -313,9 +396,10 @@ const ServiceFormEditor = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="basic">Basic Configuration</TabsTrigger>
             <TabsTrigger value="structure">Form Structure</TabsTrigger>
+            <TabsTrigger value="triggers">Triggers</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-6">
@@ -400,7 +484,7 @@ const ServiceFormEditor = () => {
                       </SelectTrigger>
                       <SelectContent>
 
-                        {console.log("workflowGroups",workflowGroups)}
+                        {console.log("workflowGroups", workflowGroups)}
                         {workflowGroups
                           .filter(wg => wg.is_active)
                           .map((workflowGroup) => (
@@ -501,6 +585,23 @@ const ServiceFormEditor = () => {
                 <UnifiedFormStructureEditor
                   items={formStructure}
                   onUpdate={handleStructureUpdate}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="triggers" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Automation Triggers</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Configure actions that run automatically when specific events occur (e.g., on approval, status change).
+                </p>
+              </CardHeader>
+              <CardContent>
+                <TriggerActionsEditor
+                  triggers={triggers}
+                  onTriggersChange={setTriggers}
                 />
               </CardContent>
             </Card>

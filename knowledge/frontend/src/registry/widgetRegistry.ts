@@ -12,6 +12,46 @@ export const widgetRegistry: Record<string, WidgetConfig> = {
     category: "Scheduling"
   },
 
+  order_items: {
+    id: "order_items",
+    name: "E-Order Item List",
+    description: "Manage order items (Add/Remove/Calculate)",
+    componentPath: "OrderItemsWidget",
+    applicableTo: ["form", "cms"],
+    dataRequirements: [],
+    category: "E-Order"
+  },
+
+  my_tickets: {
+    id: "my_tickets",
+    name: "My Tickets",
+    description: "Display user's recent tickets",
+    componentPath: "MyTicketsWidget",
+    applicableTo: ["cms"],
+    dataRequirements: [],
+    category: "Dashboard"
+  },
+
+  pending_approvals: {
+    id: "pending_approvals",
+    name: "Pending Approvals",
+    description: "Show tickets awaiting user's approval",
+    componentPath: "PendingApprovalsWidget",
+    applicableTo: ["cms"],
+    dataRequirements: [],
+    category: "Dashboard"
+  },
+
+  ai_chat: {
+    id: "ai_chat",
+    name: "AI Chat Assistant",
+    description: "Interactive chatbot for FAQs and system help",
+    componentPath: "AIChatWidget",
+    applicableTo: ["cms"],
+    dataRequirements: [],
+    category: "AI"
+  },
+
   gantt_room_schedule_static: {
     id: "gantt_room_schedule_static",
     name: "Room Usage Gantt Chart Static",

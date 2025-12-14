@@ -1,0 +1,11 @@
+{
+    "IT": "Information Technology Department",
+    "GA": "General Affairs (Logistics, Building Maintenance)",
+    "HOTS": "The name of this system (Helpdesk & Order Tracking System)",
+    "E-Order": "The subsystem for ordering office supplies (Stationery, Ink, etc)",
+    "PC-01": "The main Database Server in the Server Room",
+    "AP-Lobby": "Access Point in the Main Lobby",
+    "Pak Budi": "Head of IT Department",
+    "Bu Susi": "Head of General Affairs",
+    "SOP-01": "Standard Procedure for resetting AD password: Verify Employee ID first."
+}

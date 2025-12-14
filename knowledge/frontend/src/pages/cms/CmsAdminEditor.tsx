@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { adminGetPage, adminSavePage } from '@/api/cms';
 import { Button } from '@/components/ui/button';
 import { API_URL } from '@/config/sourceConfig';
+import { widgetRegistry } from '@/registry/widgetRegistry';
 
 const DEFAULT_BLOCK_TYPES = [
   { key: 'heading', title: 'Heading', sample: { type: 'heading', text: 'Heading text', level: 2 } },
@@ -10,6 +11,7 @@ const DEFAULT_BLOCK_TYPES = [
   { key: 'html', title: 'HTML', sample: { type: 'html', html: '<p>HTML content</p>' } },
   { key: 'image', title: 'Image', sample: { type: 'image', src: 'https://via.placeholder.com/600x300', alt: 'Image alt' } },
   { key: 'divider', title: 'Divider', sample: { type: 'divider', style: 'solid' } },
+  { key: 'widget', title: 'Widget', sample: { type: 'widget', widgetId: '', params: {} } },
 ];
 
 // small helper to deep clone
@@ -234,6 +236,54 @@ export default function CmsAdminEditor() {
       );
     }
 
+    if (block.type === 'widget') {
+      const [jsonText, setJsonText] = React.useState(JSON.stringify(block.params || {}, null, 2));
+      const [jsonError, setJsonError] = React.useState<string | null>(null);
+
+      const handleJsonChange = (value: string) => {
+        setJsonText(value);
+        try {
+          const parsed = JSON.parse(value);
+          set({ params: parsed });
+          setJsonError(null);
+        } catch (err: any) {
+          setJsonError(err.message || 'Invalid JSON');
+        }
+      };
+
+      return (
+        <div className="space-y-3">
+          <label className="block text-sm font-medium">Select Widget</label>
+          <select
+            className="w-full border rounded p-2"
+            value={block.widgetId || ''}
+            onChange={(e) => set({ widgetId: e.target.value })}
+          >
+            <option value="">-- Choose Widget --</option>
+            {Object.values(widgetRegistry).map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name} ({w.id})
+              </option>
+            ))}
+          </select>
+
+          <label className="block text-sm font-medium">Params (JSON)</label>
+          <textarea
+            className={`w-full border rounded p-2 h-32 font-mono text-xs ${jsonError ? 'border-red-500 bg-red-50' : ''}`}
+            value={jsonText}
+            onChange={(e) => handleJsonChange(e.target.value)}
+          />
+          {jsonError ? (
+            <div className="text-xs text-red-600">⚠️ {jsonError}</div>
+          ) : (
+            <div className="text-xs text-gray-500">
+              Edit JSON carefully. Example: {`{ "showTitle": true }`}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     return <div className="text-sm text-gray-500">No editor for this block type</div>;
   };
 
@@ -259,6 +309,17 @@ export default function CmsAdminEditor() {
 
       case 'divider':
         return <div style={{ borderTop: block.style === 'dashed' ? '2px dashed #d1d5db' : block.style === 'none' ? 'none' : '2px solid #e5e7eb', margin: block.spacing || 16 }} />;
+
+      case 'widget':
+        const w = widgetRegistry[block.widgetId];
+        return (
+          <div className="p-4 border border-blue-200 bg-blue-50 rounded">
+            <div className="font-semibold text-blue-800">Widget: {w ? w.name : block.widgetId}</div>
+            <div className="text-xs text-blue-600 mt-1">
+              Params: {JSON.stringify(block.params || {})}
+            </div>
+          </div>
+        );
 
       default:
         return <pre className="text-xs font-mono">{JSON.stringify(block)}</pre>;

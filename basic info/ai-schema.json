@@ -1,0 +1,215 @@
+{
+    "project_name": "HOTS (Helpdesk & Order Tracking System)",
+    "database_type": "MySQL",
+    "tables": [
+        {
+            "table_name": "t_ticket",
+            "description": "Main table for all tickets and requests",
+            "columns": [
+                {
+                    "name": "ticket_id",
+                    "type": "varchar(50)",
+                    "description": "Unique Ticket ID (e.g. TICK-2023-001)"
+                },
+                {
+                    "name": "service_id",
+                    "type": "int",
+                    "description": "ID of the service requested"
+                },
+                {
+                    "name": "status_id",
+                    "type": "int",
+                    "description": "Current status ID (0=Open, 1=In Progress, 2=Resolved, 3=Closed)"
+                },
+                {
+                    "name": "requester_id",
+                    "type": "int",
+                    "description": "User ID of the person who created the ticket"
+                },
+                {
+                    "name": "current_node_id",
+                    "type": "varchar(50)",
+                    "description": "Current step in the workflow"
+                },
+                {
+                    "name": "json_data",
+                    "type": "json",
+                    "description": "Dynamic form data (e.g. { 'reason': 'PC Slow', 'urgency': 'High' })"
+                },
+                {
+                    "name": "created_at",
+                    "type": "datetime",
+                    "description": "Timestamp of creation"
+                }
+            ]
+        },
+        {
+            "table_name": "m_users",
+            "description": "User accounts and profile information",
+            "columns": [
+                {
+                    "name": "user_id",
+                    "type": "int",
+                    "description": "Unique User ID"
+                },
+                {
+                    "name": "fullname",
+                    "type": "varchar(100)",
+                    "description": "Full name of the user"
+                },
+                {
+                    "name": "email",
+                    "type": "varchar(100)",
+                    "description": "Email address"
+                },
+                {
+                    "name": "role_id",
+                    "type": "int",
+                    "description": "Role ID (1=User, 2=Manager, 4=Admin)"
+                },
+                {
+                    "name": "department_name",
+                    "type": "varchar(100)",
+                    "description": "Department name"
+                }
+            ]
+        },
+        {
+            "table_name": "m_services",
+            "description": "Catalog of available services",
+            "columns": [
+                {
+                    "name": "service_id",
+                    "type": "int",
+                    "description": "Unique Service ID"
+                },
+                {
+                    "name": "service_name",
+                    "type": "varchar(100)",
+                    "description": "Name of the service (e.g. IT Support, E-Order)"
+                },
+                {
+                    "name": "category",
+                    "type": "varchar(50)",
+                    "description": "Category (IT, GA, Logistics)"
+                }
+            ]
+        },
+        {
+            "table_name": "t_ticket_event",
+            "description": "History log of all actions performed on tickets",
+            "columns": [
+                {
+                    "name": "event_id",
+                    "type": "int",
+                    "description": "Unique Event ID"
+                },
+                {
+                    "name": "ticket_id",
+                    "type": "varchar(50)",
+                    "description": "Related Ticket ID"
+                },
+                {
+                    "name": "action",
+                    "type": "varchar(50)",
+                    "description": "Action performed (APPROVE, REJECT, COMMENT)"
+                },
+                {
+                    "name": "actor_id",
+                    "type": "int",
+                    "description": "User ID who performed the action"
+                },
+                {
+                    "name": "event_time",
+                    "type": "datetime",
+                    "description": "Timestamp of the event"
+                }
+            ]
+        },
+        {
+            "table_name": "t_workflow_config",
+            "description": "Configuration for workflows",
+            "columns": [
+                {
+                    "name": "workflow_id",
+                    "type": "varchar(50)",
+                    "description": "Unique Workflow ID"
+                },
+                {
+                    "name": "config_json",
+                    "type": "json",
+                    "description": "JSON definition of nodes and edges"
+                }
+            ]
+        },
+        {
+            "table_name": "t_trigger_warnings",
+            "description": "Logs for infinite loops or trigger errors",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "int",
+                    "description": "Unique ID"
+                },
+                {
+                    "name": "trigger_id",
+                    "type": "varchar(50)",
+                    "description": "ID of the faulty trigger"
+                },
+                {
+                    "name": "message",
+                    "type": "text",
+                    "description": "Error message"
+                }
+            ]
+        },
+        {
+            "table_name": "t_cms_pages",
+            "description": "Content for CMS pages",
+            "columns": [
+                {
+                    "name": "page_id",
+                    "type": "int",
+                    "description": "Unique Page ID"
+                },
+                {
+                    "name": "slug",
+                    "type": "varchar(100)",
+                    "description": "URL slug (e.g. dashboard-home)"
+                },
+                {
+                    "name": "title",
+                    "type": "varchar(200)",
+                    "description": "Page Title"
+                },
+                {
+                    "name": "content_json",
+                    "type": "json",
+                    "description": "JSON array of layout blocks"
+                }
+            ]
+        }
+    ],
+    "relationships": [
+        {
+            "from": "t_ticket.requester_id",
+            "to": "m_users.user_id",
+            "type": "many-to-one"
+        },
+        {
+            "from": "t_ticket.service_id",
+            "to": "m_services.service_id",
+            "type": "many-to-one"
+        },
+        {
+            "from": "t_ticket_event.ticket_id",
+            "to": "t_ticket.ticket_id",
+            "type": "many-to-one"
+        },
+        {
+            "from": "t_ticket_event.actor_id",
+            "to": "m_users.user_id",
+            "type": "many-to-one"
+        }
+    ]
+}

@@ -22,6 +22,7 @@ class TriggerEngine {
     this.engineLoader = null;
     this.documentEngine = null;
     this.actions = {};
+    this.MAX_TRIGGER_DEPTH = process.env.TRIGGER_MAX_DEPTH || 10;
   }
 
   init({ dbQuery, engineLoader, documentEngine }) {
@@ -40,6 +41,7 @@ class TriggerEngine {
     this.registerAction('complete_assignment', this._action_completeAssignment.bind(this));
     this.registerAction('create_task', this._action_createTask.bind(this));
     this.registerAction('log_analytics', this._action_logAnalytics.bind(this));
+    this.registerAction('create_record', this._action_createRecord.bind(this));
   }
 
   registerAction(name, fn) { this.actions[name] = fn; }
@@ -299,7 +301,55 @@ class TriggerEngine {
     }
   }
 
+  /**
+   * Generic action to insert a record into any table
+   * params: { table: 'table_name', mapping: { col1: ':contextKey', col2: 'literal' } }
+   */
+  async _action_createRecord(context, params) {
+    const table = params.table;
+    const mapping = params.mapping || {};
 
+    if (!table) {
+      console.error(`❌ [TRIGGER][CREATE_RECORD] Missing table name`);
+      return { ok: false, error: 'missing table name' };
+    }
+
+    const columns = [];
+    const values = [];
+
+    for (const [col, source] of Object.entries(mapping)) {
+      columns.push(col);
+      // Resolve :placeholders from context
+      if (typeof source === 'string' && source.startsWith(':')) {
+        const key = source.substring(1);
+        // Check context.values first, then context directly
+        const resolved = context.values?.[key] ?? context[key] ?? null;
+        values.push(resolved);
+        console.log(`🔍 [TRIGGER][CREATE_RECORD] Mapping ${col} <- :${key} = ${resolved}`);
+      } else {
+        values.push(source);
+        console.log(`🔍 [TRIGGER][CREATE_RECORD] Mapping ${col} <- literal = ${source}`);
+      }
+    }
+
+    if (!columns.length) {
+      console.error(`❌ [TRIGGER][CREATE_RECORD] Empty mapping`);
+      return { ok: false, error: 'empty mapping' };
+    }
+
+    const sql = `INSERT INTO \`${table}\` (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`;
+    console.log(`🔍 [TRIGGER][CREATE_RECORD] SQL: ${sql}`);
+    console.log(`🔍 [TRIGGER][CREATE_RECORD] Values:`, values);
+
+    try {
+      await this.dbQuery(sql, values);
+      console.log(`✅ [TRIGGER][CREATE_RECORD] Inserted into ${table}`);
+      return { ok: true, table, inserted: columns.length };
+    } catch (e) {
+      console.error(`❌ [TRIGGER][CREATE_RECORD] Error:`, e);
+      return { ok: false, error: e.message };
+    }
+  }
 
   async _action_createTask(context, params) {
     const ticketId = context.ticketId;
@@ -462,6 +512,24 @@ class TriggerEngine {
       } catch (e) { }
     }
 
+    // Check execution depth for loop detection
+    const depth = context._triggerDepth || 0;
+    const chain = context._triggerChain || [];
+    const eventInfo = `${serviceName}:${eventName}`;
+
+    if (depth >= this.MAX_TRIGGER_DEPTH) {
+      console.error(`❌ [TRIGGER] INFINITE LOOP DETECTED! Max depth ${this.MAX_TRIGGER_DEPTH} reached.`);
+      console.error(`   Chain: ${[...chain, eventInfo].join(' → ')}`);
+      await this._logLoopWarning(context, [...chain, eventInfo]);
+      return [{ error: 'max_depth_exceeded', chain: [...chain, eventInfo] }];
+    }
+
+    // Update context for nested triggers
+    context._triggerDepth = depth + 1;
+    context._triggerChain = [...chain, eventInfo];
+
+    console.log(`📊 [TRIGGER] Depth: ${depth + 1}/${this.MAX_TRIGGER_DEPTH}, Chain: ${context._triggerChain.join(' → ')}`);
+
     // execute triggers sequentially
     console.log(`🔍 [TRIGGER][EXEC] Starting execution of ${triggers.length} trigger(s)`);
     const results = [];
@@ -606,6 +674,70 @@ class TriggerEngine {
       return true;
     }
 
+    // 🔥 NEW: field_value condition type for flexible branching
+    if (type === 'field_value') {
+      const field = value?.field;
+      const operator = value?.operator || '==';
+      const target = value?.value;
+
+      if (!field) {
+        console.log(`⚠️ [TRIGGER][COND] field_value missing field name`);
+        return false;
+      }
+
+      // Get actual value from context.values or context directly
+      const actualValue = context.values?.[field] ?? context[field];
+      console.log(`🔍 [TRIGGER][COND] field_value check: ${field} ${operator} ${target} (actual: ${actualValue})`);
+
+      let result = false;
+      switch (operator) {
+        case '==':
+        case '=':
+          result = actualValue == target;
+          break;
+        case '!=':
+        case '<>':
+          result = actualValue != target;
+          break;
+        case '>':
+          result = Number(actualValue) > Number(target);
+          break;
+        case '<':
+          result = Number(actualValue) < Number(target);
+          break;
+        case '>=':
+          result = Number(actualValue) >= Number(target);
+          break;
+        case '<=':
+          result = Number(actualValue) <= Number(target);
+          break;
+        case 'contains':
+          result = String(actualValue || '').toLowerCase().includes(String(target).toLowerCase());
+          break;
+        case 'not_contains':
+          result = !String(actualValue || '').toLowerCase().includes(String(target).toLowerCase());
+          break;
+        case 'starts_with':
+          result = String(actualValue || '').toLowerCase().startsWith(String(target).toLowerCase());
+          break;
+        case 'ends_with':
+          result = String(actualValue || '').toLowerCase().endsWith(String(target).toLowerCase());
+          break;
+        case 'is_empty':
+          result = actualValue === null || actualValue === undefined || actualValue === '';
+          break;
+        case 'is_not_empty':
+          result = actualValue !== null && actualValue !== undefined && actualValue !== '';
+          break;
+        default:
+          console.log(`⚠️ [TRIGGER][COND] Unknown operator: ${operator}, defaulting to ==`);
+          result = actualValue == target;
+      }
+
+      console.log(`${result ? '✅' : '❌'} [TRIGGER][COND] field_value result: ${result}`);
+      return result;
+    }
+
     return true;
   }
 }
@@ -615,5 +747,21 @@ function tryParseJSON(v) {
   if (typeof v === 'object') return v;
   try { return JSON.parse(String(v)); } catch (e) { return null; }
 }
+
+/**
+ * Log loop warning to database
+ */
+TriggerEngine.prototype._logLoopWarning = async function (context, chain) {
+  try {
+    await this.dbQuery(`
+      INSERT INTO t_trigger_warnings 
+      (ticket_id, warning_type, trigger_chain, created_at)
+      VALUES (?, ?, ?, NOW())
+    `, [context.ticketId || null, 'infinite_loop', JSON.stringify(chain)]);
+    console.log(`✅ [TRIGGER] Loop warning logged to database`);
+  } catch (err) {
+    console.error(`❌ [TRIGGER] Failed to log loop warning:`, err.message);
+  }
+};
 
 module.exports = new TriggerEngine();

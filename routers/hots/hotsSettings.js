@@ -127,6 +127,12 @@ route.get('/get/meetingroom_static', decodeTokenHT, hotsSettingsController.getme
 // Factory list for SRF service
 route.get('/factories', decodeTokenHT, hotsSettingsController.getFactories)
 
+// Trigger Management
+route.get('/triggers/:service_id', decodeTokenHT, hotsSettingsController.getTriggers)
+route.post('/triggers/:service_id', decodeTokenHT, hotsSettingsController.saveTriggers)
+route.get('/schema', decodeTokenHT, hotsSettingsController.getSchemaInfo)
+route.post('/validate_triggers', decodeTokenHT, hotsSettingsController.validateTriggerConfig)
+
 module.exports = route
 
 

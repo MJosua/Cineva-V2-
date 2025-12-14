@@ -4,7 +4,7 @@ export interface WidgetPreset {
   name: string;
   description: string;
   componentPath: string;
-  applicableTo: ('form' | 'ticket_detail')[];
+  applicableTo: ('form' | 'ticket_detail' | 'cms')[];
   dataRequirements?: string[];
   category?: string;
 }
@@ -15,6 +15,8 @@ export interface ServiceWidgetAssignment {
 }
 
 export interface WidgetProps {
+  data?: any;
+  handleUpdateData?: (data: any) => void;
   serviceInfo?: any;
   widgetId?: string;
   widgetName?: string;

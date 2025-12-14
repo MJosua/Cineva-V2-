@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchPublicPage } from '@/api/cms';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import WidgetRenderer from "@/components/widgets/WidgetRenderer";
+import { widgetRegistry } from '@/registry/widgetRegistry';
 
 const renderBlock = (block: any, idx: number) => {
   switch (block.type) {
@@ -19,6 +21,17 @@ const renderBlock = (block: any, idx: number) => {
 
     case 'divider':
       return <hr key={idx} className="my-4" />;
+
+    case 'widget': {
+      const widgetConfig = widgetRegistry[block.widgetId];
+      if (!widgetConfig) return <div key={idx} className="text-red-500">Widget not found: {block.widgetId}</div>;
+
+      return (
+        <div key={idx} className="my-4">
+          <WidgetRenderer config={widgetConfig} data={block.params} />
+        </div>
+      );
+    }
 
     case 'card-grid':
       return (

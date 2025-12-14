@@ -2701,5 +2701,221 @@ module.exports = {
             console.log(timestamp, "HOTS Get Data Diff Error: ", e);
             return res.status(500).json({ success: false, message: e.message });
         }
+    },
+
+    // Get triggers for a service
+    getTriggers: async (req, res) => {
+        const { service_id } = req.params;
+
+        try {
+            const [triggers] = await dbHots.promise().query(`
+                SELECT 
+                    trigger_id,
+                    service_id,
+                    trigger_name,
+                    trigger_type,
+                    trigger_config,
+                    active,
+                    created_at,
+                    updated_at
+                FROM m_service_triggers 
+                WHERE service_id = ? AND active = 1
+                ORDER BY trigger_id ASC
+            `, [service_id]);
+
+            // Parse trigger_config JSON for each trigger
+            const parsedTriggers = triggers.map(t => ({
+                ...t,
+                trigger_config: typeof t.trigger_config === 'string'
+                    ? JSON.parse(t.trigger_config)
+                    : t.trigger_config
+            }));
+
+            res.status(200).json(parsedTriggers);
+        } catch (err) {
+            console.error('Error getting triggers:', err);
+            res.status(500).json({ success: false, message: err.message });
+        }
+    },
+
+    // Save triggers for a service (replace all)
+    saveTriggers: async (req, res) => {
+        const { service_id } = req.params;
+        const { triggers } = req.body;
+
+        try {
+            // Start transaction
+            const connection = await dbHots.promise().getConnection();
+            await connection.beginTransaction();
+
+            try {
+                // Deactivate existing triggers
+                await connection.query(`
+                    UPDATE m_service_triggers 
+                    SET active = 0, updated_at = NOW() 
+                    WHERE service_id = ?
+                `, [service_id]);
+
+                // Insert new triggers
+                for (const trigger of triggers) {
+                    await connection.query(`
+                        INSERT INTO m_service_triggers 
+                        (service_id, trigger_name, trigger_type, trigger_config, active, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+                    `, [
+                        service_id,
+                        trigger.trigger_name,
+                        trigger.trigger_type || 'event',
+                        JSON.stringify(trigger.trigger_config),
+                        trigger.active !== undefined ? trigger.active : 1
+                    ]);
+                }
+
+                await connection.commit();
+                connection.release();
+
+                res.status(200).json({
+                    success: true,
+                    message: 'Triggers saved successfully',
+                    count: triggers.length
+                });
+            } catch (err) {
+                await connection.rollback();
+                connection.release();
+                throw err;
+            }
+        } catch (err) {
+            console.error('Error saving triggers:', err);
+            res.status(500).json({ success: false, message: err.message });
+        }
+    },
+
+    // Get database schema info for validation
+    getSchemaInfo: async (req, res) => {
+        try {
+            // Get all tables in hots database
+            const [tables] = await dbHots.promise().query(`
+                SELECT TABLE_NAME 
+                FROM INFORMATION_SCHEMA.TABLES 
+                WHERE TABLE_SCHEMA = 'hots'
+                ORDER BY TABLE_NAME
+            `);
+
+            const schema = [];
+
+            // Get columns for each table
+            for (const table of tables) {
+                const [columns] = await dbHots.promise().query(`
+                    SELECT 
+                        COLUMN_NAME,
+                        DATA_TYPE,
+                        IS_NULLABLE,
+                        COLUMN_DEFAULT,
+                        COLUMN_KEY
+                    FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_SCHEMA = 'hots' AND TABLE_NAME = ?
+                    ORDER BY ORDINAL_POSITION
+                `, [table.TABLE_NAME]);
+
+                schema.push({
+                    table: table.TABLE_NAME,
+                    columns: columns.map(col => ({
+                        name: col.COLUMN_NAME,
+                        type: col.DATA_TYPE,
+                        nullable: col.IS_NULLABLE === 'YES',
+                        defaultValue: col.COLUMN_DEFAULT,
+                        isPrimary: col.COLUMN_KEY === 'PRI'
+                    }))
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                schema
+            });
+        } catch (err) {
+            console.error('Error getting schema info:', err);
+            res.status(500).json({ success: false, message: err.message });
+        }
+    },
+
+    // Validate trigger configuration
+    validateTriggerConfig: async (req, res) => {
+        const { triggers } = req.body;
+
+        try {
+            // Get schema
+            const [tables] = await dbHots.promise().query(`
+                SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'hots'
+            `);
+            const tableNames = tables.map(t => t.TABLE_NAME);
+
+            const errors = [];
+
+            for (let i = 0; i < triggers.length; i++) {
+                const trigger = triggers[i];
+
+                if (!trigger.trigger_config?.actions) continue;
+
+                for (let j = 0; j < trigger.trigger_config.actions.length; j++) {
+                    const action = trigger.trigger_config.actions[j];
+
+                    if (action.action === 'create_record') {
+                        const table = action.params?.table;
+                        const mapping = action.params?.mapping || {};
+
+                        // Validate table exists
+                        if (!table) {
+                            errors.push({
+                                trigger: i,
+                                action: j,
+                                field: 'table',
+                                message: 'Table name is required'
+                            });
+                            continue;
+                        }
+
+                        if (!tableNames.includes(table)) {
+                            errors.push({
+                                trigger: i,
+                                action: j,
+                                field: 'table',
+                                message: `Table '${table}' does not exist in database`
+                            });
+                            continue;
+                        }
+
+                        // Get columns for this table
+                        const [columns] = await dbHots.promise().query(`
+                            SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+                            WHERE TABLE_SCHEMA = 'hots' AND TABLE_NAME = ?
+                        `, [table]);
+                        const columnNames = columns.map(c => c.COLUMN_NAME);
+
+                        // Validate columns
+                        for (const [col, value] of Object.entries(mapping)) {
+                            if (!columnNames.includes(col)) {
+                                errors.push({
+                                    trigger: i,
+                                    action: j,
+                                    field: 'column',
+                                    column: col,
+                                    message: `Column '${col}' does not exist in table '${table}'`
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            res.status(200).json({
+                success: true,
+                valid: errors.length === 0,
+                errors
+            });
+        } catch (err) {
+            console.error('Error validating triggers:', err);
+            res.status(500).json({ success: false, message: err.message });
+        }
     }
 }

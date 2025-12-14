@@ -72,6 +72,11 @@ const adminItems = [
     url: "/admin/settings",
     icon: Settings,
   },
+  {
+    title: "Dashboard Page Builder",
+    url: "/admin/cms",
+    icon: Home,
+  },
 ];
 
 const helpItems = [
