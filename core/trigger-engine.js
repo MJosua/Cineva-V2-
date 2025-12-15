@@ -515,7 +515,7 @@ class TriggerEngine {
     // Check execution depth for loop detection
     const depth = context._triggerDepth || 0;
     const chain = context._triggerChain || [];
-    const eventInfo = `${serviceName}:${eventName}`;
+    const eventInfo = `${eventName}`;
 
     if (depth >= this.MAX_TRIGGER_DEPTH) {
       console.error(`❌ [TRIGGER] INFINITE LOOP DETECTED! Max depth ${this.MAX_TRIGGER_DEPTH} reached.`);
