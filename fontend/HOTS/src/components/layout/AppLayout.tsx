@@ -29,6 +29,7 @@ import axios from 'axios';
 import { API_URL } from '@/config/sourceConfig';
 import { fetchTaskCount } from '@/store/slices/ticketsSlice';
 import { fetchAssignmentCount } from '@/store/slices/assignmentSlice';
+import { setSearchQuery } from "@/store/slices/dashboardSlice";
 
 interface UserProfile {
   user_id: number;
@@ -42,12 +43,7 @@ interface UserProfile {
 }
 
 const adminItems = [
-  {
-    title: "Visual Studio",
-    url: "/admin/studio",
-    icon: Palette,
-    description: "Form & Workflow Builder",
-  },
+
   {
     title: "Service Catalog Admin",
     url: "/admin/service-catalog",
@@ -72,6 +68,11 @@ const adminItems = [
     title: "System Settings",
     url: "/admin/settings",
     icon: Settings,
+  },
+  {
+    title: "Dashboard Page Builder",
+    url: "/admin/cms",
+    icon: Home,
   },
 ];
 
@@ -270,7 +271,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-   
+
 
         {/* Only show Administration menu for users with role === 4 */}
         {
@@ -317,24 +318,74 @@ export function AppSidebar() {
           )
         }
 
-
+        {/* Engine Modules (Admin Only) */}
         {
           isAdmin && (
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="CMS Pages">
-                <Link
-                  to="/admin/cms"
-                  className={cn(
-                    "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                    location.pathname.startsWith("/admin/cms") &&
-                    "bg-sidebar-accent text-sidebar-accent-foreground"
-                  )}
-                >
-                  <FileText className="w-5 h-5 flex-shrink-0" />
-                  <span>CMS Pages</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider px-3 py-2">
+                Engine Modules
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Engine Module Tester">
+                      <Link
+                        to="/engine-module/it-support"
+                        className={cn(
+                          "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                          location.pathname.startsWith("/engine-module") && "bg-sidebar-accent text-sidebar-accent-foreground"
+                        )}
+                      >
+                        <Code className="w-5 h-5 flex-shrink-0" />
+                        <span>Engine Module Tester</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Module Manager">
+                      <Link
+                        to="/engine-modules-admin"
+                        className={cn(
+                          "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                          location.pathname.startsWith("/engine-modules-admin") && "bg-sidebar-accent text-sidebar-accent-foreground"
+                        )}
+                      >
+                        <Settings className="w-5 h-5 flex-shrink-0" />
+                        <span>Module Manager</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Workflow Admin">
+                      <Link
+                        to="/admin/workflow"
+                        className={cn(
+                          "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                          location.pathname.startsWith("/admin/workflow") && "bg-sidebar-accent text-sidebar-accent-foreground"
+                        )}
+                      >
+                        <FileCode className="w-5 h-5 flex-shrink-0" />
+                        <span>Workflow Admin</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="All Tickets">
+                      <Link
+                        to="/admin/tickets"
+                        className={cn(
+                          "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                          location.pathname === "/admin/tickets" && "bg-sidebar-accent text-sidebar-accent-foreground"
+                        )}
+                      >
+                        <FileText className="w-5 h-5 flex-shrink-0" />
+                        <span>All Tickets</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
           )}
 
       </SidebarContent >
@@ -385,10 +436,27 @@ export function AppSidebar() {
   );
 }
 
+
 export function AppLayout({ children, searchValue, onSearchChange, searchPlaceholder = "Search..." }: AppLayoutProps) {
   const location = useLocation();
+  const dispatch = useAppDispatch();
+  const { searchQuery } = useAppSelector((state) => state.dashboard);
+
+
   const hiddenSearchRoutes = ['/', '/login', '/admin/settings', '/admin/service-catalog', '/admin/service-catalog/create', '/admin/custom-functions', '/admin/function-logs'];
   const shouldHideSearch = hiddenSearchRoutes.includes(location.pathname);
+
+  const isDashboardRoute = location.pathname.startsWith('/dashboard');
+
+  const handleSearchChange = (val: string) => {
+    if (onSearchChange) {
+      onSearchChange(val);
+    } else if (isDashboardRoute) {
+      dispatch(setSearchQuery(val));
+    }
+  };
+
+  const currentSearchValue = searchValue !== undefined ? searchValue : (isDashboardRoute ? searchQuery : '');
 
   return (
     <SidebarProvider>
@@ -414,8 +482,8 @@ export function AppLayout({ children, searchValue, onSearchChange, searchPlaceho
                     <Input
                       type="text"
                       placeholder={searchPlaceholder}
-                      value={searchValue || ''}
-                      onChange={(e) => onSearchChange?.(e.target.value)}
+                      value={currentSearchValue}
+                      onChange={(e) => handleSearchChange(e.target.value)}
                       className="w-64 pl-4 pr-10 py-2 bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-foreground focus-visible:ring-2 focus-visible:border-foreground"
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">

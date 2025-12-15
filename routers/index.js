@@ -40,6 +40,8 @@ const hotsSettings = require('./hots/hotsSettings')
 const hotscustomfunction = require('./hots/hotscustomfunction')
 const hotsdashboard = require('./hots/hotsdashboard')
 const hotspublic = require('./hots/hotsPublic')
+const hotsReporting = require('./hots/hotsReporting')
+const hotsPreferences = require('./hots/hotsPreferences')
 
 // Project Manager routes
 const projectmngr = require('./project_manager/project_routes')
@@ -105,6 +107,8 @@ module.exports = {
     hotsSettings,
     hotsdashboard,
     hotspublic,
+    hotsReporting,
+    hotsPreferences,
 
 
     // Project Manager modules

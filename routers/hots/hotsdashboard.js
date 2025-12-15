@@ -7,8 +7,10 @@ const hotsDashboardController = require("../../controller/hots_controller/hotsDa
 
 
 // GET /hots/dashboard/functions
+route.get("/summary", decodeTokenHT, hotsDashboardController.getDashboardSummary);
 route.get("/functions", decodeTokenHT, hotsDashboardController.getDashboardFunctions);
 route.get("/report_srf", decodeTokenHT, hotsDashboardController.srf_report);
+route.get("/report_service", decodeTokenHT, hotsDashboardController.report_service);
 route.post("/report_detail/upsert", decodeTokenHT, hotsDashboardController.upsertReportDetail);
 
 // Service Analytics Endpoints

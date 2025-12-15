@@ -1,7 +1,7 @@
-// src/pages/dashboard/PanelContent.tsx
-// Renders the correct content based on panel type
 import React from 'react';
 import { DashboardPanel } from './DashboardPanelRenderer';
+import WidgetRenderer from '@/widgets/WidgetRenderer';
+import { widgetRegistry } from '@/registry/widgetRegistry';
 
 // Panel Components (lazy loading for performance)
 const SummaryCardsPanel = React.lazy(() => import('./panels/SummaryCardsPanel'));
@@ -49,13 +49,25 @@ export const PanelContent: React.FC<PanelContentProps> = ({ panel, serviceId }) 
                 return <AnalyticsCardsPanel config={panel.config} serviceId={serviceId} />;
 
             case 'custom':
+                if (panel.config?.widgetId) {
+                    const widgetConfig = widgetRegistry[panel.config.widgetId];
+                    if (widgetConfig) {
+                        return <WidgetRenderer config={widgetConfig} data={panel.config} />;
+                    }
+                    return (
+                        <div className="p-4 bg-orange-50 text-orange-600 rounded">
+                            Widget "{panel.config.widgetId}" not found in registry.
+                        </div>
+                    );
+                }
+
                 if (panel.component_key) {
                     const CustomComponent = loadCustomComponent(panel.component_key);
                     return <CustomComponent {...panel.config} serviceId={serviceId} />;
                 }
                 return (
                     <div className="p-4 text-muted-foreground text-center">
-                        No component_key specified for custom panel
+                        No component_key or widgetId specified for custom panel
                     </div>
                 );
 

@@ -16,7 +16,7 @@ const UserGuide = () => {
             <HelpCircle className="w-6 h-6 text-green-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">FAQ & Update</h1>
+            <h1 className="text-3xl font-bold">FAQ & Help</h1>
             <p className="text-muted-foreground">Everything you need to know about using HOTS</p>
           </div>
         </div>
@@ -24,7 +24,7 @@ const UserGuide = () => {
         <Tabs defaultValue="faq" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="faq">FAQ</TabsTrigger>
-            <TabsTrigger value="updates">Updates</TabsTrigger>
+            <TabsTrigger value="updates">Chat with us</TabsTrigger>
           </TabsList>
 
           <TabsContent value="faq" className="space-y-6">
@@ -89,41 +89,11 @@ const UserGuide = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
-                  System Updates & News
+                  AI Assistant
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-semibold text-blue-800">Latest Updates</h4>
-                  <div className="space-y-3 mt-3">
-                    <div className="border-l-2 border-blue-200 pl-4">
-                      <div className="flex justify-between items-start">
-                        <h5 className="font-medium">Widget System Enhancement</h5>
-                        <Badge variant="outline">New</Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">Forms now support dynamic widgets for better user experience</p>
-                      <p className="text-xs text-gray-500 mt-1">January 2025</p>
-                    </div>
-                    
-                    <div className="border-l-2 border-green-200 pl-4">
-                      <div className="flex justify-between items-start">
-                        <h5 className="font-medium">Improved File Upload</h5>
-                        <Badge variant="secondary">Updated</Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">Support for larger files and better preview functionality</p>
-                      <p className="text-xs text-gray-500 mt-1">December 2024</p>
-                    </div>
-                    
-                    <div className="border-l-2 border-orange-200 pl-4">
-                      <div className="flex justify-between items-start">
-                        <h5 className="font-medium">Mobile Responsiveness</h5>
-                        <Badge variant="outline">Enhanced</Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">Better mobile experience across all pages</p>
-                      <p className="text-xs text-gray-500 mt-1">November 2024</p>
-                    </div>
-                  </div>
-                </div>
+               
               </CardContent>
             </Card>
           </TabsContent>

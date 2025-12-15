@@ -92,6 +92,67 @@ export const widgetRegistry: Record<string, WidgetConfig> = {
     category: "Job Marketplace"
   },
 
+  // E-Order / Sales widgets
+  order_items: {
+    id: "order_items",
+    name: "Order Items (E-Order)",
+    description: "Shopping cart widget for E-Order with item management",
+    componentPath: "OrderItemsWidget",
+    applicableTo: ["form"],
+    dataRequirements: ["orderData"],
+    category: "E-Order"
+  },
+
+  // Dashboard widgets
+  ai_chat: {
+    id: "ai_chat",
+    name: "HOTS Copilot (AI Chat)",
+    description: "AI assistant chat widget for help and guidance",
+    componentPath: "AIChatWidget",
+    applicableTo: ["form", "ticket_detail"],
+    dataRequirements: [],
+    category: "Dashboard"
+  },
+
+  my_tickets: {
+    id: "my_tickets",
+    name: "My Recent Tickets",
+    description: "Display user's recent tickets with status",
+    componentPath: "MyTicketsWidget",
+    applicableTo: ["form"],
+    dataRequirements: [],
+    category: "Dashboard"
+  },
+
+  pending_approvals: {
+    id: "pending_approvals",
+    name: "Pending Approvals",
+    description: "Display pending approval items with quick actions",
+    componentPath: "PendingApprovalsWidget",
+    applicableTo: ["form"],
+    dataRequirements: [],
+    category: "Dashboard"
+  },
+
+  quick_links: {
+    id: "quick_links",
+    name: "Quick Links Grid",
+    description: "Configurable grid of navigation cards with icons",
+    componentPath: "QuickLinksWidget",
+    applicableTo: ["form"],
+    dataRequirements: [],
+    category: "Dashboard"
+  },
+
+  guest_info: {
+    id: "guest_info",
+    name: "Guest Info Log",
+    description: "Visitor management log",
+    componentPath: "GuestInfoWidget",
+    applicableTo: ["form"],
+    dataRequirements: [],
+    category: "Dashboard"
+  },
 };
 
 // Get widget by ID

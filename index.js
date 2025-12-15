@@ -242,6 +242,8 @@ const {
   mbusers,
   hotsdashboard,
   hotspublic,
+  hotsReporting,
+  hotsPreferences,
   cmsRouter,
   engineModuleRouter,
   engineRouter,
@@ -373,6 +375,8 @@ App.use("/hots_Tps", hotsTps);
 App.use("/hots_customfunction", hotscustomfunction);
 App.use("/hotsdashboard", hotsdashboard);
 App.use("/hots/public", hotspublic);
+App.use("/hotsreporting", hotsReporting);
+App.use("/hotsprefs", hotsPreferences);
 
 App.use("/shortener", shortener);
 

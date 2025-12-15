@@ -35,6 +35,9 @@ export interface WidgetProps {
   userData?: Record<string, any>;
   serviceId?: string | number;
 
+  // Widget-specific data and callbacks
+  data?: Record<string, any>;
+  handleUpdateData?: (data: Record<string, any>) => void;
 }
 
 export interface WidgetConfig extends WidgetPreset {

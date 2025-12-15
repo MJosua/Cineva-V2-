@@ -33,7 +33,6 @@ fontend/.env.*
 # ---------------------------
 # Large/sensitive assets
 # ---------------------------
-*.sql
 *.pdf
 *.xlsx
 *.zip

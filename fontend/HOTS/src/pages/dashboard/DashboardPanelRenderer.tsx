@@ -8,6 +8,8 @@ import { CardCollapsible } from '@/components/ui/CardCollapsible';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PanelContent } from './PanelContent';
 import { BarChart3, FileText, LayoutDashboard, Settings } from 'lucide-react';
+import WidgetRenderer from '@/widgets/WidgetRenderer';
+import { widgetRegistry } from '@/registry/widgetRegistry';
 
 export interface DashboardPanel {
     id: number;
@@ -55,9 +57,43 @@ const DashboardPanelRenderer: React.FC<DashboardPanelRendererProps> = ({ dashboa
             });
 
             if (res.data.success) {
-                setPanels(res.data.panels);
+                let fetchedPanels = res.data.panels;
+
+                // Fallback for known missing panels (map to existing components)
+                if (!fetchedPanels || fetchedPanels.length === 0) {
+                    const id = Number(dashboardId);
+
+                    // Map specific IDs to known components (component_key matches files in ./report/)
+                    const componentMapping: Record<number, { title: string; component_key: string }> = {
+                        2: { title: 'E-Order Reporting', component_key: 'EOrderReporting' },
+                        5: { title: 'SRF Ticket Report', component_key: 'SRFReportPage' },
+                        10: { title: 'Service Report', component_key: 'ReportService' },
+                        11: { title: 'Job Marketplace', component_key: 'JobListPage' },
+                        // Add more mappings as needed
+                    };
+
+                    if (componentMapping[id]) {
+                        fetchedPanels = [
+                            {
+                                id: 999000 + id,
+                                dashboard_function_id: id,
+                                panel_type: 'custom',
+                                title: componentMapping[id].title,
+                                component_key: componentMapping[id].component_key,
+                                order_index: 0,
+                                is_tab: false,
+                                is_collapsible: false,
+                                default_collapsed: false,
+                                config: {}
+                            }
+                        ];
+                    }
+                    // For unmapped IDs, leave panels empty - will show "No panels configured" message
+                }
+
+                setPanels(fetchedPanels);
                 // Set first tab as active
-                const firstTab = res.data.panels.find((p: DashboardPanel) => p.is_tab);
+                const firstTab = fetchedPanels.find((p: DashboardPanel) => p.is_tab);
                 if (firstTab) {
                     setActiveTab(String(firstTab.id));
                 }

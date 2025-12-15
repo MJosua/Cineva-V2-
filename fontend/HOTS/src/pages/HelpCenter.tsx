@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Search, BookOpen, Video, FileText, MessageCircle, Star, Clock, Users, ArrowRight, MessageSquare, HelpCircle, CheckSquare } from 'lucide-react';
+import { Search, BookOpen, Video, FileText, MessageCircle, Star, Clock, Users, ArrowRight, MessageSquare, HelpCircle, CheckSquare, History, Sparkles, Bug, Wrench } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const HelpCenter = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,7 +56,7 @@ const HelpCenter = () => {
       articleCount: 12
     },
     {
-      name: "Service Requests",  
+      name: "Service Requests",
       description: "Everything about creating and managing service requests",
       icon: FileText,
       color: "bg-green-100 text-green-700",
@@ -87,18 +88,19 @@ const HelpCenter = () => {
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Help Center</h1>
           <p className="text-xl text-gray-600 mb-8">Find answers, guides, and support for all your questions</p>
-          
-          
+
+
         </div>
 
         <Tabs defaultValue="tickets" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="tickets">Tickets</TabsTrigger>
             <TabsTrigger value="approval">Approval</TabsTrigger>
             <TabsTrigger value="guide">Quick Guide</TabsTrigger>
+            <TabsTrigger value="updates">Updates</TabsTrigger>
           </TabsList>
 
-          
+
 
           <TabsContent value="tickets" className="space-y-6">
             <Card>
@@ -198,7 +200,7 @@ const HelpCenter = () => {
             </Card>
           </TabsContent>
 
-          
+
 
           <TabsContent value="guide" className="space-y-6">
             <Card>
@@ -219,7 +221,7 @@ const HelpCenter = () => {
                       <li>4. Submit request</li>
                     </ol>
                   </div>
-                  
+
                   <div className="p-4 border rounded-lg">
                     <h4 className="font-semibold mb-3 flex items-center gap-2">
                       <CheckSquare className="w-4 h-4" />
@@ -232,7 +234,7 @@ const HelpCenter = () => {
                       <li>4. Add comments</li>
                     </ol>
                   </div>
-                  
+
                   <div className="p-4 border rounded-lg">
                     <h4 className="font-semibold mb-3 flex items-center gap-2">
                       <MessageSquare className="w-4 h-4" />
@@ -245,7 +247,7 @@ const HelpCenter = () => {
                       <li>4. Add comments if needed</li>
                     </ol>
                   </div>
-                  
+
                   <div className="p-4 border rounded-lg">
                     <h4 className="font-semibold mb-3 flex items-center gap-2">
                       <HelpCircle className="w-4 h-4" />
@@ -257,6 +259,181 @@ const HelpCenter = () => {
                       <li>3. Ask your manager</li>
                       <li>4. Submit help request</li>
                     </ol>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="updates" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="w-5 h-5 text-blue-600" />
+                  System Updates & Changelog
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 mb-6">
+                  Track all system improvements, new features, and bug fixes. Updates are listed from newest to oldest.
+                </p>
+
+                <div className="space-y-6">
+                  {/* December 2024 Updates */}
+                  <div className="border-l-4 border-blue-500 pl-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-blue-500" />
+                      December 2024
+                    </h3>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-28">Date</TableHead>
+                          <TableHead className="w-24">Type</TableHead>
+                          <TableHead>Feature / Update</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-12-15</TableCell>
+                          <TableCell><Badge className="bg-green-100 text-green-800">New</Badge></TableCell>
+                          <TableCell>CMS Dashboard Widgets - AI Chat, My Tickets, Pending Approvals, Order Items</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-12-15</TableCell>
+                          <TableCell><Badge className="bg-green-100 text-green-800">New</Badge></TableCell>
+                          <TableCell>CMS-Integrated Dashboard - Hybrid dashboard with widget support</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-12-15</TableCell>
+                          <TableCell><Badge className="bg-purple-100 text-purple-800">Update</Badge></TableCell>
+                          <TableCell>Admin Guide - Added CMS & Widgets documentation tab</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-12-15</TableCell>
+                          <TableCell><Badge className="bg-purple-100 text-purple-800">Update</Badge></TableCell>
+                          <TableCell>Enhanced Sidebar - Engine Modules section with admin tools</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-12-12</TableCell>
+                          <TableCell><Badge className="bg-orange-100 text-orange-800">Fix</Badge></TableCell>
+                          <TableCell>SRF Document Generation - Factory selection and regeneration logic</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-12-10</TableCell>
+                          <TableCell><Badge className="bg-purple-100 text-purple-800">Update</Badge></TableCell>
+                          <TableCell>E-Order Include - Updated order management functions</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-12-09</TableCell>
+                          <TableCell><Badge className="bg-purple-100 text-purple-800">Update</Badge></TableCell>
+                          <TableCell>SRF Report & Analytics - Fixed view and loading issues</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-12-05</TableCell>
+                          <TableCell><Badge className="bg-orange-100 text-orange-800">Fix</Badge></TableCell>
+                          <TableCell>SRF Document Generator - Ticket ID null fix and trigger improvements</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-12-04</TableCell>
+                          <TableCell><Badge className="bg-green-100 text-green-800">New</Badge></TableCell>
+                          <TableCell>Knowledge Folder - SQL dump and ready-to-use components</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-12-03</TableCell>
+                          <TableCell><Badge className="bg-orange-100 text-orange-800">Fix</Badge></TableCell>
+                          <TableCell>Stuffing Week Logic - Fixed GET logic and SO insertion</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* November 2024 Updates */}
+                  <div className="border-l-4 border-green-500 pl-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Wrench className="w-5 h-5 text-green-500" />
+                      November 2024
+                    </h3>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-28">Date</TableHead>
+                          <TableHead className="w-24">Type</TableHead>
+                          <TableHead>Feature / Update</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-11-28</TableCell>
+                          <TableCell><Badge className="bg-orange-100 text-orange-800">Fix</Badge></TableCell>
+                          <TableCell>Approval Workflow - Fixed approval process bugs</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-11-27</TableCell>
+                          <TableCell><Badge className="bg-purple-100 text-purple-800">Update</Badge></TableCell>
+                          <TableCell>Core Engine - New database linking system</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-11-26</TableCell>
+                          <TableCell><Badge className="bg-orange-100 text-orange-800">Fix</Badge></TableCell>
+                          <TableCell>Mailer Service - Email notification fixes</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-11-25</TableCell>
+                          <TableCell><Badge className="bg-green-100 text-green-800">New</Badge></TableCell>
+                          <TableCell>New Engine System - Complete engine architecture overhaul</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-11-18</TableCell>
+                          <TableCell><Badge className="bg-green-100 text-green-800">New</Badge></TableCell>
+                          <TableCell>CMS Backend - Initial CMS system implementation</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-11-17</TableCell>
+                          <TableCell><Badge className="bg-purple-100 text-purple-800">Update</Badge></TableCell>
+                          <TableCell>Stuffing Week - Added blocking date feature</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-11-12</TableCell>
+                          <TableCell><Badge className="bg-orange-100 text-orange-800">Fix</Badge></TableCell>
+                          <TableCell>MySQL Login - Fixed CI authentication issues</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-11-10</TableCell>
+                          <TableCell><Badge className="bg-green-100 text-green-800">New</Badge></TableCell>
+                          <TableCell>HOTS Reporting Functions - Dashboard analytics</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-11-06</TableCell>
+                          <TableCell><Badge className="bg-orange-100 text-orange-800">Fix</Badge></TableCell>
+                          <TableCell>Mailer - Create ticket notification fix</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono text-sm">2024-11-06</TableCell>
+                          <TableCell><Badge className="bg-orange-100 text-orange-800">Fix</Badge></TableCell>
+                          <TableCell>SeaRates Tracking - Fixed tracking without SO ID</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-semibold mb-3">Update Types</h4>
+                    <div className="flex flex-wrap gap-4">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-green-100 text-green-800">New</Badge>
+                        <span className="text-sm text-gray-600">New feature added</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-purple-100 text-purple-800">Update</Badge>
+                        <span className="text-sm text-gray-600">Existing feature improved</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-orange-100 text-orange-800">Fix</Badge>
+                        <span className="text-sm text-gray-600">Bug fix or issue resolved</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
