@@ -27,7 +27,7 @@ module.exports = {
                 const sqlCheckOrderProceed = await dbQuery(`
                    SELECT
                         el.is_notified,
-                        me.email AS "to",
+                        GROUP_CONCAT(DISTINCT me.email) AS "to",
                         p.person_notice cc,
                         mo.order_id,
                         mos.status_order,
@@ -78,6 +78,7 @@ module.exports = {
                     return;
                 }
 
+
                 console.log(`${timestamp} [INFO] ${sqlCheckOrderProceed.length} order ditemukan untuk dikirim email.`);
 
                 // 🔁 Loop per row agar sequential dan bisa pakai await dengan aman
@@ -89,11 +90,14 @@ module.exports = {
                         continue;
                     }
 
+                    const toList = to.split(',').map(e => e.trim());
+
+
                     try {
                         // 1️⃣ Kirim email dulu
                         const mailResult = await notifMailDeliver(
                             order_id,
-                            to,
+                            toList,
                             cc,
                             po_buyer,
                             company_name

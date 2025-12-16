@@ -342,11 +342,11 @@ module.exports = {
       }
       if (validateToken[0]) {
         console.log(timestamp + "=>> Auth Keep login for : " + req.dataToken.uid);
-        // console.log("--------------------------")
-        // console.log("Auth Keep login for : " + req.dataToken.user_id)
-        // console.log("--------------------------")
-        // console.log("Token : ", req.token);
-        // console.log("--------------------------")
+        console.log("--------------------------")
+        console.log("Auth Keep login for : " + req.dataToken.user_id)
+        console.log("--------------------------")
+        console.log("Token : ", req.token);
+        console.log("--------------------------")
 
         let userID = await dbQuery(
           `
