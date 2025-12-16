@@ -1899,7 +1899,6 @@ WHERE
                     console.log(timestamp + "Error Push addOrderSummary", err)
                 } else {
 
-                    // let callSO = await dbQuery('CALL insert_so;');
 
                     //END CONNECTION
                     res.status(200).send(results);
