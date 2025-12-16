@@ -36,7 +36,7 @@ function CreateAccount() {
     const [firstname, setFirstname] = useState();
     const [lastname, setLastname] = useState();
     const [uid, setUid] = useState();
-    const [usertype, setUsertype] = useState("4");
+    const [usertype, setUsertype] = useState("3");
     const [pswd, setPswd] = useState();
     const [email, setEmail] = useState();
     const [telp, setTelp] = useState();
@@ -287,11 +287,14 @@ function CreateAccount() {
                                                         value={company_id}
                                                         onChange={handleCompany_idChange}
                                                     >
-                                                        {distributorList.map((company) => (
-                                                            <option key={company.company_id} value={company.company_id}>
-                                                                {company.company_name} ({company.company_id})
-                                                            </option>
-                                                        ))}
+                                                        {distributorList
+                                                            .slice() // prevent mutating original array
+                                                            .sort((a, b) => a.company_id - b.company_id)
+                                                            .map((company) => (
+                                                                <option key={company.company_id} value={company.company_id}>
+                                                                    ({company.company_id}) {company.company_name} || {company.division_name}
+                                                                </option>
+                                                            ))}
                                                     </Select>
                                                 </Tooltip>
                                             </div>

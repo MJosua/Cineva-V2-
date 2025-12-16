@@ -1108,7 +1108,7 @@ WHERE
 
       dbConf.query(
         `
-        SELECT mc.company_id, mc.company_name  FROM mst_company mc WHERE company_type_id = 2 ORDER BY mc.company_name ;
+        SELECT mc.company_id, mc.company_name, mc.division_name  FROM mst_company mc WHERE company_type_id = 2 ORDER BY mc.company_name ;
         `
         , (err, results) => {
 
