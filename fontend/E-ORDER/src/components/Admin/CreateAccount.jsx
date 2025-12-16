@@ -36,7 +36,7 @@ function CreateAccount() {
     const [firstname, setFirstname] = useState();
     const [lastname, setLastname] = useState();
     const [uid, setUid] = useState();
-    const [usertype, setUsertype] = useState();
+    const [usertype, setUsertype] = useState("4");
     const [pswd, setPswd] = useState();
     const [email, setEmail] = useState();
     const [telp, setTelp] = useState();
