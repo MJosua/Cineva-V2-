@@ -485,11 +485,10 @@ module.exports = {
                        ON s.shipment_id = v.shipment_id 
                        AND v.vessel_id = e.vessel_id 
                    WHERE 
-                   s.number = ?
-                   or 
-                   c.container_number = ?
+                   (s.number = ? OR c.container_number = ?)
+                   AND (s.so_id = ? OR ? = '0')
                    order by e.order_id ASC 
-           `, [number, number]);
+           `, [number, number, so_id, so_id]);
 
             let reload = false;
             if (refresh && results.length) {

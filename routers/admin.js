@@ -14,16 +14,16 @@ route.get('/config-top', readToken, adminController.getTOP)
 route.get('/feedback', readToken, adminController.getFeedback)
 route.get('/req-data-change', readToken, adminController.getRequestDataChange)
 route.get('/banner', readToken, adminController.getBanner)
-route.get('/account', readToken, adminController.getAccount) 
-route.get('/audit', readToken, adminController.getAudit) 
+route.get('/account', readToken, adminController.getAccount)
+route.get('/audit', readToken, adminController.getAudit)
 
 route.post('/create_account', readToken, adminController.addAccount)
 route.post('/banner', readToken, uploadBanner, adminController.addBanner)
 route.post('/account-detail', readToken, adminController.getAccountDetail)
 route.post('/config', readToken, uploadBanner, adminController.addConfig)
 
-route.patch('/active', readToken, adminController.changeActive) 
-route.patch('/status-data-change', readToken, adminController.updateStatusRequestDataChange) 
+route.patch('/active', readToken, adminController.changeActive)
+route.patch('/status-data-change', readToken, adminController.updateStatusRequestDataChange)
 
 route.put('/config', readToken, adminController.editConfig)
 route.put('/account', readToken, adminController.editAccount)
@@ -38,8 +38,9 @@ route.delete('/config/:id', readToken, adminController.deleteConfig)
 // route.put('/edit', authController.editProduct)
 // route.delete('/delete', authController.deleteProduct)
 
-route.get('/get_blocking_date_sys_text', readToken, adminController.sys_textCallBlockingDate) 
+route.get('/get_blocking_date_sys_text', readToken, adminController.sys_textCallBlockingDate)
 route.post('/edit_blocking_date_sys_text', readToken, adminController.sys_textEditBlockingDate)
+route.get('/next-user-id/:company_id', readToken, adminController.getNextUserID)
 
 
 module.exports = route;

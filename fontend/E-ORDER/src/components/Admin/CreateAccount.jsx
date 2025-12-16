@@ -41,7 +41,20 @@ function CreateAccount() {
     const [email, setEmail] = useState();
     const [telp, setTelp] = useState();
     let type_id = usertype;
-   
+
+
+    const [distributorList, setDistributorList] = useState([]);
+
+    useEffect(() => {
+        let userToken = localStorage.getItem("tokek");
+        Axios.get(API_URL + "/admin/config-company", {
+            headers: { Authorization: `Bearer ${userToken}` }
+        }).then((res) => {
+            if (res.data.success) {
+                setDistributorList(res.data.results);
+            }
+        }).catch((err) => console.log("Error fetching companies:", err));
+    }, []);
 
     const handleButtonCreate = async () => {
         // console.log("jalan")
@@ -190,10 +203,19 @@ function CreateAccount() {
 
     const handleCompany_idChange = (event) => {
         const value = event.target.value;
-        const sanitizedValue = value.replace(/\D/g, '');
+        setCompany_id(value);
 
-        setCompany_id(sanitizedValue);
-
+        if (value) {
+            let userToken = localStorage.getItem("tokek");
+            Axios.get(`${API_URL}/admin/next-user-id/${value}`, {
+                headers: { Authorization: `Bearer ${userToken}` }
+            }).then((res) => {
+                if (res.data.success) {
+                    setUserID(res.data.results);
+                    setEmployee_id(res.data.results);
+                }
+            }).catch((err) => console.log("Error fetching next user ID:", err));
+        }
     };
 
     const handleEmployee_idChange = (event) => {
@@ -240,6 +262,91 @@ function CreateAccount() {
                             <div className="row px-2">
                                 <div className="col-12 card-body border border_radius_10px">
 
+                                    <div className="card position-relative px-3 pt-4 pb-4 mt-4 mb-4">
+                                        <div className="position-absolute bg-secondary shadow px-4 text-light" style={{ top: "-10px" }}>
+                                            Company Request
+                                        </div>
+                                        <div className="row px-2 mb-2">
+
+
+                                            <div className="grey_text_bold ratakiri fs-6 d-flex col-4 col-md-2 mt-2">
+                                                Company_id
+                                                <span className="color_red">*</span>
+                                            </div>
+
+                                            <div className="col-4 mt-1 ps-4">
+                                                <Tooltip
+                                                    label=" company_id sesuai dengan request "
+                                                    hasArrow
+                                                    arrowSize={15}
+                                                >
+                                                    <Select
+                                                        className="grey_text fs-6"
+                                                        placeholder="Select Company"
+                                                        size="sm"
+                                                        value={company_id}
+                                                        onChange={handleCompany_idChange}
+                                                    >
+                                                        {distributorList.map((company) => (
+                                                            <option key={company.company_id} value={company.company_id}>
+                                                                {company.company_name} ({company.company_id})
+                                                            </option>
+                                                        ))}
+                                                    </Select>
+                                                </Tooltip>
+                                            </div>
+
+                                        </div>
+                                        <div className="row px-2">
+
+
+                                            <div className="grey_text_bold ratakiri fs-6 d-flex col-4 col-md-2 mt-2">
+                                                User_id
+                                                <span className="color_red">*</span>
+                                            </div>
+                                            <Tooltip
+                                                label=" user_id adalah company_id + 001 atau 01. Jika dalam company tersebut sudah ada, maka ditambahkan. "
+                                                hasArrow
+                                                arrowSize={15}
+                                            >
+                                                <div className="col-4 mt-1 ps-4">
+                                                    <Input
+                                                        className="grey_text fs-6"
+                                                        type="text"
+                                                        placeholder="Insert your User ID"
+                                                        size="sm"
+                                                        value={employee_id}
+                                                        onChange={handleEmployee_idChange}
+                                                    />
+                                                </div>
+                                            </Tooltip>
+
+                                            <div className="grey_text_bold ratakiri fs-6 d-flex col-4 col-md-2 mt-2">
+                                                Employee_id
+                                                <span className="color_red">*</span>
+                                            </div>
+
+                                            <div className="col-4 mt-1 ps-4">
+                                                <Tooltip
+                                                    label=" NIK / ID Pekerja.  "
+                                                    hasArrow
+                                                    arrowSize={15}
+                                                >
+                                                    <Input
+                                                        className="grey_text fs-6"
+                                                        type="text"
+                                                        placeholder="Insert your Employee ID"
+                                                        size="sm"
+                                                        value={userID}
+                                                        onChange={handleUserIDChange}
+                                                    />
+                                                </Tooltip>
+                                            </div>
+
+                                        </div>
+
+
+                                    </div>
 
                                     <div className="row px-2 mb-2">
 
@@ -430,86 +537,7 @@ function CreateAccount() {
 
 
                                     </div>
-                                    <div className="card position-relative px-3 pt-4 pb-4 mt-4">
-                                        <div className="position-absolute bg-secondary shadow px-4 text-light" style={{ top: "-10px" }}>
-                                            Company Request
-                                        </div>
-                                        <div className="row px-2 mb-2">
 
-
-                                            <div className="grey_text_bold ratakiri fs-6 d-flex col-4 col-md-2 mt-2">
-                                                Company_id
-                                                <span className="color_red">*</span>
-                                            </div>
-
-                                            <div className="col-4 mt-1 ps-4">
-                                                <Tooltip
-                                                    label=" company_id sesuai dengan request "
-                                                    hasArrow
-                                                    arrowSize={15}
-                                                >
-                                                    <Input
-                                                        className="grey_text fs-6"
-                                                        type="text"
-                                                        placeholder="Insert your Company ID"
-                                                        size="sm"
-                                                        value={company_id}
-                                                        onChange={handleCompany_idChange}
-                                                    />
-                                                </Tooltip>
-                                            </div>
-
-                                        </div>
-                                        <div className="row px-2">
-
-
-                                            <div className="grey_text_bold ratakiri fs-6 d-flex col-4 col-md-2 mt-2">
-                                                User_id
-                                                <span className="color_red">*</span>
-                                            </div>
-                                            <Tooltip
-                                                label=" user_id adalah company_id + 001 atau 01. Jika dalam company tersebut sudah ada, maka ditambahkan. "
-                                                hasArrow
-                                                arrowSize={15}
-                                            >
-                                                <div className="col-4 mt-1 ps-4">
-                                                    <Input
-                                                        className="grey_text fs-6"
-                                                        type="text"
-                                                        placeholder="Insert your User ID"
-                                                        size="sm"
-                                                        value={employee_id}
-                                                        onChange={handleEmployee_idChange}
-                                                    />
-                                                </div>
-                                            </Tooltip>
-
-                                            <div className="grey_text_bold ratakiri fs-6 d-flex col-4 col-md-2 mt-2">
-                                                Employee_id
-                                                <span className="color_red">*</span>
-                                            </div>
-
-                                            <div className="col-4 mt-1 ps-4">
-                                                <Tooltip
-                                                    label=" NIK / ID Pekerja.  "
-                                                    hasArrow
-                                                    arrowSize={15}
-                                                >
-                                                    <Input
-                                                        className="grey_text fs-6"
-                                                        type="text"
-                                                        placeholder="Insert your Employee ID"
-                                                        size="sm"
-                                                        value={userID}
-                                                        onChange={handleUserIDChange}
-                                                    />
-                                                </Tooltip>
-                                            </div>
-
-                                        </div>
-
-
-                                    </div>
 
 
 

@@ -1324,6 +1324,50 @@ WHERE
       }
     })
 
+  },
+
+  getNextUserID: async (req, res) => {
+    let date = new Date();
+    let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+    const company_id = req.params.company_id;
+
+    if (!company_id || isNaN(company_id)) {
+      return res.status(400).send({ success: false, message: "Invalid Company ID" });
+    }
+
+    if (req.dataToken.type_id = 9) {
+      try {
+        const query = `SELECT MAX(user_id) as max_id FROM sys_user WHERE company_id = ${company_id}`;
+
+        dbConf.query(query, (err, results) => {
+          if (err) {
+            console.log(timestamp + " Error getNextUserID: " + err);
+            return res.status(500).send({ success: false, message: "Error fetching user ID" });
+          }
+
+          let nextId;
+          if (results[0].max_id) {
+            nextId = results[0].max_id + 1;
+          } else {
+            // First user for this company: CompanyID + "01"
+            nextId = parseInt(`${company_id}01`);
+          }
+
+          res.status(200).send({
+            success: true,
+            results: nextId
+          });
+          console.log(timestamp + `Next User ID for Company ${company_id} is ${nextId}`);
+        });
+
+      } catch (error) {
+        console.log(timestamp + " Exception in getNextUserID: " + error);
+        res.status(500).send({ success: false, message: "Server Error" });
+      }
+
+    } else {
+      res.status(401).send({ success: false, message: "Unauthorized" });
+    }
   }
 
 };

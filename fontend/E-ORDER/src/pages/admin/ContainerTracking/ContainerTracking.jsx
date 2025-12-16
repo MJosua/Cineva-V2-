@@ -110,12 +110,12 @@ function ContainerTracking({
 
             if (res.data?.data?.data || res.data?.data) {
                 console.log("searatesData", searatesData)
-            }else{
+            } else {
                 console.log("containerData", containerData)
 
             }
 
-            
+
 
             const normalized = {
                 metadata: src.metadata || {},
@@ -221,7 +221,9 @@ function ContainerTracking({
 
     const handleRefresh = async (e) => {
         e.preventDefault();
-        await handleDataFetch({ number: dataNumber || number, so_id, refresh: true });
+        // Use so_id from state if URL param is undefined to prevent duplicate rows
+        const effectiveSoId = so_id || orderSOIDState || "0";
+        await handleDataFetch({ number: dataNumber || number, so_id: effectiveSoId, refresh: true });
     };
 
     const fetchData = async (number, so_id) => {

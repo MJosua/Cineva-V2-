@@ -1,0 +1,703 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+    <script type="text/javascript">
+		(function($) {
+			$.fn.easyTabs = function(option) {
+				var param = jQuery.extend({ fadeSpeed: 'fast', defaultContent: 1, activeClass: 'active' }, option);
+				$(this).each(function() {
+					var thisId = '#' + this.id;
+					if ( param.defaultContent == '' )
+					{
+						param.defaultContent = 1;
+					}
+					if ( typeof param.defaultContent == 'number' )
+					{
+						var defaultTab = $(thisId + ' .tabs li:eq(' + (param.defaultContent - 1) + ') a').attr('href').substr(1);
+					}
+					else
+					{
+						var defaultTab = param.defaultContent;
+					}
+					$(thisId + ' .tabs li a').each(function() {
+						var tabToHide = $(this).attr('href').substr(1);
+						$('#' + tabToHide).addClass('easytabs-tab-content');
+					});
+					hideAll();
+					changeContent(defaultTab);
+
+					function hideAll() {$(thisId + ' .easytabs-tab-content').hide();}
+
+					function changeContent(tabId)
+					{
+						hideAll();
+						$(thisId + ' .tabs li').removeClass(param.activeClass);
+						$(thisId + ' .tabs li a[href=#' + tabId + ']').closest('li').addClass(param.activeClass);
+						if ( param.fadeSpeed != 'none' )
+						{
+							$(thisId + ' #' + tabId).fadeIn(param.fadeSpeed);
+						}
+						else
+						{
+							$(thisId + ' #' + tabId).show();
+						}
+					}
+
+					$(thisId + ' .tabs li').click(function() {
+						var tabId = $(this).find('a').attr('href').substr(1);
+						changeContent(tabId);
+						return false;
+					});
+				});
+			}
+		})(jQuery);
+    </script>
+    <link rel="stylesheet" href="specimen_files/specimen_stylesheet.css" type="text/css" charset="utf-8"/>
+    <link rel="stylesheet" href="stylesheet.css" type="text/css" charset="utf-8"/>
+
+    <style type="text/css">
+        		body {
+			font-family: 'plutocond_black_italic';
+        		}
+
+            </style>
+
+    <title>Pluto Cond Black Italic Specimen</title>
+
+
+    <script type="text/javascript" charset="utf-8">
+		$(document).ready(function() {
+			$('#container').easyTabs({ defaultContent: 1 });
+		});
+    </script>
+</head>
+
+<body>
+<div id="container">
+    <div id="header">
+		Pluto Cond Black Italic    </div>
+    <ul className="tabs">
+        <li><a href="#specimen">Specimen</a></li>
+        <li><a href="#layout">Sample Layout</a></li>
+		        <li><a href="#glyphs">Glyphs &amp; Languages</a></li>
+        <li><a href="#installing">Installing Webfonts</a></li>
+
+    </ul>
+
+    <div id="main_content">
+
+
+        <div id="specimen">
+
+            <div className="section">
+                <div className="grid12 firstcol">
+                    <div className="huge">AaBb</div>
+                </div>
+            </div>
+
+            <div className="section">
+                <div className="glyph_range">A&#x200B;B&#x200b;C&#x200b;D&#x200b;E&#x200b;F&#x200b;G&#x200b;H&#x200b;I&#x200b;J&#x200b;K&#x200b;L&#x200b;M&#x200b;N&#x200b;O&#x200b;P&#x200b;Q&#x200b;R&#x200b;S&#x200b;T&#x200b;U&#x200b;V&#x200b;W&#x200b;X&#x200b;Y&#x200b;Z&#x200b;a&#x200b;b&#x200b;c&#x200b;d&#x200b;e&#x200b;f&#x200b;g&#x200b;h&#x200b;i&#x200b;j&#x200b;k&#x200b;l&#x200b;m&#x200b;n&#x200b;o&#x200b;p&#x200b;q&#x200b;r&#x200b;s&#x200b;t&#x200b;u&#x200b;v&#x200b;w&#x200b;x&#x200b;y&#x200b;z&#x200b;1&#x200b;2&#x200b;3&#x200b;4&#x200b;5&#x200b;6&#x200b;7&#x200b;8&#x200b;9&#x200b;0&#x200b;&amp;&#x200b;.&#x200b;,&#x200b;?&#x200b;!&#x200b;&#64;&#x200b;(&#x200b;)&#x200b;#&#x200b;$&#x200b;%&#x200b;*&#x200b;+&#x200b;-&#x200b;=&#x200b;:&#x200b;;</div>
+            </div>
+            <div className="section">
+                <div className="grid12 firstcol">
+                    <table className="sample_table">
+                        <tr>
+                            <td>10</td>
+                            <td className="size10">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                        <tr>
+                            <td>11</td>
+                            <td className="size11">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                        <tr>
+                            <td>12</td>
+                            <td className="size12">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                        <tr>
+                            <td>13</td>
+                            <td className="size13">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                        <tr>
+                            <td>14</td>
+                            <td className="size14">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                        <tr>
+                            <td>16</td>
+                            <td className="size16">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                        <tr>
+                            <td>18</td>
+                            <td className="size18">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                        <tr>
+                            <td>20</td>
+                            <td className="size20">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                        <tr>
+                            <td>24</td>
+                            <td className="size24">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                        <tr>
+                            <td>30</td>
+                            <td className="size30">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                        <tr>
+                            <td>36</td>
+                            <td className="size36">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                        <tr>
+                            <td>48</td>
+                            <td className="size48">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                        <tr>
+                            <td>60</td>
+                            <td className="size60">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                        <tr>
+                            <td>72</td>
+                            <td className="size72">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                        <tr>
+                            <td>90</td>
+                            <td className="size90">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+                        </tr>
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <div className="section" id="bodycomparison">
+
+
+                <div id="xheight">
+                    <div className="fontbody">&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;&#x25FC;body</div>
+                    <div className="arialbody">body</div>
+                    <div className="verdanabody">body</div>
+                    <div className="georgiabody">body</div>
+                </div>
+                <div className="fontbody" style="z-index:1">
+                    body<span>Pluto Cond Black Italic</span>
+                </div>
+                <div className="arialbody" style="z-index:1">
+                    body<span>Arial</span>
+                </div>
+                <div className="verdanabody" style="z-index:1">
+                    body<span>Verdana</span>
+                </div>
+                <div className="georgiabody" style="z-index:1">
+                    body<span>Georgia</span>
+                </div>
+
+
+            </div>
+
+
+            <div className="section psample psample_row1" id="">
+
+                <div className="grid2 firstcol">
+                    <span className="size10"><span>10.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+
+                </div>
+                <div className="grid3">
+                    <span className="size11"><span>11.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+
+                </div>
+                <div className="grid3">
+                    <span className="size12"><span>12.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+
+                </div>
+                <div className="grid4">
+                    <span className="size13"><span>13.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+
+                </div>
+                <div className="white_blend"></div>
+
+            </div>
+            <div className="section psample psample_row2" id="">
+                <div className="grid3 firstcol">
+                    <span className="size14"><span>14.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+
+                </div>
+                <div className="grid4">
+                    <span className="size16"><span>16.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+
+                </div>
+                <div className="grid5">
+                    <span className="size18"><span>18.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+
+                </div>
+
+                <div className="white_blend"></div>
+
+            </div>
+
+            <div className="section psample psample_row3" id="">
+                <div className="grid5 firstcol">
+                    <span className="size20"><span>20.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+                </div>
+                <div className="grid7">
+                    <span className="size24"><span>24.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+                </div>
+
+                <div className="white_blend"></div>
+
+            </div>
+
+            <div className="section psample psample_row4" id="">
+                <div className="grid12 firstcol">
+                    <span className="size30"><span>30.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+                </div>
+                <div className="white_blend"></div>
+
+            </div>
+
+
+            <div className="section psample psample_row1 fullreverse">
+                <div className="grid2 firstcol">
+                    <span className="size10"><span>10.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+
+                </div>
+                <div className="grid3">
+                    <span className="size11"><span>11.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+
+                </div>
+                <div className="grid3">
+                    <span className="size12"><span>12.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+
+                </div>
+                <div className="grid4">
+                    <span className="size13"><span>13.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+
+                </div>
+                <div className="black_blend"></div>
+
+            </div>
+
+            <div className="section psample psample_row2 fullreverse">
+                <div className="grid3 firstcol">
+                    <span className="size14"><span>14.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+
+                </div>
+                <div className="grid4">
+                    <span className="size16"><span>16.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+
+                </div>
+                <div className="grid5">
+                    <span className="size18"><span>18.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+
+                </div>
+                <div className="black_blend"></div>
+
+            </div>
+
+            <div className="section psample fullreverse psample_row3" id="">
+                <div className="grid5 firstcol">
+                    <span className="size20"><span>20.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+                </div>
+                <div className="grid7">
+                    <span className="size24"><span>24.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+                </div>
+
+                <div className="black_blend"></div>
+
+            </div>
+
+            <div className="section psample fullreverse psample_row4" id="" style="border-bottom: 20px #000 solid;">
+                <div className="grid12 firstcol">
+                    <span className="size30"><span>30.</span>Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla vitae elit libero, a pharetra augue.</span>
+                </div>
+                <div className="black_blend"></div>
+
+            </div>
+
+
+        </div>
+
+        <div id="layout">
+
+            <div className="section">
+
+                <div className="grid12 firstcol">
+                    <h1>Lorem Ipsum Dolor</h1>
+                    <h2>Etiam porta sem malesuada magna mollis euismod</h2>
+
+                    <span className="byline">By <a href="#link">Aenean Lacinia</a></span>
+                </div>
+            </div>
+            <div className="section">
+                <div className="grid8 firstcol">
+                    <span className="large">Donec sed odio dui. Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. </span>
+
+
+                    <h3>Pellentesque ornare sem</h3>
+
+                    <span>Maecenas sed diam eget risus varius blandit sit amet non magna. Maecenas faucibus mollis interdum. Donec ullamcorper nulla non metus auctor fringilla. Nullam id dolor id nibh ultricies vehicula ut id elit. Nullam id dolor id nibh ultricies vehicula ut id elit. </span>
+
+                    <span>Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. </span>
+
+                    <span>Nulla vitae elit libero, a pharetra augue. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Aenean lacinia bibendum nulla sed consectetur. </span>
+
+                    <span>Nullam quis risus eget urna mollis ornare vel eu leo. Nullam quis risus eget urna mollis ornare vel eu leo. Maecenas sed diam eget risus varius blandit sit amet non magna. Donec ullamcorper nulla non metus auctor fringilla. </span>
+
+                    <h3>Cras mattis consectetur</h3>
+
+                    <span>Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Aenean lacinia bibendum nulla sed consectetur. Integer posuere erat a ante venenatis dapibus posuere velit aliquet. Cras mattis consectetur purus sit amet fermentum. </span>
+
+                    <span>Nullam id dolor id nibh ultricies vehicula ut id elit. Nullam quis risus eget urna mollis ornare vel eu leo. Cras mattis consectetur purus sit amet fermentum.</span>
+                </div>
+
+                <div className="grid4 sidebar">
+
+                    <div className="box reverse">
+                        <span className="last">Nullam quis risus eget urna mollis ornare vel eu leo. Donec ullamcorper nulla non metus auctor fringilla. Cras mattis consectetur purus sit amet fermentum. Sed posuere consectetur est at lobortis. Lorem ipsum dolor sit amet, consectetur adipiscing elit. </span>
+                    </div>
+
+                    <span className="caption">Maecenas sed diam eget risus varius.</span>
+
+                    <span>Vestibulum id ligula porta felis euismod semper. Integer posuere erat a ante venenatis dapibus posuere velit aliquet. Vestibulum id ligula porta felis euismod semper. Sed posuere consectetur est at lobortis. Maecenas sed diam eget risus varius blandit sit amet non magna. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. </span>
+
+
+                    <span>Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia odio sem nec elit. Aenean lacinia bibendum nulla sed consectetur. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor. Aenean lacinia bibendum nulla sed consectetur. Nullam quis risus eget urna mollis ornare vel eu leo. </span>
+
+                    <span>Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec ullamcorper nulla non metus auctor fringilla. Maecenas faucibus mollis interdum. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. </span>
+
+                </div>
+            </div>
+
+        </div>
+
+
+		
+
+        <div id="glyphs">
+            <div className="section">
+                <div className="grid12 firstcol">
+
+                    <h1>Language Support</h1>
+                    <span>The subset of Pluto Cond Black Italic in this kit supports the following languages:<br/>
+
+						Albanian, Basque, Breton, Chamorro, Danish, Dutch, English, Faroese, Finnish, French, Frisian, Galician, German, Icelandic, Italian, Malagasy, Norwegian, Portuguese, Spanish, Alsatian, Aragonese, Arapaho, Arrernte, Asturian, Aymara, Bislama, Cebuano, Corsican, Fijian, French_creole, Genoese, Gilbertese, Greenlandic, Haitian_creole, Hiligaynon, Hmong, Hopi, Ibanag, Iloko_ilokano, Indonesian, Interglossa_glosa, Interlingua, Irish_gaelic, Jerriais, Lojban, Lombard, Luxembourgeois, Manx, Mohawk, Norfolk_pitcairnese, Occitan, Oromo, Pangasinan, Papiamento, Piedmontese, Potawatomi, Rhaeto-romance, Romansh, Rotokas, Sami_lule, Samoan, Sardinian, Scots_gaelic, Seychelles_creole, Shona, Sicilian, Somali, Southern_ndebele, Swahili, Swati_swazi, Tagalog_filipino_pilipino, Tetum, Tok_pisin, Uyghur_latinized, Volapuk, Walloon, Warlpiri, Xhosa, Yapese, Zulu, Latinbasic, Ubasic, Demo                    </span>
+                    <h1>Glyph Chart</h1>
+                    <span>The subset of Pluto Cond Black Italic in this kit includes all the glyphs listed below. Unicode entities are included above each glyph to help you insert individual characters into your layout.</span>
+                    <div id="glyph_chart">
+
+																																	                                <div><span>&amp;#32;</span>&#32;</div>
+																				                                <div><span>&amp;#33;</span>&#33;</div>
+																				                                <div><span>&amp;#34;</span>&#34;</div>
+																				                                <div><span>&amp;#35;</span>&#35;</div>
+																				                                <div><span>&amp;#36;</span>&#36;</div>
+																				                                <div><span>&amp;#37;</span>&#37;</div>
+																				                                <div><span>&amp;#38;</span>&#38;</div>
+																				                                <div><span>&amp;#39;</span>&#39;</div>
+																				                                <div><span>&amp;#40;</span>&#40;</div>
+																				                                <div><span>&amp;#41;</span>&#41;</div>
+																				                                <div><span>&amp;#42;</span>&#42;</div>
+																				                                <div><span>&amp;#43;</span>&#43;</div>
+																				                                <div><span>&amp;#44;</span>&#44;</div>
+																				                                <div><span>&amp;#45;</span>&#45;</div>
+																				                                <div><span>&amp;#46;</span>&#46;</div>
+																				                                <div><span>&amp;#47;</span>&#47;</div>
+																				                                <div><span>&amp;#48;</span>&#48;</div>
+																				                                <div><span>&amp;#49;</span>&#49;</div>
+																				                                <div><span>&amp;#50;</span>&#50;</div>
+																				                                <div><span>&amp;#51;</span>&#51;</div>
+																				                                <div><span>&amp;#52;</span>&#52;</div>
+																				                                <div><span>&amp;#53;</span>&#53;</div>
+																				                                <div><span>&amp;#54;</span>&#54;</div>
+																				                                <div><span>&amp;#55;</span>&#55;</div>
+																				                                <div><span>&amp;#56;</span>&#56;</div>
+																				                                <div><span>&amp;#57;</span>&#57;</div>
+																				                                <div><span>&amp;#58;</span>&#58;</div>
+																				                                <div><span>&amp;#59;</span>&#59;</div>
+																				                                <div><span>&amp;#60;</span>&#60;</div>
+																				                                <div><span>&amp;#61;</span>&#61;</div>
+																				                                <div><span>&amp;#62;</span>&#62;</div>
+																				                                <div><span>&amp;#63;</span>&#63;</div>
+																				                                <div><span>&amp;#64;</span>&#64;</div>
+																				                                <div><span>&amp;#65;</span>&#65;</div>
+																				                                <div><span>&amp;#66;</span>&#66;</div>
+																				                                <div><span>&amp;#67;</span>&#67;</div>
+																				                                <div><span>&amp;#68;</span>&#68;</div>
+																				                                <div><span>&amp;#69;</span>&#69;</div>
+																				                                <div><span>&amp;#70;</span>&#70;</div>
+																				                                <div><span>&amp;#71;</span>&#71;</div>
+																				                                <div><span>&amp;#72;</span>&#72;</div>
+																				                                <div><span>&amp;#73;</span>&#73;</div>
+																				                                <div><span>&amp;#74;</span>&#74;</div>
+																				                                <div><span>&amp;#75;</span>&#75;</div>
+																				                                <div><span>&amp;#76;</span>&#76;</div>
+																				                                <div><span>&amp;#77;</span>&#77;</div>
+																				                                <div><span>&amp;#78;</span>&#78;</div>
+																				                                <div><span>&amp;#79;</span>&#79;</div>
+																				                                <div><span>&amp;#80;</span>&#80;</div>
+																				                                <div><span>&amp;#81;</span>&#81;</div>
+																				                                <div><span>&amp;#82;</span>&#82;</div>
+																				                                <div><span>&amp;#83;</span>&#83;</div>
+																				                                <div><span>&amp;#84;</span>&#84;</div>
+																				                                <div><span>&amp;#85;</span>&#85;</div>
+																				                                <div><span>&amp;#86;</span>&#86;</div>
+																				                                <div><span>&amp;#87;</span>&#87;</div>
+																				                                <div><span>&amp;#88;</span>&#88;</div>
+																				                                <div><span>&amp;#89;</span>&#89;</div>
+																				                                <div><span>&amp;#90;</span>&#90;</div>
+																				                                <div><span>&amp;#91;</span>&#91;</div>
+																				                                <div><span>&amp;#92;</span>&#92;</div>
+																				                                <div><span>&amp;#93;</span>&#93;</div>
+																				                                <div><span>&amp;#94;</span>&#94;</div>
+																				                                <div><span>&amp;#95;</span>&#95;</div>
+																				                                <div><span>&amp;#96;</span>&#96;</div>
+																				                                <div><span>&amp;#97;</span>&#97;</div>
+																				                                <div><span>&amp;#98;</span>&#98;</div>
+																				                                <div><span>&amp;#99;</span>&#99;</div>
+																				                                <div><span>&amp;#100;</span>&#100;</div>
+																				                                <div><span>&amp;#101;</span>&#101;</div>
+																				                                <div><span>&amp;#102;</span>&#102;</div>
+																				                                <div><span>&amp;#103;</span>&#103;</div>
+																				                                <div><span>&amp;#104;</span>&#104;</div>
+																				                                <div><span>&amp;#105;</span>&#105;</div>
+																				                                <div><span>&amp;#106;</span>&#106;</div>
+																				                                <div><span>&amp;#107;</span>&#107;</div>
+																				                                <div><span>&amp;#108;</span>&#108;</div>
+																				                                <div><span>&amp;#109;</span>&#109;</div>
+																				                                <div><span>&amp;#110;</span>&#110;</div>
+																				                                <div><span>&amp;#111;</span>&#111;</div>
+																				                                <div><span>&amp;#112;</span>&#112;</div>
+																				                                <div><span>&amp;#113;</span>&#113;</div>
+																				                                <div><span>&amp;#114;</span>&#114;</div>
+																				                                <div><span>&amp;#115;</span>&#115;</div>
+																				                                <div><span>&amp;#116;</span>&#116;</div>
+																				                                <div><span>&amp;#117;</span>&#117;</div>
+																				                                <div><span>&amp;#118;</span>&#118;</div>
+																				                                <div><span>&amp;#119;</span>&#119;</div>
+																				                                <div><span>&amp;#120;</span>&#120;</div>
+																				                                <div><span>&amp;#121;</span>&#121;</div>
+																				                                <div><span>&amp;#122;</span>&#122;</div>
+																				                                <div><span>&amp;#123;</span>&#123;</div>
+																				                                <div><span>&amp;#124;</span>&#124;</div>
+																				                                <div><span>&amp;#125;</span>&#125;</div>
+																				                                <div><span>&amp;#126;</span>&#126;</div>
+																				                                <div><span>&amp;#160;</span>&#160;</div>
+																				                                <div><span>&amp;#161;</span>&#161;</div>
+																				                                <div><span>&amp;#162;</span>&#162;</div>
+																				                                <div><span>&amp;#163;</span>&#163;</div>
+																				                                <div><span>&amp;#164;</span>&#164;</div>
+																				                                <div><span>&amp;#165;</span>&#165;</div>
+																				                                <div><span>&amp;#166;</span>&#166;</div>
+																				                                <div><span>&amp;#167;</span>&#167;</div>
+																				                                <div><span>&amp;#168;</span>&#168;</div>
+																				                                <div><span>&amp;#169;</span>&#169;</div>
+																				                                <div><span>&amp;#170;</span>&#170;</div>
+																				                                <div><span>&amp;#171;</span>&#171;</div>
+																				                                <div><span>&amp;#172;</span>&#172;</div>
+																				                                <div><span>&amp;#173;</span>&#173;</div>
+																				                                <div><span>&amp;#174;</span>&#174;</div>
+																				                                <div><span>&amp;#175;</span>&#175;</div>
+																				                                <div><span>&amp;#176;</span>&#176;</div>
+																				                                <div><span>&amp;#177;</span>&#177;</div>
+																				                                <div><span>&amp;#178;</span>&#178;</div>
+																				                                <div><span>&amp;#179;</span>&#179;</div>
+																				                                <div><span>&amp;#180;</span>&#180;</div>
+																				                                <div><span>&amp;#181;</span>&#181;</div>
+																				                                <div><span>&amp;#182;</span>&#182;</div>
+																				                                <div><span>&amp;#183;</span>&#183;</div>
+																				                                <div><span>&amp;#184;</span>&#184;</div>
+																				                                <div><span>&amp;#185;</span>&#185;</div>
+																				                                <div><span>&amp;#186;</span>&#186;</div>
+																				                                <div><span>&amp;#187;</span>&#187;</div>
+																				                                <div><span>&amp;#188;</span>&#188;</div>
+																				                                <div><span>&amp;#189;</span>&#189;</div>
+																				                                <div><span>&amp;#190;</span>&#190;</div>
+																				                                <div><span>&amp;#191;</span>&#191;</div>
+																				                                <div><span>&amp;#192;</span>&#192;</div>
+																				                                <div><span>&amp;#193;</span>&#193;</div>
+																				                                <div><span>&amp;#194;</span>&#194;</div>
+																				                                <div><span>&amp;#195;</span>&#195;</div>
+																				                                <div><span>&amp;#196;</span>&#196;</div>
+																				                                <div><span>&amp;#197;</span>&#197;</div>
+																				                                <div><span>&amp;#198;</span>&#198;</div>
+																				                                <div><span>&amp;#199;</span>&#199;</div>
+																				                                <div><span>&amp;#200;</span>&#200;</div>
+																				                                <div><span>&amp;#201;</span>&#201;</div>
+																				                                <div><span>&amp;#202;</span>&#202;</div>
+																				                                <div><span>&amp;#203;</span>&#203;</div>
+																				                                <div><span>&amp;#204;</span>&#204;</div>
+																				                                <div><span>&amp;#205;</span>&#205;</div>
+																				                                <div><span>&amp;#206;</span>&#206;</div>
+																				                                <div><span>&amp;#207;</span>&#207;</div>
+																				                                <div><span>&amp;#208;</span>&#208;</div>
+																				                                <div><span>&amp;#209;</span>&#209;</div>
+																				                                <div><span>&amp;#210;</span>&#210;</div>
+																				                                <div><span>&amp;#211;</span>&#211;</div>
+																				                                <div><span>&amp;#212;</span>&#212;</div>
+																				                                <div><span>&amp;#213;</span>&#213;</div>
+																				                                <div><span>&amp;#214;</span>&#214;</div>
+																				                                <div><span>&amp;#215;</span>&#215;</div>
+																				                                <div><span>&amp;#216;</span>&#216;</div>
+																				                                <div><span>&amp;#217;</span>&#217;</div>
+																				                                <div><span>&amp;#218;</span>&#218;</div>
+																				                                <div><span>&amp;#219;</span>&#219;</div>
+																				                                <div><span>&amp;#220;</span>&#220;</div>
+																				                                <div><span>&amp;#221;</span>&#221;</div>
+																				                                <div><span>&amp;#222;</span>&#222;</div>
+																				                                <div><span>&amp;#223;</span>&#223;</div>
+																				                                <div><span>&amp;#224;</span>&#224;</div>
+																				                                <div><span>&amp;#225;</span>&#225;</div>
+																				                                <div><span>&amp;#226;</span>&#226;</div>
+																				                                <div><span>&amp;#227;</span>&#227;</div>
+																				                                <div><span>&amp;#228;</span>&#228;</div>
+																				                                <div><span>&amp;#229;</span>&#229;</div>
+																				                                <div><span>&amp;#230;</span>&#230;</div>
+																				                                <div><span>&amp;#231;</span>&#231;</div>
+																				                                <div><span>&amp;#232;</span>&#232;</div>
+																				                                <div><span>&amp;#233;</span>&#233;</div>
+																				                                <div><span>&amp;#234;</span>&#234;</div>
+																				                                <div><span>&amp;#235;</span>&#235;</div>
+																				                                <div><span>&amp;#236;</span>&#236;</div>
+																				                                <div><span>&amp;#237;</span>&#237;</div>
+																				                                <div><span>&amp;#238;</span>&#238;</div>
+																				                                <div><span>&amp;#239;</span>&#239;</div>
+																				                                <div><span>&amp;#240;</span>&#240;</div>
+																				                                <div><span>&amp;#241;</span>&#241;</div>
+																				                                <div><span>&amp;#242;</span>&#242;</div>
+																				                                <div><span>&amp;#243;</span>&#243;</div>
+																				                                <div><span>&amp;#244;</span>&#244;</div>
+																				                                <div><span>&amp;#245;</span>&#245;</div>
+																				                                <div><span>&amp;#246;</span>&#246;</div>
+																				                                <div><span>&amp;#247;</span>&#247;</div>
+																				                                <div><span>&amp;#248;</span>&#248;</div>
+																				                                <div><span>&amp;#249;</span>&#249;</div>
+																				                                <div><span>&amp;#250;</span>&#250;</div>
+																				                                <div><span>&amp;#251;</span>&#251;</div>
+																				                                <div><span>&amp;#252;</span>&#252;</div>
+																				                                <div><span>&amp;#253;</span>&#253;</div>
+																				                                <div><span>&amp;#254;</span>&#254;</div>
+																				                                <div><span>&amp;#255;</span>&#255;</div>
+																				                                <div><span>&amp;#338;</span>&#338;</div>
+																				                                <div><span>&amp;#339;</span>&#339;</div>
+																				                                <div><span>&amp;#376;</span>&#376;</div>
+																				                                <div><span>&amp;#710;</span>&#710;</div>
+																				                                <div><span>&amp;#732;</span>&#732;</div>
+																				                                <div><span>&amp;#8192;</span>&#8192;</div>
+																				                                <div><span>&amp;#8193;</span>&#8193;</div>
+																				                                <div><span>&amp;#8194;</span>&#8194;</div>
+																				                                <div><span>&amp;#8195;</span>&#8195;</div>
+																				                                <div><span>&amp;#8196;</span>&#8196;</div>
+																				                                <div><span>&amp;#8197;</span>&#8197;</div>
+																				                                <div><span>&amp;#8198;</span>&#8198;</div>
+																				                                <div><span>&amp;#8199;</span>&#8199;</div>
+																				                                <div><span>&amp;#8200;</span>&#8200;</div>
+																				                                <div><span>&amp;#8201;</span>&#8201;</div>
+																				                                <div><span>&amp;#8202;</span>&#8202;</div>
+																				                                <div><span>&amp;#8208;</span>&#8208;</div>
+																				                                <div><span>&amp;#8209;</span>&#8209;</div>
+																				                                <div><span>&amp;#8210;</span>&#8210;</div>
+																				                                <div><span>&amp;#8211;</span>&#8211;</div>
+																				                                <div><span>&amp;#8212;</span>&#8212;</div>
+																				                                <div><span>&amp;#8216;</span>&#8216;</div>
+																				                                <div><span>&amp;#8217;</span>&#8217;</div>
+																				                                <div><span>&amp;#8218;</span>&#8218;</div>
+																				                                <div><span>&amp;#8220;</span>&#8220;</div>
+																				                                <div><span>&amp;#8221;</span>&#8221;</div>
+																				                                <div><span>&amp;#8222;</span>&#8222;</div>
+																				                                <div><span>&amp;#8226;</span>&#8226;</div>
+																				                                <div><span>&amp;#8230;</span>&#8230;</div>
+																				                                <div><span>&amp;#8239;</span>&#8239;</div>
+																				                                <div><span>&amp;#8249;</span>&#8249;</div>
+																				                                <div><span>&amp;#8250;</span>&#8250;</div>
+																				                                <div><span>&amp;#8287;</span>&#8287;</div>
+																				                                <div><span>&amp;#8364;</span>&#8364;</div>
+																				                                <div><span>&amp;#8482;</span>&#8482;</div>
+																				                                <div><span>&amp;#9724;</span>&#9724;</div>
+																				                                <div><span>&amp;#64257;</span>&#64257;</div>
+																				                                <div><span>&amp;#64258;</span>&#64258;</div>
+																																													                    </div>
+                </div>
+
+
+            </div>
+        </div>
+
+
+        <div id="specs">
+
+        </div>
+
+        <div id="installing">
+            <div className="section">
+                <div className="grid7 firstcol">
+                    <h1>Installing Webfonts</h1>
+
+                    <span>Webfonts are supported by all major browser platforms but not all in the same way. There are currently four different font formats that must be included in order to target all browsers. This includes TTF, WOFF, EOT and SVG.</span>
+
+                    <h2>1. Upload your webfonts</h2>
+                    <span>You must upload your webfont kit to your website. They should be in or near the same directory as your CSS files.</span>
+
+                    <h2>2. Include the webfont stylesheet</h2>
+                    <span>A special CSS @font-face declaration helps the various browsers select the appropriate font it needs without causing you a bunch of headaches. Learn more about this syntax by reading the <a href="https://www.fontspring.com/blog/further-hardening-of-the-bulletproof-syntax">Fontspring blog post</a> about it. The code for it is as follows:</span>
+
+
+                    <code>
+                        @font-face{
+                        font-family: 'MyWebFont';
+                        src: url('WebFont.eot');
+                        src: url('WebFont.eot?#iefix') format('embedded-opentype'),
+                        url('WebFont.woff') format('woff'),
+                        url('WebFont.ttf') format('truetype'),
+                        url('WebFont.svg#webfont') format('svg');
+                        }
+                    </code>
+
+                    <span>We've already gone ahead and generated the code for you. All you have to do is link to the stylesheet in your HTML, like this:</span>
+                    <code>&lt;link rel=&quot;stylesheet&quot; href=&quot;stylesheet.css&quot; type=&quot;text/css&quot; charset=&quot;utf-8&quot; /&gt;</code>
+
+                    <h2>3. Modify your own stylesheet</h2>
+                    <span>To take advantage of your new fonts, you must tell your stylesheet to use them. Look at the original @font-face declaration above and find the property called "font-family." The name linked there will be what you use to reference the font. Prepend that webfont name to the font stack in the "font-family" property, inside the selector you want to change. For example:</span>
+                    <code>p { font-family: 'WebFont', Arial, sans-serif; }</code>
+
+                    <h2>4. Test</h2>
+                    <span>Getting webfonts to work cross-browser <em>can</em> be tricky. Use the information in the sidebar to help you if you find that fonts aren't loading in a particular browser.</span>
+                </div>
+
+                <div className="grid5 sidebar">
+                    <div className="box">
+                        <h2>Troubleshooting<br/>Font-Face Problems</h2>
+                        <span>Having trouble getting your webfonts to load in your new website? Here are some tips to sort out what might be the problem.</span>
+
+                        <h3>Fonts not showing in any browser</h3>
+
+                        <span>This sounds like you need to work on the plumbing. You either did not upload the fonts to the correct directory, or you did not link the fonts properly in the CSS. If you've confirmed that all this is correct and you still have a problem, take a look at your .htaccess file and see if requests are getting intercepted.</span>
+
+                        <h3>Fonts not loading in iPhone or iPad</h3>
+
+                        <span>The most common problem here is that you are serving the fonts from an IIS server. IIS refuses to serve files that have unknown MIME types. If that is the case, you must set the MIME type for SVG to "image/svg+xml" in the server settings. Follow these instructions from Microsoft if you need help.</span>
+
+                        <h3>Fonts not loading in Firefox</h3>
+
+                        <span>The primary reason for this failure? You are still using a version Firefox older than 3.5. So upgrade already! If that isn't it, then you are very likely serving fonts from a different domain. Firefox requires that all font assets be served from the same domain. Lastly it is possible that you need to add WOFF to your list of MIME types (if you are serving via IIS.)</span>
+
+                        <h3>Fonts not loading in IE</h3>
+
+                        <span>Are you looking at Internet Explorer on an actual Windows machine or are you cheating by using a service like Adobe BrowserLab? Many of these screenshot services do not render @font-face for IE. Best to test it on a real machine.</span>
+
+                        <h3>Fonts not loading in IE9</h3>
+
+                        <span>IE9, like Firefox, requires that fonts be served from the same domain as the website. Make sure that is the case.</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+    <div id="footer">
+        <span>&copy;2010-2017 Font Squirrel. All rights reserved.</span>
+    </div>
+</div>
+</body>
+</html>

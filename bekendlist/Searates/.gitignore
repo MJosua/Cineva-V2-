@@ -1,0 +1,12 @@
+/node_modules 
+
+/.zip
+
+/.jpg
+/.jpeg
+/.png
+/.vscode
+
+*.jpg
+*.jpeg
+*.png
