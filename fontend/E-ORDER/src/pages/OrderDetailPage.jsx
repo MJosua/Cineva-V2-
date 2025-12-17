@@ -903,7 +903,7 @@ const OrderDetailPage = () => {
         {
             title: 'On Delivery',
             description: (
-                <div className='col-12'>
+                <>
                     Your order is on its way to the port destination
                     <table className='table table-sm border' style={{ fontSize: "10px" }}>
                         <tr className=' text-light' style={{ backgroundColor: "#505050" }}>
@@ -959,7 +959,7 @@ const OrderDetailPage = () => {
                                             </td>
 
                                             <td className='align-center ps-2'>{order.product_name}</td> {/* Render data from orderDetails */}
-                                            <td td className='align-center px-2' > {!order.qty ? 0 : order.qty.toLocaleString()}</td> {/* Render more data from orderDetails */}
+                                            <td className='align-center px-2'> {!order.qty ? 0 : order.qty.toLocaleString()}</td> {/* Render more data from orderDetails */}
 
 
 
@@ -989,7 +989,7 @@ const OrderDetailPage = () => {
                         }
 
                     </table >
-                </div >
+                </>
             )
         },
 
@@ -1305,7 +1305,7 @@ const OrderDetailPage = () => {
                                 >
                                     <ModalBody className="px-0 py-0">
                                         <iframe
-                                            src={`https://www.indofoodinternational.com/e-order/containertracking/${containerName}?so_id=${soid}`}
+                                            src={`https://www.indofoodinternational.com/e-order/containertracking/${containerName}/${soid}`}
                                             title="My Iframe"
                                             width="100%"
                                             height="100%"

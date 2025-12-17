@@ -128,11 +128,11 @@ module.exports = {
               //berhasil login
               if (results[0]) {
 
-                console.log("results[0]",results[0])
+                console.log("results[0]", results[0])
 
-                if (results[0].type_id === 1 || results[0].type_id === 2 || results[0].type_id === 4  ) {
+                if (results[0].type_id === 1 || results[0].type_id === 2 || results[0].type_id === 4) {
 
-                  console.log("results[0]",results[0])
+                  console.log("results[0]", results[0])
                   res.status(200).send({
                     message: ` Wrong username`,
                     success: false,
@@ -192,7 +192,7 @@ module.exports = {
                   });
                   console.log(timestamp + `==> Auth Login ${userID} UNAUTHORIZED TO LOGIN`);
 
-                } else if( userData[0].active === null || userData[0].active === undefined ){
+                } else if (userData[0].active === null || userData[0].active === undefined) {
 
                   //login berhasil
                   res.status(200).send({
@@ -345,7 +345,7 @@ module.exports = {
         console.log("--------------------------")
         console.log("Auth Keep login for : " + req.dataToken.user_id)
         console.log("--------------------------")
-        console.log("Token : ", req.token);
+        console.log("Token : ", req.token ? "exist" : "not exist");
         console.log("--------------------------")
 
         let userID = await dbQuery(

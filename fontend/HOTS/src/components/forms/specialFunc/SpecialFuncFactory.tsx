@@ -1,5 +1,6 @@
 import React from 'react';
 import { DiffWidget } from './DiffWidget';
+import { DetailTableWidget } from './DetailTableWidget';
 
 interface SpecialFuncFactoryProps {
     data: {
@@ -25,6 +26,19 @@ export const SpecialFuncFactory: React.FC<SpecialFuncFactoryProps> = ({ data, gl
                 <div className="my-4">
                     {data.title && <h3 className="text-sm font-semibold mb-2 text-gray-700">{data.title}</h3>}
                     <DiffWidget
+                        config={data.config}
+                        globalValues={globalValues}
+                        setGlobalValues={setGlobalValues}
+                        id={id}
+                    />
+                </div>
+            );
+
+        case 'detail_table':
+            return (
+                <div className="my-4">
+                    {data.title && <h3 className="text-sm font-semibold mb-2 text-gray-700">{data.title}</h3>}
+                    <DetailTableWidget
                         config={data.config}
                         globalValues={globalValues}
                         setGlobalValues={setGlobalValues}

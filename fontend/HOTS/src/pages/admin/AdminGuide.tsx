@@ -8,21 +8,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AppLayout } from '@/components/layout/AppLayout';
-import {
-  Settings,
-  FileText,
-  Users,
-  Workflow,
-  Code,
-  TestTube,
-  Copy,
+import { 
+  Settings, 
+  FileText, 
+  Users, 
+  Workflow, 
+  Code, 
+  TestTube, 
+  Copy, 
   Download,
   CheckCircle,
   AlertCircle,
-  Info,
-  LayoutDashboard,
-  Puzzle,
-  Globe
+  Info
 } from 'lucide-react';
 import { FormConfig, FormField, FormSection, RowGroup } from '@/types/formTypes';
 import { DynamicForm } from '@/components/forms/DynamicForm';
@@ -246,9 +243,8 @@ const AdminGuide = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="cms-widgets">CMS & Widgets</TabsTrigger>
             <TabsTrigger value="guides">Detailed Guides</TabsTrigger>
             <TabsTrigger value="config-generator">Config Generator</TabsTrigger>
             <TabsTrigger value="troubleshooting">Troubleshooting</TabsTrigger>
@@ -311,143 +307,6 @@ const AdminGuide = () => {
                       Role-based access control with department and team structure
                     </p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="cms-widgets" className="space-y-6">
-            {/* Dashboard Widgets Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Puzzle className="w-5 h-5 text-purple-600" />
-                  Dashboard Widgets
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-gray-600">
-                  Widgets are reusable components that can be added to dashboards and CMS pages.
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                    <h4 className="font-semibold text-purple-800 mb-2">Available Widgets</h4>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-center gap-2">
-                        <Badge className="bg-purple-100 text-purple-800">ai_chat</Badge>
-                        <span>HOTS Copilot AI Assistant</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Badge className="bg-blue-100 text-blue-800">my_tickets</Badge>
-                        <span>My Recent Tickets</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Badge className="bg-orange-100 text-orange-800">pending_approvals</Badge>
-                        <span>Pending Approvals List</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Badge className="bg-green-100 text-green-800">order_items</Badge>
-                        <span>E-Order Shopping Cart</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h4 className="font-semibold text-blue-800 mb-2">Widget Categories</h4>
-                    <ul className="space-y-1 text-sm text-blue-700">
-                      <li>• <strong>Dashboard:</strong> AI Chat, My Tickets, Pending Approvals</li>
-                      <li>• <strong>E-Order:</strong> Order Items Widget</li>
-                      <li>• <strong>Scheduling:</strong> Gantt Room Usage</li>
-                      <li>• <strong>Inventory:</strong> Stock Overview</li>
-                      <li>• <strong>Job Marketplace:</strong> Job Applicants, Execution Tools</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* CMS Page Builder Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-green-600" />
-                  CMS Page Builder
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-2">Creating CMS Pages</h4>
-                  <ol className="list-decimal list-inside space-y-1 text-sm text-green-700">
-                    <li>Navigate to <strong>Admin → CMS Pages</strong></li>
-                    <li>Click <strong>"New Page"</strong></li>
-                    <li>Set the <strong>slug</strong> (URL path, e.g., "dashboard-home")</li>
-                    <li>Add blocks: Heading, Text, HTML, Image, Divider, or <strong>Widget</strong></li>
-                    <li>For widgets, select from dropdown and configure JSON params</li>
-                    <li>Click <strong>Publish</strong> to make live</li>
-                  </ol>
-                </div>
-
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <h4 className="font-semibold text-yellow-800 mb-2">Block Types</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-                    <Badge variant="outline">Heading (H1-H4)</Badge>
-                    <Badge variant="outline">Text Paragraph</Badge>
-                    <Badge variant="outline">HTML Content</Badge>
-                    <Badge variant="outline">Image</Badge>
-                    <Badge variant="outline">Divider</Badge>
-                    <Badge variant="outline" className="bg-purple-100">Widget</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* CMS-Integrated Dashboard Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <LayoutDashboard className="w-5 h-5 text-blue-600" />
-                  CMS-Integrated Dashboard
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-semibold text-blue-800 mb-2">How It Works</h4>
-                  <p className="text-sm text-blue-700 mb-3">
-                    The dashboard is now hybrid: it first tries to load a CMS page, then falls back to legacy cards.
-                  </p>
-                  <ol className="list-decimal list-inside space-y-1 text-sm text-blue-700">
-                    <li>Dashboard checks for CMS page with slug <code className="bg-blue-100 px-1 rounded">dashboard-home</code></li>
-                    <li>If found → renders widgets from CMS blocks</li>
-                    <li>If not found → shows legacy dashboard cards</li>
-                  </ol>
-                </div>
-
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-2">Quick Setup: Custom Dashboard</h4>
-                  <ol className="list-decimal list-inside space-y-1 text-sm text-green-700">
-                    <li>Go to <strong>Admin → CMS Pages</strong></li>
-                    <li>Create new page with slug: <code className="bg-green-100 px-1 rounded">dashboard-home</code></li>
-                    <li>Add a Heading block: "Welcome to HOTS"</li>
-                    <li>Add Widget block → select <code className="bg-green-100 px-1 rounded">my_tickets</code></li>
-                    <li>Add Widget block → select <code className="bg-green-100 px-1 rounded">pending_approvals</code></li>
-                    <li>Add Widget block → select <code className="bg-green-100 px-1 rounded">ai_chat</code></li>
-                    <li>Click <strong>Publish</strong></li>
-                    <li>Visit <strong>/dashboard</strong> - widgets now appear!</li>
-                  </ol>
-                </div>
-
-                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                  <h4 className="font-semibold text-orange-800 mb-2">Widget Parameters (JSON)</h4>
-                  <p className="text-sm text-orange-700 mb-2">
-                    Some widgets accept configuration via JSON params:
-                  </p>
-                  <pre className="bg-orange-100 p-2 rounded text-xs overflow-x-auto">
-                    {`// my_tickets widget example
-{ "limit": 5 }
-
-// pending_approvals widget example  
-{ "limit": 10 }`}</pre>
                 </div>
               </CardContent>
             </Card>
@@ -567,7 +426,7 @@ const AdminGuide = () => {
                       <Input
                         id="form-title"
                         value={configBuilder.title}
-                        onChange={(e) => setConfigBuilder({ ...configBuilder, title: e.target.value })}
+                        onChange={(e) => setConfigBuilder({...configBuilder, title: e.target.value})}
                         placeholder="Enter form title"
                       />
                     </div>
@@ -576,7 +435,7 @@ const AdminGuide = () => {
                       <Textarea
                         id="form-description"
                         value={configBuilder.description}
-                        onChange={(e) => setConfigBuilder({ ...configBuilder, description: e.target.value })}
+                        onChange={(e) => setConfigBuilder({...configBuilder, description: e.target.value})}
                         placeholder="Enter form description"
                       />
                     </div>
@@ -585,7 +444,7 @@ const AdminGuide = () => {
                       <Input
                         id="form-category"
                         value={configBuilder.category}
-                        onChange={(e) => setConfigBuilder({ ...configBuilder, category: e.target.value })}
+                        onChange={(e) => setConfigBuilder({...configBuilder, category: e.target.value})}
                         placeholder="Enter form category"
                       />
                     </div>
@@ -593,7 +452,7 @@ const AdminGuide = () => {
                       Generate Sample Configuration
                     </Button>
                   </div>
-
+                  
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <Label>Generated JSON Configuration</Label>
@@ -643,7 +502,7 @@ const AdminGuide = () => {
                       Solution: Use sections or row groups to organize fields efficiently.
                     </p>
                   </div>
-
+                  
                   <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <h4 className="font-semibold text-yellow-800 mb-2">Workflow Not Triggering</h4>
                     <p className="text-sm text-yellow-700 mb-2">
@@ -653,7 +512,7 @@ const AdminGuide = () => {
                       Solution: Check workflow group assignment and approval levels.
                     </p>
                   </div>
-
+                  
                   <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
                     <h4 className="font-semibold text-orange-800 mb-2">File Upload Failures</h4>
                     <p className="text-sm text-orange-700 mb-2">
@@ -683,7 +542,7 @@ const AdminGuide = () => {
                       <li>• Provide helpful placeholder text</li>
                     </ul>
                   </div>
-
+                  
                   <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                     <h4 className="font-semibold text-green-800 mb-2">Performance</h4>
                     <ul className="text-sm text-green-700 space-y-1">
@@ -693,7 +552,7 @@ const AdminGuide = () => {
                       <li>• Monitor system resources</li>
                     </ul>
                   </div>
-
+                  
                   <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
                     <h4 className="font-semibold text-purple-800 mb-2">Security</h4>
                     <ul className="text-sm text-purple-700 space-y-1">

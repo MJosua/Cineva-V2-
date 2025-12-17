@@ -43,7 +43,16 @@ export const DiffWidget: React.FC<DiffWidgetProps> = ({ config, globalValues, se
             try {
                 // Determine API URL - prepend API_URL and append triggerValue
                 let apiPath = config.api_source.replace('${trigger_field}', triggerValue);
-                if (!apiPath.includes(triggerValue)) apiPath = `${config.api_source}/${triggerValue}`;
+
+                // If api_source ends with = (query param style), append value directly
+                // Otherwise append as path segment
+                if (!apiPath.includes(triggerValue)) {
+                    if (apiPath.endsWith('=')) {
+                        apiPath = `${config.api_source}${encodeURIComponent(triggerValue)}`;
+                    } else {
+                        apiPath = `${config.api_source}/${triggerValue}`;
+                    }
+                }
 
                 // Ensure the URL starts with API_URL
                 const url = apiPath.startsWith('http') ? apiPath : `${API_URL}${apiPath}`;
@@ -78,7 +87,15 @@ export const DiffWidget: React.FC<DiffWidgetProps> = ({ config, globalValues, se
                         is_changed: false
                     }));
                     setRows(apiRows);
-                    // Also sync to global values immediately? No, wait for edits.
+
+                    // Sync meta (so_id) to global values for DetailTableWidget to use
+                    if (res.data.meta) {
+                        setGlobalValues((g: any) => ({
+                            ...g,
+                            '_meta': { ...g['_meta'], ...res.data.meta },
+                            'so_id': res.data.meta.so_id  // Also set so_id directly for trigger_field
+                        }));
+                    }
                 } else {
                     toast({ title: "No Data Found", description: "Could not load record details.", variant: "destructive" });
                 }

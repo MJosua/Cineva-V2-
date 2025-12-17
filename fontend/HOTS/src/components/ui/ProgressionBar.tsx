@@ -27,6 +27,7 @@ const ProgressionBar = ({ steps, className, showDetails = false }: ProgressionBa
   const { user } = useAppSelector((state) => state.auth);
 
 
+    console.log("steps",steps);
 
   if (!showDetails) {
     // Simple progress bar view

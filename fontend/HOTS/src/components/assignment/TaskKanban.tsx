@@ -49,8 +49,6 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [draggedTask, setDraggedTask] = useState<Task | null>(null);
     const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
-    const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
-    const [dragOverPosition, setDragOverPosition] = useState<'above' | 'below' | null>(null);
     const { toast } = useToast();
 
     // New task form state
@@ -144,23 +142,6 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId }) => {
         }
     };
 
-    const handleOrderChange = async (taskId: string, newOrder: number) => {
-        try {
-            const token = localStorage.getItem('tokek');
-            await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks/${taskId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ order: String(newOrder) })
-            });
-        } catch (error) {
-            console.error('Error updating task order:', error);
-            fetchTasks();
-        }
-    };
-
     const handleStepToggle = async (taskId: string, stepId: string, checked: boolean) => {
         // Optimistic update
         setTasks(prev => prev.map(task => {
@@ -249,8 +230,6 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId }) => {
     const handleDragEnd = (e: React.DragEvent) => {
         setDraggedTask(null);
         setDragOverColumn(null);
-        setDragOverTaskId(null);
-        setDragOverPosition(null);
         const target = e.target as HTMLElement;
         target.style.opacity = '1';
     };
@@ -260,31 +239,6 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId }) => {
         e.dataTransfer.dropEffect = 'move';
         if (dragOverColumn !== columnId) {
             setDragOverColumn(columnId);
-        }
-    };
-
-    const handleTaskDragOver = (e: React.DragEvent, task: Task) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (!draggedTask || draggedTask.entity_id === task.entity_id) return;
-
-        // Determine if we're above or below the task
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const midpoint = rect.top + rect.height / 2;
-        const position = e.clientY < midpoint ? 'above' : 'below';
-
-        setDragOverTaskId(task.entity_id);
-        setDragOverPosition(position);
-    };
-
-    const handleTaskDragLeave = (e: React.DragEvent) => {
-        // Only clear if actually leaving
-        const relatedTarget = e.relatedTarget as HTMLElement;
-        const currentTarget = e.currentTarget as HTMLElement;
-        if (!currentTarget.contains(relatedTarget)) {
-            setDragOverTaskId(null);
-            setDragOverPosition(null);
         }
     };
 
@@ -299,68 +253,16 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId }) => {
 
     const handleDrop = (e: React.DragEvent, columnId: string) => {
         e.preventDefault();
-
-        if (!draggedTask) {
-            setDragOverColumn(null);
-            setDragOverTaskId(null);
-            setDragOverPosition(null);
-            return;
-        }
-
-        const columnTasks = getTasksByStatus(columnId);
-        const isSameColumn = draggedTask.status === columnId;
-
-        // If dropping on a specific task
-        if (dragOverTaskId && dragOverPosition) {
-            const targetTask = tasks.find(t => t.entity_id === dragOverTaskId);
-            if (targetTask) {
-                // Calculate new order
-                const sortedTasks = [...columnTasks].sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
-                const targetIndex = sortedTasks.findIndex(t => t.entity_id === dragOverTaskId);
-
-                let newOrder: number;
-                const targetOrder = Number(targetTask.order || 0);
-
-                if (dragOverPosition === 'above') {
-                    const prevTask = sortedTasks[targetIndex - 1];
-                    const prevOrder = prevTask ? Number(prevTask.order || 0) : 0;
-                    newOrder = prevTask ? (prevOrder + targetOrder) / 2 : targetOrder - 1;
-                } else {
-                    const nextTask = sortedTasks[targetIndex + 1];
-                    const nextOrder = nextTask ? Number(nextTask.order || 0) : 0;
-                    newOrder = nextTask ? (targetOrder + nextOrder) / 2 : targetOrder + 1;
-                }
-
-                // Optimistic update
-                setTasks(prev => prev.map(t =>
-                    t.entity_id === draggedTask.entity_id
-                        ? { ...t, status: columnId as Task['status'], order: String(newOrder) }
-                        : t
-                ));
-
-                // Update backend
-                if (!isSameColumn) {
-                    handleStatusChange(draggedTask.entity_id, columnId);
-                }
-                handleOrderChange(draggedTask.entity_id, newOrder);
-            }
-        } else if (!isSameColumn) {
-            // Just changing column, add to end
-            const maxOrder = columnTasks.reduce((max, t) => Math.max(max, Number(t.order || 0)), 0);
-            handleStatusChange(draggedTask.entity_id, columnId);
-            handleOrderChange(draggedTask.entity_id, maxOrder + 1);
-        }
-
         setDragOverColumn(null);
-        setDragOverTaskId(null);
-        setDragOverPosition(null);
+
+        if (draggedTask && draggedTask.status !== columnId) {
+            handleStatusChange(draggedTask.entity_id, columnId);
+        }
         setDraggedTask(null);
     };
 
     const getTasksByStatus = (status: string) => {
-        return tasks
-            .filter(t => t.status === status)
-            .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+        return tasks.filter(t => t.status === status);
     };
 
     if (loading) {
@@ -485,40 +387,24 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId }) => {
                                         {isDragOver ? 'Drop here' : 'No tasks'}
                                     </div>
                                 ) : (
-                                    columnTasks.map(task => {
-                                        const isDropTarget = dragOverTaskId === task.entity_id;
-                                        const dropAbove = isDropTarget && dragOverPosition === 'above';
-                                        const dropBelow = isDropTarget && dragOverPosition === 'below';
-
-                                        return (
-                                            <div
-                                                key={task.entity_id}
+                                    columnTasks.map(task => (
+                                        <div
+                                            key={task.entity_id}
+                                            draggable
+                                            onDragStart={(e) => handleDragStart(e, task)}
+                                            onDragEnd={handleDragEnd}
+                                            className="cursor-grab active:cursor-grabbing"
+                                        >
+                                            <TaskCard
+                                                task={task}
+                                                onStatusChange={handleStatusChange}
+                                                onStepToggle={handleStepToggle}
+                                                onAddStep={handleAddStep}
+                                                onDelete={handleDeleteTask}
                                                 draggable
-                                                onDragStart={(e) => handleDragStart(e, task)}
-                                                onDragEnd={handleDragEnd}
-                                                onDragOver={(e) => handleTaskDragOver(e, task)}
-                                                onDragLeave={handleTaskDragLeave}
-                                                className="cursor-grab active:cursor-grabbing relative"
-                                            >
-                                                {/* Drop indicator above */}
-                                                {dropAbove && (
-                                                    <div className="absolute -top-1 left-0 right-0 h-1 bg-primary rounded-full z-10" />
-                                                )}
-                                                <TaskCard
-                                                    task={task}
-                                                    onStatusChange={handleStatusChange}
-                                                    onStepToggle={handleStepToggle}
-                                                    onAddStep={handleAddStep}
-                                                    onDelete={handleDeleteTask}
-                                                    draggable
-                                                />
-                                                {/* Drop indicator below */}
-                                                {dropBelow && (
-                                                    <div className="absolute -bottom-1 left-0 right-0 h-1 bg-primary rounded-full z-10" />
-                                                )}
-                                            </div>
-                                        );
-                                    })
+                                            />
+                                        </div>
+                                    ))
                                 )}
                             </div>
                         </div>

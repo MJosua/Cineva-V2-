@@ -8,7 +8,7 @@ import StarterKit from '@tiptap/starter-kit';
 import axios from 'axios';
 import { API_URL } from '@/config/sourceConfig';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Clock, X, ImageIcon, Loader2 } from 'lucide-react';
+import { Send, Clock } from 'lucide-react';
 
 interface TimelineUpdate {
     entity_id: string;
@@ -23,41 +23,18 @@ interface AssignmentTimelineProps {
     assignmentId: number | string;
 }
 
-interface UploadedImage {
-    url: string;
-    upload_id?: number;
-}
-
 const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId }) => {
     const [updates, setUpdates] = useState<TimelineUpdate[]>([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [uploading, setUploading] = useState(false);
-    const [pendingImages, setPendingImages] = useState<UploadedImage[]>([]);
     const { toast } = useToast();
 
     const editor = useEditor({
         extensions: [StarterKit],
-        content: '',
+        content: '<p>Add your progress update...</p>',
         editorProps: {
             attributes: {
                 class: 'prose prose-sm max-w-none focus:outline-none min-h-[100px] p-3',
-            },
-            handlePaste: (view, event) => {
-                const items = event.clipboardData?.items;
-                if (items) {
-                    for (let i = 0; i < items.length; i++) {
-                        if (items[i].type.indexOf('image') !== -1) {
-                            const blob = items[i].getAsFile();
-                            if (blob) {
-                                handleImageUpload(blob);
-                                event.preventDefault();
-                                return true;
-                            }
-                        }
-                    }
-                }
-                return false;
             },
         },
     });
@@ -89,53 +66,14 @@ const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId })
         }
     };
 
-    const handleImageUpload = async (file: File) => {
-        setUploading(true);
-        try {
-            const token = localStorage.getItem('tokek');
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const res = await axios.post(
-                `${API_URL}/hots_ticket/upload/files/`,
-                formData,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data',
-                    },
-                }
-            );
-
-            const results = res.data.data || [];
-            if (results.length > 0) {
-                const uploadedUrl = `${API_URL}${results[0].fileUrl}`;
-                setPendingImages(prev => [...prev, {
-                    url: uploadedUrl,
-                    upload_id: results[0].upload_id
-                }]);
-                toast({ title: 'Image uploaded', description: 'Image ready to post' });
-            }
-        } catch (error) {
-            console.error('Error uploading image:', error);
-            toast({ title: 'Upload failed', description: 'Could not upload image', variant: 'destructive' });
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const removeImage = (index: number) => {
-        setPendingImages(prev => prev.filter((_, i) => i !== index));
-    };
-
     const handleSubmit = async () => {
         if (!editor) return;
 
         const content = editor.getHTML();
-        if ((!content || content.trim() === '<p></p>' || content.trim() === '') && pendingImages.length === 0) {
+        if (!content || content.trim() === '<p></p>' || content.trim() === '') {
             toast({
                 title: 'Error',
-                description: 'Please enter some content or add an image',
+                description: 'Please enter some content',
                 variant: 'destructive'
             });
             return;
@@ -144,14 +82,9 @@ const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId })
         setSubmitting(true);
         try {
             const token = localStorage.getItem('tokek');
-            const imageUrls = pendingImages.map(img => img.url);
-
             await axios.post(
                 `${API_URL}/engine/assignment/${assignmentId}/timeline`,
-                {
-                    content: content || '<p></p>',
-                    images: imageUrls.length > 0 ? imageUrls : undefined
-                },
+                { content },
                 {
                     headers: { Authorization: `Bearer ${token}` }
                 }
@@ -162,9 +95,8 @@ const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId })
                 description: 'Update added successfully'
             });
 
-            // Clear editor and images
-            editor.commands.setContent('');
-            setPendingImages([]);
+            // Clear editor
+            editor.commands.setContent('<p>Add your progress update...</p>');
 
             // Refresh timeline
             fetchTimeline();
@@ -201,46 +133,14 @@ const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId })
             <CardContent className="space-y-6">
                 {/* Editor for new update */}
                 <div className="border rounded-lg bg-white">
-                    <EditorContent
-                        editor={editor}
-                        placeholder="Add your progress update..."
-                    />
-
-                    {/* Image preview section */}
-                    {(pendingImages.length > 0 || uploading) && (
-                        <div className="border-t p-2 flex flex-wrap gap-2">
-                            {pendingImages.map((img, index) => (
-                                <div key={index} className="relative group">
-                                    <img
-                                        src={img.url}
-                                        alt={`Pending ${index}`}
-                                        className="w-16 h-16 object-cover rounded border"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeImage(index)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <X className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            ))}
-                            {uploading && (
-                                <div className="w-16 h-16 flex items-center justify-center border rounded bg-gray-100">
-                                    <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-                                </div>
-                            )}
-                        </div>
-                    )}
-
+                    <EditorContent editor={editor} />
                     <div className="border-t p-2 flex justify-between items-center bg-gray-50">
-                        <div className="text-xs text-gray-500 flex items-center gap-2">
-                            <ImageIcon className="w-3 h-3" />
-                            Paste images (Ctrl+V)
+                        <div className="text-xs text-gray-500">
+                            Use formatting: <strong>Bold</strong>, <em>Italic</em>, Lists
                         </div>
                         <Button
                             onClick={handleSubmit}
-                            disabled={submitting || uploading}
+                            disabled={submitting}
                             size="sm"
                         >
                             <Send className="w-4 h-4 mr-1" />
@@ -284,9 +184,6 @@ const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId })
                                             className="prose prose-sm max-w-none"
                                             dangerouslySetInnerHTML={{ __html: update.content }}
                                         />
-
-
-
                                         {update.images && JSON.parse(update.images).length > 0 && (
                                             <div className="mt-2 grid grid-cols-2 gap-2">
                                                 {JSON.parse(update.images).map((img: string, idx: number) => (

@@ -80,7 +80,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     serviceId: serviceId || 0,
     widgetId: config.id,
     context: context || {},
-
+    
     enabled: !!(serviceId && context && !isExcluded),
   });
 
@@ -105,8 +105,8 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     ...config.props,
     widgetId: config.id,
     widgetName: config.name,
-    // Merge: use dynamically fetched data OR fallback to data.widgetData from parent
-    widgetData: hasData ? { ...data?.widgetData, ...widgetData } : data?.widgetData,
+    // Pass the dynamically fetched data
+    widgetData: hasData ? widgetData : undefined,
     isLoading: isDataLoading,
     error: dataError,
     handleReload

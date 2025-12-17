@@ -2,6 +2,7 @@ const express = require("express");
 const route = express.Router();
 const { generateTokenHT, decodeTokenHT } = require('../../config/encrypts')
 const { hotsSettingsController, hotsSRFController } = require('../../controller');
+const hotsDataChangeController = require('../../controller/hots_controller/hotsDataChangeController');
 const teamJoinRequestController = require('../../controller/project_manager_controller/teamJoinRequestController');
 
 
@@ -9,7 +10,7 @@ route.get('/get_menu', decodeTokenHT, hotsSettingsController.getmenu)
 route.get('/get_menu_active', decodeTokenHT, hotsSettingsController.getserviceactive)
 route.get('/get_menu_inactive', decodeTokenHT, hotsSettingsController.getserviceinactive)
 route.post('/toggle_menu', decodeTokenHT, hotsSettingsController.setserviceactivestatus)
-route.get('/get_data_diff/:id', decodeTokenHT, hotsSettingsController.getDataDiff)
+route.get('/get_data_diff', decodeTokenHT, hotsDataChangeController.getSOHeader)
 
 // User Management
 route.get('/get/user', decodeTokenHT, hotsSettingsController.getAllUser)
@@ -132,6 +133,12 @@ route.get('/triggers/:service_id', decodeTokenHT, hotsSettingsController.getTrig
 route.post('/triggers/:service_id', decodeTokenHT, hotsSettingsController.saveTriggers)
 route.get('/schema', decodeTokenHT, hotsSettingsController.getSchemaInfo)
 route.post('/validate_triggers', decodeTokenHT, hotsSettingsController.validateTriggerConfig)
+
+// Data Change Request APIs
+route.get('/get_so_header/:po_number', decodeTokenHT, hotsDataChangeController.getSOHeader)
+route.get('/get_so_details/:so_id', decodeTokenHT, hotsDataChangeController.getSODetails)
+route.post('/store_dcr_original', decodeTokenHT, hotsDataChangeController.storeOriginalData)
+route.post('/submit_data_change', decodeTokenHT, hotsDataChangeController.submitDataChange)
 
 module.exports = route
 

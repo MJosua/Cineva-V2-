@@ -84,75 +84,34 @@ export const widgetRegistry: Record<string, WidgetConfig> = {
 
   job_execution_tools: {
     id: "job_execution_tools",
-    name: "Data Execution Tools",
-    description: "Manage ticket data rows with calculations and audit logging",
-    componentPath: "DataExecutionTools",
+    name: "Job Execution Tools",
+    description: "Tools for workers to execute job assignments",
+    componentPath: "JobExecutionTools",
     applicableTo: ["assignment_detail"],
     dataRequirements: ["assignmentData", "workData"],
     category: "Job Marketplace"
   },
 
-  // E-Order / Sales widgets
-  order_items: {
-    id: "order_items",
-    name: "Order Items (E-Order)",
-    description: "Shopping cart widget for E-Order with item management",
-    componentPath: "OrderItemsWidget",
+  detail_table: {
+    id: "detail_table",
+    name: "Detail Table Widget",
+    description: "Editable table for line item details",
+    componentPath: "DetailTableWidget",
     applicableTo: ["form"],
-    dataRequirements: ["orderData"],
-    category: "E-Order"
+    dataRequirements: ["tableData"],
+    category: "Data Management"
   },
 
-  // Dashboard widgets
-  ai_chat: {
-    id: "ai_chat",
-    name: "HOTS Copilot (AI Chat)",
-    description: "AI assistant chat widget for help and guidance",
-    componentPath: "AIChatWidget",
-    applicableTo: ["form", "ticket_detail"],
-    dataRequirements: [],
-    category: "Dashboard"
+  diff_table: {
+    id: "diff_table",
+    name: "Diff Table Widget",
+    description: "Show old vs new data comparison",
+    componentPath: "DetailTableWidget",
+    applicableTo: ["form"],
+    dataRequirements: ["diffData"],
+    category: "Data Management"
   },
 
-  my_tickets: {
-    id: "my_tickets",
-    name: "My Recent Tickets",
-    description: "Display user's recent tickets with status",
-    componentPath: "MyTicketsWidget",
-    applicableTo: ["form"],
-    dataRequirements: [],
-    category: "Dashboard"
-  },
-
-  pending_approvals: {
-    id: "pending_approvals",
-    name: "Pending Approvals",
-    description: "Display pending approval items with quick actions",
-    componentPath: "PendingApprovalsWidget",
-    applicableTo: ["form"],
-    dataRequirements: [],
-    category: "Dashboard"
-  },
-
-  quick_links: {
-    id: "quick_links",
-    name: "Quick Links Grid",
-    description: "Configurable grid of navigation cards with icons",
-    componentPath: "QuickLinksWidget",
-    applicableTo: ["form"],
-    dataRequirements: [],
-    category: "Dashboard"
-  },
-
-  guest_info: {
-    id: "guest_info",
-    name: "Guest Info Log",
-    description: "Visitor management log",
-    componentPath: "GuestInfoWidget",
-    applicableTo: ["form"],
-    dataRequirements: [],
-    category: "Dashboard"
-  },
 };
 
 // Get widget by ID

@@ -171,6 +171,7 @@ function App() {
         <Route path="/i2i/containertracking/:number/:so_id" element={<ContainerTracking admin={true} />} />
         <Route path="/i2i/containertracking/" element={<ContainerTracking admin={true} />} />
         <Route path="/e-order/containertracking/:number" element={<ContainerTracking />} />
+        <Route path="/e-order/containertracking/:number/:so_id" element={<ContainerTracking />} />
 
         {/* PUBLIC ACCESS */}
         {!user_id && (

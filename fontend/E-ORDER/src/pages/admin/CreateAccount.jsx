@@ -40,7 +40,7 @@ const AccountManagementPage = () => {
     const dispatch = useDispatch();
 
     const toast = useToast();
-    
+
 
     const navigate = useNavigate();
 

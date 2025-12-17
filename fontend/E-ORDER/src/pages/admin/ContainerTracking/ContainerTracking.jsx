@@ -130,6 +130,9 @@ function ContainerTracking({
                         : {}
                 ),
             };
+
+            console.log("normalized", normalized)
+
             return normalized;
         } catch (err) {
             console.error("❌ unifiedFetchSeaRatesData error:", err);
@@ -871,7 +874,7 @@ function ContainerTracking({
                                                     <TabPanel>
                                                         <div className="container-fluid px-0" style={{ maxHeight: "150px", overflow: "auto" }}>
                                                             {dataVesselState.map((vessel, idx) => {
-                                                                const voyage = vessel.voyage || "N/A";  // Default to "N/A" if voyage is missing
+                                                                const voyage = vessel.call_sign || "N/A";  // Default to "N/A" if voyage is missing
 
                                                                 // Example: Fetch or get vessel details by using the index or other methods here
                                                                 let data
@@ -899,10 +902,10 @@ function ContainerTracking({
                                                                                 {vessel.imo &&
                                                                                     <div className="d-flex mt-1 justify-content-between">
                                                                                         <div className="col-4 fw-bold">
-                                                                                            Voyage
+                                                                                            Voyage as
                                                                                         </div>
                                                                                         <div className="col-auto">
-                                                                                            {vessel.imo && data?.voyage ? data.voyage : "N/A"}
+                                                                                            {vessel.imo && vessel?.voyage ? vessel.voyage : "N/A"}
                                                                                         </div>
                                                                                     </div>
                                                                                 }
@@ -1193,8 +1196,9 @@ function ContainerTracking({
                             const next = fullRoute[idx + 1];
                             if (!next) return null;
 
+
                             return (
-                                <>
+                                <React.Fragment key={`route-fragment-${idx}`}>
                                     <Polyline
                                         key={`route - ${idx} `}
                                         positions={[
@@ -1222,7 +1226,7 @@ function ContainerTracking({
                                             dashArray: '4, 6', // ← This makes it dotted/dashed
                                         }}
                                     />
-                                </>
+                                </React.Fragment>
                             );
                         })}
 

@@ -2680,22 +2680,89 @@ module.exports = {
         let timestamp = "\x1b[33m" + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         try {
-            const { id } = req.params;
-            const category = req.query.category || 'm_product';
+            // Support both query param and path param
+            const po_number = req.query.po_number || req.params.id;
+            const category = req.query.category || 'trs_sales_order';
 
-            console.log(timestamp, `HOTS Get Data Diff: ID=${id}, Category=${category}`);
+            console.log(timestamp, `HOTS Get Data Diff: PO=${po_number}, Category=${category}`);
 
-            // MOCK implementation
-            const mockData = [
-                { key: "Record ID", value: id },
-                { key: "Name", value: `Item ${id}` },
-                { key: "Category", value: category },
-                { key: "Status", value: "Active" },
-                { key: "Last Updated", value: new Date().toISOString().split('T')[0] },
-                { key: "Price", value: "15000.00" }
-            ];
+            if (!po_number) {
+                return res.status(400).json({ success: false, message: 'PO Number is required' });
+            }
 
-            return res.json({ success: true, data: mockData });
+            // Query real data from trs_sales_order by PO number
+            const query = `
+             SELECT 
+                    tso.so_id,
+                    tso.so_date,
+                    tso.po_number,
+                    tso.po_date,
+                    tso.client_id,
+                    mc.company_name as client_name,
+                    tso.ship_to_id,
+                    mc2.company_name as ship_to_name,
+                    tso.delv_date,
+                    tso.week_delv,
+                    tso.year_delv,
+                    tso.completion_note,
+                    tso.trade_promo,
+                    tso.final_dest,
+                    tso.incoterm_id,
+                    mi.incoterm_name as incoterm_desc,
+                    tso.factory_id,
+                    mf.factory_name
+                FROM iod.trs_sales_order tso
+                LEFT JOIN iod.mst_company mc ON tso.client_id = mc.company_id
+                LEFT JOIN iod.mst_company mc2 ON tso.ship_to_id = mc2.company_id
+                LEFT JOIN iod.mst_incoterm mi ON tso.incoterm_id = mi.id 
+                LEFT JOIN iod.mst_factory mf ON tso.factory_id = mf.factory_id
+                WHERE tso.po_number = ?
+                ORDER BY tso.so_id DESC
+                LIMIT 1
+        `;
+
+            dbQuery(query, [po_number], (err, results) => {
+                if (err) {
+                    console.log(timestamp, "HOTS Get Data Diff Error:", err);
+                    return res.status(500).json({ success: false, message: err.message });
+                }
+
+                if (!results || results.length === 0) {
+                    // Return empty data structure if no record found
+                    return res.json({
+                        success: true,
+                        data: [],
+                        message: "No SO found for this PO number"
+                    });
+                }
+
+                const so = results[0];
+
+                // Transform to key-value pairs for DiffWidget
+                const data = [
+                    { key: "SO Date", field: "so_date", value: so.so_date ? new Date(so.so_date).toISOString().split('T')[0] : '', editable: false },
+                    { key: "PO Number", field: "po_number", value: so.po_number || '', editable: false },
+                    { key: "PO Date", field: "po_date", value: so.po_date ? new Date(so.po_date).toISOString().split('T')[0] : '', editable: true },
+                    { key: "Client", field: "client_name", value: so.client_name || '', editable: false },
+                    { key: "Ship To", field: "ship_to_name", value: so.ship_to_name || '', editable: false },
+                    { key: "Delivery Date", field: "delv_date", value: so.delv_date ? new Date(so.delv_date).toISOString().split('T')[0] : '', editable: true },
+                    { key: "Week Delivery", field: "week_delv", value: String(so.week_delv || ''), editable: true },
+                    { key: "Completion Note", field: "completion_note", value: so.completion_note || '', editable: true },
+                    { key: "Trade Promo", field: "trade_promo", value: so.trade_promo || '', editable: true },
+                    { key: "Final Destination", field: "final_dest", value: so.final_dest || '', editable: true },
+                    { key: "Incoterm", field: "incoterm_desc", value: so.incoterm_desc || '', editable: false },
+                    { key: "Factory", field: "factory_name", value: so.factory_name || '', editable: false }
+                ];
+
+                return res.json({
+                    success: true,
+                    data: data,
+                    meta: {
+                        so_id: so.so_id,
+                        client_id: so.client_id
+                    }
+                });
+            });
 
         } catch (e) {
             console.log(timestamp, "HOTS Get Data Diff Error: ", e);

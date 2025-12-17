@@ -60,7 +60,15 @@ export const createLazyWidget = (componentPath: string) => {
   const loader = modules[widgetFile];
 
   if (!loader) {
-    console.error(`Widget not found: ${widgetFile}`);
+    console.error(`Widget not found in widgets: ${widgetFile}`);
+
+    // Fallback to components/forms/specialFunc for special function widgets
+    const specialFuncModules = import.meta.glob('../components/forms/specialFunc/*.tsx');
+    const specialFuncFile = `../components/forms/specialFunc/${componentPath}.tsx`;
+    if (specialFuncModules[specialFuncFile]) {
+      console.log(`✅ Found widget in specialFunc: ${specialFuncFile}`);
+      return React.lazy(specialFuncModules[specialFuncFile] as any);
+    }
 
     // Fallback to components/widgets just in case
     const oldModules = import.meta.glob('../components/widgets/**/*.tsx');

@@ -139,19 +139,77 @@ const JobExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =>
     return (
         <div className="space-y-6">
             {/* Progress Card */}
-
+            <Card>
+                <CardHeader>
+                    <CardTitle>Assignment Progress</CardTitle>
+                    <CardDescription>Track your work completion</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                            <span>Overall Progress</span>
+                            <span className="text-gray-500">70%</span>
+                        </div>
+                        <Progress value={70} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p className="text-gray-500">Status</p>
+                            <p className="font-medium">{assignmentData?.assignment_status || 'Active'}</p>
+                        </div>
+                        <div>
+                            <p className="text-gray-500">Assigned Date</p>
+                            <p className="font-medium">
+                                {assignmentData?.assigned_at ? new Date(assignmentData.assigned_at).toLocaleDateString() : '-'}
+                            </p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Upload Deliverable */}
-
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Upload className="w-5 h-5" />
+                        Upload Deliverable
+                    </CardTitle>
+                    <CardDescription>Upload your completed work</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="deliverable">Select File</Label>
+                        <Input
+                            id="deliverable"
+                            type="file"
+                            onChange={handleFileChange}
+                            accept=".pdf,.doc,.docx,.zip"
+                        />
+                        {deliverableFile && (
+                            <p className="text-sm text-gray-600">
+                                Selected: {deliverableFile.name}
+                            </p>
+                        )}
+                    </div>
+                    <Button
+                        onClick={handleUploadDeliverable}
+                        disabled={!deliverableFile || uploading}
+                        className="w-full"
+                    >
+                        <Upload className="w-4 h-4 mr-2" />
+                        {uploading ? 'Uploading...' : 'Upload Deliverable'}
+                    </Button>
+                </CardContent>
+            </Card>
 
             {/* Add Notes */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <FileText className="w-5 h-5" />
-                        Data Execution
+                        Work Notes
                     </CardTitle>
-                    <CardDescription>Add execution notes and data entries</CardDescription>
+                    <CardDescription>Add notes about your progress</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <Textarea
@@ -172,7 +230,29 @@ const JobExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =>
                 </CardContent>
             </Card>
 
-
+            {/* Complete Assignment */}
+            {assignmentData?.assignment_status === 'active' && (
+                <Card className="border-green-200 bg-green-50">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-green-800">
+                            <CheckCircle2 className="w-5 h-5" />
+                            Complete Assignment
+                        </CardTitle>
+                        <CardDescription className="text-green-700">
+                            Mark this assignment as complete
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button
+                            onClick={handleCompleteAssignment}
+                            className="w-full bg-green-600 hover:bg-green-700"
+                        >
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            Mark as Complete
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 };

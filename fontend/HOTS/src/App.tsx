@@ -24,6 +24,7 @@ import Registerpage from "./pages/login/Registerpage";
 // Admin
 import ServiceCatalogAdmin from "./pages/admin/ServiceCatalogAdmin";
 import ServiceFormEditor from "./pages/admin/ServiceFormEditor";
+import StudioPage from "./pages/admin/StudioPage";
 import StudioLanding from "./pages/admin/StudioLanding";
 import UserManagement from "./pages/admin/UserManagement";
 import TeamManagement from "./pages/admin/TeamManagement";
@@ -107,7 +108,7 @@ const AppContentInner = () => {
 
 
           {/* Protected Routes */}
-          <Route path="/" element={<ProtectedRoute><AppLayout><DashboardPage /></AppLayout></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/my-tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
           <Route path="/ticket/:id" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
           <Route path="/task-list" element={<ProtectedRoute><TaskList /></ProtectedRoute>} />
@@ -122,6 +123,8 @@ const AppContentInner = () => {
           <Route path="/admin/service-catalog/new" element={<ProtectedRoute><ServiceFormEditor /></ProtectedRoute>} />
           <Route path="/admin/service-catalog/create" element={<ProtectedRoute><ServiceFormEditor /></ProtectedRoute>} />
           <Route path="/admin/service-catalog/edit/:id" element={<ProtectedRoute><ServiceFormEditor /></ProtectedRoute>} />
+          <Route path="/admin/studio" element={<ProtectedRoute><StudioLanding /></ProtectedRoute>} />
+          <Route path="/admin/studio/:id" element={<ProtectedRoute><StudioPage /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
           <Route path="/admin/teams" element={<ProtectedRoute><TeamManagement /></ProtectedRoute>} />
           <Route path="/admin/departments" element={<ProtectedRoute><DepartmentManagement /></ProtectedRoute>} />
@@ -135,7 +138,7 @@ const AppContentInner = () => {
           <Route path="/service-catalog" element={<ProtectedRoute><ServiceCatalog /></ProtectedRoute>} />
           {dynamicServiceRoutes}
 
-          <Route path="/dashboard" element={<ProtectedRoute><AppLayout><DashboardPage /></AppLayout></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/dashboard/analytics/:serviceId" element={<ProtectedRoute><ServiceAnalyticsView /></ProtectedRoute>} />
           <Route path="/dashboard/view/:dashboardId" element={<ProtectedRoute><DashboardView /></ProtectedRoute>} />
           {dynamicDashboardRoutes}
@@ -153,9 +156,9 @@ const AppContentInner = () => {
           <Route path="/page/:slug" element={<AppLayout><CmsPublicPage /></AppLayout>} />
 
           {/* CMS Admin Pages (role 4 only — enforced by server) */}
-          <Route path="/admin/cms" element={<ProtectedRoute><AppLayout><CmsAdminList /></AppLayout></ProtectedRoute>} />
-          <Route path="/admin/cms/new" element={<ProtectedRoute><AppLayout><CmsAdminEditor /></AppLayout></ProtectedRoute>} />
-          <Route path="/admin/cms/edit/:id" element={<ProtectedRoute><AppLayout><CmsAdminEditor /></AppLayout></ProtectedRoute>} />
+          <Route path="/admin/cms" element={<AppLayout><CmsAdminList /></AppLayout>} />
+          <Route path="/admin/cms/new" element={<AppLayout><CmsAdminEditor /></AppLayout>} />
+          <Route path="/admin/cms/edit/:id" element={<AppLayout><CmsAdminEditor /></AppLayout>} />
 
           <Route path="/engine-module/:moduleKey" element={<AppLayout><EngineModulePage /></AppLayout>} />
           <Route path="/engine-modules-admin" element={<AppLayout><EngineModuleAdminPage /></AppLayout>} />

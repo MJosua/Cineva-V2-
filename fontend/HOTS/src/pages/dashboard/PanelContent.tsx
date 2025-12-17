@@ -1,7 +1,7 @@
+// src/pages/dashboard/PanelContent.tsx
+// Renders the correct content based on panel type
 import React from 'react';
 import { DashboardPanel } from './DashboardPanelRenderer';
-import WidgetRenderer from '@/widgets/WidgetRenderer';
-import { widgetRegistry } from '@/registry/widgetRegistry';
 
 // Panel Components (lazy loading for performance)
 const SummaryCardsPanel = React.lazy(() => import('./panels/SummaryCardsPanel'));
@@ -11,55 +11,15 @@ const GenericReportPanel = React.lazy(() => import('./panels/GenericReportPanel'
 const CMSPanel = React.lazy(() => import('./panels/CMSPanel'));
 const ChartPanel = React.lazy(() => import('./panels/ChartPanel'));
 
-// ============================================================
-// 🔥 Auto-discovery using Vite's import.meta.glob
-// This automatically bundles ALL .tsx files in ./report/ folder
-// No manual registration needed - just create a file with default export!
-// ============================================================
-const reportModules = import.meta.glob<{ default: React.ComponentType<any> }>(
-    './report/*.tsx'
-);
-
-// Helper: Extract component key from path (e.g., './report/SRFReportPage.tsx' -> 'SRFReportPage')
-const getComponentKey = (path: string): string => {
-    const match = path.match(/\.\/report\/(.+)\.tsx$/);
-    return match ? match[1] : path;
-};
-
-// Build a lookup map: { 'SRFReportPage': () => import(...), ... }
-const moduleMap = Object.fromEntries(
-    Object.entries(reportModules).map(([path, importFn]) => [
-        getComponentKey(path),
-        importFn
-    ])
-);
-
-/**
- * Load a custom component by key.
- * Components are auto-discovered from ./report/*.tsx
- * Just ensure your component has a default export!
- */
-const loadCustomComponent = (componentKey: string): React.LazyExoticComponent<React.ComponentType<any>> => {
-    const importFn = moduleMap[componentKey];
-
-    if (importFn) {
-        return React.lazy(importFn);
-    }
-
-    // Component not found - return error placeholder
-    console.error(`❌ Component "${componentKey}" not found in ./report/ folder`);
-    console.info(`📁 Available components:`, Object.keys(moduleMap));
-
-    return React.lazy(() => Promise.resolve({
-        default: () => (
-            <div className="p-4 text-red-500 bg-red-50 rounded border border-red-200">
-                <strong>Component "{componentKey}" not found</strong>
-                <p className="text-sm mt-1">
-                    Create file: <code>./report/{componentKey}.tsx</code> with a default export
-                </p>
-            </div>
-        )
-    }));
+// Dynamic component loader - loads from pages/dashboard/report/{component_key}.tsx
+// No hardcoding needed! Just name your file to match component_key in database
+const loadCustomComponent = (componentKey: string) => {
+    return React.lazy(() =>
+        import(`./report/${componentKey}`).catch(() => {
+            console.error(`Custom panel component not found: ./report/${componentKey}`);
+            return { default: () => <div className="p-4 text-red-500">Component "{componentKey}" not found</div> };
+        })
+    );
 };
 
 interface PanelContentProps {
@@ -89,25 +49,13 @@ export const PanelContent: React.FC<PanelContentProps> = ({ panel, serviceId }) 
                 return <AnalyticsCardsPanel config={panel.config} serviceId={serviceId} />;
 
             case 'custom':
-                if (panel.config?.widgetId) {
-                    const widgetConfig = widgetRegistry[panel.config.widgetId];
-                    if (widgetConfig) {
-                        return <WidgetRenderer config={widgetConfig} data={panel.config} />;
-                    }
-                    return (
-                        <div className="p-4 bg-orange-50 text-orange-600 rounded">
-                            Widget "{panel.config.widgetId}" not found in registry.
-                        </div>
-                    );
-                }
-
                 if (panel.component_key) {
                     const CustomComponent = loadCustomComponent(panel.component_key);
                     return <CustomComponent {...panel.config} serviceId={serviceId} />;
                 }
                 return (
                     <div className="p-4 text-muted-foreground text-center">
-                        No component_key or widgetId specified for custom panel
+                        No component_key specified for custom panel
                     </div>
                 );
 

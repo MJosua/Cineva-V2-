@@ -8,14 +8,12 @@ interface DashboardState {
   data: DashboardFunction[];
   loading: boolean;
   error?: string;
-  searchQuery: string;
 }
 
 const initialState: DashboardState = {
   data: [],
   loading: false,
   error: undefined,
-  searchQuery: "",
 };
 
 export const fetchDashboardFunctions = createAsyncThunk(
@@ -62,9 +60,6 @@ const dashboardSlice = createSlice({
     clearDashboardData: (state) => {
       state.data = [];
     },
-    setSearchQuery: (state, action: PayloadAction<string>) => {
-      state.searchQuery = action.payload;
-    },
   },
   extraReducers: (builder) => {
     builder
@@ -83,5 +78,5 @@ const dashboardSlice = createSlice({
   },
 });
 
-export const { clearDashboardErrors, clearDashboardData, setSearchQuery } = dashboardSlice.actions;
+export const { clearDashboardErrors, clearDashboardData } = dashboardSlice.actions;
 export default dashboardSlice.reducer;
