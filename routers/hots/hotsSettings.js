@@ -139,6 +139,7 @@ route.get('/get_so_header/:po_number', decodeTokenHT, hotsDataChangeController.g
 route.get('/get_so_details/:so_id', decodeTokenHT, hotsDataChangeController.getSODetails)
 route.post('/store_dcr_original', decodeTokenHT, hotsDataChangeController.storeOriginalData)
 route.post('/submit_data_change', decodeTokenHT, hotsDataChangeController.submitDataChange)
+route.get('/get_all_products', decodeTokenHT, hotsDataChangeController.getAllProducts)
 
 module.exports = route
 

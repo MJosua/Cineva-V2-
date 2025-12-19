@@ -632,8 +632,12 @@ module.exports = {
                         container_status: row.status
                     });
                 }
-                // Events
-                if (row.event_id && !shipmentData[id].events.some(e => e.event_id === row.event_id)) {
+                // Events - deduplicate based on order_id, event_code, and location_id
+                if (row.event_id && !shipmentData[id].events.some(e =>
+                    e.order_id === row.order_id &&
+                    e.event_code === row.event_code &&
+                    e.location_id === row.location_id
+                )) {
                     shipmentData[id].events.push({
                         event_id: row.event_id,
                         order_id: row.order_id,
@@ -1035,12 +1039,24 @@ module.exports = {
                 if (record.data) {
 
 
+                    // Flatten and deduplicate events across all containers
+                    const allEvents = (searatesRes.data.containers || []).flatMap(c => c.events || []);
+                    const uniqueEvents = allEvents.reduce((acc, event) => {
+                        const exists = acc.some(e =>
+                            e.order_id === event.order_id &&
+                            e.event_code === event.event_code &&
+                            e.location === event.location
+                        );
+                        if (!exists) acc.push(event);
+                        return acc;
+                    }, []);
+
                     const normalized = {
                         shipment_id: checkresult[0]?.shipment_id ?? null,
                         so_id: so_id ?? checkresult[0]?.so_id ?? 0,
                         metadata: searatesRes.data.metadata,
                         container: searatesRes.data.containers || [],
-                        events: (searatesRes.data.containers || []).flatMap(c => c.events || []),
+                        events: uniqueEvents,
                         locations: searatesRes.data.locations || [],
                         vessels: searatesRes.data.vessels || [],
                         dataRoute: [{
@@ -1108,8 +1124,12 @@ module.exports = {
                         container_status: row.status
                     });
                 }
-                // Events
-                if (row.event_id && !shipmentData[id].events.some(e => e.event_id === row.event_id)) {
+                // Events - deduplicate based on order_id, event_code, and location_id
+                if (row.event_id && !shipmentData[id].events.some(e =>
+                    e.order_id === row.order_id &&
+                    e.event_code === row.event_code &&
+                    e.location_id === row.location_id
+                )) {
                     shipmentData[id].events.push({
                         event_id: row.event_id,
                         order_id: row.order_id,

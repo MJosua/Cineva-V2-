@@ -181,13 +181,22 @@ export function DataTableReportPro<T extends Record<string, any>>({
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (setData) {
+      if (setData && ticketKey) {
+        // Use ticket_id (SRF No.) as the primary row identifier
+        // This ensures only the specific row is updated, not all rows
         setData((prev: any[]) =>
-          prev.map((r) =>
-            String(r.detail_id) === String(detail_id)
+          prev.map((r) => {
+            const rowTicketId = String(r[ticketKey] ?? "");
+            const rowDetailId = String(r[detailKey as keyof T] ?? "null");
+
+            // Match on ticket_id, and optionally detail_id if it's meaningful
+            const isMatch = rowTicketId === String(ticket_id) &&
+              (detail_id === "null" || detail_id === "" || rowDetailId === detail_id);
+
+            return isMatch
               ? { ...r, [lbl_col]: newValue, Color: color ?? r.Color }
-              : r
-          )
+              : r;
+          })
         );
       }
     } catch (err) {
@@ -270,11 +279,10 @@ export function DataTableReportPro<T extends Record<string, any>>({
                   .map((col, idx) => (
                     <th
                       key={idx}
-                      className={`p-2 text-${col.align || "left"} font-semibold whitespace-nowrap ${
-                        col.sticky
+                      className={`p-2 text-${col.align || "left"} font-semibold whitespace-nowrap ${col.sticky
                           ? `sticky ${col.sticky} bg-white z-[20] shadow-sm`
                           : ""
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-1">
                         {col.sortable ? (
@@ -286,11 +294,10 @@ export function DataTableReportPro<T extends Record<string, any>>({
                           >
                             {col.header}
                             <ArrowUpDown
-                              className={`ml-1 w-3 h-3 ${
-                                sort.column === col.accessor
+                              className={`ml-1 w-3 h-3 ${sort.column === col.accessor
                                   ? "text-blue-600"
                                   : "text-gray-400"
-                              }`}
+                                }`}
                             />
                           </Button>
                         ) : (
@@ -356,11 +363,10 @@ export function DataTableReportPro<T extends Record<string, any>>({
                         return (
                           <td
                             key={j}
-                            className={`p-2 text-${col.align || "left"} whitespace-nowrap ${
-                              col.sticky
+                            className={`p-2 text-${col.align || "left"} whitespace-nowrap ${col.sticky
                                 ? `sticky ${col.sticky} bg-white z-[10] border-r`
                                 : ""
-                            }`}
+                              }`}
                             style={{
                               backgroundColor:
                                 row["Color"] ||

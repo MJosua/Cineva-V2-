@@ -379,6 +379,66 @@ module.exports = {
                 error: error.message
             });
         }
+    },
+
+    /**
+     * Get all products for item name dropdown
+     * Used by DCR detail_table widget for item selection
+     */
+    getAllProducts: async (req, res) => {
+        const timestamp = yellow + new Date().toLocaleString('id') + ' : ';
+        try {
+            console.log(timestamp, '📦 DCR getAllProducts called');
+
+            const { search, limit = 100 } = req.query;
+
+            let query = `
+                SELECT 
+                    mp.product_code as sku_id,
+                    mp.product_sku,
+                    mp.product_name,
+                    mp.product_desc,
+                    mp.per_carton
+                FROM iod.mst_product mp
+                WHERE mp.active = 1
+            `;
+            const params = [];
+
+            if (search) {
+                query += ` AND (mp.product_sku LIKE ? OR mp.product_name LIKE ? OR mp.product_code LIKE ?)`;
+                params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+            }
+
+            query += ` ORDER BY mp.product_name ASC LIMIT ?`;
+            params.push(Number(limit));
+
+            dbConf.execute(query, params, (err, results) => {
+                if (err) {
+                    console.error(timestamp, "DCR getAllProducts Error:", err);
+                    return res.status(500).json({
+                        success: false,
+                        message: "Database error",
+                        error: err.message
+                    });
+                }
+
+                console.log(timestamp, `✅ DCR getAllProducts: Found ${results.length} products`);
+
+                return res.json({
+                    success: true,
+                    data: results,
+                    total: results.length
+                });
+            });
+
+        } catch (error) {
+            console.error(timestamp, "DCR getAllProducts Exception:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Server error",
+                error: error.message
+            });
+        }
     }
 
 };

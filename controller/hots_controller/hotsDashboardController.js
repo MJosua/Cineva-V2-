@@ -274,37 +274,72 @@ module.exports = {
             const limitNum = Math.min(Math.max(Number(limit) || 50, 1), 1000);
             const offset = (pageNum - 1) * limitNum;
 
-            // Simple query - VIEW already includes Color and Remarks
+            // Query with LEFT JOIN to t_ticket_work_data for Color and Remarks
+            // Use COALESCE to prefer work_data values over view values (if view already has these columns)
+            // Explicitly list columns to avoid duplicate column name error
             let sql = `
-            SELECT *
-            FROM hots.srf_report
+            SELECT 
+                sr.\`SRF No.\`,
+                sr.\`Year\`,
+                sr.\`Tgl Email SRF\`,
+                sr.\`Requester\`,
+                sr.\`Distributor\`,
+                sr.\`Country\`,
+                sr.\`Purpose\`,
+                sr.\`Product Category\`,
+                sr.\`Sample Category\`,
+                sr.\`Factory\`,
+                sr.\`PO Req\`,
+                sr.\`Week\`,
+                sr.\`Declare on Shipping Docs\`,
+                sr.\`Item Name\`,
+                sr.\`Material Code\`,
+                sr.\`Product\`,
+                sr.\`QTY Req\`,
+                sr.\`Satuan\`,
+                sr.\`Status ID\`,
+                sr.\`Tanggal Created\`,
+                sr.ticket_id,
+                sr.detail_id,
+                COALESCE(color_wd.field_value, sr.Color) as Color,
+                COALESCE(remarks_wd.field_value, sr.Remarks) as Remarks
+            FROM hots.srf_report sr
+            LEFT JOIN hots.t_ticket_work_data color_wd 
+                ON sr.\`SRF No.\` = color_wd.ticket_id 
+                AND color_wd.field_name = 'Color'
+                AND color_wd.data_type = 'report'
+            LEFT JOIN hots.t_ticket_work_data remarks_wd 
+                ON sr.\`SRF No.\` = remarks_wd.ticket_id 
+                AND remarks_wd.field_name = 'Remarks'
+                AND remarks_wd.data_type = 'report'
             WHERE 1 = 1
           `;
             const params = [];
 
             if (year) {
-                sql += ` AND YEAR(\`Tgl Email SRF\`) = ?`;
+                sql += ` AND YEAR(sr.\`Tgl Email SRF\`) = ?`;
                 params.push(year);
             }
             if (type) {
-                sql += ` AND (\`Product Category\` LIKE ? OR \`Sample Category\` LIKE ?)`;
+                sql += ` AND (sr.\`Product Category\` LIKE ? OR sr.\`Sample Category\` LIKE ?)`;
                 params.push(`%${type}%`, `%${type}%`);
             }
             if (distributor) {
-                sql += ` AND \`Distributor\` LIKE ?`;
+                sql += ` AND sr.\`Distributor\` LIKE ?`;
                 params.push(`%${distributor}%`);
             }
             if (country) {
-                sql += ` AND \`Country\` LIKE ?`;
+                sql += ` AND sr.\`Country\` LIKE ?`;
                 params.push(`%${country}%`);
             }
 
-            // Count total first
-            const [countRows] = await dbHots.promise().query(`SELECT COUNT(*) as total FROM (${sql}) as tmp`, params);
+            // Count total first (need to use subquery for the joined result)
+            const countSql = `SELECT COUNT(*) as total FROM (${sql}) as tmp`;
+            const [countRows] = await dbHots.promise().query(countSql, params);
             const total = countRows[0].total;
 
             // Apply pagination
-            sql += ` ORDER BY \`Tgl Email SRF\` DESC, \`SRF No.\` ASC LIMIT ?, ?`;
+            sql += ` ORDER BY sr.\`Tgl Email SRF\` DESC, sr.\`SRF No.\` ASC LIMIT ?, ?`;
             params.push(Number(offset), Number(limitNum));
 
             const [rows] = await dbHots.promise().query(sql, params);
