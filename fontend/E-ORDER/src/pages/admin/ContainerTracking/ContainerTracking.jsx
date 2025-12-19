@@ -54,6 +54,11 @@ import { LuWarehouse } from "react-icons/lu";
 import { GiCargoShip } from "react-icons/gi";
 import { BiDownArrow, BiRefresh, BiUpArrow } from "react-icons/bi";
 import { formatDate } from "../../../utils/DateFormatter";
+import {
+    normalizeContainerTrackingData,
+    calculateProgress,
+    findLocationName
+} from "../../../utils/containerTrackingNormalizer";
 
 function ContainerTracking({
     dataContainer,
@@ -89,6 +94,7 @@ function ContainerTracking({
     const [selectedLocation1, setSelectedLocation1] = useState()
     const [selectedLocation2, setSelectedLocation2] = useState()
     const [updateat, setUpdateat] = useState("")
+    const [orderedLocationsState, setOrderedLocations] = useState([])
     const [loading, setLoading] = useState(false)
 
     // ==========================================================
@@ -99,39 +105,32 @@ function ContainerTracking({
 
         try {
             const res = await axios.get(url);
+
+            // Determine the source of data
+            // Backend returns: array (cached data) or { data: { data: {...} } } (SeaRates proxy)
             const containerData = Array.isArray(res.data) ? res.data[0] : null;
             const searatesData = res.data?.data?.data || res.data?.data || null;
-            const src = containerData || searatesData;
+            const rawData = containerData || searatesData;
 
-            if (!src) {
+            if (!rawData) {
                 console.warn("⚠️ No valid data structure found in response");
                 return null;
             }
 
-            if (res.data?.data?.data || res.data?.data) {
-                console.log("searatesData", searatesData)
+            // Log the source for debugging
+            if (containerData) {
+                console.log("📦 Data from backend (cached):", containerData);
             } else {
-                console.log("containerData", containerData)
-
+                console.log("🌐 Data from SeaRates API:", searatesData);
             }
 
+            // Use the normalizer to ensure consistent data structure
+            const normalized = normalizeContainerTrackingData(rawData);
 
-
-            const normalized = {
-                metadata: src.metadata || {},
-                containers: src.container || src.containers || [],
-                events: src.events || src.container_events || src.containers?.[0]?.events || [],
-                locations: src.locations || [],
-                vessels: src.vessels || [],
-                dataRoute: src.dataRoute || (src.route ? [{ pol: [src.route.pol], pod: [src.route.pod] }] : []),
-                pin_location: src.pin_location || (
-                    src.route_data?.pin
-                        ? { lat: src.route_data.pin[0], lng: src.route_data.pin[1] }
-                        : {}
-                ),
-            };
-
-            console.log("normalized", normalized)
+            if (!normalized) {
+                console.warn("⚠️ Normalization failed");
+                return null;
+            }
 
             return normalized;
         } catch (err) {
@@ -164,10 +163,13 @@ function ContainerTracking({
                 return;
             }
 
+            // Set core data from normalized result
             setDataContainer(data.containers || []);
             setContainerName(data.containers?.[0]?.container_number || data.metadata?.number || "");
             setoOrderSOIDState(data.containers?.[0]?.so_id || "");
             setDataLocation(data.locations || []);
+            // Use orderedLocations for correct map route sequence
+            setOrderedLocations(data.orderedLocations || data.locations || []);
             setDataEvent(data.events || []);
             setContainerStatus(data.containers?.[0]?.container_status || data.metadata?.status || "");
             setDataPinLocation(data.pin_location || {});
@@ -176,38 +178,27 @@ function ContainerTracking({
             setDataVessel(data.vessels || []);
             setUpdateat(data.metadata?.last_updated_date || data.metadata?.updated_at || "");
 
-            const polDateStr = data.dataRoute?.[0]?.pol?.[0]?.date;
-            const podDateStr = data.dataRoute?.[0]?.pod?.[0]?.date;
-            if (polDateStr && podDateStr) {
-                const polDate = new Date(polDateStr);
-                const podDate = new Date(podDateStr);
-                if (!isNaN(polDate) && !isNaN(podDate)) {
-                    const now = new Date();
-                    const totalDuration = podDate - polDate;
-                    const progressDuration = now - polDate;
-                    const progress = Math.max(0, Math.min(progressDuration / totalDuration, 1));
-                    const progressPercentage = Math.max(0, Math.min(100, progress * 100));
-                    setDataProgressPercentage(progressPercentage);
-                } else {
-                    console.warn("⚠️ Invalid date format in dataRoute");
-                    setDataProgressPercentage(0);
-                }
-            } else {
-                console.warn("⚠️ Missing pol/pod date in dataRoute");
-                setDataProgressPercentage(0);
-            }
+            // Use pre-computed ETD/ETA from normalizer (handles both data sources)
+            setDataTimeDeparture(data.etd || "");
+            setDataTimeArrive(data.eta || "");
 
-            let locationNameDeparture = data.locations.find(
-                (loc) => loc.location_list_id === data.dataRoute?.[0]?.pol?.[0]?.location
-                    || loc.id === data.dataRoute?.[0]?.pol?.[0]?.location
-            );
-            setDataLocationDeparture(locationNameDeparture?.name || "");
+            // Use pre-computed departure/arrival locations from normalizer
+            setDataLocationDeparture(data.departureLocation || "");
+            setDataLocationArrive(data.arrivalLocation || "");
 
-            let locationNameArrive = data.locations.find(
-                (loc) => loc.location_list_id === data.dataRoute?.[0]?.pod?.[0]?.location
-                    || loc.id === data.dataRoute?.[0]?.pod?.[0]?.location
-            );
-            setDataLocationArrive(locationNameArrive?.name || "");
+            // Calculate progress using the normalizer utility
+            const progressPercentage = calculateProgress(data.etd, data.eta);
+            setDataProgressPercentage(progressPercentage);
+
+            console.log("✅ Data loaded successfully:", {
+                source: data._source,
+                etd: data.etd,
+                eta: data.eta,
+                departureLocation: data.departureLocation,
+                arrivalLocation: data.arrivalLocation,
+                progress: progressPercentage,
+                pin_location: data.pin_location,
+            });
 
             setLoading(false);
             setIsVisible(false);
@@ -252,95 +243,80 @@ function ContainerTracking({
 
 
     const groupedData = useMemo(() => {
-        if (!dataEvent || dataEvent.length === 0) { // Ensure dataEvent exists
-            if (dataEventState.length > 0) {
-                const grouped = dataEventState.reduce((acc, curr) => {
-                    const locId = (curr.location_id ?? curr.location); // fallback ke `location` jika `location_id` tidak ada
-                    acc[locId] = acc[locId] || [];
-                    acc[locId].push(curr);
-                    return acc;
-                }, {});
-
-                Object.values(grouped).forEach(events => {
-                    events.sort((a, b) => a.order_id - b.order_id);
-                });
-
-                return grouped;
-
-            }
-        }
-        else {
-
-            const grouped = dataEvent.reduce((acc, curr) => {
-                const locId = curr.location_id.toString(); // Ensure consistency in object keys
-                acc[locId] = acc[locId] || [];
-                acc[locId].push(curr);
-                return acc;
-            }, {});
-
-            // Sort each group by order_id
-            Object.values(grouped).forEach(events => {
-                events.sort((a, b) => a.order_id - b.order_id);
-            });
-
-            return grouped;
+        // Use dataEventState which contains normalized events
+        const events = dataEventState || [];
+        if (!events || events.length === 0) {
+            return {};
         }
 
+        // Group events by location_id (normalized data always has location_id)
+        const grouped = events.reduce((acc, curr) => {
+            // Use location_id which is present in normalized data from both sources
+            const locId = (curr.location_id ?? curr.location ?? 0).toString();
+            acc[locId] = acc[locId] || [];
+            acc[locId].push(curr);
+            return acc;
+        }, {});
 
-    }, [dataEvent, dataEventState]);
+        // Sort each group by order_id
+        Object.values(grouped).forEach(events => {
+            events.sort((a, b) => (a.order_id || 0) - (b.order_id || 0));
+        });
+
+        return grouped;
+    }, [dataEventState]);
 
     const steps = useMemo(() => {
-        if (!groupedData && !dataLocation) {
-            return []
-        }; // Prevent errors on empty data
-        if (groupedData && dataLocation) { // Prevent errors on empty data
-            return Object.entries(groupedData)
-                .map(([locationId, events]) => ({
-                    location: dataLocation.find(loc => loc.location_list_id === parseInt(locationId))?.name || 'Unknown',
+        if (!groupedData || Object.keys(groupedData).length === 0) {
+            return [];
+        }
 
-                    events,
-                }))
+        // Use dataLocationState which contains normalized locations
+        const locations = dataLocationState || [];
 
-                .sort((a, b) => (a.events[0]?.order_id || 0) - (b.events[0]?.order_id || 0)); // Handle potential missing order_id
-        };
-        if (groupedData && !dataLocation) { // Prevent errors on empty data
-
-
-
-            const data = Object.entries(groupedData)
-                .filter(([locationId]) => parseInt(locationId) !== 0)
-                .map(([locationId, events]) => ({
-                    location: dataLocationState.find(loc => {
-                        const idToMatch = locationId.toString();
-                        return loc.location_list_id?.toString() === idToMatch || loc.id?.toString() === idToMatch;
-                    })?.name || 'Unknown',
-                    events,
-                }))
-                .sort((a, b) => (a.events[0]?.order_id || 0) - (b.events[0]?.order_id || 0)); // Handle potential missing order_id
-
-            // Example: [2, 3, 1]
-
-
-            return data
+        // Helper to find location by any ID format (handles normalized data)
+        const findLocationName = (locId) => {
+            const id = parseInt(locId);
+            const loc = locations.find(l =>
+                l.location_id === id ||
+                l.location_list_id === id ||
+                l.id === id
+            );
+            return loc?.name || 'Unknown';
         };
 
-    }, [groupedData, dataLocation,]);
+        return Object.entries(groupedData)
+            .filter(([locationId]) => parseInt(locationId) !== 0) // Filter out invalid location IDs
+            .map(([locationId, events]) => ({
+                location: findLocationName(locationId),
+                events,
+            }))
+            .sort((a, b) => (a.events[0]?.order_id || 0) - (b.events[0]?.order_id || 0));
+    }, [groupedData, dataLocationState]);
 
 
+    // Use orderedLocations for correct map route - derived from events' order_id
+    // This fixes the issue where backend location IDs don't match the route order
     const locationPath = useMemo(() => {
+        // If orderedLocations is available, use it directly (already in correct order)
+        if (orderedLocationsState && orderedLocationsState.length > 0) {
+            return orderedLocationsState.map(loc =>
+                loc.location_id ?? loc.location_list_id ?? loc.id
+            ).filter(id => id !== null && id !== undefined);
+        }
+
+        // Fallback to deriving from steps
         return steps
             .map(step => {
                 const matchingLocation = dataLocationState?.find(
                     loc => loc.name === step.location
                 );
                 return matchingLocation
-                    ? ('location_list_id' in matchingLocation
-                        ? matchingLocation.location_list_id
-                        : matchingLocation.id)
+                    ? (matchingLocation.location_id ?? matchingLocation.location_list_id ?? matchingLocation.id)
                     : null;
             })
             .filter(id => id !== null && id !== undefined);
-    }, [steps, dataLocationState]);
+    }, [orderedLocationsState, steps, dataLocationState]);
 
 
 
@@ -406,24 +382,42 @@ function ContainerTracking({
 
         let pin;
 
+        // Handle different pin_location formats:
+        // 1. Normalized object format: { lat, lng } (from normalizer)
+        // 2. Array format: [lat, lng] (from SeaRates route_data.pin)
+        // 3. Legacy array with object: [{ latitude, longitude }]
         if (
+            dataPinLocationState &&
+            typeof dataPinLocationState === 'object' &&
+            !Array.isArray(dataPinLocationState) &&
+            dataPinLocationState.lat != null &&
+            dataPinLocationState.lng != null
+        ) {
+            // Normalized object format: { lat, lng }
+            pin = [dataPinLocationState.lat, dataPinLocationState.lng];
+            console.log("📍 Using pin from normalized object:", pin);
+        } else if (
             Array.isArray(dataPinLocationState) &&
             dataPinLocationState.length === 2 &&
             typeof dataPinLocationState[0] === 'number' &&
             typeof dataPinLocationState[1] === 'number'
         ) {
-
+            // Direct array format: [lat, lng]
             pin = dataPinLocationState;
+            console.log("📍 Using pin from array:", pin);
         } else if (
             Array.isArray(dataPinLocationState) &&
             dataPinLocationState.length === 1 &&
             dataPinLocationState[0]?.longitude != null &&
             dataPinLocationState[0]?.latitude != null
         ) {
+            // Legacy array with object format
             pin = [dataPinLocationState[0].latitude, dataPinLocationState[0].longitude];
+            console.log("📍 Using pin from legacy format:", pin);
         } else {
-
-            pin = [-6.21462, 106.84513]; // default location
+            // Fallback to default Jakarta coordinates
+            pin = [-6.21462, 106.84513];
+            console.warn("⚠️ No valid pin location, using default Jakarta:", dataPinLocationState);
         }
 
 
@@ -434,11 +428,14 @@ function ContainerTracking({
             isPin: true,
         };
 
-        // Step 1: Get valid route points
+        // Step 1: Get valid route points using orderedLocationsState for correct order
+        // Use orderedLocationsState first as it has the correct route sequence
+        const locationsToUse = orderedLocationsState.length > 0 ? orderedLocationsState : dataLocationState;
+
         const routePoints = locationPath
             .map(id =>
-                dataLocationState.find(loc =>
-                    (loc?.location_list_id === id || loc?.id === id) &&
+                locationsToUse.find(loc =>
+                    (loc?.location_id === id || loc?.location_list_id === id || loc?.id === id) &&
                     loc.lat != null && loc.lng != null
                 )
             )
@@ -474,8 +471,15 @@ function ContainerTracking({
             ...routePoints.slice(bestIdx),
         ];
 
+        console.log("🗺️ Full route built:", {
+            totalPoints: routeWithCurrent.length,
+            routeNames: routeWithCurrent.map(p => p.name || 'Unknown'),
+            currentLocation: currentLoc,
+            routePoints: routePoints.map(p => p.name),
+        });
+
         return routeWithCurrent;
-    }, [dataLocationState, dataPinLocationState, locationPath]);
+    }, [orderedLocationsState, dataLocationState, dataPinLocationState, locationPath]);
 
 
     const [flip, setflip] = useState(false);
@@ -578,8 +582,10 @@ function ContainerTracking({
     }), [shipAngle]);
 
     function getVesselDetails(vesselId) {
-        // console.log("dataEventState", dataEventState)
-        const vesselEvents = dataEventState.filter(event => event.vessel_id === vesselId);
+        // Filter events by vessel_id or vessel (normalized data supports both)
+        const vesselEvents = dataEventState.filter(event =>
+            event.vessel_id === vesselId || event.vessel === vesselId
+        );
 
         if (!vesselEvents || vesselEvents.length === 0) {
             // no matching events, return fallback
@@ -592,22 +598,30 @@ function ContainerTracking({
             };
         }
 
-        const sortedEventsFirst = vesselEvents.sort((b, a) => new Date(b.date) - new Date(a.date));
+        const sortedEventsFirst = [...vesselEvents].sort((a, b) => new Date(a.date) - new Date(b.date));
+        const firstVesselEvent = sortedEventsFirst[0];
+        const latestEvent = sortedEventsFirst[sortedEventsFirst.length - 1];
 
-        const firstVesselEvent = sortedEventsFirst[0];  // Access the first event
-        const sortedEvents = vesselEvents.sort((a, b) => new Date(b.date) - new Date(a.date));
-        const latestEvent = sortedEvents[0];
-        const locationStart = dataLocationState.find(loc => loc.location_list_id === firstVesselEvent.location_id);
-        console.log("dataLocationState", dataLocationState)
-        const locationEnd = dataLocationState.find(loc => loc.location_list_id === latestEvent.location_id);
+        // Helper to find location by any ID format (works with normalized data)
+        const findLocation = (locId) => dataLocationState.find(loc =>
+            loc.location_list_id === locId ||
+            loc.location_id === locId ||
+            loc.id === locId
+        );
+
+        // Get location ID from event (normalized data has both location_id and location)
+        const startLocId = firstVesselEvent.location_id ?? firstVesselEvent.location;
+        const endLocId = latestEvent.location_id ?? latestEvent.location;
+
+        const locationStart = findLocation(startLocId);
+        const locationEnd = findLocation(endLocId);
 
         const vesselDetails = {
-            voyage: firstVesselEvent.voyage,
-            locationStart: locationStart?.name ? locationStart.name : "unknown",
-            locationEnd: locationEnd?.name ? locationEnd.name : "unknown",
+            voyage: firstVesselEvent.voyage || "N/A",
+            locationStart: locationStart?.name || "Unknown",
+            locationEnd: locationEnd?.name || "Unknown",
             ETD: firstVesselEvent.date,
             ETA: latestEvent.date,
-
         };
 
         return vesselDetails;
@@ -853,19 +867,38 @@ function ContainerTracking({
                                                                     />
                                                                     <VStack align="start" spacing={1} pl={2}>
                                                                         <Text mb="1" fontWeight="bold">{step.location}</Text>
-                                                                        {step.events
-                                                                            .filter(event => event.actual !== 0)
-                                                                            .map((event, idx) => (
-                                                                                <Flex key={idx} justify="space-between" w="100%" align="start">
-                                                                                    <Text fontSize="sm" mb="0" className="text-start" flex="1" pr="4" noOfLines={2} wordBreak="break-word">
-                                                                                        {event.description}
-                                                                                    </Text>
-                                                                                    <Text fontSize="sm" mb="0" pe="2" className="text-end" color="gray.500" whiteSpace="nowrap">
-                                                                                        {formatDate(event.date)}
-                                                                                    </Text>
-                                                                                </Flex>
+                                                                        {step.events.map((event, idx) => (
+                                                                            <Flex key={idx} justify="space-between" w="100%" align="start">
+                                                                                <Text
+                                                                                    fontSize="sm"
+                                                                                    mb="0"
+                                                                                    flex="1"
+                                                                                    className="text-start"
+                                                                                    pr="4"
+                                                                                    noOfLines={2}
+                                                                                    wordBreak="break-word"
+                                                                                    style={{
+                                                                                        color: event.actual === 1 ? "#1A202C" : "#718096", // dark vs soft gray
+                                                                                        fontWeight: event.actual === 1 ? 500 : 400,
+                                                                                    }}
+                                                                                >
+                                                                                    {event.description}
+                                                                                </Text>
 
-                                                                            ))}
+                                                                                <Text
+                                                                                    fontSize="sm"
+                                                                                    mb="0"
+                                                                                    pe="2"
+                                                                                    whiteSpace="nowrap"
+                                                                                    style={{
+                                                                                        color: event.actual === 1 ? "#4A5568" : "#A0AEC0",
+                                                                                    }}
+                                                                                >
+                                                                                    {formatDate(event.date)}
+                                                                                </Text>
+                                                                            </Flex>
+                                                                        ))}
+
                                                                     </VStack>
                                                                 </Box>
                                                             ))}
@@ -1097,23 +1130,21 @@ function ContainerTracking({
                         className="rounded petaindofood"
 
                         center={
-                            dataPinLocation?.[0]
-                                ? [dataPinLocation[0].longitude, dataPinLocation[0].latitude]
-                                : (
-                                    Array.isArray(dataPinLocationState?.[0])
-                                        ? dataPinLocationState[0] // [longitude, latitude]
-                                        : (dataPinLocationState?.[0]?.longitude != null && dataPinLocationState?.[0]?.latitude != null
-                                            ? [
-                                                dataPinLocationState[0].longitude,
-                                                wrapLongitude(dataPinLocationState[0].latitude, 106.8333)
-                                            ]
-                                            : [-6.21462, 106.84513]
-                                        )
-                                )
+                            // Handle normalized object format: { lat, lng }
+                            dataPinLocationState &&
+                                typeof dataPinLocationState === 'object' &&
+                                !Array.isArray(dataPinLocationState) &&
+                                dataPinLocationState.lat != null &&
+                                dataPinLocationState.lng != null
+                                ? [dataPinLocationState.lat, wrapLongitude(dataPinLocationState.lng, 106.8333)]
+                                // Handle array format: [lat, lng]
+                                : Array.isArray(dataPinLocationState) &&
+                                    dataPinLocationState.length === 2 &&
+                                    typeof dataPinLocationState[0] === 'number'
+                                    ? [dataPinLocationState[0], wrapLongitude(dataPinLocationState[1], 106.8333)]
+                                    // Fallback to Jakarta
+                                    : [-6.21462, 106.84513]
                         }
-
-
-
 
                         minZoom={2}
                         zoom={4}
@@ -1126,18 +1157,34 @@ function ContainerTracking({
 
                         <RecenterMap
                             lat={
-                                dataPinLocation?.[0]
-                                    ? dataPinLocation[0].latitude  // Correcting to use latitude for lat
-                                    : dataPinLocationState?.[0]
-                                        ? dataPinLocationState[0].latitude  // Correcting to use latitude for lat
-                                        : -6.21462  // Default latitude value
+                                // Handle normalized object format: { lat, lng }
+                                dataPinLocationState &&
+                                    typeof dataPinLocationState === 'object' &&
+                                    !Array.isArray(dataPinLocationState) &&
+                                    dataPinLocationState.lat != null
+                                    ? dataPinLocationState.lat
+                                    // Handle array format: [lat, lng]
+                                    : Array.isArray(dataPinLocationState) &&
+                                        dataPinLocationState.length === 2 &&
+                                        typeof dataPinLocationState[0] === 'number'
+                                        ? dataPinLocationState[0]
+                                        // Fallback to Jakarta
+                                        : -6.21462
                             }
                             lng={
-                                dataPinLocation?.[0]
-                                    ? dataPinLocation[0].longitude  // Correctly using longitude for lng
-                                    : dataPinLocationState?.[0]
-                                        ? wrapLongitude(dataPinLocationState[0].longitude, 106.8333)  // Applying wrapLongitude to longitude
-                                        : 106.84513  // Default longitude value
+                                // Handle normalized object format: { lat, lng }
+                                dataPinLocationState &&
+                                    typeof dataPinLocationState === 'object' &&
+                                    !Array.isArray(dataPinLocationState) &&
+                                    dataPinLocationState.lng != null
+                                    ? wrapLongitude(dataPinLocationState.lng, 106.8333)
+                                    // Handle array format: [lat, lng]
+                                    : Array.isArray(dataPinLocationState) &&
+                                        dataPinLocationState.length === 2 &&
+                                        typeof dataPinLocationState[1] === 'number'
+                                        ? wrapLongitude(dataPinLocationState[1], 106.8333)
+                                        // Fallback to Jakarta
+                                        : 106.84513
                             }
                         />
 
@@ -1232,16 +1279,25 @@ function ContainerTracking({
 
                         <Marker
                             position={
-                                dataPinLocation?.[0]?.longitude != null && dataPinLocation?.[0]?.latitude != null
-                                    ? [dataPinLocation[0].latitude, wrapLongitude(dataPinLocation[0].longitude, 106.8333)]
-                                    : Array.isArray(dataPinLocationState) && dataPinLocationState.length === 2 &&
-                                        typeof dataPinLocationState[0] === 'number' && typeof dataPinLocationState[1] === 'number'
-                                        ? dataPinLocationState // It’s [longitude, latitude]
-                                        : dataPinLocationState?.[0]?.longitude != null && dataPinLocationState?.[0]?.latitude != null
+                                // Handle normalized object format: { lat, lng }
+                                dataPinLocationState &&
+                                    typeof dataPinLocationState === 'object' &&
+                                    !Array.isArray(dataPinLocationState) &&
+                                    dataPinLocationState.lat != null &&
+                                    dataPinLocationState.lng != null
+                                    ? [dataPinLocationState.lat, wrapLongitude(dataPinLocationState.lng, 106.8333)]
+                                    // Handle array format: [lat, lng]
+                                    : Array.isArray(dataPinLocationState) &&
+                                        dataPinLocationState.length === 2 &&
+                                        typeof dataPinLocationState[0] === 'number'
+                                        ? [dataPinLocationState[0], wrapLongitude(dataPinLocationState[1], 106.8333)]
+                                        // Handle legacy array with object format
+                                        : dataPinLocationState?.[0]?.latitude != null &&
+                                            dataPinLocationState?.[0]?.longitude != null
                                             ? [dataPinLocationState[0].latitude, wrapLongitude(dataPinLocationState[0].longitude, 106.8333)]
-                                            : [-6.21462, 106.84513] // fallback
+                                            // Fallback to Jakarta
+                                            : [-6.21462, 106.84513]
                             }
-
                             icon={markerIcon}
                         />
 

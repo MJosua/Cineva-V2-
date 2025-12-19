@@ -521,8 +521,15 @@ module.exports = {
                    order by e.order_id ASC 
            `, [number, number, so_id, so_id]);
 
+            // 🔄 Determine if we need to fetch fresh data
+            // If refresh=true is explicitly passed, always fetch fresh data
+            // Otherwise, auto-refresh only if data is > 5 hours old or so_id is missing
             let reload = false;
-            if (refresh && results.length) {
+            if (refresh) {
+                // User explicitly requested refresh - always fetch fresh data
+                reload = true;
+                console.log(`🔄 Refresh requested for ${number}, fetching fresh data from SeaRates...`);
+            } else if (results.length) {
                 const diffHours = (new Date() - new Date(results[0].last_updated_date)) / (1000 * 60 * 60);
                 reload = diffHours >= 5 || !results[0].so_id;
             }
@@ -973,8 +980,15 @@ module.exports = {
                     order by e.order_id ASC 
             `, [number, so_id]);
 
+            // 🔄 Determine if we need to fetch fresh data
+            // If refresh=true is explicitly passed, always fetch fresh data
+            // Otherwise, auto-refresh only if data is > 5 hours old or so_id is missing
             let reload = false;
-            if (refresh && results.length) {
+            if (refresh) {
+                // User explicitly requested refresh - always fetch fresh data
+                reload = true;
+                console.log(`🔄 Refresh requested for ${number}, fetching fresh data from SeaRates...`);
+            } else if (results.length) {
                 const diffHours = (new Date() - new Date(results[0].last_updated_date)) / (1000 * 60 * 60);
                 reload = diffHours >= 5 || !results[0].so_id;
             }

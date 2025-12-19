@@ -1305,7 +1305,7 @@ const OrderDetailPage = () => {
                                 >
                                     <ModalBody className="px-0 py-0">
                                         <iframe
-                                            src={`https://www.indofoodinternational.com/e-order/containertracking/${containerName}/${soid}`}
+                                            src={`https://www.indofoodinternational.com/i2i/containertracking/${containerName}/${soid}`}
                                             title="My Iframe"
                                             width="100%"
                                             height="100%"

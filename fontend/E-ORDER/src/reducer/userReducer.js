@@ -25,7 +25,6 @@ export const userReducer = (state = INITIAL_STATE, action) => {
 
   switch (action.type) {
     case "LOGIN_SUCCESS":
-      console.log("action.payload",action.payload)
       return {
         ...state,
         ...action.payload,
