@@ -1392,11 +1392,7 @@ WHERE
                         mco.company_name,
                         det.created_by,
                         su.firstname,
-                        case
-                            when det.company_id not in (${blockingSoIdCompany})
-                            and tae.appr_date is not null then so.so_id
-                            else ''
-                        end as so_id,
+                        tr.so_id,
                         DATE_FORMAT(trd.delv_date, '%d-%b-%Y') delv_date,
                         tr.ship_name vessel_name,
                         tr.ship_line shipping_line,
@@ -1927,7 +1923,7 @@ WHERE
             });
 
             let getWeekLimit = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 9 AND mcn.company_id = ${req.dataToken.company_id}  AND mcn.active = 1;`))[0]
-            
+
             let getWeekBlock = await dbQuery(`
                 SELECT mcn.value 
                 FROM m_config_new mcn 
@@ -1942,7 +1938,7 @@ WHERE
                   ;
             `);
 
-            
+
 
             const blockedWeeks = getWeekBlock.map(row => Number(row.value));
 

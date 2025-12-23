@@ -133,7 +133,11 @@ const OrderDetailPage = () => {
         })
     }
 
-
+    const { spc_condition } = useSelector((state) => {
+        return {
+            spc_condition: state.userReducer.spc_condition
+        }
+    });
 
 
     const [orderHeader, setOrderHeader] = useState([])
@@ -799,8 +803,9 @@ const OrderDetailPage = () => {
                                 }
 
                                 {
-                                    orderDetails?.[0]?.so_id &&
-                                    [2, 3, 4, 66].includes(header.is_status) &&
+                                    orderDetails?.[0]?.so_id != null &&
+                                    [2, 3, 4, 66].includes(header?.is_status) &&
+                                    !pc_condition?.includes(12) &&
                                     <>
                                         {header.notify1_name && !header.notify2_name ?
                                             <div className='col-6'>
@@ -1305,7 +1310,7 @@ const OrderDetailPage = () => {
                                 >
                                     <ModalBody className="px-0 py-0">
                                         <iframe
-                                            src={`https://www.indofoodinternational.com/i2i/containertracking/${containerName}/${soid}`}
+                                            src={`https://www.indofoodinternational.com/e-order/containertracking/${containerName}/${soid}`}
                                             title="My Iframe"
                                             width="100%"
                                             height="100%"

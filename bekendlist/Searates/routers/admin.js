@@ -8,5 +8,6 @@ const { imageUploader } = require("../config/uploader")
 const uploadBanner = imageUploader('banner', 'banner-').array('image', 1)
 
 route.get('/config', readToken, adminController.getContainer)
+route.get('/preview-email/:type/:so_id', adminController.previewEOrderEmail)
 
 module.exports = route;

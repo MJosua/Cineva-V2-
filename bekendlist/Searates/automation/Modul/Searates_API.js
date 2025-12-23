@@ -87,6 +87,7 @@ function runCheck() {
                         (
                             (l.actual = 0 OR l.actual IS NULL)
                             AND (YEAR(r.eta) = YEAR(CURDATE()) OR YEAR(r.etd) = YEAR(CURDATE()))
+                            AND (MONTH(r.eta) = MONTH(CURDATE()) OR MONTH(r.etd) = MONTH(CURDATE()))
                         )
                     )
                     GROUP BY i.bl_no, r.so_id 
@@ -163,13 +164,14 @@ function runCheck() {
                             )
                             OR
                             (
-                                r.eta = NOW()
+                                DATE(r.eta) = CURDATE()
                                 AND (YEAR(r.eta) = YEAR(CURDATE()))
                             )
                             OR
                             (
                                 (l.actual IS NULL)
                                 AND (YEAR(r.eta) = YEAR(CURDATE()) OR YEAR(r.etd) = YEAR(CURDATE()))
+                                AND (MONTH(r.eta) = MONTH(CURDATE()) OR MONTH(r.etd) = MONTH(CURDATE()))
                             )
                         )
                     GROUP BY r.cont_id   

@@ -1392,11 +1392,7 @@ WHERE
                         mco.company_name,
                         det.created_by,
                         su.firstname,
-                        case
-                            when det.company_id not in (${blockingSoIdCompany})
-                            and tae.appr_date is not null then so.so_id
-                            else ''
-                        end as so_id,
+                        tr.so_id,
                         DATE_FORMAT(trd.delv_date, '%d-%b-%Y') delv_date,
                         tr.ship_name vessel_name,
                         tr.ship_line shipping_line,
@@ -1921,33 +1917,33 @@ WHERE
                 day: "2-digit",
                 year: "numeric",
             });
-    
+
             // --- CONFIG ---
             const company_id = test ? 101 : req?.dataToken?.company_id;
             const user_id = test ? 1098 : req?.dataToken?.user_id ?? 0;
-    
+
             if (!req?.dataToken && !test) {
                 const msg = "Unauthorized — missing token or company_id";
                 return res.status(401).send({ success: false, message: msg });
             }
-    
+
             const getWeekLimit = (await dbQuery(`
                 SELECT value FROM m_config_new 
                 WHERE conditions = 9 
                   AND company_id = ${company_id}
                   AND active = 1
             `))[0];
-    
+
             const getWeekBlock = await dbQuery(`
                 SELECT value FROM m_config_new
                 WHERE conditions = 21
                   AND (company_id = ${company_id} OR company_id = 100)
                   AND active = 1
             `);
-    
+
             const blockedWeeks = getWeekBlock.map(r => Number(r.value));
             const weekLimit = getWeekLimit ? Number(getWeekLimit.value) : 13;
-    
+
             // --- TODAY OPCAL ID ---
             const todayOpcal = await dbQuery(`
                 SELECT opcal_id FROM dat_operational_calendar
@@ -1955,21 +1951,21 @@ WHERE
                 LIMIT 1
             `);
             const todayCalId = todayOpcal[0]?.opcal_id ?? null;
-    
+
             // --- GET CURRENT WEEK NUMBER ---
             const todayWeekRow = await dbQuery(`
                 SELECT week FROM dat_operational_calendar
                 WHERE opcal_id = ${todayCalId}
                 LIMIT 1
             `);
-    
+
             const currentWeek = todayWeekRow[0]?.week ?? 0;
-    
+
             // ===============================
             // FIXED SQL → UNIQUE NEXT YEAR WEEKS ONLY
             // ===============================
             const nextYear = new Date().getFullYear() + 1;
-    
+
             const deliveryData = await dbQuery(`
                 SELECT 
                     week,
@@ -1981,32 +1977,32 @@ WHERE
                 GROUP BY week
                 ORDER BY first_opcal
             `);
-    
+
             // ===============================
             // COMPUTE START WEEK = currentWeek + 5
             // ===============================
             let startWeek = currentWeek + 5;
             if (startWeek > 52) startWeek -= 52;
-    
+
             // rotate list so it starts from startWeek
             let weeks = deliveryData.map(r => r.week);
-    
+
             let rotated = [
                 ...weeks.filter(w => w >= startWeek),
                 ...weeks.filter(w => w < startWeek)
             ];
-    
+
             // remove blocked
             rotated = rotated.filter(w => !blockedWeeks.includes(w));
-    
+
             // apply weekLimit
             rotated = rotated.slice(0, weekLimit);
-    
+
             // ===============================
             // BUILD WEEK DATE OUTPUT
             // ===============================
             const weeksList = [];
-    
+
             for (const w of rotated) {
                 const row = await dbQuery(`
                     SELECT opcal_id
@@ -2018,18 +2014,18 @@ WHERE
                     ORDER BY opcal_id
                     LIMIT 1
                 `);
-    
+
                 const opcal_id = row[0]?.opcal_id ?? null;
                 if (!opcal_id) continue;
-    
+
                 const minDateObj = new Date(opcal_id * 100 * 1000);
                 if (minDateObj.getDay() === 0) minDateObj.setDate(minDateObj.getDate() + 1);
-    
+
                 const minDate = DATE_FORMATTER.format(minDateObj);
-    
+
                 // next week
                 let nextWeek = w === 52 ? 1 : w + 1;
-    
+
                 const nextRow = await dbQuery(`
                     SELECT opcal_id
                     FROM dat_operational_calendar
@@ -2040,7 +2036,7 @@ WHERE
                     ORDER BY opcal_id
                     LIMIT 1
                 `);
-    
+
                 let maxDateObj;
                 if (nextRow.length > 0) {
                     maxDateObj = new Date(nextRow[0].opcal_id * 100 * 1000);
@@ -2049,9 +2045,9 @@ WHERE
                     maxDateObj = new Date(minDateObj);
                     maxDateObj.setDate(maxDateObj.getDate() + 6);
                 }
-    
+
                 const maxDate = DATE_FORMATTER.format(maxDateObj);
-    
+
                 weeksList.push({
                     opcal_id,
                     id: `${nextYear}${String(w).padStart(2, "0")}`,
@@ -2061,14 +2057,14 @@ WHERE
                     endingDate: maxDate
                 });
             }
-    
+
             return res.status(200).send({ success: true, weeksList });
-    
+
         } catch (err) {
             return res.status(500).send({ success: false, message: err.message });
         }
     }
-    
+
     , getOrder_id: async (req, res) => {
 
         let date = new Date();

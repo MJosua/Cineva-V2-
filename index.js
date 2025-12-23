@@ -94,10 +94,10 @@ const io = new Server(svr, {
 // Session store using MySQL (production-safe)
 const MySQLStore = require('express-mysql-session')(session);
 const sessionStoreOptions = {
-  host: process.env.DB_HOST,
+  host: production() ? process.env.DB_HOST : process.env.DEV_DB_HOST,
   port: 3306,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
+  user: production() ? process.env.DB_USER : process.env.DEV_DB_USER,
+  password: production() ? process.env.DB_PASSWORD : process.env.DEV_DB_PASSWORD,
   database: process.env.DB_NAME_HT,
   clearExpired: true,
   checkExpirationInterval: 900000, // 15 min

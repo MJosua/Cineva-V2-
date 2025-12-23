@@ -1,11 +1,36 @@
-
-
 const { dbConf, dbQuery, addSqlLogger } = require("../config/db");
 const { hashPassword } = require("../config/encrypts");
+const { getEOrderEmailHtml } = require('../mailer/eorder/eorder_mailer');
+const { getNotifMailDeliverHtml } = require('../../../service/mailer/eorder/eorder_mailer');
 
 let blue = "\x1b[31m";
 
 module.exports = {
+
+  previewEOrderEmail: async (req, res) => {
+    try {
+      const { so_id, type } = req.params;
+
+      if (type === 'delivery') {
+        const emailData = await getNotifMailDeliverHtml(so_id);
+        if (emailData.error) return res.status(404).send(emailData.error);
+        return res.send(emailData.html);
+      }
+
+      // type: 'distributor' or 'analyst'
+      const emailData = await getEOrderEmailHtml(so_id, type);
+
+      if (emailData.error) {
+        return res.status(404).send(emailData.error);
+      }
+
+      res.send(emailData.html);
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Error generating preview: " + err.message);
+    }
+  },
 
   getContainer: async (req, res) => {
 
@@ -48,3 +73,4 @@ module.exports = {
     }
   }
 };
+

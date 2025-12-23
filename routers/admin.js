@@ -42,5 +42,8 @@ route.get('/get_blocking_date_sys_text', readToken, adminController.sys_textCall
 route.post('/edit_blocking_date_sys_text', readToken, adminController.sys_textEditBlockingDate)
 route.get('/next-user-id/:company_id', readToken, adminController.getNextUserID)
 
+// Email preview (no auth for dev convenience)
+route.get('/preview-email/:type/:so_id', adminController.previewEOrderEmail)
+
 
 module.exports = route;

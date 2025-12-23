@@ -313,11 +313,22 @@ module.exports = {
     /**
      * Submit proposed data changes
      * Stores changes in t_ticket_work_data with old/new values
+     * Also stores meta info (distributor, po_number) for analytics
      */
     submitDataChange: async (req, res) => {
         const timestamp = yellow + new Date().toLocaleString('id') + ' : ';
         try {
-            const { ticket_id, service_id, so_id, header_changes, detail_changes } = req.body;
+            const {
+                ticket_id,
+                service_id,
+                so_id,
+                header_changes,
+                detail_changes,
+                // New fields for analytics
+                distributor_id,
+                po_number,
+                client_id
+            } = req.body;
             const user_id = req.decoded?.user_id || req.body.user_id;
 
             if (!ticket_id || !service_id) {
@@ -327,7 +338,33 @@ module.exports = {
                 });
             }
 
-            console.log(timestamp, `DCR submitDataChange: ticket=${ticket_id}`);
+            console.log(timestamp, `DCR submitDataChange: ticket=${ticket_id}, distributor=${distributor_id}, po=${po_number}`);
+
+            // Store meta info for analytics (distributor, po_number, client_id)
+            if (so_id) {
+                const metaValue = JSON.stringify({
+                    so_id: so_id,
+                    distributor_id: distributor_id,
+                    po_number: po_number,
+                    client_id: client_id
+                });
+
+                // Check if meta already exists
+                const existing = await dbQueryHots(
+                    `SELECT id FROM hots.t_ticket_work_data 
+                     WHERE ticket_id = ? AND data_type = 'dcr_meta' LIMIT 1`,
+                    [ticket_id]
+                );
+
+                if (!existing || existing.length === 0) {
+                    await dbQueryHots(
+                        `INSERT INTO hots.t_ticket_work_data 
+                         (ticket_id, service_id, data_type, entity_id, field_name, field_value, field_type, created_by)
+                         VALUES (?, ?, 'dcr_meta', ?, 'reference_info', ?, 'json', ?)`,
+                        [ticket_id, service_id, so_id, metaValue, user_id]
+                    );
+                }
+            }
 
             // Store header changes
             if (header_changes && Array.isArray(header_changes)) {
@@ -395,6 +432,7 @@ module.exports = {
             let query = `
                 SELECT 
                     mp.product_code as sku_id,
+                    mp.product_code,
                     mp.product_sku,
                     mp.product_name,
                     mp.product_desc,
@@ -403,14 +441,16 @@ module.exports = {
                 WHERE mp.active = 1
             `;
             const params = [];
+            const limitNum = Math.min(Number(limit) || 100, 1000); // Allow up to 1000 for client-side filtering
 
-            if (search) {
-                query += ` AND (mp.product_sku LIKE ? OR mp.product_name LIKE ? OR mp.product_code LIKE ?)`;
-                params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+            if (search && search.trim()) {
+                const searchTerm = `%${search.trim()}%`;
+                // Only search string columns (product_sku, product_name)
+                query += ` AND (mp.product_sku LIKE ? OR mp.product_name LIKE ?)`;
+                params.push(searchTerm, searchTerm);
             }
 
-            query += ` ORDER BY mp.product_name ASC LIMIT ?`;
-            params.push(Number(limit));
+            query += ` ORDER BY mp.product_name ASC LIMIT ${limitNum}`;
 
             dbConf.execute(query, params, (err, results) => {
                 if (err) {
