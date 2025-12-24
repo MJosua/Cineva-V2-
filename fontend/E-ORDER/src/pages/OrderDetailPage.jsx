@@ -805,7 +805,7 @@ const OrderDetailPage = () => {
                                 {
                                     orderDetails?.[0]?.so_id != null &&
                                     [2, 3, 4, 66].includes(header?.is_status) &&
-                                    !pc_condition?.includes(12) &&
+                                    !spc_condition?.includes(12) &&
                                     <>
                                         {header.notify1_name && !header.notify2_name ?
                                             <div className='col-6'>

@@ -616,7 +616,7 @@ module.exports = {
                 await transporter.sendMail({
                     from: 'no-reply@indofoodinternational.com',
                     to: emailAnalisList,
-                    cc: ['rangga.primanto@icbp.indofood.co.id', 'anisa.novitasari@icbp.indofood.co.id', 'tripomo@icbp.indofood.co.id'],
+                    cc: ['rangga.primanto@icbp.indofood.co.id', 'tripomo@icbp.indofood.co.id'],
                     bcc: ['etria.purba@icbp.indofood.co.id', 'yosua.gultom@icbp.indofood.co.id', 'muhammad.asmarakusuma@icbp.indofood.co.id'],
 
                     subject: `[E-Order] Order Submission ${po_buyer} - ${company_name} is Successful!`,
