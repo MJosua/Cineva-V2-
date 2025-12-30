@@ -123,7 +123,7 @@ where
 module.exports = {
     addTicketITSupport: async (req, res) => {
         let timestamp = magenta + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        let service_id = 7; // IT Support Request
+        let service_id = SERVICE_IDS.IT_SUPPORT; // 🔧 Refactored: was hardcoded as 7
         const { type, issue_desc } = req.body;
 
         if (req.dataToken.user_type) {
@@ -206,8 +206,7 @@ module.exports = {
 
         let date = new Date();
         let timestamp = magenta + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        // 1 === PCRequest
-        let service_id = 1;
+        let service_id = SERVICE_IDS.PC_REQUEST; // 🔧 Refactored: was hardcoded as 1
         const { job_desc, reason, laptop_spec_id, old_device, date_acquisition, old_device_spec } = req.body;
 
 
