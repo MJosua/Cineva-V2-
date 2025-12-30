@@ -17,7 +17,7 @@ const cardGenerator = require('./cardGenerator')
 
 const hotsAuth = require('./hots_controller/hotsAuth')
 const hotsAdmin = require('./hots_controller/hotsAdmin')
-const hotsTicket = require('./hots_controller/hotsTicket')
+const hotsTicket = require('./hots_controller/ticketing/controllers/ticketController'); // 🔧 Reorganized: moved under hots_controller
 const hotsSettingsController = require('./hots_controller/hotsSettingsController')
 const hotsTps = require('./hots_controller/hotsTps')
 const hotscustomfunctionController = require('./hots_controller/hotscustomfunctionController')

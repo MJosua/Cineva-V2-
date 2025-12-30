@@ -1,27 +1,27 @@
 const {
     dbHots,
     dbQueryHots,
-} = require("../../config/db");
-const { uploadFile } = require("../order");
+} = require("../../../../config/db");
+const { uploadFile } = require("../../../order");
 const path = require("path");
 const archiver = require("archiver");
 
-const FormLoader = require("../../core/form-loader");
-const workflowEngine = require("../../core/workflow-engine");
-const triggerEngine = require("../../core/trigger-engine");
+const FormLoader = require("../../../../core/form-loader");
+const workflowEngine = require("../../../../core/workflow-engine");
+const triggerEngine = require("../../../../core/trigger-engine");
 
-const hotsCheckApprovalLevel = require("../../config/hotsCheckApprovalLevel");
-// const { generateTokenHT, hashPasswordHT } = require("../config/encrypts"); 
+const hotsCheckApprovalLevel = require("../../../../config/hotsCheckApprovalLevel");
+// const { generateTokenHT, hashPasswordHT } = require("../../../../config/encrypts"); 
 
 const fs = require('fs');
-const { hotsMailer, hotsSubmitMailer, hotsApproveRequest } = require('../../service/mailer/hots/hots_mailer');
-const hotscustomfunctionController = require("./hotscustomfunctionController");
+const { hotsMailer, hotsSubmitMailer, hotsApproveRequest } = require('../../../../service/mailer/hots/hots_mailer');
+const hotscustomfunctionController = require("../../hotscustomfunctionController");
 
 // ============================================================
 // 🔧 REFACTORED IMPORTS - Using script/Utility
 // ============================================================
-const { SERVICE_IDS, STATUS_IDS, ENTITY_TYPES } = require("../../script/Utility/hotsConstants");
-const { generateID: sharedGenerateID, generateCustomTicketID: sharedGenerateCustomTicketID } = require("../../script/Utility/idGenerator");
+const { SERVICE_IDS, STATUS_IDS, ENTITY_TYPES } = require("../../../../script/Utility/hotsConstants");
+const { generateID: sharedGenerateID, generateCustomTicketID: sharedGenerateCustomTicketID } = require("../../../../script/Utility/idGenerator");
 
 
 

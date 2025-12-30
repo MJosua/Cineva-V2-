@@ -1,17 +1,20 @@
 # HOTS Refactoring Knowledge Base
 
 **Last Updated:** 2025-12-30
-**Status:** Phase 3 Complete (Utility Extraction & Function Swap)
+**Status:** Complete (Reorganized Folder Structure)
 
 ---
 
 ## 📍 Quick Reference: Where Things Are
 
-| Component | Old Location | New Location |
-|-----------|--------------|--------------|
-| ID Generation | `hotsTicket.js` (lines 35-70) | `src/shared/utils/idGenerator.js` |
-| Constants | Hardcoded in controllers | `src/shared/constants/hotsConstants.js` |
-| Email Templates | Inline in `hotsTicket.js` | `src/modules/ticketing/notifications/templates.js` |
+| Component | Location |
+|-----------|----------|
+| **Ticket Controller** | `controller/hots_controller/ticketing/controllers/ticketController.js` |
+| **Constants** | `script/Utility/hotsConstants.js` |
+| **ID Generator** | `script/Utility/idGenerator.js` |
+| **Email Templates** | `controller/hots_controller/ticketing/notifications/templates.js` |
+| **Backup Controller** | `controller/hots_controller/hotsTicket.js` (still functional) |
+| **Documentation** | `knowledge/` folder |
 
 ---
 
@@ -59,50 +62,26 @@ const ENTITY_TYPES = {
 ```javascript
 // Example
 generateID(1001, 7, 5);  // Returns: 202512301001076
-//          ↑     ↑  ↑              ↑       ↑   ↑ ↑
-//        user  svc row           date   user svc row+1
 ```
 
 ### `generateCustomTicketID(db, service_id, user_id)`
 **Purpose:** Generate custom ticket ID with running number from database.
 **Format:** `YY` + `service_id (2 digits)` + `user_id (4 digits)` + `running (4 digits)`
 
-```javascript
-// Example
-await generateCustomTicketID(dbHots, 7, 1001);  // Returns: "2507100010001"
-//                                                         ↑↑ ↑  ↑    ↑
-//                                                        YY svc user running
-```
-
 ---
 
-## 📧 Email Templates
-
-Located in: `src/modules/ticketing/notifications/templates.js`
-
-| Function | Purpose |
-|----------|---------|
-| `ticketCreatedITSupport({ fullName, timestamp })` | IT Support ticket creation email |
-| `ticketSubmitted({ fullName, service_id, ticketId, ... })` | General ticket submission confirmation |
-| `approvalRequired({ approverName, ticketId, ... })` | Email to approvers requesting action |
-| `subjects.ticketCreated(ticketId)` | Subject line for ticket creation |
-| `subjects.approvalRequired(ticketId)` | Subject line for approval request |
-
----
-
-## 🔄 How to Use New Utilities
+## 🔄 How to Use Utilities
 
 ### In Controllers:
 ```javascript
 // Import constants
-const { SERVICE_IDS, STATUS_IDS } = require("../../src/shared/constants/hotsConstants");
+const { SERVICE_IDS, STATUS_IDS } = require("../../script/Utility/hotsConstants");
 
 // Import ID generators
-const { generateID, generateCustomTicketID } = require("../../src/shared/utils/idGenerator");
+const { generateID } = require("../../script/Utility/idGenerator");
 
 // Usage
-let service_id = SERVICE_IDS.IT_SUPPORT;  // Instead of: let service_id = 7;
-let status_id = STATUS_IDS.DRAFT;         // Instead of: status_id = 0
+let service_id = SERVICE_IDS.IT_SUPPORT;  // Instead of: service_id = 7
 let ticketId = generateID(user_id, service_id, rowNumber);
 ```
 
@@ -110,60 +89,60 @@ let ticketId = generateID(user_id, service_id, rowNumber);
 
 ## ⚠️ Rollback Instructions
 
-If something breaks after refactoring:
+### If Issues Arise:
 
-### Quick Rollback (Git):
+**Option 1: Git Revert**
 ```bash
 git revert HEAD
 ```
 
-### Manual Rollback (hotsTicket.js):
-1. Find the commented block: `/* === ORIGINAL FUNCTIONS (Kept for rollback reference) ===`
-2. Uncomment the original functions
-3. Comment out or delete the wrapper lines:
+**Option 2: Use Backup Controller**
+1. Edit `controller/index.js`
+2. Change line 20 from:
    ```javascript
-   // Comment these out:
-   // const generateID = sharedGenerateID;
-   // const generateCustomTicketID = sharedGenerateCustomTicketID;
+   const hotsTicket = require('./hots_controller/ticketing/controllers/ticketController');
+   ```
+   To:
+   ```javascript
+   const hotsTicket = require('./hots_controller/hotsTicket');
    ```
 
 ---
 
-## 📊 Verification Tests
+## 🗂️ Final Folder Structure
 
-To verify ID generation still works correctly:
-```bash
-node -e "
-const { generateID } = require('./src/shared/utils/idGenerator');
-console.log('Test:', generateID(1001, 7, 5));
-// Expected: 202512301001076 (date-dependent)
-"
+```
+controller/
+└── hots_controller/
+    ├── hotsTicket.js                 # BACKUP (still works)
+    ├── hotscustomfunctionController.js
+    ├── hotsAdmin.js
+    ├── hotsAuth.js
+    ├── hotsSettingsController.js
+    └── ticketing/                    # NEW STRUCTURE
+        ├── controllers/
+        │   └── ticketController.js   # MAIN CONTROLLER
+        └── notifications/
+            └── templates.js          # Email templates
+
+script/
+└── Utility/
+    ├── hotsConstants.js              # All magic numbers
+    ├── idGenerator.js                # ID generation functions
+    └── ... (other utilities)
+
+knowledge/
+├── hots-refactoring-guide.md         # This file
+└── docs/
+    ├── architecture/                 # Architecture docs
+    └── domain/                       # Domain knowledge
 ```
 
 ---
 
-## 🗂️ Folder Structure After Refactoring
+## 📈 What's Next (Future Work)
 
-```
-src/
-├── modules/
-│   └── ticketing/
-│       └── notifications/
-│           └── templates.js       # Email templates
-└── shared/
-    ├── constants/
-    │   └── hotsConstants.js       # All magic numbers
-    └── utils/
-        └── idGenerator.js         # ID generation functions
-
-docs/
-├── architecture/                  # Architecture docs (future)
-└── domain/                        # Domain knowledge (future)
-```
-
----
-
-## 🎯 What's Next (Phase 4 - Not Yet Executed)
-
-Phase 4 involves moving `hotsTicket.js` entirely to `src/modules/ticketing/controllers/`.
-This is a **high-risk** structural change and should only be done after Phase 3 is stable in production.
+1. **Production Testing** - Deploy and verify all ticket endpoints work
+2. **Phase 5** - Apply same pattern to other HOTS controllers (hotsAdmin, hotsSettings)
+3. **Phase 6** - Create Inventory module following same structure
+4. **Phase 7** - Consolidate workflow-engine as the single approval source

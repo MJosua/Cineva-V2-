@@ -37,6 +37,10 @@ fontend/.env.*
 *.xlsx
 *.zip
 
+# SQL dumps (too large for Git, but AI can read locally)
+# tables.json and relations.json are still tracked!
+knowledge/sql/*.sql
+
 # Optional: images if you really want to exclude them
 *.jpg
 *.jpeg
@@ -55,3 +59,4 @@ Thumbs.db
 # ---------------------------
 /uploads/
 /storage/
+knowledge/sql/*.sql 
