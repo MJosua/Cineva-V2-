@@ -19,10 +19,10 @@ const hotsAuth = require('./hots_controller/auth/controllers/authController'); /
 const hotsAdmin = require('./hots_controller/admin/controllers/adminController'); // 🔧 Phase 5: Moved to module
 const hotsTicket = require('./hots_controller/ticketing/controllers/ticketController'); // 🔧 Reorganized: moved under hots_controller
 const hotsSettingsController = require('./hots_controller/settings/controllers/settingsController'); // 🔧 Phase 5: Moved to module
-const hotsTps = require('./hots_controller/hotsTps')
+const hotsTps = require('./hots_controller/tps/controllers/tpsController'); // 🔧 Phase 5: Moved to module
 const hotscustomfunctionController = require('./hots_controller/customfunction/controllers/customfunctionController'); // 🔧 Phase 5: Moved to module
-const hotsSRFController = require('./hots_controller/hotsSRFController');
-const hotsPublicController = require('./hots_controller/hotsPublicController');
+const hotsSRFController = require('./hots_controller/srf/controllers/srfController'); // 🔧 Phase 5: Moved to module
+const hotsPublicController = require('./hots_controller/public/controllers/publicController'); // 🔧 Phase 5: Moved to module
 
 
 const shortenerController = require('./shortenerController')
