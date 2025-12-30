@@ -1,0 +1,3 @@
+# Shared Constants
+Application-wide constants (Service IDs, Status Codes, etc.) will be defined here.
+No magic numbers allowed in controllers.
