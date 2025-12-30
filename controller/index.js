@@ -15,12 +15,12 @@ const cardGenerator = require('./cardGenerator')
 
 //hots 
 
-const hotsAuth = require('./hots_controller/hotsAuth')
+const hotsAuth = require('./hots_controller/auth/controllers/authController'); // 🔧 Phase 5: Moved to module
 const hotsAdmin = require('./hots_controller/admin/controllers/adminController'); // 🔧 Phase 5: Moved to module
 const hotsTicket = require('./hots_controller/ticketing/controllers/ticketController'); // 🔧 Reorganized: moved under hots_controller
 const hotsSettingsController = require('./hots_controller/settings/controllers/settingsController'); // 🔧 Phase 5: Moved to module
 const hotsTps = require('./hots_controller/hotsTps')
-const hotscustomfunctionController = require('./hots_controller/hotscustomfunctionController')
+const hotscustomfunctionController = require('./hots_controller/customfunction/controllers/customfunctionController'); // 🔧 Phase 5: Moved to module
 const hotsSRFController = require('./hots_controller/hotsSRFController');
 const hotsPublicController = require('./hots_controller/hotsPublicController');
 
@@ -40,7 +40,7 @@ const projectmngr_approval = require('./project_manager_controller/approval_cont
 const projectmngr_department = require('./project_manager_controller/department_controller')
 const projectmngr_team = require('./project_manager_controller/team_controller')
 const projectmngr_dashboard = require('./project_manager_controller/dashboard_controller');
-const hotsDashboardController = require('./hots_controller/hotsDashboardController');
+const hotsDashboardController = require('./hots_controller/dashboard/controllers/dashboardController'); // 🔧 Phase 5: Moved to module
 
 // Coupon System
 const couponController = require('./couponController');
