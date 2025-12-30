@@ -41,17 +41,14 @@ export const DiffWidget: React.FC<DiffWidgetProps> = ({ config, globalValues, se
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Determine API URL - prepend API_URL and append triggerValue
-                let apiPath = config.api_source.replace('${trigger_field}', triggerValue);
+                // Determine API URL - use query parameter instead of path segment (handles slashes in PO numbers)
+                let apiPath = config.api_source.replace('${trigger_field}', encodeURIComponent(triggerValue));
 
-                // If api_source ends with = (query param style), append value directly
-                // Otherwise append as path segment
-                if (!apiPath.includes(triggerValue)) {
-                    if (apiPath.endsWith('=')) {
-                        apiPath = `${config.api_source}${encodeURIComponent(triggerValue)}`;
-                    } else {
-                        apiPath = `${config.api_source}/${triggerValue}`;
-                    }
+                // If api_source doesn't contain the triggerValue, append it as a query parameter
+                if (!apiPath.includes(encodeURIComponent(triggerValue)) && !apiPath.includes(triggerValue)) {
+                    // Use query parameter format (safer for values with special characters like slashes)
+                    const separator = apiPath.includes('?') ? '&' : '?';
+                    apiPath = `${config.api_source}${separator}po_number=${encodeURIComponent(triggerValue)}`;
                 }
 
                 // Ensure the URL starts with API_URL

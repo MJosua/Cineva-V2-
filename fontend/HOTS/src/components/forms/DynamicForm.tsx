@@ -574,6 +574,8 @@ export const DynamicForm: React.FC<{
                                 isSubmitting={isSubmitting}
                                 setIsSubmitting={setIsSubmitting}
                                 handleUpdateRowGroup={handleUpdateRowGroup}
+                                schema={normalizedSchema}
+                                onFieldOptionsUpdate={handleFieldOptionsUpdate}
                               />
                             </div>
                           );

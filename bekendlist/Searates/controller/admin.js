@@ -1,12 +1,13 @@
 const { dbConf, dbQuery, addSqlLogger } = require("../config/db");
 const { hashPassword } = require("../config/encrypts");
 const { getEOrderEmailHtml } = require('../mailer/eorder/eorder_mailer');
-const { getNotifMailDeliverHtml } = require('../../../service/mailer/eorder/eorder_mailer');
+const { getNotifMailDeliverHtml } = require('../Utility/Notificationmailer');
 
 let blue = "\x1b[31m";
 
 module.exports = {
 
+  
   previewEOrderEmail: async (req, res) => {
     try {
       const { so_id, type } = req.params;

@@ -1,9 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DynamicField } from "./DynamicField";
 import { StructuredRowGroup } from "./StructuredRowGroup";
 import { SpecialFuncFactory } from "./specialFunc/SpecialFuncFactory";
 import { FormField, RowGroup } from "@/types/formTypes";
+import { applyFieldRules } from "@/utils/rulingSystem/applyFieldRules";
 
 interface DynamicSectionProps {
   section: any;
@@ -15,8 +16,10 @@ interface DynamicSectionProps {
   globalValues: Record<string, any>;
   setSelectedObjects: React.Dispatch<React.SetStateAction<Record<string, any>>>;
   handleUpdateRowGroup?: (groupId: string, updatedRows: any[]) => void;
-  isSubmitting?: boolean; // 🧩 NEW
-  setIsSubmitting?: React.Dispatch<React.SetStateAction<boolean>>; // 🧩 NEW
+  isSubmitting?: boolean;
+  setIsSubmitting?: React.Dispatch<React.SetStateAction<boolean>>;
+  schema?: any; // 🧩 NEW - for rule evaluation
+  onFieldOptionsUpdate?: (fieldName: string, newOptions: any[]) => void; // 🧩 NEW
 }
 
 export const DynamicSection: React.FC<DynamicSectionProps> = ({
@@ -31,12 +34,62 @@ export const DynamicSection: React.FC<DynamicSectionProps> = ({
   handleUpdateRowGroup,
   isSubmitting,
   setIsSubmitting,
+  schema,
+  onFieldOptionsUpdate,
 }) => {
   // 🧩 normalize possible nested structure
   const rawFields = section.fields || [];
   const fields = rawFields.map((f: any) => f.data ?? f); // 👈 unwrap data layer if exists
 
   const title = section.title || "Section";
+
+  // 🧩 Handle field options update (for API rule results)
+  const handleFieldOptionsUpdateInternal = useCallback(
+    (fieldName: string, newOptions: any[]) => {
+      console.log(`🧩 [DynamicSection] Updating options for ${fieldName}`, newOptions);
+      if (onFieldOptionsUpdate) {
+        onFieldOptionsUpdate(fieldName, newOptions);
+      }
+      // Also update the section's field options in config
+      setConfig((prev: any) => ({
+        ...prev,
+        items: prev.items.map((item: any) => {
+          if (item.type === "section" && item.data?.fields) {
+            return {
+              ...item,
+              data: {
+                ...item.data,
+                fields: item.data.fields.map((f: any) =>
+                  (f.name || f.data?.name) === fieldName
+                    ? { ...f, options: newOptions, data: f.data ? { ...f.data, options: newOptions } : undefined }
+                    : f
+                ),
+              },
+            };
+          }
+          return item;
+        }),
+      }));
+    },
+    [onFieldOptionsUpdate, setConfig]
+  );
+
+  // 🧩 Apply rules to fields (similar to DynamicForm.tsx)
+  const fieldsWithRules = useMemo(() => {
+    return fields.map((field: FormField) => {
+      if (!field.rules || field.rules.length === 0) return field;
+
+      const ruledField = applyFieldRules(field, {
+        globalValues,
+        selectedObjects,
+        onFieldOptionsUpdate: handleFieldOptionsUpdateInternal,
+        setGlobalValues,
+        rowContext: {},
+        schema,
+      });
+      return ruledField;
+    });
+  }, [fields, globalValues, selectedObjects, handleFieldOptionsUpdateInternal, setGlobalValues, schema]);
 
 
 
@@ -78,7 +131,7 @@ export const DynamicSection: React.FC<DynamicSectionProps> = ({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {fields.map((f: FormField | RowGroup, i: number) => {
+          {fieldsWithRules.map((f: FormField | RowGroup, i: number) => {
             const key =
               (f as FormField).name ||
               f.label?.toLowerCase()?.replace(/[^a-z0-9]/g, "_") ||

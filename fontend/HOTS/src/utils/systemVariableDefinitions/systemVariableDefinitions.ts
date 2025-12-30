@@ -176,7 +176,7 @@ export const SYSTEM_VARIABLE_ENTRIES: SystemVariableEntry[] = [
     type: 'string[]',
     description: 'Linked distributor names',
     resolve: (ctx) => {
-      if (!Array.isArray(ctx.srfsamplecategoryes)) return [];
+      if (!Array.isArray(ctx.linkeddistributors)) return [];
       return ctx.linkeddistributors.map(item => ({
         item_name: item.company_name,
         filter: item.company_id
