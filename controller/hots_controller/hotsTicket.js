@@ -17,6 +17,13 @@ const fs = require('fs');
 const { hotsMailer, hotsSubmitMailer, hotsApproveRequest } = require('../../service/mailer/hots/hots_mailer');
 const hotscustomfunctionController = require("./hotscustomfunctionController");
 
+// ============================================================
+// 🔧 REFACTORED IMPORTS (Phase 3)
+// ============================================================
+const { SERVICE_IDS, STATUS_IDS, ENTITY_TYPES } = require("../../src/shared/constants/hotsConstants");
+const { generateID: sharedGenerateID, generateCustomTicketID: sharedGenerateCustomTicketID } = require("../../src/shared/utils/idGenerator");
+
+
 const magenta = '\x1b[35m';
 
 let date = new Date();
