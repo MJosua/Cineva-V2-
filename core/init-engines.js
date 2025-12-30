@@ -1,7 +1,7 @@
 /**
  * core/init-engines.js
  *
- * Bootstraps engine subsystems: engine-loader, form-loader (light), workflow-engine, trigger-engine, document-engine.
+ * Bootstraps engine subsystems: engine-loader, form-loader (light), workflow-engine, trigger-engine, document-engine, transaction-engine.
  * Usage:
  *   const { initAll } = require('./core/init-engines');
  *   await initAll({ dbQuery: dbQueryHots, dbPool: dbHots });
@@ -14,6 +14,7 @@ const formLoader = require('./form-loader');
 const workflowEngine = require('./workflow-engine');
 const triggerEngine = require('./trigger-engine');
 const documentEngine = require('./document-engine');
+const transactionEngine = require('./transaction'); // 🆕 Transaction Engine
 
 const { dbQueryHots, dbHots } = require('../config/db');
 
@@ -40,12 +41,21 @@ async function initAll(opts = {}) {
   // init trigger engine
   triggerEngine.init({ dbQuery: dbQueryHots, engineLoader, documentEngine });
 
-
   // document engine (no DB)
   documentEngine.init({});
+
+  // 🆕 init transaction engine (wraps all other engines)
+  transactionEngine.init({
+    workflowEngine,
+    triggerEngine,
+    documentEngine,
+    engineLoader,
+    dbQuery
+  });
 
   _inited = true;
   console.log('✅ HOTS Engine Initialized!');
 }
 
-module.exports = { initAll, engineLoader, formLoader, workflowEngine, triggerEngine, documentEngine };
+module.exports = { initAll, engineLoader, formLoader, workflowEngine, triggerEngine, documentEngine, transactionEngine };
+
