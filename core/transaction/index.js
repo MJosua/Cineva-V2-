@@ -23,6 +23,8 @@ const transactionManager = require('./transaction-manager');
 
 // Import built-in transaction types
 const TicketingType = require('./types/ticketing');
+const POSType = require('./types/pos');
+const InventoryType = require('./types/inventory');
 
 // Register built-in types (will happen when module is first loaded after init)
 let _typesRegistered = false;
@@ -31,6 +33,8 @@ function registerBuiltInTypes() {
     if (_typesRegistered) return;
 
     transactionManager.registerType('ticketing', TicketingType);
+    transactionManager.registerType('pos', POSType);
+    transactionManager.registerType('inventory', InventoryType);
 
     // Future types can be registered here:
     // transactionManager.registerType('pos', POSType);
@@ -52,7 +56,7 @@ module.exports = {
 
     /**
      * Begin a new transaction
-     * @param {string} type - Transaction type ('ticketing', 'pos', etc.)
+     * @param {string} type - Transaction type ('ticketing', 'pos', 'inventory')
      * @param {object} context - Transaction context
      */
     begin: (type, context) => transactionManager.begin(type, context),

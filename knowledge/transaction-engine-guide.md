@@ -1,7 +1,7 @@
 # Transaction Engine Guide
 
 **Created:** 2025-12-30
-**Status:** Phase 1 Complete
+**Status:** Phase 2 Complete
 
 ---
 
@@ -35,52 +35,51 @@ It provides a clean API for all transaction types (Ticketing, POS, Inventory).
 
 ## Usage
 
-### Basic Transaction Flow
+### Ticketing Transaction (Full Implementation)
 
 ```javascript
-const txEngine = require('./core/transaction');
+const { transactionEngine } = require('./core/init-engines');
 
-// Begin a transaction
-const tx = await txEngine.begin('ticketing', {
+const tx = await transactionEngine.begin('ticketing', {
   user_id: 123,
   service_id: 7,
-  form_data: { title: 'IT Support Request' }
+  form_data: { title: 'IT Support Request', description: '...' },
+  company_id: 100,
+  creator_email: 'user@example.com'
 });
 
-// Commit it
 const result = await tx.commit();
-
-// Or check state
-console.log(tx.getState());
+// result: { ok: true, ticket_id: '2507012300001', workflow_steps: 2 }
 ```
 
-### Registering Custom Types
+### POS Transaction (Template)
 
 ```javascript
-const txEngine = require('./core/transaction');
-
-txEngine.registerType('pos', {
-  name: 'pos',
-  
-  async validate(context, manager) {
-    // Validate POS transaction
-    if (!context.cart_items) throw new Error('Cart required');
-    return true;
-  },
-  
-  async execute(context, manager) {
-    // Execute POS sale
-    return { order_id: 'ORD-123', total: 99.99 };
-  },
-  
-  async afterCommit(context, result, manager) {
-    // Send receipt, update inventory
-  },
-  
-  async rollback(context, result, manager) {
-    // Reverse the transaction
-  }
+const tx = await transactionEngine.begin('pos', {
+  user_id: 456,
+  cart_items: [
+    { product_id: 'SKU001', quantity: 2, price: 99.99 },
+    { product_id: 'SKU002', quantity: 1, price: 149.99 }
+  ],
+  payment_method: 'card'
 });
+
+const result = await tx.commit();
+```
+
+### Inventory Transaction (Template)
+
+```javascript
+const tx = await transactionEngine.begin('inventory', {
+  user_id: 789,
+  operation: 'receive', // receive, issue, transfer, adjust, count
+  warehouse_id: 'WH001',
+  items: [
+    { product_id: 'SKU001', quantity: 100 }
+  ]
+});
+
+const result = await tx.commit();
 ```
 
 ---
@@ -90,10 +89,22 @@ txEngine.registerType('pos', {
 ```
 core/transaction/
 ├── index.js                  # Public API
-├── transaction-manager.js    # Core facade
+├── transaction-manager.js    # Core facade (195 lines)
 └── types/
-    └── ticketing.js          # Ticketing type handler
+    ├── ticketing.js          # ✅ Full implementation (240 lines)
+    ├── pos.js                # 📝 Template (100 lines)
+    └── inventory.js          # 📝 Template (115 lines)
 ```
+
+---
+
+## Registered Types
+
+| Type | File | Status | Operations |
+|------|------|--------|------------|
+| `ticketing` | `types/ticketing.js` | ✅ Complete | create, workflow, triggers |
+| `pos` | `types/pos.js` | 📝 Template | sale, payment, receipt |
+| `inventory` | `types/inventory.js` | 📝 Template | receive, issue, transfer, adjust, count |
 
 ---
 
@@ -109,7 +120,7 @@ core/transaction/
 
 ---
 
-## Integration with init-engines.js
+## Integration
 
 The transaction engine is automatically initialized with all other engines:
 
@@ -117,23 +128,21 @@ The transaction engine is automatically initialized with all other engines:
 const { initAll, transactionEngine } = require('./core/init-engines');
 
 await initAll();
-// transactionEngine is now ready
+// transactionEngine is now ready with types: ticketing, pos, inventory
 ```
 
 ---
 
-## Built-in Types
+## Adding New Types
 
-| Type | File | Status |
-|------|------|--------|
-| `ticketing` | `types/ticketing.js` | ✅ Registered |
-| `pos` | (future) | ⬜ Planned |
-| `inventory` | (future) | ⬜ Planned |
+```javascript
+const txEngine = require('./core/transaction');
 
----
-
-## Next Steps
-
-1. **Phase 2:** Connect ticketing type to actual `engineTicket.js` logic
-2. **Phase 3:** Create POS and Inventory types
-3. **Phase 4:** Migrate controllers to use transaction engine
+txEngine.registerType('custom', {
+  name: 'custom',
+  async validate(context, manager) { /* ... */ },
+  async execute(context, manager) { /* ... */ },
+  async afterCommit(context, result, manager) { /* ... */ },
+  async rollback(context, result, manager) { /* ... */ }
+});
+```
