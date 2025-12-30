@@ -24,6 +24,7 @@ const { SERVICE_IDS, STATUS_IDS, ENTITY_TYPES } = require("../../src/shared/cons
 const { generateID: sharedGenerateID, generateCustomTicketID: sharedGenerateCustomTicketID } = require("../../src/shared/utils/idGenerator");
 
 
+
 const magenta = '\x1b[35m';
 
 let date = new Date();
@@ -32,6 +33,18 @@ let yellowTerminal = "\x1b[33m";
 
 
 
+// ============================================================
+// 🔧 REFACTORED: Using shared utilities (Phase 3)
+// Original functions commented out for reference/rollback
+// ============================================================
+
+// UNTUK GENERATE ID - Now using shared utility
+const generateID = sharedGenerateID;
+
+// UNTUK GENERATE CUSTOM TICKET ID - Now using shared utility
+const generateCustomTicketID = sharedGenerateCustomTicketID;
+
+/* === ORIGINAL FUNCTIONS (Kept for rollback reference) ===
 // UNTUK GENERATE ID
 const generateID = (user_id, service_id, row_number) => {
     const year = date.getFullYear();
@@ -68,6 +81,8 @@ async function generateCustomTicketID(db, service_id, user_id) {
 
     return `${year}${service}${user}${running}`;
 }
+=== END ORIGINAL FUNCTIONS ===*/
+
 
 // UNTUK GENERATE NOMOR BELAKANG ID
 const queryCheckTicketRow = `
