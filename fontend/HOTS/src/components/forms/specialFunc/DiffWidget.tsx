@@ -30,7 +30,31 @@ export const DiffWidget: React.FC<DiffWidgetProps> = ({ config, globalValues, se
     const [rows, setRows] = useState<DiffRow[]>([]);
 
     // Watch the trigger field (e.g., 'record_id')
-    const triggerValue = globalValues[config.trigger_field];
+    const rawTriggerValue = globalValues[config.trigger_field];
+
+    // Extract string value from object/array if needed (suggestion-insert fields can return objects or arrays)
+    const triggerValue: string | undefined = (() => {
+        if (!rawTriggerValue) return undefined;
+        if (typeof rawTriggerValue === 'string') return rawTriggerValue;
+
+        // Handle arrays - find first non-empty value
+        if (Array.isArray(rawTriggerValue)) {
+            const firstValid = rawTriggerValue.find((v: any) => {
+                if (typeof v === 'string' && v.trim()) return true;
+                if (typeof v === 'object' && v && (v.value || v.label || v.po_number)) return true;
+                return false;
+            });
+            if (!firstValid) return undefined;
+            if (typeof firstValid === 'string') return firstValid;
+            return firstValid.value || firstValid.label || firstValid.po_number || String(firstValid);
+        }
+
+        // Handle objects
+        if (typeof rawTriggerValue === 'object') {
+            return rawTriggerValue.value || rawTriggerValue.label || rawTriggerValue.po_number || String(rawTriggerValue);
+        }
+        return String(rawTriggerValue);
+    })();
 
     useEffect(() => {
         if (!triggerValue) {

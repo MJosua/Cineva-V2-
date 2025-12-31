@@ -30,6 +30,24 @@ module.exports = {
             // Use query parameter instead of path parameter (handles slashes in PO numbers)
             let po_number = req.query.po_number || req.params.po_number;
 
+            // Handle case where po_number is an array (from duplicate query params)
+            if (Array.isArray(po_number)) {
+                console.log(timestamp, '⚠️ po_number is an array:', JSON.stringify(po_number));
+                // Find the first non-empty string value
+                po_number = po_number.find(v => v && typeof v === 'string' && v.trim() !== '') || '';
+            }
+
+            // Handle case where po_number is an object (from frontend suggestion-insert field)
+            if (po_number && typeof po_number === 'object' && !Array.isArray(po_number)) {
+                console.log(timestamp, '⚠️ po_number is an object:', JSON.stringify(po_number));
+                po_number = po_number.value || po_number.label || po_number.po_number || '';
+            }
+
+            // Ensure po_number is a string before calling string methods
+            if (po_number && typeof po_number !== 'string') {
+                po_number = String(po_number);
+            }
+
             // Safety: trim leading slash if present
             if (po_number && po_number.startsWith('/')) {
                 po_number = po_number.substring(1);
