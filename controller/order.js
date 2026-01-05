@@ -1910,7 +1910,6 @@ WHERE
 
     },
     stuffingWeek: async (req, res, test = false) => {
-        let sql;
         try {
             const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
                 month: "short",
@@ -1918,128 +1917,139 @@ WHERE
                 year: "numeric",
             });
 
-            // --- CONFIG ---
+            // ===============================
+            // AUTH / CONFIG
+            // ===============================
             const company_id = test ? 101 : req?.dataToken?.company_id;
             const user_id = test ? 1098 : req?.dataToken?.user_id ?? 0;
 
+            console.log("company_id", company_id)
+            console.log("user_id", user_id)
+
             if (!req?.dataToken && !test) {
-                const msg = "Unauthorized — missing token or company_id";
-                return res.status(401).send({ success: false, message: msg });
+                return res.status(401).send({
+                    success: false,
+                    message: "Unauthorized — missing token or company_id",
+                });
             }
 
+            // ===============================
+            // CONFIG VALUES
+            // ===============================
             const getWeekLimit = (await dbQuery(`
-                SELECT value FROM m_config_new 
-                WHERE conditions = 9 
-                  AND company_id = ${company_id}
-                  AND active = 1
-            `))[0];
+            SELECT value 
+            FROM m_config_new 
+            WHERE conditions = 9
+              AND company_id = ${company_id}
+              AND active = 1
+            LIMIT 1
+        `))[0];
 
             const getWeekBlock = await dbQuery(`
-                SELECT value FROM m_config_new
-                WHERE conditions = 21
-                  AND (company_id = ${company_id} OR company_id = 100)
-                  AND active = 1
-            `);
+            SELECT value 
+            FROM m_config_new
+            WHERE conditions = 21
+              AND (company_id = ${company_id} OR company_id = 100)
+              AND active = 1
+        `);
 
             const blockedWeeks = getWeekBlock.map(r => Number(r.value));
             const weekLimit = getWeekLimit ? Number(getWeekLimit.value) : 13;
 
-            // --- TODAY OPCAL ID ---
+            // ===============================
+            // TODAY / CURRENT WEEK
+            // ===============================
             const todayOpcal = await dbQuery(`
-                SELECT opcal_id FROM dat_operational_calendar
-                WHERE DATE(FROM_UNIXTIME(opcal_id * 100)) = CURDATE()
-                LIMIT 1
-            `);
+        SELECT opcal_id 
+            FROM dat_operational_calendar
+            WHERE DATE(FROM_UNIXTIME(CONCAT(opcal_id, '00'))) = CURDATE()
+            LIMIT 1
+        `);
+
             const todayCalId = todayOpcal[0]?.opcal_id ?? null;
 
-            // --- GET CURRENT WEEK NUMBER ---
-            const todayWeekRow = await dbQuery(`
-                SELECT week FROM dat_operational_calendar
+            const todayWeekRow = todayCalId
+                ? await dbQuery(`
+                SELECT week 
+                FROM dat_operational_calendar
                 WHERE opcal_id = ${todayCalId}
                 LIMIT 1
-            `);
+            `)
+                : [];
 
             const currentWeek = todayWeekRow[0]?.week ?? 0;
 
             // ===============================
-            // FIXED SQL → UNIQUE NEXT YEAR WEEKS ONLY
+            // YEAR RANGE (CURRENT + NEXT)
             // ===============================
-            const nextYear = new Date().getFullYear() + 1;
-
-            const deliveryData = await dbQuery(`
-                SELECT 
-                    week,
-                    MIN(opcal_id) AS first_opcal
-                FROM dat_operational_calendar
-                WHERE year = ${nextYear}
-                  AND factory_id = 1
-                  AND product_type_id = 256
-                GROUP BY week
-                ORDER BY first_opcal
-            `);
+            const currentYear = new Date().getFullYear();
+            const years = [currentYear, currentYear + 1];
 
             // ===============================
-            // COMPUTE START WEEK = currentWeek + 5
+            // GET UNIQUE WEEKS (BOTH YEARS)
+            // ===============================
+            const calendarData = await dbQuery(`
+            SELECT 
+                year,
+                week,
+                MIN(opcal_id) AS first_opcal
+            FROM dat_operational_calendar
+            WHERE year IN (${years.join(",")})
+              AND factory_id = 1
+              AND product_type_id = 256
+            GROUP BY year, week
+            ORDER BY year, first_opcal
+        `);
+
+            if (!calendarData.length) {
+                return res.status(200).send({ success: true, weeksList: [] });
+            }
+
+            // ===============================
+            // START WEEK = currentWeek + 5
             // ===============================
             let startWeek = currentWeek + 5;
             if (startWeek > 52) startWeek -= 52;
 
-            // rotate list so it starts from startWeek
-            let weeks = deliveryData.map(r => r.week);
+            // ===============================
+            // SORT & ROTATE WEEKS
+            // ===============================
+            const orderedWeeks = calendarData
+                .sort((a, b) => {
+                    if (a.year !== b.year) return a.year - b.year;
+                    return a.week - b.week;
+                });
 
             let rotated = [
-                ...weeks.filter(w => w >= startWeek),
-                ...weeks.filter(w => w < startWeek)
+                ...orderedWeeks.filter(w => w.week >= startWeek),
+                ...orderedWeeks.filter(w => w.week < startWeek),
             ];
 
-            // remove blocked
-            rotated = rotated.filter(w => !blockedWeeks.includes(w));
-
-            // apply weekLimit
+            // ===============================
+            // APPLY BLOCK + LIMIT
+            // ===============================
+            rotated = rotated.filter(w => !blockedWeeks.includes(w.week));
             rotated = rotated.slice(0, weekLimit);
 
             // ===============================
-            // BUILD WEEK DATE OUTPUT
+            // BUILD RESPONSE
             // ===============================
             const weeksList = [];
 
-            for (const w of rotated) {
-                const row = await dbQuery(`
-                    SELECT opcal_id
-                    FROM dat_operational_calendar
-                    WHERE year = ${nextYear}
-                      AND week = ${w}
-                      AND factory_id = 1
-                      AND product_type_id = 256
-                    ORDER BY opcal_id
-                    LIMIT 1
-                `);
+            for (let i = 0; i < rotated.length; i++) {
+                const curr = rotated[i];
+                const next = rotated[i + 1];
 
-                const opcal_id = row[0]?.opcal_id ?? null;
-                if (!opcal_id) continue;
-
-                const minDateObj = new Date(opcal_id * 100 * 1000);
-                if (minDateObj.getDay() === 0) minDateObj.setDate(minDateObj.getDate() + 1);
+                const minDateObj = new Date(curr.first_opcal * 1000);
+                if (minDateObj.getDay() === 0) {
+                    minDateObj.setDate(minDateObj.getDate() + 1);
+                }
 
                 const minDate = DATE_FORMATTER.format(minDateObj);
 
-                // next week
-                let nextWeek = w === 52 ? 1 : w + 1;
-
-                const nextRow = await dbQuery(`
-                    SELECT opcal_id
-                    FROM dat_operational_calendar
-                    WHERE year = ${nextYear}
-                      AND week = ${nextWeek}
-                      AND factory_id = 1
-                      AND product_type_id = 256
-                    ORDER BY opcal_id
-                    LIMIT 1
-                `);
-
                 let maxDateObj;
-                if (nextRow.length > 0) {
-                    maxDateObj = new Date(nextRow[0].opcal_id * 100 * 1000);
+                if (next) {
+                    maxDateObj = new Date(next.first_opcal * 1000);
                     maxDateObj.setDate(maxDateObj.getDate() - 1);
                 } else {
                     maxDateObj = new Date(minDateObj);
@@ -2049,21 +2059,29 @@ WHERE
                 const maxDate = DATE_FORMATTER.format(maxDateObj);
 
                 weeksList.push({
-                    opcal_id,
-                    id: `${nextYear}${String(w).padStart(2, "0")}`,
-                    year: nextYear,
-                    week: w,
+                    opcal_id: curr.first_opcal,
+                    id: `${curr.year}${String(curr.week).padStart(2, "0")}`,
+                    year: curr.year,
+                    week: curr.week,
                     startingDate: minDate,
-                    endingDate: maxDate
+                    endingDate: maxDate,
                 });
             }
 
-            return res.status(200).send({ success: true, weeksList });
+            return res.status(200).send({
+                success: true,
+                weeksList,
+            });
 
         } catch (err) {
-            return res.status(500).send({ success: false, message: err.message });
+            console.error(err);
+            return res.status(500).send({
+                success: false,
+                message: err.message,
+            });
         }
     }
+
 
     , getOrder_id: async (req, res) => {
 

@@ -69,3 +69,5 @@ export const ReportService: React.FC = () => {
     </div>
   );
 };
+
+export default ReportService;

@@ -33,6 +33,7 @@ import SystemSettings from "./pages/admin/SystemSettings";
 import CustomFunctionManagement from "./pages/admin/CustomFunctionManagement";
 import FunctionLogsManagement from "./pages/admin/FunctionLogsManagement";
 import AdminGuide from "./pages/admin/AdminGuide";
+import TriggerFunctionManager from "./pages/admin/TriggerFunctionManager";
 
 // Other
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -132,6 +133,7 @@ const AppContentInner = () => {
           <Route path="/admin/settings" element={<ProtectedRoute><SystemSettings /></ProtectedRoute>} />
           <Route path="/admin/custom-functions" element={<ProtectedRoute><CustomFunctionManagement /></ProtectedRoute>} />
           <Route path="/admin/function-logs" element={<ProtectedRoute><FunctionLogsManagement /></ProtectedRoute>} />
+          <Route path="/admin/api-builder" element={<ProtectedRoute><AppLayout><TriggerFunctionManager /></AppLayout></ProtectedRoute>} />
           <Route path="/admin/guide" element={<ProtectedRoute><AdminGuide /></ProtectedRoute>} />
 
           {/* ✅ Dynamic Service Routes (generated from catalog) */}

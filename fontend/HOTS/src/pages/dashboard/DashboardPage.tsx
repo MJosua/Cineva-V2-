@@ -31,7 +31,7 @@ const DashboardPage: React.FC = () => {
         dispatch(fetchDashboardFunctions());
     }, [dispatch]);
 
-    // Fetch summaries for dashboard functions with related_service_id
+    // Fetch summaries for each dashboard function using new card_summary endpoint
     useEffect(() => {
         const fetchSummaries = async () => {
             if (!data || data.length === 0) return;
@@ -42,35 +42,29 @@ const DashboardPage: React.FC = () => {
             setSummaryLoading(true);
             const newSummaries: Record<number, ServiceSummary> = {};
 
-            // Get unique service IDs that need summaries
-            const serviceIds = new Set<number>();
-            data.forEach(func => {
-                if (func.related_service_id) {
-                    serviceIds.add(func.related_service_id);
-                }
-            });
-
-            // Fetch summaries in parallel
+            // Fetch card summary for each function in parallel
             await Promise.all(
-                Array.from(serviceIds).map(async (serviceId) => {
+                data.map(async (func) => {
                     try {
                         const res = await axios.get(
-                            `${API_URL}/hotsdashboard/service_summary/${serviceId}`,
+                            `${API_URL}/hotsdashboard/card_summary/${func.id}`,
                             { headers: { Authorization: `Bearer ${token}` } }
                         );
-                        if (res.data.success) {
-                            newSummaries[serviceId] = {
-                                total: res.data.kpis.total,
-                                pending: res.data.kpis.pending,
-                                approved: res.data.kpis.approved,
-                                rejected: res.data.kpis.rejected,
-                                trend: res.data.kpis.trend,
-                                trendDirection: res.data.kpis.trendDirection,
-                                sparklineData: res.data.sparklineData || []
+                        if (res.data.success && res.data.data) {
+                            const d = res.data.data;
+                            newSummaries[func.id] = {
+                                total: d.total,
+                                pending: d.pending,
+                                approved: d.approved,
+                                rejected: d.rejected,
+                                trend: d.trend || 0,
+                                trendDirection: d.trendDirection || 'neutral',
+                                sparklineData: d.sparklineData || []
                             };
                         }
+                        // If data is null (static type or no config), don't add to summaries
                     } catch (err) {
-                        console.warn(`Failed to fetch summary for service ${serviceId}:`, err);
+                        console.warn(`Failed to fetch summary for function ${func.id}:`, err);
                     }
                 })
             );
@@ -89,12 +83,11 @@ const DashboardPage: React.FC = () => {
         acc[category].push(func);
         return acc;
     }, {});
-
+ 
     // Transform API summary to card summary format
     const getCardSummary = (func: typeof data[0]) => {
-        if (!func.related_service_id) return undefined;
-
-        const summary = summaries[func.related_service_id];
+        // Look up by function ID (not service ID anymore)
+        const summary = summaries[func.id];
         if (!summary) return undefined;
 
         return {

@@ -268,21 +268,20 @@ module.exports = {
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
         try {
-            const { year, type, distributor, country, page = 1, limit = 50 } = req.query;
+            const { year, type, distributor, country, category, page = 1, limit = 50 } = req.query;
 
             const pageNum = Math.max(Number(page) || 1, 1);
             const limitNum = Math.min(Math.max(Number(limit) || 50, 1), 1000);
             const offset = (pageNum - 1) * limitNum;
 
-            // Query with LEFT JOIN to t_ticket_work_data for Color and Remarks
-            // Use COALESCE to prefer work_data values over view values (if view already has these columns)
-            // Explicitly list columns to avoid duplicate column name error
+            // Base SQL - VIEW columns + custom work_data columns
             let sql = `
             SELECT 
                 sr.\`SRF No.\`,
                 sr.\`Year\`,
                 sr.\`Tgl Email SRF\`,
                 sr.\`Requester\`,
+                sr.\`Deliver To\`,
                 sr.\`Distributor\`,
                 sr.\`Country\`,
                 sr.\`Purpose\`,
@@ -292,30 +291,52 @@ module.exports = {
                 sr.\`PO Req\`,
                 sr.\`Week\`,
                 sr.\`Declare on Shipping Docs\`,
+                sr.\`Request Detail\`,
+                sr.\`Reason\`,
                 sr.\`Item Name\`,
                 sr.\`Material Code\`,
                 sr.\`Product\`,
                 sr.\`QTY Req\`,
                 sr.\`Satuan\`,
+                sr.\`Lead Time Approval (Factory)\`,
                 sr.\`Status ID\`,
+                sr.\`Status\`,
                 sr.\`Tanggal Created\`,
+                sr.\`Last Update\`,
                 sr.ticket_id,
                 sr.detail_id,
-                COALESCE(color_wd.field_value, sr.Color) as Color,
-                COALESCE(remarks_wd.field_value, sr.Remarks) as Remarks
+                sr.Color,
+                sr.Remarks,
+                wd_dest.field_value as \`Destination\`,
+                wd_weekrdd.field_value as \`Week RDD\`,
+                wd_qtyact.field_value as \`QTY Act\`,
+                wd_qtyout.field_value as \`Qty Outstanding\`,
+                wd_stuffing.field_value as \`Realisasi Stuffing\`,
+                wd_oasys.field_value as \`OASYS\`
             FROM hots.srf_report sr
-            LEFT JOIN hots.t_ticket_work_data color_wd 
-                ON sr.\`SRF No.\` = color_wd.ticket_id 
-                AND color_wd.field_name = 'Color'
-                AND color_wd.data_type = 'report'
-            LEFT JOIN hots.t_ticket_work_data remarks_wd 
-                ON sr.\`SRF No.\` = remarks_wd.ticket_id 
-                AND remarks_wd.field_name = 'Remarks'
-                AND remarks_wd.data_type = 'report'
+            LEFT JOIN hots.t_ticket_work_data wd_dest 
+                ON sr.ticket_id = wd_dest.ticket_id AND sr.detail_id = wd_dest.entity_id
+                AND wd_dest.field_name = 'Destination'
+            LEFT JOIN hots.t_ticket_work_data wd_weekrdd 
+                ON sr.ticket_id = wd_weekrdd.ticket_id AND sr.detail_id = wd_weekrdd.entity_id
+                AND wd_weekrdd.field_name = 'Week RDD'
+            LEFT JOIN hots.t_ticket_work_data wd_qtyact 
+                ON sr.ticket_id = wd_qtyact.ticket_id AND sr.detail_id = wd_qtyact.entity_id
+                AND wd_qtyact.field_name = 'QTY Act'
+            LEFT JOIN hots.t_ticket_work_data wd_qtyout 
+                ON sr.ticket_id = wd_qtyout.ticket_id AND sr.detail_id = wd_qtyout.entity_id
+                AND wd_qtyout.field_name = 'Qty Outstanding'
+            LEFT JOIN hots.t_ticket_work_data wd_stuffing 
+                ON sr.ticket_id = wd_stuffing.ticket_id AND sr.detail_id = wd_stuffing.entity_id
+                AND wd_stuffing.field_name = 'Realisasi Stuffing'
+            LEFT JOIN hots.t_ticket_work_data wd_oasys 
+                ON sr.ticket_id = wd_oasys.ticket_id AND sr.detail_id = wd_oasys.entity_id
+                AND wd_oasys.field_name = 'OASYS'
             WHERE 1 = 1
           `;
             const params = [];
 
+            // Apply Filters
             if (year) {
                 sql += ` AND YEAR(sr.\`Tgl Email SRF\`) = ?`;
                 params.push(year);
@@ -333,35 +354,44 @@ module.exports = {
                 params.push(`%${country}%`);
             }
 
-            // Count total first (need to use subquery for the joined result)
-            const countSql = `SELECT COUNT(*) as total FROM (${sql}) as tmp`;
-            const [countRows] = await dbHots.promise().query(countSql, params);
-            const total = countRows[0].total;
+            // RM vs FG Filter
+            if (category === 'RM') {
+                sql += ` AND sr.\`Sample Category\` LIKE 'RM -%'`;
+            } else if (category === 'FG') {
+                sql += ` AND sr.\`Sample Category\` LIKE 'FG -%'`;
+            }
 
-            // Apply pagination
+            // 1. Calculate Global Stats (Total, Pending, Approved, Rejected)
+            // We use the same WHERE clause but wrap it to count by status
+            const statsSql = `
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN \`Status ID\` IN (1,2,3) THEN 1 ELSE 0 END) as pending,
+                    SUM(CASE WHEN \`Status ID\` = 6 THEN 1 ELSE 0 END) as approved,
+                    SUM(CASE WHEN \`Status ID\` = 7 THEN 1 ELSE 0 END) as rejected
+                FROM (${sql}) as tmp
+            `;
+
+            const [statsRows] = await dbHots.promise().query(statsSql, params);
+            const stats = statsRows[0] || { total: 0, pending: 0, approved: 0, rejected: 0 };
+
+            // 2. Fetch Paginated Data
             sql += ` ORDER BY sr.\`Tgl Email SRF\` DESC, sr.\`SRF No.\` ASC LIMIT ?, ?`;
             params.push(Number(offset), Number(limitNum));
 
             const [rows] = await dbHots.promise().query(sql, params);
 
-            console.log(timestamp, `GET SRF REPORT SUCCESS | Rows: ${rows.length}/${total}`);
-
-
-            if (rows.length === 0) {
-                console.log(timestamp, "SRF REPORT — No results found");
-                return res.json({
-                    success: true,
-                    total,
-                    page: Number(page),
-                    limit: Number(limit),
-                    results: [],
-                    message: "No SRF data found for given filters."
-                });
-            }
+            console.log(timestamp, `GET SRF REPORT SUCCESS | Rows: ${rows.length}/${stats.total} | Category: ${category || 'All'}`);
 
             res.json({
                 success: true,
-                total,
+                total: stats.total,
+                stats: {
+                    total: stats.total,
+                    pending: Number(stats.pending) || 0,
+                    approved: Number(stats.approved) || 0,
+                    rejected: Number(stats.rejected) || 0
+                },
                 page: Number(pageNum),
                 limit: Number(limitNum),
                 results: rows,
@@ -772,6 +802,161 @@ module.exports = {
 
         } catch (err) {
             console.error("Error fetching dashboard panels:", err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    },
+
+    /**
+     * GET /hotsdashboard/card_summary/:function_id
+     * Returns summary data for a dashboard card based on its card_config
+     * Supports: ticket (from t_ticket), custom endpoint, static (no data)
+     */
+    getCardSummary: async (req, res) => {
+        try {
+            const { function_id } = req.params;
+
+            // 1. Get function with card_config
+            const [funcRows] = await dbHots.promise().query(`
+                SELECT id, title, card_config, related_service_id 
+                FROM m_dashboard_function 
+                WHERE id = ?
+            `, [function_id]);
+
+            if (!funcRows.length) {
+                return res.status(404).json({ success: false, error: 'Dashboard function not found' });
+            }
+
+            const func = funcRows[0];
+            let config = {};
+
+            // Parse card_config JSON
+            if (func.card_config) {
+                try {
+                    config = typeof func.card_config === 'string'
+                        ? JSON.parse(func.card_config)
+                        : func.card_config;
+                } catch (e) {
+                    console.warn('Invalid card_config JSON:', e);
+                }
+            }
+
+            // 2. Handle different config types
+            const configType = config.type || 'ticket'; // default to ticket
+
+            // STATIC type - no data needed
+            if (configType === 'static') {
+                return res.json({
+                    success: true,
+                    type: 'static',
+                    data: null
+                });
+            }
+
+            // TICKET type - fetch from t_ticket
+            if (configType === 'ticket') {
+                const serviceId = config.serviceId || func.related_service_id;
+
+                if (!serviceId) {
+                    return res.json({
+                        success: true,
+                        type: 'ticket',
+                        data: null // No service configured
+                    });
+                }
+
+                // Get ticket stats
+                const [statsRows] = await dbHots.promise().query(`
+                    SELECT 
+                        COUNT(*) as total,
+                        SUM(CASE WHEN status_id IN (1,2,3) THEN 1 ELSE 0 END) as pending,
+                        SUM(CASE WHEN status_id = 6 THEN 1 ELSE 0 END) as approved,
+                        SUM(CASE WHEN status_id = 7 THEN 1 ELSE 0 END) as rejected
+                    FROM t_ticket 
+                    WHERE service_id = ?
+                    AND YEAR(creation_date) = YEAR(CURRENT_DATE)
+                `, [serviceId]);
+
+                // Get trend (compare to last month)
+                const [trendRows] = await dbHots.promise().query(`
+                    SELECT 
+                        (SELECT COUNT(*) FROM t_ticket 
+                         WHERE service_id = ? 
+                         AND YEAR(creation_date) = YEAR(CURRENT_DATE) 
+                         AND MONTH(creation_date) = MONTH(CURRENT_DATE)) as thisMonth,
+                        (SELECT COUNT(*) FROM t_ticket 
+                         WHERE service_id = ? 
+                         AND creation_date >= DATE_SUB(DATE_FORMAT(CURRENT_DATE, '%Y-%m-01'), INTERVAL 1 MONTH)
+                         AND creation_date < DATE_FORMAT(CURRENT_DATE, '%Y-%m-01')) as lastMonth
+                `, [serviceId, serviceId]);
+
+                const thisMonth = trendRows[0]?.thisMonth || 0;
+                const lastMonth = trendRows[0]?.lastMonth || 1;
+                const trend = lastMonth > 0 ? Math.round(((thisMonth - lastMonth) / lastMonth) * 100) : 0;
+
+                // Get sparkline data (last 7 days)
+                const [sparkRows] = await dbHots.promise().query(`
+                    SELECT DATE(creation_date) as date, COUNT(*) as value
+                    FROM t_ticket 
+                    WHERE service_id = ?
+                    AND creation_date >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+                    GROUP BY DATE(creation_date)
+                    ORDER BY date
+                `, [serviceId]);
+
+                return res.json({
+                    success: true,
+                    type: 'ticket',
+                    data: {
+                        total: statsRows[0]?.total || 0,
+                        pending: statsRows[0]?.pending || 0,
+                        approved: statsRows[0]?.approved || 0,
+                        rejected: statsRows[0]?.rejected || 0,
+                        trend: trend,
+                        trendDirection: trend > 3 ? 'up' : trend < -3 ? 'down' : 'neutral',
+                        sparklineData: sparkRows.map(r => ({ value: r.value }))
+                    }
+                });
+            }
+
+            // EORDER type - fetch from iod.m_order
+            if (configType === 'eorder') {
+                const { dbConf } = require("../../config/db");
+
+                try {
+                    const [orderStats] = await dbConf.promise().query(`
+                        SELECT 
+                            COUNT(*) as total,
+                            SUM(CASE WHEN order_status IN ('pending', 'confirmed') THEN 1 ELSE 0 END) as pending,
+                            SUM(CASE WHEN order_status = 'delivered' THEN 1 ELSE 0 END) as completed,
+                            SUM(CASE WHEN order_status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
+                        FROM iod.m_order
+                        WHERE YEAR(creation_date) = YEAR(CURRENT_DATE)
+                    `);
+
+                    return res.json({
+                        success: true,
+                        type: 'eorder',
+                        data: {
+                            total: orderStats[0]?.total || 0,
+                            pending: orderStats[0]?.pending || 0,
+                            approved: orderStats[0]?.completed || 0,
+                            rejected: orderStats[0]?.cancelled || 0,
+                            trend: 0,
+                            trendDirection: 'neutral',
+                            sparklineData: []
+                        }
+                    });
+                } catch (err) {
+                    console.warn('E-Order query failed:', err.message);
+                    return res.json({ success: true, type: 'eorder', data: null });
+                }
+            }
+
+            // Unknown type - return null
+            return res.json({ success: true, type: configType, data: null });
+
+        } catch (err) {
+            console.error("Error fetching card summary:", err);
             res.status(500).json({ success: false, error: err.message });
         }
     }

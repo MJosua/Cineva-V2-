@@ -64,8 +64,8 @@ const Registerpage = () => {
     if (!formData.password) newErrors.password = "Password is required";
     if (!formData.confirmPassword) newErrors.confirmPassword = "Confirm password is required";
     if (!formData.department) newErrors.department = "Department is required";
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-      newErrors.email = "Enter a valid email";
+    if (formData.email && !/^[a-zA-Z0-9._%+-]+@icbp\.indofood\.co\.id$/.test(formData.email))
+      newErrors.email = "Enter a valid @icbp.indofood.co.id email";
     if (formData.password && formData.password.length < 6)
       newErrors.password = "Password must be at least 6 characters";
     if (formData.password !== formData.confirmPassword)
@@ -80,7 +80,7 @@ const Registerpage = () => {
       try {
         const res = await axios.get(`${API_URL}/hots/public/departments`);
 
-        console.log("res",res)
+        console.log("res", res)
 
         setDepartments(res.data.data || []);
       } catch {
@@ -94,7 +94,7 @@ const Registerpage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-  
+
     setIsLoading(true);
     try {
       const payload = {
@@ -105,9 +105,9 @@ const Registerpage = () => {
         password: formData.password,
         department_id: formData.department,
       };
-  
+
       const res = await axios.post(`${API_URL}/hots_auth/register`, payload);
-  
+
       if (res.data.success) {
         toast({
           title: "Registration Successful",
@@ -196,9 +196,10 @@ const Registerpage = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   className={`pl-10 ${errors.email ? "border-red-500" : ""}`}
-                  placeholder="john.doe@company.com"
+                  placeholder="yourname@icbp.indofood.co.id"
                 />
               </div>
+              <p className="text-gray-500 text-xs mt-1">Please use your Indofood email (@icbp.indofood.co.id)</p>
               {errors.email && (
                 <p className="text-red-500 text-xs mt-1">{errors.email}</p>
               )}

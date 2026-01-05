@@ -11,15 +11,30 @@ const GenericReportPanel = React.lazy(() => import('./panels/GenericReportPanel'
 const CMSPanel = React.lazy(() => import('./panels/CMSPanel'));
 const ChartPanel = React.lazy(() => import('./panels/ChartPanel'));
 
-// Dynamic component loader - loads from pages/dashboard/report/{component_key}.tsx
-// No hardcoding needed! Just name your file to match component_key in database
+// EXPLICIT COMPONENT REGISTRY - Required for production builds
+// Dynamic imports with variables don't work in Vite production builds,
+// so we must explicitly list all custom components here
+const CUSTOM_COMPONENT_REGISTRY: Record<string, React.LazyExoticComponent<React.ComponentType<any>>> = {
+    'srf_report': React.lazy(() => import('./report/srf_report')),
+    'EOrderReporting': React.lazy(() => import('./report/EOrderReporting')),
+    'JobListPage': React.lazy(() => import('./report/JobListPage')),
+    'DefaultDashboard': React.lazy(() => import('./report/DefaultDashboard')),
+    'ReportPublic': React.lazy(() => import('./report/ReportPublic')),
+    'ReportService': React.lazy(() => import('./report/ReportService')),
+    'WorkflowSummary': React.lazy(() => import('./report/WorkflowSummary')),
+};
+
+// Dynamic component loader - looks up from registry for production compatibility
 const loadCustomComponent = (componentKey: string) => {
-    return React.lazy(() =>
-        import(`./report/${componentKey}`).catch(() => {
-            console.error(`Custom panel component not found: ./report/${componentKey}`);
-            return { default: () => <div className="p-4 text-red-500">Component "{componentKey}" not found</div> };
-        })
-    );
+    const Component = CUSTOM_COMPONENT_REGISTRY[componentKey];
+    if (Component) {
+        return Component;
+    }
+    // Fallback for development (won't work in production for unlisted components)
+    console.error(`Custom panel component not found in registry: ${componentKey}`);
+    return React.lazy(() => Promise.resolve({
+        default: () => <div className="p-4 text-red-500">Component "{componentKey}" not found. Add it to CUSTOM_COMPONENT_REGISTRY.</div>
+    }));
 };
 
 interface PanelContentProps {

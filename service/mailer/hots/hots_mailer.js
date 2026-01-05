@@ -786,5 +786,80 @@ module.exports = {
         }
     },
 
+    hotsRequestUserApprovalMailer: async (leaderEmail, draftDetails) => {
+        let date = new Date();
+        let timestamp = date.toLocaleDateString("id") + " " + date.toLocaleTimeString("id") + " : ";
+
+        // Link to the approval page (or dashboard)
+        const approvalLink = `${process.env.FE_URL_HOTS}/admin/user-approvals`;
+
+        const htmlContent = `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+            <h2>New User Registration Pending Approval</h2>
+            <p>Dear Department Leader,</p>
+            <p>A new user has registered and verified their email. They are waiting for your approval to join your department.</p>
+            
+            <table style="border-collapse: collapse; margin: 20px 0;">
+                <tr><th style="text-align:left; padding: 8px;">Name</th><td style="padding: 8px;">: ${draftDetails.firstname} ${draftDetails.lastname}</td></tr>
+                <tr><th style="text-align:left; padding: 8px;">Email</th><td style="padding: 8px;">: ${draftDetails.email}</td></tr>
+                <tr><th style="text-align:left; padding: 8px;">Username</th><td style="padding: 8px;">: ${draftDetails.uid}</td></tr>
+            </table>
+
+            <p>Please review and approve this request:</p>
+            <div style="margin: 20px 0;">
+                <a href="${approvalLink}" style="background-color:#007bff; color:#fff; padding:10px 20px; text-decoration:none; border-radius:5px;">
+                    Review Request
+                </a>
+            </div>
+             <p>If the button doesn’t work, visit: ${approvalLink}</p>
+        </div>`;
+
+        try {
+            const info = await transporter.sendMail({
+                from: mailaccount,
+                to: leaderEmail,
+                subject: `[HOTS] New User Registration - Action Required`,
+                html: htmlContent,
+            });
+            console.log(`${timestamp} ✅ Approval request email sent to Leader: ${leaderEmail}`);
+        } catch (error) {
+            console.error(`${timestamp} ❌ ERROR sending approval mail to ${leaderEmail}`, error);
+        }
+    },
+
+    hotsWelcomeMailer: async (userEmail, firstname) => {
+        let date = new Date();
+        let timestamp = date.toLocaleDateString("id") + " " + date.toLocaleTimeString("id") + " : ";
+        const loginLink = `${process.env.FE_URL_HOTS}/login`;
+
+        const htmlContent = `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+            <h2>Welcome to HOTS!</h2>
+            <p>Dear ${firstname},</p>
+            <p>Congratulations! Your registration has been <strong>approved</strong> by your Department Leader.</p>
+            <p>You have been successfully assigned to your department and can now access all features of the HOTS system.</p>
+            
+            <div style="margin: 20px 0;">
+                <a href="${loginLink}" style="background-color:#28a745; color:#fff; padding:10px 20px; text-decoration:none; border-radius:5px;">
+                    Login to HOTS
+                </a>
+            </div>
+            
+            <p>Best regards,<br><strong>HOTS Team</strong></p>
+        </div>`;
+
+        try {
+            const info = await transporter.sendMail({
+                from: mailaccount,
+                to: userEmail,
+                subject: `[HOTS] Registration Approved - Welcome!`,
+                html: htmlContent,
+            });
+            console.log(`${timestamp} ✅ Welcome email sent to ${userEmail}`);
+        } catch (error) {
+            console.error(`${timestamp} ❌ ERROR sending welcome mail to ${userEmail}`, error);
+        }
+    },
+
 
 }

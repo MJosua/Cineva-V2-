@@ -133,6 +133,7 @@ class TriggerEngine {
 
   async _action_executeFunction(context, params) {
     // Execute a JavaScript function from trigger-functions directory
+    // OR from m_service_trigger_function table (for SQL-based functions)
     // params = { function: 'publishJobListing', args: { ticketId: ':ticketId' } }
 
     const functionName = params.function || params.name;
@@ -155,10 +156,95 @@ class TriggerEngine {
         }
       }
 
-      // Try to load the function from trigger-functions directory
+      // NEW: First try to lookup from m_service_trigger_function table
+      try {
+        const fnRows = await this.dbQuery(
+          'SELECT * FROM m_service_trigger_function WHERE function_key = ? AND is_active = 1',
+          [functionName]
+        );
+
+        if (fnRows && fnRows.length > 0) {
+          const fnConfig = fnRows[0];
+          console.log(`🔍 [TRIGGER][FUNC] Found function in database: ${functionName} (type: ${fnConfig.function_type})`);
+
+          // Handle SQL type functions - execute stored query WITH SAFETY VALIDATION
+          if (fnConfig.function_type === 'sql' && fnConfig.sql_query) {
+            console.log(`🔍 [TRIGGER][SQL] Executing SQL function: ${functionName}`);
+
+            // Load safety validator
+            const SqlSafetyValidator = require('./sql-safety-validator');
+            const validator = new SqlSafetyValidator();
+
+            // Validate the SQL query
+            const validation = validator.validate(fnConfig.sql_query);
+            if (!validation.valid) {
+              console.error(`❌ [TRIGGER][SQL] Query validation failed for "${functionName}":`);
+              validation.errors.forEach(err => console.error(`   - ${err}`));
+
+              // Log the failed attempt
+              try {
+                await this.dbQuery(
+                  `INSERT INTO t_trigger_warnings (ticket_id, warning_type, trigger_chain, created_at)
+                   VALUES (?, 'sql_validation_failed', ?, NOW())`,
+                  [context.ticketId || null, JSON.stringify({ function: functionName, errors: validation.errors })]
+                );
+              } catch (logErr) { /* ignore logging errors */ }
+
+              return {
+                ok: false,
+                error: `SQL validation failed: ${validation.errors.join('; ')}`
+              };
+            }
+
+            console.log(`✅ [TRIGGER][SQL] Query validation passed for "${functionName}"`);
+
+            // Parse and resolve SQL parameters
+            let sqlParamDefs = [];
+            try {
+              sqlParamDefs = fnConfig.sql_params ? JSON.parse(fnConfig.sql_params) : [];
+            } catch (e) {
+              console.warn(`⚠️ [TRIGGER][SQL] Failed to parse sql_params, using empty array`);
+            }
+
+            // Resolve parameters from context, with sanitization
+            const resolvedSqlParams = sqlParamDefs.map(p => {
+              let value;
+              if (typeof p === 'string' && p.startsWith(':')) {
+                const key = p.substring(1);
+                value = context[key] ?? context.values?.[key] ?? resolvedArgs[key] ?? null;
+              } else if (typeof p === 'object' && p.name) {
+                // Object format: { name: 'ticketId', type: 'string', default: null }
+                const key = p.name;
+                value = context[key] ?? context.values?.[key] ?? resolvedArgs[key] ?? p.default ?? null;
+              } else {
+                value = p;
+              }
+              return validator.sanitizeParam(value);
+            });
+
+            console.log(`🔍 [TRIGGER][SQL] Resolved ${resolvedSqlParams.length} parameters`);
+
+            // Execute the query
+            const result = await this.dbQuery(fnConfig.sql_query, resolvedSqlParams);
+
+            console.log(`✅ [TRIGGER][SQL] Function "${functionName}" executed successfully`);
+            return { ok: true, data: result, rowCount: Array.isArray(result) ? result.length : 1 };
+          }
+
+          // Handler type - use handler_path if specified, otherwise fall through to file lookup
+          if (fnConfig.function_type === 'handler' && fnConfig.handler_path) {
+            console.log(`🔍 [TRIGGER][FUNC] Using handler_path: ${fnConfig.handler_path}`);
+            // Handler path is relative, will be loaded below with adjusted path
+          }
+        }
+      } catch (dbErr) {
+        // Table might not exist yet or other DB error - continue to file-based lookup
+        console.log(`⚠️ [TRIGGER][FUNC] DB lookup failed, falling back to file: ${dbErr.message}`);
+      }
+
+      // Fallback: Load the function from trigger-functions directory
       const path = require('path');
       const functionPath = path.join(__dirname, '..', 'script', 'trigger-functions', `${functionName}.js`);
-
 
       console.log(`🔍 [TRIGGER][FUNC] Loading function from: ${functionPath}`);
 

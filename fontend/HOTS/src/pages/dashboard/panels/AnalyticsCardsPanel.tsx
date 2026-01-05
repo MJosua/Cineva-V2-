@@ -121,10 +121,10 @@ const AnalyticsCardsPanel: React.FC<AnalyticsCardsPanelProps> = ({ config, servi
         if (serviceId) {
             fetchData();
         } else {
-            // No serviceId - use mock data immediately
-            setKpis({ total: 156, pending: 23, approved: 120, rejected: 13, trend: 12 });
-            setTrendData(generateMockTrend());
-            setStatusData(generateMockStatus());
+            // No serviceId - show empty state (no mock data)
+            setKpis({ total: 0, pending: 0, approved: 0, rejected: 0, trend: 0 });
+            setTrendData([]);
+            setStatusData([]);
             setLoading(false);
         }
     }, [serviceId]);
@@ -140,15 +140,15 @@ const AnalyticsCardsPanel: React.FC<AnalyticsCardsPanelProps> = ({ config, servi
 
             if (res.data.success) {
                 setKpis(res.data.kpis || { total: 0, pending: 0, approved: 0, rejected: 0 });
-                setTrendData(res.data.trendData || generateMockTrend());
-                setStatusData(res.data.statusDistribution || generateMockStatus());
+                setTrendData(res.data.trendData || []);
+                setStatusData(res.data.statusDistribution || []);
             }
         } catch (err) {
             console.error('Error fetching analytics:', err);
-            // Use mock data for demo
-            setKpis({ total: 156, pending: 23, approved: 120, rejected: 13, trend: 12 });
-            setTrendData(generateMockTrend());
-            setStatusData(generateMockStatus());
+            // Show empty state on error (no mock data)
+            setKpis({ total: 0, pending: 0, approved: 0, rejected: 0, trend: 0 });
+            setTrendData([]);
+            setStatusData([]);
         } finally {
             setLoading(false);
         }

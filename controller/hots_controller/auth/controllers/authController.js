@@ -738,7 +738,7 @@ module.exports = {
             INSERT INTO user_draft 
             (uid, firstname, lastname, email, password_hash, department_id, leader_id, approval_status)
             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
-          `, [uid, firstname, lastname, email, password, department_id, leader_id]);
+          `, [uid, firstname, lastname, email, hashedPassword, department_id, leader_id]);
 
             const draftId = result.insertId;
 
@@ -806,19 +806,18 @@ module.exports = {
                 [draft_id]
             );
 
-            // ✅ Step 2: Copy data into the user table
+            // ✅ Step 2: Copy data into the user table (WITHOUT Department/Superior)
             const [insertResult] = await dbHots.promise().query(
                 `INSERT INTO user (
                 role_id, firstname, lastname, uid, pswd, email, 
-                superior_id, active, status, registration_date
-            ) VALUES (1, ?, ?, ?, ?, ?,  ?, 1, 'pending', NOW())`,
+                department_id, superior_id, active, status, registration_date
+            ) VALUES (1, ?, ?, ?, ?, ?, NULL, NULL, 1, 'pending', NOW())`,
                 [
                     draft.firstname,
                     draft.lastname,
                     draft.uid,
                     draft.password_hash,
-                    draft.email,
-                    draft.leader_id
+                    draft.email
                 ]
             );
 
@@ -830,14 +829,26 @@ module.exports = {
                 [newUserId, draft_id]
             );
 
+            // ✅ Step 4: Notify Department Leader
+            // Retrieve Leader's Email from m_department or user table (via draft.leader_id)
+            const [leaders] = await dbHots.promise().query(
+                "SELECT email FROM user WHERE user_id = ?",
+                [draft.leader_id]
+            );
+
+            if (leaders.length > 0 && leaders[0].email) {
+                const { hotsRequestUserApprovalMailer } = require("../../../../../service/mailer/hots/hots_mailer");
+                await hotsRequestUserApprovalMailer(leaders[0].email, draft);
+            }
+
             console.log(
-                `${date.toLocaleString("id")} ✅ Verified user copied to 'user' table. ID: ${newUserId}`
+                `${date.toLocaleString("id")} ✅ Verified user created (Pending Approval). ID: ${newUserId}`
             );
 
             return res.status(200).json({
                 success: true,
                 message:
-                    "Email verified successfully. You can now log in and complete your profile.",
+                    "Email verified! Your account is active but pending Department Leader approval. You will be notified once approved.",
                 user_id: newUserId,
             });
         } catch (err) {
@@ -999,18 +1010,24 @@ module.exports = {
                 return res.json({ success: true, message: "Draft rejected successfully." });
             }
 
-            // 1️⃣ Insert into user table
-            const [userResult] = await dbHots.promise().query(`
-            INSERT INTO user (
-              firstname, lastname, uid, pswd, email,
-              department_id, superior_id, active, status, registration_date
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'active', NOW())
+            // 1️⃣ Update existing user table (Department Assignment)
+            await dbHots.promise().query(`
+            UPDATE user SET 
+                department_id = ?, 
+                superior_id = ?, 
+                active = 1, 
+                status = 'active', 
+                registration_date = NOW()
+            WHERE email = ?
           `, [
-                draft.firstname, draft.lastname, draft.uid, draft.password_hash,
-                draft.email, draft.department_id, draft.leader_id
+                draft.department_id,
+                draft.leader_id,
+                draft.email
             ]);
 
-            const newUserId = userResult.insertId;
+            // Get the user_id from the user table
+            const [users] = await dbHots.promise().query("SELECT user_id, firstname FROM user WHERE email = ?", [draft.email]);
+            const newUserId = users[0].user_id;
 
             // 2️⃣ Link back to user_draft
             await dbHots.promise().query(`
@@ -1018,6 +1035,10 @@ module.exports = {
             SET approval_status = 'approved', approval_date = NOW(), user_id = ?
             WHERE draft_id = ?
           `, [newUserId, draft_id]);
+
+            // 3️⃣ Send Welcome Email
+            const { hotsWelcomeMailer } = require("../../../../../service/mailer/hots/hots_mailer");
+            await hotsWelcomeMailer(draft.email, draft.firstname);
 
             res.json({
                 success: true,

@@ -28,53 +28,29 @@ interface DashboardCardEnhancedProps {
     };
 }
 
-// Mock sparkline data generator (for demo purposes)
-const generateMockSparkline = (seed: number): { value: number }[] => {
-    const base = 50 + (seed * 10) % 30;
-    return Array.from({ length: 7 }, (_, i) => ({
-        value: base + Math.sin(i + seed) * 15 + Math.random() * 10
-    }));
-};
-
-// Mock summary generator
-const generateMockSummary = (funcId: number): DashboardCardEnhancedProps['summary'] => {
-    const trend = Math.floor(Math.random() * 30) - 10;
-    return {
-        total: 50 + funcId * 23,
-        trend: Math.abs(trend),
-        trendDirection: trend > 3 ? 'up' : trend < -3 ? 'down' : 'neutral',
-        sparklineData: generateMockSparkline(funcId),
-        quickStats: [
-            { label: 'Pending', value: Math.floor(Math.random() * 20) + 5, color: 'bg-amber-100 text-amber-700' },
-            { label: 'Approved', value: Math.floor(Math.random() * 80) + 20, color: 'bg-green-100 text-green-700' },
-            { label: 'Rejected', value: Math.floor(Math.random() * 10), color: 'bg-red-100 text-red-700' }
-        ]
-    };
-};
-
-const DashboardCardEnhanced: React.FC<DashboardCardEnhancedProps> = ({ func, summary: propSummary }) => {
+const DashboardCardEnhanced: React.FC<DashboardCardEnhancedProps> = ({ func, summary }) => {
     const navigate = useNavigate();
     const Icon = (Icons as any)[func.icon || "AppWindow"] || Icons.AppWindow;
 
-    // Use mock data if no summary provided
-    const summary = propSummary || generateMockSummary(func.id);
+    // Check if we have real data
+    const hasData = summary && summary.total > 0;
 
-    const TrendIcon = summary.trendDirection === 'up'
+    const TrendIcon = summary?.trendDirection === 'up'
         ? TrendingUp
-        : summary.trendDirection === 'down'
+        : summary?.trendDirection === 'down'
             ? TrendingDown
             : Minus;
 
-    const trendColor = summary.trendDirection === 'up'
+    const trendColor = summary?.trendDirection === 'up'
         ? 'text-green-600'
-        : summary.trendDirection === 'down'
+        : summary?.trendDirection === 'down'
             ? 'text-red-600'
             : 'text-gray-400';
 
     const chartConfig = {
         value: {
-            color: summary.trendDirection === 'up' ? "hsl(142, 76%, 36%)" :
-                summary.trendDirection === 'down' ? "hsl(0, 84%, 60%)" :
+            color: summary?.trendDirection === 'up' ? "hsl(142, 76%, 36%)" :
+                summary?.trendDirection === 'down' ? "hsl(0, 84%, 60%)" :
                     "hsl(210, 100%, 50%)"
         }
     };
@@ -115,62 +91,76 @@ const DashboardCardEnhanced: React.FC<DashboardCardEnhancedProps> = ({ func, sum
                             <CardTitle className="text-sm font-semibold text-gray-900 line-clamp-1 leading-snug">
                                 {func.title}
                             </CardTitle>
-                            <p className="text-xs text-gray-500 mt-0.5">{func.description?.slice(0, 30)}...</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{func.description?.slice(0, 40)}{func.description && func.description.length > 40 ? '...' : ''}</p>
                         </div>
                     </div>
                 </div>
             </CardHeader>
 
             <CardContent className="pt-2 pb-4 relative">
-                {/* Main Stats Row */}
-                <div className="flex items-end justify-between mb-3">
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-gray-900">
-                            {summary.total.toLocaleString()}
-                        </span>
-                        <div className={cn("flex items-center gap-0.5 text-xs font-medium", trendColor)}>
-                            <TrendIcon className="w-3.5 h-3.5" />
-                            <span>{summary.trend}%</span>
-                        </div>
-                    </div>
-
-                    {/* Sparkline */}
-                    <div className="w-20 h-10">
-                        <ChartContainer config={chartConfig} className="w-full h-full">
-                            <AreaChart data={summary.sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id={`sparkGradient-${func.id}`} x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor={chartConfig.value.color} stopOpacity={0.3} />
-                                        <stop offset="100%" stopColor={chartConfig.value.color} stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <Area
-                                    type="monotone"
-                                    dataKey="value"
-                                    stroke={chartConfig.value.color}
-                                    strokeWidth={1.5}
-                                    fill={`url(#sparkGradient-${func.id})`}
-                                />
-                            </AreaChart>
-                        </ChartContainer>
-                    </div>
-                </div>
-
-                {/* Quick Stats Pills */}
-                {summary.quickStats && (
-                    <div className="flex gap-2 mb-3">
-                        {summary.quickStats.map((stat, i) => (
-                            <div
-                                key={i}
-                                className={cn(
-                                    "flex-1 px-2 py-1.5 rounded-lg text-center",
-                                    stat.color || 'bg-gray-100 text-gray-700'
-                                )}
-                            >
-                                <div className="text-sm font-semibold">{stat.value}</div>
-                                <div className="text-[10px] opacity-80">{stat.label}</div>
+                {/* Stats Section - only show if we have data */}
+                {hasData && summary ? (
+                    <>
+                        {/* Main Stats Row */}
+                        <div className="flex items-end justify-between mb-3">
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-bold text-gray-900">
+                                    {summary.total.toLocaleString()}
+                                </span>
+                                <div className={cn("flex items-center gap-0.5 text-xs font-medium", trendColor)}>
+                                    <TrendIcon className="w-3.5 h-3.5" />
+                                    <span>{summary.trend}%</span>
+                                </div>
                             </div>
-                        ))}
+
+                            {/* Sparkline */}
+                            {summary.sparklineData && summary.sparklineData.length > 0 && (
+                                <div className="w-20 h-10">
+                                    <ChartContainer config={chartConfig} className="w-full h-full">
+                                        <AreaChart data={summary.sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                                            <defs>
+                                                <linearGradient id={`sparkGradient-${func.id}`} x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor={chartConfig.value.color} stopOpacity={0.3} />
+                                                    <stop offset="100%" stopColor={chartConfig.value.color} stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <Area
+                                                type="monotone"
+                                                dataKey="value"
+                                                stroke={chartConfig.value.color}
+                                                strokeWidth={1.5}
+                                                fill={`url(#sparkGradient-${func.id})`}
+                                            />
+                                        </AreaChart>
+                                    </ChartContainer>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Quick Stats Pills */}
+                        {summary.quickStats && (
+                            <div className="flex gap-2 mb-3">
+                                {summary.quickStats.map((stat, i) => (
+                                    <div
+                                        key={i}
+                                        className={cn(
+                                            "flex-1 px-2 py-1.5 rounded-lg text-center",
+                                            stat.color || 'bg-gray-100 text-gray-700'
+                                        )}
+                                    >
+                                        <div className="text-sm font-semibold">{stat.value}</div>
+                                        <div className="text-[10px] opacity-80">{stat.label}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    /* No data - show description card */
+                    <div className="py-4 text-center">
+                        <p className="text-sm text-gray-500 mb-2">
+                            {func.description || 'Click to open this dashboard'}
+                        </p>
                     </div>
                 )}
 

@@ -3851,7 +3851,9 @@ module.exports = {
             }
 
             // ---------- Custom functions and triggers ----------
-            await module.exports.callexecuteCustomFunctions(service_id, ticket_id);
+            // DEPRECATED: Legacy custom functions removed 2026-01-02
+            // Core Engine triggers (m_service_triggers) now handle all automation
+            // await module.exports.callexecuteCustomFunctions(service_id, ticket_id);
 
             if (Array.isArray(workflowSteps) && workflowSteps.length > 0) {
                 hotsApproveRequest(false, ticket_id);

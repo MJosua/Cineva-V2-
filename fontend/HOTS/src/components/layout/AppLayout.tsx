@@ -14,7 +14,7 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from "@/components/ui/sidebar";
-import { Home, FileText, CheckSquare, List, Settings, LogOut, Monitor, Users, Search, User, Code, FileCode, HelpCircle, ChevronRight, ClipboardList, Palette } from 'lucide-react';
+import { Home, FileText, CheckSquare, List, Settings, LogOut, Monitor, Users, Search, User, Code, FileCode, HelpCircle, ChevronRight, ClipboardList, Palette, Database } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -47,6 +47,12 @@ const adminItems = [
     url: "/admin/studio",
     icon: Palette,
     description: "Form & Workflow Builder",
+  },
+  {
+    title: "API Builder",
+    url: "/admin/api-builder",
+    icon: Database,
+    description: "Create & manage SQL functions",
   },
   {
     title: "Service Catalog Admin",
@@ -270,7 +276,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-   
+
 
         {/* Only show Administration menu for users with role === 4 */}
         {

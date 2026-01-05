@@ -141,6 +141,28 @@ route.post('/store_dcr_original', decodeTokenHT, hotsDataChangeController.storeO
 route.post('/submit_data_change', decodeTokenHT, hotsDataChangeController.submitDataChange)
 route.get('/get_all_products', decodeTokenHT, hotsDataChangeController.getAllProducts)
 
+// ============================================
+// Trigger Functions (Visual API Builder)
+// Admin only for create/update/delete
+// ============================================
+const triggerFunctionController = require('../../controller/hots_controller/settings/controllers/triggerFunctionController');
+
+// List and get (authenticated users)
+route.get('/trigger-functions', decodeTokenHT, triggerFunctionController.listFunctions)
+route.get('/trigger-functions/categories', decodeTokenHT, triggerFunctionController.getCategories)
+route.get('/trigger-functions/:key', decodeTokenHT, triggerFunctionController.getFunction)
+
+// Validate (authenticated users)
+route.post('/trigger-functions/validate', decodeTokenHT, triggerFunctionController.validateQuery)
+
+// Execute (authenticated users - but function itself can restrict)
+route.post('/trigger-functions/:key/execute', decodeTokenHT, triggerFunctionController.executeFunction)
+
+// Create/Update/Delete (Admin only - middleware in controller)
+route.post('/trigger-functions', decodeTokenHT, ...triggerFunctionController.createFunction)
+route.put('/trigger-functions/:key', decodeTokenHT, ...triggerFunctionController.updateFunction)
+route.delete('/trigger-functions/:key', decodeTokenHT, ...triggerFunctionController.deleteFunction)
+
 module.exports = route
 
 

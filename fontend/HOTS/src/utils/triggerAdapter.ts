@@ -61,11 +61,13 @@ export interface ActionMeta {
 export interface ParamMeta {
     key: string;
     label: string;
-    type: 'text' | 'textarea' | 'select' | 'number' | 'checkbox' | 'context';
+    type: 'text' | 'textarea' | 'select' | 'number' | 'checkbox' | 'context' | 'function';
     options?: { value: string; label: string }[];
     placeholder?: string;
     required?: boolean;
     helpText?: string;
+    filterCategory?: string; // For function picker
+    filterType?: 'sql' | 'handler' | 'template'; // For function picker
 }
 
 // Action catalog
@@ -96,11 +98,11 @@ export const ACTION_CATALOG: ActionMeta[] = [
     {
         type: 'execute_function',
         label: 'Execute Function',
-        description: 'Run a custom JavaScript function',
+        description: 'Run a function from the function library',
         icon: 'Code',
         color: 'purple',
         params: [
-            { key: 'function', label: 'Function Name', type: 'text', required: true, placeholder: 'e.g., srf_document_generator' },
+            { key: 'function', label: 'Function', type: 'function', required: true, helpText: 'Select a function from the library' },
             { key: 'args', label: 'Arguments (JSON)', type: 'textarea', placeholder: '{"ticketId": ":ticketId"}' },
         ],
     },

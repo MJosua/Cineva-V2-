@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Monitor, Lightbulb, Wrench, Database, Plane, FileText, Users, CreditCard } from 'lucide-react';
+import { Monitor, Lightbulb, Wrench, Database, Plane, FileText, Users, CreditCard, Icon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,6 +32,17 @@ const categoryColors: Record<string, string> = {
   'HRGA': 'bg-green-100 text-green-600',
   'Accounting': 'bg-pink-100 text-pink-600',
   'Freight': 'bg-indigo-100 text-indigo-600',
+};
+
+const categorygradientColors: Record<string, string> = {
+
+  'Supply Chain & Logistics': 'bg-gradient-to-br from-indigo-500 to-indigo-600',
+  'IT': 'bg-gradient-to-br from-orange-500 to-orange-600',
+  'Marketing': 'bg-gradient-to-br from-purple-500 to-purple-600',
+  'General': 'bg-gradient-to-br from-blue-500 to-blue-600',
+  'HRGA': 'bg-gradient-to-br from-green-500 to-green-600',
+  'Accounting': 'bg-gradient-to-br from-pink-500 to-pink-600',
+  'Freight': 'bg-gradient-to-br from-indigo-500 to-indigo-600',
 };
 
 // Service icon mapping
@@ -83,11 +94,13 @@ const ServiceCatalog = () => {
       title: category.category_name,
       icon: categoryIcons[category.category_name] || FileText,
       color: categoryColors[category.category_name] || 'bg-gray-100 text-gray-600',
+      gradientcolor: categorygradientColors[category.category_name || `bg-gradient-to-br from-blue-500  to-blue-600`],
       services: categoryServices.map(service => ({
         title: service.service_name,
         description: service.service_description,
         icon: serviceIcons[service.service_name] || FileText,
         color: categoryColors[category.category_name] || 'bg-gray-100 text-gray-600',
+        gradientcolor: categorygradientColors[category.category_name || `bg-gradient-to-br from-blue-500  to-blue-600`],
         url: `/${service.nav_link}`
       }))
     };
@@ -169,8 +182,11 @@ const ServiceCatalog = () => {
         <div className="space-y-8">
           {serviceCategories.map((category) => (
             <div key={category.title}>
+
+
+
               <div className="flex items-center space-x-3 mb-4">
-                <div className={`p-2 rounded-lg ${category.color}`}>
+                <div className={`p-2 rounded-lg text-white ${category.gradientcolor}`}>
                   <category.icon className="w-6 h-6" />
                 </div>
                 <h2 className="text-xl font-semibold text-gray-900">{category.title}</h2>
@@ -184,31 +200,33 @@ const ServiceCatalog = () => {
 
                   <Card key={service.title} className="hover:shadow-md transition-shadow cursor-pointer">
 
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center space-x-4">
-                        {/* Icon Container */}
-                        <div
-                          className={`flex items-center justify-center w-9 h-9 rounded-lg ${category.color}`}
-                        >
-                          <service.icon className="w-5 h-5" />
-                        </div>
 
-                        {/* Title Text */}
-                        <div className="flex-1 min-w-0">
-                          <CardTitle className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug">
-                            {renderHighlightedText(service.title, searchValue)}
-                          </CardTitle>
+                    <CardHeader className="pb-2 relative">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className={` flex items-center justify-center w-10 h-10 rounded-xl ${service.gradientcolor} shadow-md `}>
+                            <service.icon className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-sm font-semibold text-gray-900 line-clamp-1 leading-snug">
+                              {renderHighlightedText(service.title, searchValue)}
+                            </CardTitle>
+                          </div>
                         </div>
                       </div>
                     </CardHeader>
 
 
 
+                    <CardContent className="pt-2 pb-4 relative">
 
-                    <CardContent className="pt-0">
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        {service.description}
-                      </p>
+                      <div className="py-4 text-center">
+                        <p className="text-sm text-gray-500 mb-2">
+                          {service.description || 'Click to open this dashboard'}
+                        </p>
+                      </div>
+
+
                       <Button
                         variant="outline"
                         size="sm"

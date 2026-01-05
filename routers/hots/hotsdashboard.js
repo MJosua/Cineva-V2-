@@ -20,6 +20,7 @@ route.get("/service_tickets/:service_id", decodeTokenHT, hotsDashboardController
 
 // Panel System Endpoints
 route.get("/panels/:dashboard_id", decodeTokenHT, hotsDashboardController.getDashboardPanels);
+route.get("/card_summary/:function_id", decodeTokenHT, hotsDashboardController.getCardSummary);
 
 
 module.exports = route

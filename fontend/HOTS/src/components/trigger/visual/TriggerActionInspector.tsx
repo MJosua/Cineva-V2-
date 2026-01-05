@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Trash2, Settings, HelpCircle, Code } from 'lucide-react';
 import { RuleBuilderInline } from '@/components/rules/RuleBuilderInline';
+import FunctionPicker from '@/components/common/FunctionPicker';
 import {
     Tooltip,
     TooltipContent,
@@ -96,6 +97,18 @@ export const TriggerActionInspector: React.FC<TriggerActionInspectorProps> = ({
                         value={value}
                         onChange={(e) => handleParamChange(param.key, e.target.value)}
                         placeholder={param.placeholder}
+                    />
+                );
+            case 'function':
+                return (
+                    <FunctionPicker
+                        value={value}
+                        onChange={(key) => handleParamChange(param.key, key)}
+                        filterCategory={param.filterCategory}
+                        filterType={param.filterType}
+                        showParams
+                        label=""
+                        placeholder="Select a function..."
                     />
                 );
             case 'checkbox':

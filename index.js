@@ -244,6 +244,7 @@ const {
   hotspublic,
   hotsReporting,
   hotsPreferences,
+  hotsProfile,
   cmsRouter,
   engineModuleRouter,
   engineRouter,
@@ -377,6 +378,7 @@ App.use("/hotsdashboard", hotsdashboard);
 App.use("/hots/public", hotspublic);
 App.use("/hotsreporting", hotsReporting);
 App.use("/hotsprefs", hotsPreferences);
+App.use("/hots_profile", hotsProfile);
 
 App.use("/shortener", shortener);
 
@@ -388,6 +390,7 @@ App.use("/api", couponRouter);
 =================================================================== */
 App.use('/public/files/hots/it_support', express.static(path.join(__dirname, 'public', 'files', 'hots', 'it_support')));
 App.use('/public/hots/generateddocuments', express.static(path.join(__dirname, 'public', 'hots', 'generateddocuments')));
+App.use('/hots/profile', express.static(path.join(__dirname, 'public', 'hots', 'profile'))); // User profile files (signatures, avatars)
 App.use('/image', express.static(path.join(__dirname, 'public', 'image')));
 App.use('/files', express.static(path.join(__dirname, 'public', 'files')));
 

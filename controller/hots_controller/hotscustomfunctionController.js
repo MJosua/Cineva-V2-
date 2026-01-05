@@ -18,6 +18,39 @@ const Mustache = require('mustache');
 const { PORT, API_URL } = require("../../config/env")
 
 /**
+ * Helper: Get user signature path from user_profile
+ * Returns the uploaded signature path or null (fallback to legacy URL)
+ */
+const getUserSignaturePath = async (user_id) => {
+    try {
+        const [result] = await dbHots.promise().query(`
+            SELECT attribute_value
+            FROM user_profile
+            WHERE user_id = ? AND attribute_name = 'default_signature' AND is_active = 1
+            LIMIT 1
+        `, [user_id]);
+        return result.length > 0 ? result[0].attribute_value : null;
+    } catch (err) {
+        console.error('Error fetching signature path:', err);
+        return null;
+    }
+};
+
+/**
+ * Helper: Get signature URL for a user
+ * Prioritizes uploaded signature from user_profile, falls back to legacy /ttd/sign-{id}.jpg
+ */
+const getSignatureUrl = async (user_id) => {
+    const customPath = await getUserSignaturePath(user_id);
+    if (customPath) {
+        // Use API_URL for uploaded signatures
+        return `${API_URL}${customPath}`;
+    }
+    // Fallback to legacy URL
+    return `https://backend.indofoodinternational.com:2864/ttd/sign-${user_id}.jpg`;
+};
+
+/**
  * Custom Function Controller
  * Base Path: /hots_settings/custom_functions/
  */
@@ -1232,18 +1265,24 @@ module.exports = {
         // Group 2 (Cc)
         const ccPICs = factoryPIC.filter(p => p.flag === 2).map(p => p.pic_name);
 
-        const approvalColumnsHtml = approvallist
+        // Generate approval columns with dynamic signature URLs
+        const approvalColumnsHtmlPromises = approvallist
             .filter(a => a.approval_order !== 2) // Hide Logistic Analyst (step 2) signature
-            .map((approver, index) => {
+            .map(async (approver, index) => {
 
                 const isApproved = !!approver.approve_date;
 
-                const signBlock = isApproved
+                // Get dynamic signature URL (DB first, then fallback)
+                const signatureUrl = isApproved && approver.approver_id
+                    ? await getSignatureUrl(approver.approver_id)
+                    : null;
+
+                const signBlock = isApproved && signatureUrl
                     ? `
               <div style="height: 100%; max-height:130px; display:flex; align-items:center;">
                 <img
                   alt="sign"
-                  src="https://backend.indofoodinternational.com:2864/ttd/sign-${approver.approver_id}.jpg"
+                  src="${signatureUrl}"
                   style="width:120px;display:block;margin:0 auto 5px auto;"
                 />
               </div>
@@ -1264,11 +1303,12 @@ module.exports = {
               <span style="font-size:12px;color:#555;">${positionLabel}</span>
             </td>
           `;
-            })
-            .join("");
+            });
 
+        const approvalColumnsHtml = (await Promise.all(approvalColumnsHtmlPromises)).join("");
 
-
+        // Get requester signature URL (dynamic with fallback)
+        const requesterSignatureUrl = await getSignatureUrl(data.created_by);
 
 
         const html = `
@@ -1429,7 +1469,7 @@ module.exports = {
                     
                         <img
                             alt="sign"
-                            src="https://backend.indofoodinternational.com:2864/ttd/sign-${data.created_by}.jpg"
+                            src="${requesterSignatureUrl}"
                             style="width:120px;display:block;margin:0 auto 5px auto;"
                         />
                         </div>
