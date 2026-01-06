@@ -513,12 +513,12 @@ module.exports = {
             " " +
             date.toLocaleTimeString("id") +
             " : ";
-    
+
         // Pagination
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 50;
         const offset = (page - 1) * limit;
-    
+
         // ADMIN ONLY (role_id = 4)
         if (req.dataToken.role_id !== 4) {
             console.log(timestamp, "getAllTicket UNAUTHORIZED ADMIN ONLY");
@@ -527,14 +527,14 @@ module.exports = {
                 message: "UNAUTHORIZED — ADMIN ONLY",
             });
         }
-    
+
         // ==========================================================================
         // 🔥 MAIN QUERY (Engine v4 compatible)
         // ==========================================================================
         const query = `
             SELECT
                 t.ticket_id,
-                DATE_FORMAT(t.created_at, '%d-%b-%Y %H:%i') AS creation_date,
+                DATE_FORMAT(t.created_at, '%d/%m/%Y %H:%i') AS creation_date,
     
                 s.service_id,
                 s.service_name,
@@ -593,7 +593,7 @@ module.exports = {
             ORDER BY t.created_at DESC
             LIMIT ${limit} OFFSET ${offset}
         `;
-    
+
         // ==========================================================================
         // 🔥 COUNT QUERY
         // ==========================================================================
@@ -601,16 +601,16 @@ module.exports = {
             SELECT COUNT(*) AS total_count
             FROM t_ticket
         `;
-    
+
         try {
             const [[countRow]] = await dbHots.promise().query(countQuery);
             const totalData = countRow.total_count;
             const totalPage = Math.ceil(totalData / limit);
-    
+
             const [rows] = await dbHots.promise().query(query);
-    
+
             console.log(timestamp, "getAllTicket success!");
-    
+
             return res.status(200).send({
                 success: true,
                 totalData,
@@ -627,7 +627,7 @@ module.exports = {
             });
         }
     }
-    
+
 
     , getAllWorkFlow: async (req, res) => {
 
@@ -734,7 +734,7 @@ module.exports = {
                         message: "successfuly get department",
                         data: results
                     });
-                    console.log(timestamp, " HOTS admin-get Team ", paramGetAccountData );
+                    console.log(timestamp, " HOTS admin-get Team ", paramGetAccountData);
                 }
             })
 

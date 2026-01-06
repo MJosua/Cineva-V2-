@@ -1,7 +1,12 @@
 import { WidgetConfig } from '@/types/widgetTypes';
 
+// Extended WidgetConfig with optional serviceIds for service-specific widgets
+interface ExtendedWidgetConfig extends WidgetConfig {
+  serviceIds?: number[]; // If set, widget only shows for these service IDs
+}
+
 // Widget registry - all available widgets are listed here
-export const widgetRegistry: Record<string, WidgetConfig> = {
+export const widgetRegistry: Record<string, ExtendedWidgetConfig> = {
   gantt_room_schedule: {
     id: "gantt_room_schedule",
     name: "Room Usage Gantt Chart",
@@ -92,6 +97,40 @@ export const widgetRegistry: Record<string, WidgetConfig> = {
     category: "Job Marketplace"
   },
 
+  // SRF-specific widgets (service_id = 6)
+  data_execution_tools: {
+    id: "data_execution_tools",
+    name: "Data Execution Tools",
+    description: "Factory selection and data management for SRF",
+    componentPath: "DataExecutionTools",
+    applicableTo: ["assignment_detail"],
+    dataRequirements: ["assignmentData", "workData"],
+    category: "SRF Tools",
+    serviceIds: [6] // Only for SRF service
+  },
+
+  srf_document_generator: {
+    id: "srf_document_generator",
+    name: "SRF Document Generator",
+    description: "Generate SRF documents with factory and invoice data",
+    componentPath: "SRFDocumentGenerator",
+    applicableTo: ["assignment_detail"],
+    dataRequirements: ["ticketData", "factoryData"],
+    category: "SRF Tools",
+    serviceIds: [6] // Only for SRF service
+  },
+
+  srf_invoice_input: {
+    id: "srf_invoice_input",
+    name: "SRF Invoice Input",
+    description: "Input and manage invoice numbers for SRF tickets",
+    componentPath: "SRFInvoiceInput",
+    applicableTo: ["assignment_detail"],
+    dataRequirements: ["ticketData"],
+    category: "SRF Tools",
+    serviceIds: [6] // Only for SRF service
+  },
+
   detail_table: {
     id: "detail_table",
     name: "Detail Table Widget",
@@ -115,22 +154,38 @@ export const widgetRegistry: Record<string, WidgetConfig> = {
 };
 
 // Get widget by ID
-export const getWidgetById = (id: string): WidgetConfig | undefined => {
+export const getWidgetById = (id: string): ExtendedWidgetConfig | undefined => {
   return widgetRegistry[id];
 };
 
 // Get all widgets
-export const getAllWidgets = (): WidgetConfig[] => {
+export const getAllWidgets = (): ExtendedWidgetConfig[] => {
   return Object.values(widgetRegistry);
 };
 
 // Get widgets by context (form, ticket_detail, or assignment_detail)
-export const getWidgetsByContext = (context: 'form' | 'ticket_detail' | 'assignment_detail'): WidgetConfig[] => {
-  return getAllWidgets().filter(widget => widget.applicableTo.includes(context));
+// Now supports optional serviceId filtering for service-specific widgets
+export const getWidgetsByContext = (
+  context: 'form' | 'ticket_detail' | 'assignment_detail',
+  serviceId?: number
+): ExtendedWidgetConfig[] => {
+  return getAllWidgets().filter(widget => {
+    // Must match context
+    if (!widget.applicableTo.includes(context)) return false;
+
+    // If widget has serviceIds, check if current service matches
+    if (widget.serviceIds && widget.serviceIds.length > 0) {
+      if (!serviceId) return false; // No service provided, skip service-specific widgets
+      return widget.serviceIds.includes(serviceId);
+    }
+
+    // Generic widgets (no serviceIds) always show
+    return true;
+  });
 };
 
 // Get widgets by category
-export const getWidgetsByCategory = (category: string): WidgetConfig[] => {
+export const getWidgetsByCategory = (category: string): ExtendedWidgetConfig[] => {
   return getAllWidgets().filter(widget => widget.category === category);
 };
 
@@ -138,3 +193,4 @@ export const getWidgetsByCategory = (category: string): WidgetConfig[] => {
 export const getWidgetCategories = (): string[] => {
   return [...new Set(getAllWidgets().map(widget => widget.category).filter(Boolean))];
 };
+

@@ -13,6 +13,10 @@ export const TutorialManager: React.FC = () => {
         // Wait for preferences to load
         if (loading) return;
 
+        // ✅ Guard: Only run tutorial if user is authenticated
+        const token = localStorage.getItem('tokek');
+        if (!token) return; // User is not logged in, skip tutorial
+
         // Check if tutorial is already completed
         const isTutorialCompleted = getPreference('tutorial', 'dashboard_onboarding', false);
         if (isTutorialCompleted) return;

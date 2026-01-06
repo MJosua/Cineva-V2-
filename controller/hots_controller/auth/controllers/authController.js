@@ -4,7 +4,8 @@ const {
     dbQuery,
 } = require("../../../../config/db");
 const { generateTokenHT, hashPasswordHT, createTokenHT, verifyTokenHT } = require("../../../../config/encrypts");
-const { hotsForgotPasswordMailer, hotsVerifyEmailMailer } = require('../../../../service/mailer/hots/hots_mailer');
+const { hotsForgotPasswordMailer, hotsVerifyEmailMailer, hotsMailer, hotsSubmitMailer } = require('../../../../service/mailer/hots/hots_mailer');
+const ticketController = require('../../ticketing/controllers/ticketController');
 // const cookieParser = require('cookie-parser');
 const { compare } = require('bcrypt');
 const bcrypt = require('bcrypt'); // For password comparison
@@ -399,20 +400,28 @@ module.exports = {
         let uid = req.body.uid
 
         if (uid) {
-            let queryGetEmail = `SELECT u.email, u.user_id FROM user u WHERE  u.uid = ?;`;
-            let ParamGetEmail = [uid];
+            // Updated: Search by uid OR email using OR condition
+            let queryGetEmail = `SELECT u.email, u.user_id, u.uid, u.active FROM user u WHERE u.uid = ? OR u.email = ? LIMIT 1;`;
+            let ParamGetEmail = [uid, uid];
 
             dbHots.execute(queryGetEmail, ParamGetEmail, (err1, results1) => {
 
                 if (err1) {
                     res.status(500).send({
                         success: false,
-                        message: `error at forgot password HOTS! `,
+                        message: `An error occurred while processing your request. Please try again later.`,
                         err1
                     })
 
                 } else {
                     if (results1[0]) {
+                        // Check if account is active
+                        if (results1[0].active !== 1) {
+                            return res.status(200).send({
+                                success: false,
+                                message: "Your account is inactive. Please contact IT Department to reactivate your account."
+                            });
+                        }
 
                         let address = results1[0].email;
 
@@ -422,20 +431,25 @@ module.exports = {
                             hotsForgotPasswordMailer(address, token);
 
                             let queryUpdateToken = `UPDATE user  SET registration_nr = ? WHERE uid = ?;`
-                            let paramUpdateToken = [token, uid]
+                            let paramUpdateToken = [token, results1[0].uid]
 
                             dbHots.execute(queryUpdateToken, paramUpdateToken, (err2) => {
 
                                 if (err2) {
                                     console.log(timestamp, "forgotPassword", err2)
+                                    res.status(500).send({
+                                        success: false,
+                                        message: "Failed to process your request. Please try again later."
+                                    });
 
                                 } else {
                                     res.status(200).send({
                                         success: true,
-                                        message: "Reset Password Link has been sent into your email",
+                                        message: "Reset Password Link has been sent to your email. Please check your inbox (and spam folder).",
                                         email: address
                                     });
                                     console.log(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => uid valid send to " + address)
+                                    console.log('TOKEN: ' + token)
 
                                 }
                             })
@@ -443,7 +457,7 @@ module.exports = {
                         } else {
                             res.status(200).send({
                                 success: false,
-                                message: "Cannot send email! No email Address founded!",
+                                message: "Your account is not linked to any email address. Please contact IT Department to update your email or reset your password manually."
                             });
                             console.log(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => Cannot send email! No email Address founded!")
 
@@ -454,7 +468,7 @@ module.exports = {
 
                         res.status(200).send({
                             success: false,
-                            message: `UID that you enter is not found! Please enter the correct one `
+                            message: `User not found. Please check your username or email and try again.`
                         })
                     }
 
@@ -463,9 +477,9 @@ module.exports = {
             })
 
         } else {
-            res.status(500).send({
+            res.status(400).send({
                 success: false,
-                message: `email is not provided `
+                message: `Please enter your username or email address.`
             })
         }
 
@@ -477,6 +491,10 @@ module.exports = {
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         try {
+            // Debug: Log the token data received
+            console.log(timestamp + '##### VERIFY TOKEN DEBUG =>');
+            console.log('Token:', req.token ? req.token.substring(0, 50) + '...' : 'undefined');
+            console.log('DataToken:', req.dataToken);
 
             let query = `SELECT u.uid FROM user u WHERE u.registration_nr = ?`
             let param = [req.token]
@@ -491,9 +509,10 @@ module.exports = {
                         success: false,
                         message: err,
                     });
+                    return;
                 }
 
-                if (!results[0]) {
+                if (!results || !results[0]) {
 
                     res.status(200).send({
                         success: false,
@@ -501,24 +520,24 @@ module.exports = {
                     });
 
                 } else {
-
-                    if (req.dataToken.Email) {
+                    // FIX: Changed Email to email (lowercase to match token payload)
+                    if (req.dataToken && req.dataToken.email) {
 
                         res.status(200).send({
                             success: true,
                             message: "token is valid, continue =>",
                         });
 
-                        console.log(timestamp + `auth token verification for ${req.dataToken.email}`)
+                        console.log(timestamp + `auth token verification SUCCESS for ${req.dataToken.email}`)
 
                     } else {
 
-                        res.status(500).send({
+                        res.status(200).send({
                             success: false,
                             message: "The RESET Password link has already EXPIRED. Please try to input email again",
                         });
 
-                        console.log(timestamp + `auth token verification Failed. `)
+                        console.log(timestamp + `auth token verification Failed. dataToken:`, req.dataToken)
 
                     }
 
@@ -586,7 +605,15 @@ module.exports = {
                                 });
                             } else {
 
-
+                                // Send password change confirmation email
+                                const confirmationHtml = `
+                                <div style="font-family: Arial, sans-serif; color: #333;">
+                                    <h2>Password Changed Successfully</h2>
+                                    <p>Your password has been successfully changed.</p>
+                                    <p>If you did not make this change, please contact IT support immediately.</p>
+                                    <p>Best regards,<br><strong>HOTS System</strong></p>
+                                </div>`;
+                                hotsMailer(req.dataToken.email, 'Password Changed Successfully', confirmationHtml);
 
                                 res.status(200).send({
                                     success: true,
@@ -719,8 +746,9 @@ module.exports = {
                 return res.status(409).json({ success: false, message: "Email or username already registered." });
             }
 
-            // ✅ 3. Hash password securely
-            const hashedPassword = await bcrypt.hash(password, 10);
+            // ✅ 3. Hash password (SKIPPED FOR NOW - Testing Phase)
+            // const hashedPassword = await bcrypt.hash(password, 10);
+            const hashedPassword = password; // Using plain text as per user request for testing
 
             // ✅ 4. Find department leader
             const [leader] = await dbHots.promise().query(`
@@ -806,40 +834,47 @@ module.exports = {
                 [draft_id]
             );
 
-            // ✅ Step 2: Copy data into the user table (WITHOUT Department/Superior)
+            // ✅ Step 2: Generate employee_id (incremental based on max employee_id)
+            const [maxEmpResult] = await dbHots.promise().query(
+                `SELECT MAX(CAST(employee_id AS UNSIGNED)) as max_emp FROM user WHERE employee_id IS NOT NULL`
+            );
+            const nextEmployeeId = (maxEmpResult[0]?.max_emp || 0) + 1;
+
+            // ✅ Step 3: Copy data into the user table with all required fields
             const [insertResult] = await dbHots.promise().query(
                 `INSERT INTO user (
-                role_id, firstname, lastname, uid, pswd, email, 
-                department_id, superior_id, active, status, registration_date
-            ) VALUES (1, ?, ?, ?, ?, ?, NULL, NULL, 1, 'pending', NOW())`,
+                    role_id, firstname, lastname, uid, pswd, email, 
+                    employee_id, type_id, lang_id,
+                    department_id, superior_id, active, status, registration_date
+                ) VALUES (1, ?, ?, ?, ?, ?, ?, 2, 1, NULL, NULL, 1, 'pending', NOW())`,
                 [
                     draft.firstname,
                     draft.lastname,
                     draft.uid,
                     draft.password_hash,
-                    draft.email
+                    draft.email,
+                    nextEmployeeId
                 ]
             );
 
+            // ✅ Step 3: Trigger Approval Ticket (New)
             const newUserId = insertResult.insertId;
+            const departmentId = draft.department_id; // From user_draft
 
-            // ✅ Step 3: Link user_draft → user
+            // Create approval ticket - always (fallback logic in addTicketUserApproval)
+            await ticketController.addTicketUserApproval(newUserId, departmentId, {
+                firstname: draft.firstname,
+                lastname: draft.lastname,
+                email: draft.email
+            });
+
+            // ✅ Step 4: Link user_draft → user
             await dbHots.promise().query(
                 `UPDATE user_draft SET user_id = ? WHERE draft_id = ?`,
                 [newUserId, draft_id]
             );
 
-            // ✅ Step 4: Notify Department Leader
-            // Retrieve Leader's Email from m_department or user table (via draft.leader_id)
-            const [leaders] = await dbHots.promise().query(
-                "SELECT email FROM user WHERE user_id = ?",
-                [draft.leader_id]
-            );
-
-            if (leaders.length > 0 && leaders[0].email) {
-                const { hotsRequestUserApprovalMailer } = require("../../../../../service/mailer/hots/hots_mailer");
-                await hotsRequestUserApprovalMailer(leaders[0].email, draft);
-            }
+            // Note: Notification to Department Leader is now handled via addTicketUserApproval
 
             console.log(
                 `${date.toLocaleString("id")} ✅ Verified user created (Pending Approval). ID: ${newUserId}`

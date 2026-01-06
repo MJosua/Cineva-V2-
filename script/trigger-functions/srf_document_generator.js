@@ -11,7 +11,7 @@
  * @returns {Promise<Object>} Result object { ok: boolean, ... }
  */
 
-const hotscustomfunctionController = require('../../controller/hots_controller/hotscustomfunctionController');
+const hotscustomfunctionController = require('../../controller/hots_controller/customfunction/controllers/customfunctionController');
 
 module.exports = async function srf_document_generator({ ticketId, context, dbQuery }) {
     console.log(`📄 [SRF_DOC_GEN] Starting document generation for ticket ${ticketId}, step ${context?.workflow_step}`);

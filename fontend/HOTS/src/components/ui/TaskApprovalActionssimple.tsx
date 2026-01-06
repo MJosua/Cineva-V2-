@@ -229,7 +229,7 @@ const TaskApprovalActionsSimple: React.FC<TaskApprovalActionsProps> = ({
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <Check className="w-4 h-4 mr-2" />
-                  Approve (Engine)
+                  Approve
                 </Button>
 
                 {/* ENGINE Reject */}
@@ -240,7 +240,7 @@ const TaskApprovalActionsSimple: React.FC<TaskApprovalActionsProps> = ({
                   className="text-red-600 border-red-300 hover:bg-red-50"
                 >
                   <X className="w-4 h-4 mr-2" />
-                  Reject (Engine)
+                  Reject
                 </Button>
               </>
             )}

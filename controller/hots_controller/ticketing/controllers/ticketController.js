@@ -15,7 +15,7 @@ const hotsCheckApprovalLevel = require("../../../../config/hotsCheckApprovalLeve
 
 const fs = require('fs');
 const { hotsMailer, hotsSubmitMailer, hotsApproveRequest } = require('../../../../service/mailer/hots/hots_mailer');
-const hotscustomfunctionController = require("../../hotscustomfunctionController");
+const hotscustomfunctionController = require("../../customfunction/controllers/customfunctionController");
 
 // ============================================================
 // 🔧 REFACTORED IMPORTS - Using script/Utility
@@ -120,7 +120,140 @@ where
 `
 
 
+
+
+
 module.exports = {
+    /**
+     * Create User Approval Ticket
+     * 1. Look up department_head from user's department
+     * 2. Fallback to IT Leader (dept 10) + HR Leader (dept 1) if no department_head
+     */
+    addTicketUserApproval: async (user_id, department_id, new_user_details) => {
+        let timestamp = magenta + new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString('id') + ' : ';
+        let service_id = SERVICE_IDS.USER_APPROVAL; // Service ID 21 for User Approval
+
+        try {
+            console.log(timestamp, `🎫 Creating User Approval Ticket for user_id: ${user_id}, department_id: ${department_id}`);
+
+            // Step 1: Get department_head and department_name from m_department
+            let approvers = [];
+            let department_name = 'Unknown';
+
+            if (department_id) {
+                const [deptResult] = await dbHots.promise().query(
+                    `SELECT department_head, department_name FROM m_department WHERE department_id = ?`,
+                    [department_id]
+                );
+
+                if (deptResult.length > 0) {
+                    department_name = deptResult[0].department_name || 'Unknown';
+                    if (deptResult[0].department_head) {
+                        approvers.push(deptResult[0].department_head);
+                        console.log(timestamp, `✅ Found Department Head: ${deptResult[0].department_head}`);
+                    }
+                }
+            }
+
+            // Step 2: Fallback - If no department_head, get IT Leader (dept 10) and HR Leader (dept 1)
+            if (approvers.length === 0) {
+                console.log(timestamp, `⚠️ No department_head found - using IT & HR fallback`);
+
+                const [fallbackResult] = await dbHots.promise().query(
+                    `SELECT department_id, department_head 
+                     FROM m_department 
+                     WHERE department_id IN (1, 10) 
+                     AND department_head IS NOT NULL`
+                );
+
+                for (const dept of fallbackResult) {
+                    if (dept.department_head) {
+                        approvers.push(dept.department_head);
+                        console.log(timestamp, `✅ Fallback approver from dept ${dept.department_id}: ${dept.department_head}`);
+                    }
+                }
+            }
+
+            // Step 3: Generate ticket ID using the standard function
+            const ticketId = await generateCustomTicketID(dbHots, service_id, user_id);
+            console.log(timestamp, `🎫 Generated Ticket ID: ${ticketId}`);
+
+            // Step 4: Create ticket with CORRECT ENGINE SCHEMA
+            await dbHots.promise().execute(`
+                INSERT INTO t_ticket (
+                    ticket_id, service_id, status_id, created_by, creation_date, last_update, workflow_step
+                ) VALUES (?, ?, 1, ?, NOW(), NOW(), 1)
+            `, [ticketId, service_id, user_id]);
+
+            // Step 5: Insert ticket details (Name, Department, Email)
+            // Columns: lbl_col=label, cstm_col=field_name, value=actual_value
+            const fullName = `${new_user_details.firstname} ${new_user_details.lastname}`;
+
+            // Detail 1: Name
+            await dbHots.promise().execute(`
+                INSERT INTO t_ticket_detail (ticket_id, lbl_col, cstm_col, value, order_col)
+                VALUES (?, ?, ?, ?, ?)
+            `, [ticketId, 'Name', 'name', fullName, 0]);
+
+            // Detail 2: Proposed Department
+            await dbHots.promise().execute(`
+                INSERT INTO t_ticket_detail (ticket_id, lbl_col, cstm_col, value, order_col)
+                VALUES (?, ?, ?, ?, ?)
+            `, [ticketId, 'Proposed Department', 'department', department_name, 1]);
+
+            // Detail 3: Email
+            await dbHots.promise().execute(`
+                INSERT INTO t_ticket_detail (ticket_id, lbl_col, cstm_col, value, order_col)
+                VALUES (?, ?, ?, ?, ?)
+            `, [ticketId, 'Email', 'email', new_user_details.email, 2]);
+
+            console.log(timestamp, `🎫 Ticket created: ${ticketId}`);
+
+            // Step 6: Insert approval events with CORRECT ENGINE SCHEMA
+            if (approvers.length > 0) {
+                for (const approver_id of approvers) {
+                    await dbHots.promise().execute(`
+                        INSERT INTO t_ticket_event (
+                            ticket_id, approver_id, approval_order, approval_status,
+                            step_type, assigned_value, approver_leader, event_type
+                        ) VALUES (?, ?, 1, 0, 'user', ?, 1, 'approval')
+                    `, [ticketId, approver_id, approver_id]);
+                    console.log(timestamp, `✅ Added approver: ${approver_id}`);
+                }
+
+                // Send email to all approvers
+                for (const approver_id of approvers) {
+                    const [approverData] = await dbHots.promise().query("SELECT email, firstname FROM user WHERE user_id = ?", [approver_id]);
+                    if (approverData.length > 0 && approverData[0].email) {
+                        hotsMailer(
+                            approverData[0].email,
+                            'Action Required: New User Approval',
+                            `
+                            <div>
+                                <p>Dear ${approverData[0].firstname},</p>
+                                <p>A new user <strong>${fullName}</strong> has registered and verified their email.</p>
+                                <p><strong>Proposed Department:</strong> ${department_name}</p>
+                                <p><strong>Email:</strong> ${new_user_details.email}</p>
+                                <p>Please review and approve this request in the HOTS system.</p>
+                                <p>Ticket ID: ${ticketId}</p>
+                            </div>
+                            `
+                        );
+                        console.log(timestamp, `📧 Email sent to: ${approverData[0].email}`);
+                    }
+                }
+            } else {
+                console.log(timestamp, `⚠️ No approvers found - ticket created without approval events`);
+            }
+
+            console.log(timestamp, "✅ addTicketUserApproval success", ticketId);
+            return { success: true, ticketId };
+
+        } catch (err) {
+            console.log(timestamp, "❌ error addTicketUserApproval", err);
+            return { success: false, error: err.message };
+        }
+    },
     addTicketITSupport: async (req, res) => {
         let timestamp = magenta + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
         let service_id = SERVICE_IDS.IT_SUPPORT; // 🔧 Refactored: was hardcoded as 7
@@ -1158,7 +1291,7 @@ module.exports = {
             let queryGetMyTiket = `
                             SELECT
                     t.ticket_id,
-                    DATE_FORMAT(t.creation_date, '%d-%b-%Y %H:%i') AS creation_date,
+                    DATE_FORMAT(t.creation_date, '%d/%m/%Y %H:%i') AS creation_date,
                     s.service_id,
                     s.service_name,
                     s.approval_level,
@@ -1862,7 +1995,7 @@ module.exports = {
             let queryGetMyTiket = `
             SELECT
                 t.ticket_id,
-                DATE_FORMAT(t.creation_date, '%d-%b-%Y %H:%i') AS creation_date,
+                DATE_FORMAT(t.creation_date, '%d/%m/%Y %H:%i') AS creation_date,
                 s.service_id,
                 s.service_name,
                 s.approval_level,
@@ -2048,7 +2181,7 @@ module.exports = {
             let queryGetMyTiket = `
             SELECT
                 t.ticket_id,
-                DATE_FORMAT(t.creation_date, '%d-%b-%Y %H:%i') as creation_date,
+                DATE_FORMAT(t.creation_date, '%d/%m/%Y %H:%i') as creation_date,
                 s.service_id,
                 s.service_name,
                 s.approval_level,
@@ -2480,7 +2613,7 @@ module.exports = {
                         c.comment as text,
                         c.status,
                         DATE_FORMAT(c.date_created, '%W, ') as day_created,
-                        DATE_FORMAT(c.date_created,'%d-%b-%Y ') as date_created,
+                        DATE_FORMAT(c.date_created,'%d/%m/%Y ') as date_created,
                         DATE_FORMAT(c.date_created, '%H:%i') as time_created,
                         f.upload_id as attachment_id,
                         f.file_path as attachment_url,

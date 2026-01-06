@@ -15,6 +15,7 @@ const SERVICE_IDS = {
     IT_SUPPORT: 7,          // IT Support Request
     DATA_UPDATE: 10,        // Data Update Request (previously referenced as 9 in some places)
     PRICING_STRUCTURE: 11,  // Pricing Structure
+    USER_APPROVAL: 21,      // New User Approval Request
 };
 
 // ============================================================

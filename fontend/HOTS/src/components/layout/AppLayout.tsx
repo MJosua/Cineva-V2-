@@ -365,7 +365,7 @@ export function AppSidebar() {
               {userProfile ? `${userProfile.firstname} ${userProfile.lastname}` : 'Loading...'}
             </p>
             <p className="text-xs text-sidebar-foreground/70 truncate">
-              {userProfile?.department_name || 'Loading...'}
+              {userProfile?.department_name || 'No Department'}
             </p>
             {userProfile?.superior_name && (
               <p className="text-xs text-sidebar-foreground/60 truncate">

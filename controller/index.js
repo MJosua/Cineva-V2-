@@ -15,7 +15,7 @@ const cardGenerator = require('./cardGenerator')
 
 //hots 
 
-const hotsAuth = require('./hots_controller/auth/controllers/authController'); // 🔧 Phase 5: Moved to module
+const hotsAuth = require('./hots_controller/auth/controllers/authController'); // HOTS authentication (organized in auth folder)
 const hotsAdmin = require('./hots_controller/admin/controllers/adminController'); // 🔧 Phase 5: Moved to module
 const hotsTicket = require('./hots_controller/ticketing/controllers/ticketController'); // 🔧 Reorganized: moved under hots_controller
 const hotsSettingsController = require('./hots_controller/settings/controllers/settingsController'); // 🔧 Phase 5: Moved to module

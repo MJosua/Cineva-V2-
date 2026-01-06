@@ -1441,14 +1441,7 @@ module.exports = {
                     
     
                     ${approvalColumnsHtml}
-                    
-                   
-                        <br>
-                        ${approvallist.find(a => a.approval_order === 4)?.fullname || ''}
-                        <br>
-                        <span style="font-size:12px;color:#555;">Accounting Manager</span>
-                    </td>
-    
+
                   </tr>
                 </table>
           

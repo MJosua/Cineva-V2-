@@ -15,7 +15,7 @@ const hotsCheckApprovalLevel = require("../../config/hotsCheckApprovalLevel");
 
 const fs = require('fs');
 const { hotsMailer, hotsSubmitMailer, hotsApproveRequest } = require('../../service/mailer/hots/hots_mailer');
-const hotscustomfunctionController = require("./hotscustomfunctionController");
+const hotscustomfunctionController = require("./customfunction/controllers/customfunctionController");
 
 // ============================================================
 // 🔧 REFACTORED IMPORTS - Using script/Utility
@@ -1158,7 +1158,7 @@ module.exports = {
             let queryGetMyTiket = `
                             SELECT
                     t.ticket_id,
-                    DATE_FORMAT(t.creation_date, '%d-%b-%Y %H:%i') AS creation_date,
+                    DATE_FORMAT(t.creation_date, '%d/%m/%Y %H:%i') AS creation_date,
                     s.service_id,
                     s.service_name,
                     s.approval_level,
@@ -1862,7 +1862,7 @@ module.exports = {
             let queryGetMyTiket = `
             SELECT
                 t.ticket_id,
-                DATE_FORMAT(t.creation_date, '%d-%b-%Y %H:%i') AS creation_date,
+                DATE_FORMAT(t.creation_date, '%d/%m/%Y %H:%i') AS creation_date,
                 s.service_id,
                 s.service_name,
                 s.approval_level,
@@ -2048,7 +2048,7 @@ module.exports = {
             let queryGetMyTiket = `
             SELECT
                 t.ticket_id,
-                DATE_FORMAT(t.creation_date, '%d-%b-%Y %H:%i') as creation_date,
+                DATE_FORMAT(t.creation_date, '%d/%m/%Y %H:%i') as creation_date,
                 s.service_id,
                 s.service_name,
                 s.approval_level,
@@ -2480,7 +2480,7 @@ module.exports = {
                         c.comment as text,
                         c.status,
                         DATE_FORMAT(c.date_created, '%W, ') as day_created,
-                        DATE_FORMAT(c.date_created,'%d-%b-%Y ') as date_created,
+                        DATE_FORMAT(c.date_created,'%d/%m/%Y ') as date_created,
                         DATE_FORMAT(c.date_created, '%H:%i') as time_created,
                         f.upload_id as attachment_id,
                         f.file_path as attachment_url,

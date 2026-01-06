@@ -2694,14 +2694,14 @@ module.exports = {
             const query = `
              SELECT 
                     tso.so_id,
-                    tso.so_date,
+                    DATE_FORMAT(tso.so_date, '%d/%m/%Y') as so_date,
                     tso.po_number,
-                    tso.po_date,
+                    DATE_FORMAT(tso.po_date, '%d/%m/%Y') as po_date,
                     tso.client_id,
                     mc.company_name as client_name,
                     tso.ship_to_id,
                     mc2.company_name as ship_to_name,
-                    tso.delv_date,
+                    DATE_FORMAT(tso.delv_date, '%d/%m/%Y') as delv_date,
                     tso.week_delv,
                     tso.year_delv,
                     tso.completion_note,

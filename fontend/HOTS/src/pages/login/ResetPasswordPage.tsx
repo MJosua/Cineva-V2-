@@ -92,7 +92,7 @@ const ResetPasswordPage = () => {
     // Loading state
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+            <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 z-50">
                 <Card className="w-full max-w-md shadow-xl text-center">
                     <CardContent className="p-8">
                         <Loader2 className="w-12 h-12 mx-auto animate-spin text-blue-600" />
@@ -106,7 +106,7 @@ const ResetPasswordPage = () => {
     // Token expired/invalid
     if (!tokenValid && !resetComplete) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+            <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 z-50">
                 <Card className="w-full max-w-md shadow-xl text-center">
                     <CardHeader>
                         <div className="mx-auto w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center">
@@ -132,7 +132,7 @@ const ResetPasswordPage = () => {
     // Reset complete
     if (resetComplete) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+            <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 z-50">
                 <Card className="w-full max-w-md shadow-xl text-center">
                     <CardHeader>
                         <div className="mx-auto w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center">
@@ -157,7 +157,7 @@ const ResetPasswordPage = () => {
 
     // Reset password form
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 z-50">
             <Card className="w-full max-w-md shadow-xl">
                 <CardHeader className="text-center space-y-4">
                     <div className="mx-auto w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">

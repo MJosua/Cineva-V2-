@@ -39,6 +39,8 @@ const mailPORT = parseInt(isProd ? process.env.MAIL_SMTP_PORT : process.env.MAIL
 const mailUser = isProd ? process.env.MAIL_USERNAME : process.env.MAIL_LOCAL_USERNAME;
 const mailPassword = isProd ? process.env.MAIL_PASSWORD : process.env.MAIL_LOCAL_PASSWORD;
 const mailaccount = isProd ? 'no-reply@indofoodinternational.com' : 'admin@stieprofesionalindonesia.ac.id';
+// Frontend URL for HOTS (auto-switch between dev and prod)
+const feUrlHots = isProd ? process.env.FE_URL : process.env.DEV_FE_URL;
 
 
 
@@ -108,7 +110,7 @@ module.exports = {
         let timestamp = date.toLocaleDateString("id") + " " + date.toLocaleTimeString("id") + " : ";
 
         // 🟢 Generate verify link
-        const verifyLink = `${process.env.FE_URL_HOTS}/verify?token=${token}`;
+        const verifyLink = `${process.env.FE_URL_HOTS}/hots/verify?token=${token}`;
 
         // 🧭 Log link to console for local/dev debugging
         console.log("\n----------------------------------------------------");
@@ -174,16 +176,22 @@ module.exports = {
               <div>
                 <h3>To reset your password, copy this URL into an incognito browser tab or click the link below:</h3>
                 <br>
-                <a href="${process.env.FE_URL_HOTS}/forgot-password/${token}">
-                  ${process.env.FE_URL_HOTS}/forgot-password/${token}
+                <a href="${feUrlHots}/forgot-password/${token}">
+                  ${feUrlHots}/forgot-password/${token}
                 </a>
                 <br><br>
                 <h4>Please do not share this link with anyone.</h4>
               </div>
             `,
             });
-
-
+            // Debug: Log the token and full URL for manual testing
+            const resetUrl = `${feUrlHots}/forgot-password/${token}`;
+            console.log(`\n----------------------------------------------------`);
+            console.log(`📧 [HOTS Forgot Password Debug]`);
+            console.log(`Recipient: ${address}`);
+            console.log(`Token: ${token}`);
+            console.log(`Reset URL: ${resetUrl}`);
+            console.log(`----------------------------------------------------\n`);
 
             console.log(`${timestamp} ✅ Email sent to ${address}`);
             console.log(`Message ID: ${info.messageId}`);
@@ -479,7 +487,7 @@ module.exports = {
                 t_ticket_event ae
                 left join 
                 user u on ae.approver_id = u.user_id
-                where approval_id = ? `,
+                where ae.ticket_id = ? `,
             [ticket_id]
         );
 

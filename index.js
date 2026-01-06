@@ -393,6 +393,8 @@ App.use('/public/hots/generateddocuments', express.static(path.join(__dirname, '
 App.use('/hots/profile', express.static(path.join(__dirname, 'public', 'hots', 'profile'))); // User profile files (signatures, avatars)
 App.use('/image', express.static(path.join(__dirname, 'public', 'image')));
 App.use('/files', express.static(path.join(__dirname, 'public', 'files')));
+App.use('/aset', express.static(path.join(__dirname, 'public', 'aset'))); // Assets for documents (logos, etc.)
+App.use('/ttd', express.static(path.join(__dirname, 'public', 'ttd'))); // Signature images
 
 /* ===================================================================
    🔥 404 HANDLER — MUST BE LAST

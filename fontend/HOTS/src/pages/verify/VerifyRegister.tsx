@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams, useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_URL } from "@/config/sourceConfig";
+import { Button } from '@/components/ui/button';
+
+
 
 export default function VerifyPage() {
     const [searchParams] = useSearchParams();
@@ -11,6 +14,7 @@ export default function VerifyPage() {
     const [status, setStatus] = useState("Verifying...");
     const [loading, setLoading] = useState(true);
 
+    
     // Try to get token from either ?token= or /verify/:token
     const token = searchParams.get("token") || params.token;
     console.log("🔍 Retrieved token:", token);
@@ -43,12 +47,23 @@ export default function VerifyPage() {
     }, [token]);
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="min-h-screen w-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-3 sm:p-6">
             <div className="bg-white p-6 rounded shadow-md max-w-sm text-center">
                 <h2 className="text-xl font-bold mb-3">Email Verification</h2>
                 <p className="text-gray-600">
                     {loading ? "Please wait..." : status}
                 </p>
+                <p>
+                    <Button
+                        h="1.75rem"
+                        size="sm"
+                        className="mt-4"
+                        onClick={() => navigate('/')}
+                    >
+                        Go Back to Home
+                    </Button>
+                </p>
+
             </div>
         </div>
     );

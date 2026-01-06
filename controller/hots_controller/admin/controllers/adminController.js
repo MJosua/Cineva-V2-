@@ -534,7 +534,7 @@ module.exports = {
         const query = `
             SELECT
                 t.ticket_id,
-                DATE_FORMAT(t.created_at, '%d-%b-%Y %H:%i') AS creation_date,
+                DATE_FORMAT(t.created_at, '%d/%m/%Y %H:%i') AS creation_date,
     
                 s.service_id,
                 s.service_name,
