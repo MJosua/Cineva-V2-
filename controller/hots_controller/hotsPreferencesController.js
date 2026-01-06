@@ -16,7 +16,7 @@ const hotsPreferencesController = {
 
             const [rows] = await dbHots.promise().query(`
                 SELECT pref_category, pref_key, pref_value
-                FROM m_user_preferences
+                FROM user_preferences
                 WHERE user_id = ?
             `, [user_id]);
 
@@ -52,7 +52,7 @@ const hotsPreferencesController = {
 
             const [rows] = await dbHots.promise().query(`
                 SELECT pref_key, pref_value
-                FROM m_user_preferences
+                FROM user_preferences
                 WHERE user_id = ? AND pref_category = ?
             `, [user_id, category]);
 
@@ -83,7 +83,7 @@ const hotsPreferencesController = {
 
             const [rows] = await dbHots.promise().query(`
                 SELECT pref_value
-                FROM m_user_preferences
+                FROM user_preferences
                 WHERE user_id = ? AND pref_category = ? AND pref_key = ?
             `, [user_id, category, key]);
 
@@ -119,7 +119,7 @@ const hotsPreferencesController = {
             const jsonValue = JSON.stringify(value);
 
             await dbHots.promise().query(`
-                INSERT INTO m_user_preferences (user_id, pref_category, pref_key, pref_value)
+                INSERT INTO user_preferences (user_id, pref_category, pref_key, pref_value)
                 VALUES (?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE 
                     pref_value = VALUES(pref_value),
@@ -162,7 +162,7 @@ const hotsPreferencesController = {
 
             // Batch upsert
             await dbHots.promise().query(`
-                INSERT INTO m_user_preferences (user_id, pref_category, pref_key, pref_value)
+                INSERT INTO user_preferences (user_id, pref_category, pref_key, pref_value)
                 VALUES ?
                 ON DUPLICATE KEY UPDATE 
                     pref_value = VALUES(pref_value),
@@ -188,7 +188,7 @@ const hotsPreferencesController = {
             const { category, key } = req.params;
 
             await dbHots.promise().query(`
-                DELETE FROM m_user_preferences
+                DELETE FROM user_preferences
                 WHERE user_id = ? AND pref_category = ? AND pref_key = ?
             `, [user_id, category, key]);
 
@@ -211,7 +211,7 @@ const hotsPreferencesController = {
 
             const [rows] = await dbHots.promise().query(`
                 SELECT pref_value
-                FROM m_user_preferences
+                FROM user_preferences
                 WHERE user_id = ? AND pref_category = 'dashboard' AND pref_key = 'pinned_ids'
             `, [user_id]);
 
@@ -250,7 +250,7 @@ const hotsPreferencesController = {
             // Get current pinned list
             const [rows] = await dbHots.promise().query(`
                 SELECT pref_value
-                FROM m_user_preferences
+                FROM user_preferences
                 WHERE user_id = ? AND pref_category = 'dashboard' AND pref_key = 'pinned_ids'
             `, [user_id]);
 
@@ -288,7 +288,7 @@ const hotsPreferencesController = {
 
             // Save
             await dbHots.promise().query(`
-                INSERT INTO m_user_preferences (user_id, pref_category, pref_key, pref_value)
+                INSERT INTO user_preferences (user_id, pref_category, pref_key, pref_value)
                 VALUES (?, 'dashboard', 'pinned_ids', ?)
                 ON DUPLICATE KEY UPDATE 
                     pref_value = VALUES(pref_value),
@@ -315,7 +315,7 @@ const hotsPreferencesController = {
 
             const [rows] = await dbHots.promise().query(`
                 SELECT pref_value
-                FROM m_user_preferences
+                FROM user_preferences
                 WHERE user_id = ? AND pref_category = 'dashboard' AND pref_key = ?
             `, [user_id, `card_preview_${dashboard_id}`]);
 
@@ -344,7 +344,7 @@ const hotsPreferencesController = {
             const { settings } = req.body;
 
             await dbHots.promise().query(`
-                INSERT INTO m_user_preferences (user_id, pref_category, pref_key, pref_value)
+                INSERT INTO user_preferences (user_id, pref_category, pref_key, pref_value)
                 VALUES (?, 'dashboard', ?, ?)
                 ON DUPLICATE KEY UPDATE 
                     pref_value = VALUES(pref_value),

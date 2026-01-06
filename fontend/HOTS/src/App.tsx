@@ -20,6 +20,7 @@ import HelpCenter from "./pages/HelpCenter";
 import NotFound from "./pages/NotFound";
 import Loginpage from "./pages/login/Loginpage";
 import Registerpage from "./pages/login/Registerpage";
+import ResetPasswordPage from "./pages/login/ResetPasswordPage";
 
 // Admin
 import ServiceCatalogAdmin from "./pages/admin/ServiceCatalogAdmin";
@@ -99,13 +100,14 @@ const AppContentInner = () => {
   const dynamicDashboardRoutes = useDynamicDashboardRoutes();
 
   return (
-    <Router basename="/hots">
+    <Router basename={import.meta.env.BASE_URL}>
       <div className="min-h-screen bg-background">
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Loginpage />} />
           <Route path="/register" element={<Registerpage />} />
           <Route path="/verify" element={<VerifyPage />} />
+          <Route path="/forgot-password/:token" element={<ResetPasswordPage />} />
 
 
           {/* Protected Routes */}

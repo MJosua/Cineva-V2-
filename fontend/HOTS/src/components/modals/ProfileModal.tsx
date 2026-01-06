@@ -234,6 +234,7 @@ const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
                   onClick={triggerFileInput}
                   disabled={uploading}
                   className="w-full"
+                  id="profile-upload-signature-btn"
                 >
                   {uploading ? (
                     <>Uploading...</>

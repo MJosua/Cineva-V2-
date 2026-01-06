@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import * as Icons from "lucide-react";
+import { AppWindow, Square } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { DashboardFunction } from "@/types/hotsDashboard";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,17 @@ interface DashboardCardEnhancedProps {
 
 const DashboardCardEnhanced: React.FC<DashboardCardEnhancedProps> = ({ func, summary }) => {
     const navigate = useNavigate();
-    const Icon = (Icons as any)[func.icon || "AppWindow"] || Icons.AppWindow;
+    // Safety check for dynamic icon loading
+    const getIcon = () => {
+        try {
+            const iconName = func.icon || "AppWindow";
+            const ValidIcon = (Icons as any)[iconName];
+            return ValidIcon || AppWindow || Square; // Fallbacks
+        } catch (e) {
+            return AppWindow || Square;
+        }
+    };
+    const Icon = getIcon();
 
     // Check if we have real data
     const hasData = summary && summary.total > 0;

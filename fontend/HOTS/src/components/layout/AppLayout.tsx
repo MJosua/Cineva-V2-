@@ -29,6 +29,7 @@ import axios from 'axios';
 import { API_URL } from '@/config/sourceConfig';
 import { fetchTaskCount } from '@/store/slices/ticketsSlice';
 import { fetchAssignmentCount } from '@/store/slices/assignmentSlice';
+import { TutorialManager } from '@/components/tutorial/TutorialManager';
 
 interface UserProfile {
   user_id: number;
@@ -355,6 +356,7 @@ export function AppSidebar() {
             size="sm"
             className="w-8 h-8 p-0 bg-muted rounded-full group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8"
             onClick={() => setIsProfileModalOpen(true)}
+            id="sidebar-profile-btn"
           >
             <User className="w-4 h-4" />
           </Button>
@@ -433,6 +435,7 @@ export function AppLayout({ children, searchValue, onSearchChange, searchPlaceho
             </div>
           </header>
           <div className="flex-1 p-6">
+            <TutorialManager />
             {children}
           </div>
         </SidebarInset>

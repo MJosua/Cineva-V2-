@@ -41,15 +41,28 @@ const Forgotpassform = ({ setForgotToggle, setRecoveryToggle }: ForgotpassformPr
         if (!res.data.success) {
           setError(res?.data?.message ?? "An error occurred");
           setSuccess(false);
+          // Show toast with the error message from backend
+          toast({
+            title: "Unable to send reset link",
+            description: res?.data?.message ?? "An error occurred",
+            variant: "destructive",
+            duration: 8000,
+          });
         } else {
           setEmail(res?.data?.email ?? "");
           setSuccess(true);
+          toast({
+            title: "Email Sent!",
+            description: res?.data?.message ?? "Check your inbox for the reset link.",
+            duration: 6000,
+          });
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        const errorMsg = err?.response?.data?.message ?? "Something went wrong. Please try again.";
         toast({
           title: "Oops!",
-          description: "Something went wrong. Please try again.",
+          description: errorMsg,
           variant: "destructive",
           duration: 6000,
         });
@@ -57,7 +70,7 @@ const Forgotpassform = ({ setForgotToggle, setRecoveryToggle }: ForgotpassformPr
   };
 
   return (
-    <Card className="w-full max-w-md shadow-xl">
+    <>
       <CardHeader className="text-center space-y-4">
         <div className="mx-auto w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
           <MailQuestion className="w-8 h-8 text-blue-600" />
@@ -75,7 +88,7 @@ const Forgotpassform = ({ setForgotToggle, setRecoveryToggle }: ForgotpassformPr
           ) : (
             <>
               <p className="text-sm text-gray-500">
-                Enter your username to receive password reset instructions.
+                Enter your username or email address to receive password reset instructions.
               </p>
               <p className="text-sm text-gray-500">Helpdesk and Operational Tracking System</p>
             </>
@@ -88,13 +101,13 @@ const Forgotpassform = ({ setForgotToggle, setRecoveryToggle }: ForgotpassformPr
           <>
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div>
-                <Label htmlFor="username">Username / Employee ID</Label>
+                <Label htmlFor="username">Username / Employee ID / Email</Label>
                 <Input
                   id="username"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
+                  placeholder="Enter your username or email"
                   required
                 />
               </div>
@@ -130,7 +143,7 @@ const Forgotpassform = ({ setForgotToggle, setRecoveryToggle }: ForgotpassformPr
           <p>For technical support, contact IT Department</p>
         </div>
       </CardContent>
-    </Card>
+    </>
   );
 };
 

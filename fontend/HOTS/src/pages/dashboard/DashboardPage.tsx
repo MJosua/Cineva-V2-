@@ -4,7 +4,7 @@ import { RootState, AppDispatch } from "@/store";
 import { fetchDashboardFunctions } from "@/store/slices/dashboardSlice";
 import DashboardCardEnhanced from "./DashboardCardEnhanced";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { ArrowLeft, Database, Icon } from "lucide-react";
+import { Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import axios from "axios";
@@ -83,7 +83,7 @@ const DashboardPage: React.FC = () => {
         acc[category].push(func);
         return acc;
     }, {});
- 
+
     // Transform API summary to card summary format
     const getCardSummary = (func: typeof data[0]) => {
         // Look up by function ID (not service ID anymore)

@@ -4,7 +4,7 @@ const {
     dbQuery,
 } = require("../../config/db");
 const { generateTokenHT, hashPasswordHT, createTokenHT, verifyTokenHT } = require("../../config/encrypts");
-const { hotsForgotPasswordMailer, hotsVerifyEmailMailer } = require('../../service/mailer/hots/hots_mailer');
+const { hotsForgotPasswordMailer, hotsVerifyEmailMailer, hotsMailer } = require('../../service/mailer/hots/hots_mailer');
 // const cookieParser = require('cookie-parser');
 const { compare } = require('bcrypt');
 const bcrypt = require('bcrypt'); // For password comparison
@@ -202,10 +202,10 @@ module.exports = {
             }
         });
     }
-    , 
+    ,
     keepLogin: async (req, res) => {
 
-    
+
         const date = new Date();
         const timestamp =
             yellowTerminal +
@@ -213,7 +213,7 @@ module.exports = {
             " " +
             date.toLocaleTimeString("id") +
             " : ";
-    
+
         // ============================
         // Fetch current week
         // ============================
@@ -225,7 +225,7 @@ module.exports = {
             console.error("❌ ERROR fetching week:", e);
             return res.status(500).send({ success: false, message: "weekQuery error", details: e });
         }
-    
+
         // ============================
         // Token validation
         // ============================
@@ -236,19 +236,19 @@ module.exports = {
                 message: `Unauthorized`
             });
         }
-    
-    
+
+
         const queryValidateToken = `
             SELECT registration_nr 
             FROM user 
             WHERE registration_nr = ?
         `;
         const paramValidateToken = [req.token];
-    
-    
+
+
         dbHots.execute(queryValidateToken, paramValidateToken, (err1, results1) => {
-    
-    
+
+
             if (err1) {
                 console.error("❌ SQL ERROR validateToken:", err1);
                 return res.status(500).send({
@@ -257,12 +257,12 @@ module.exports = {
                     details: err1
                 });
             }
-    
-    
+
+
             // ==========================================================
             // USER DATA QUERY
             // ==========================================================
-    
+
             const queryGetUserData = `
                 SELECT
                     u.user_id,
@@ -314,13 +314,13 @@ module.exports = {
     
                 WHERE user_id = ?
             `;
-    
+
             const paramGetUserData = [req.dataToken.user_id];
-    
-    
+
+
             dbHots.execute(queryGetUserData, paramGetUserData, (err2, results2) => {
-    
-    
+
+
                 if (err2) {
                     console.error("❌ SQL ERROR getUserData:", err2);
                     return res.status(500).send({
@@ -329,8 +329,8 @@ module.exports = {
                         details: err2
                     });
                 }
-    
-    
+
+
                 if (!results2[0]) {
                     console.warn("⚠ No user data found");
                     return res.status(200).send({
@@ -338,9 +338,9 @@ module.exports = {
                         message: `no data`
                     });
                 }
-    
+
                 const userData = results2[0];
-    
+
                 let tokek;
                 try {
                     tokek = generateTokenHT(userData);
@@ -352,7 +352,7 @@ module.exports = {
                         details: tokenErr
                     });
                 }
-    
+
                 // ============================
                 // Send final response
                 // ============================
@@ -362,7 +362,7 @@ module.exports = {
                     tokek,
                     current_delv_week
                 });
-    
+
                 // ============================
                 // Update DB with new token
                 // ============================
@@ -372,8 +372,8 @@ module.exports = {
                     WHERE user_id = ?
                 `;
                 const paramUpdateToken = [tokek, req.dataToken.user_id];
-    
-    
+
+
                 dbHots.execute(queryUpdateToken, paramUpdateToken, (err3) => {
                     if (err3) {
                         console.error("❌ SQL ERROR updateToken:", err3);
@@ -381,16 +381,16 @@ module.exports = {
                         console.log("🟢 Token updated successfully");
                     }
                 });
-    
+
                 console.log(timestamp, `Hots_auth KeepLogin ${req.dataToken.uid} success`);
             });
-    
+
         });
-    
+
     }
-    
-    
-    
+
+
+
     , forgotPassword: async (req, res) => {
 
         let date = new Date();
@@ -399,20 +399,28 @@ module.exports = {
         let uid = req.body.uid
 
         if (uid) {
-            let queryGetEmail = `SELECT u.email, u.user_id FROM user u WHERE  u.uid = ?;`;
-            let ParamGetEmail = [uid];
+            // Updated: Search by uid OR email using OR condition
+            let queryGetEmail = `SELECT u.email, u.user_id, u.uid, u.active FROM user u WHERE u.uid = ? OR u.email = ? LIMIT 1;`;
+            let ParamGetEmail = [uid, uid];
 
             dbHots.execute(queryGetEmail, ParamGetEmail, (err1, results1) => {
 
                 if (err1) {
                     res.status(500).send({
                         success: false,
-                        message: `error at forgot password HOTS! `,
+                        message: `An error occurred while processing your request. Please try again later.`,
                         err1
                     })
 
                 } else {
                     if (results1[0]) {
+                        // Check if account is active
+                        if (results1[0].active !== 1) {
+                            return res.status(200).send({
+                                success: false,
+                                message: "Your account is inactive. Please contact IT Department to reactivate your account."
+                            });
+                        }
 
                         let address = results1[0].email;
 
@@ -422,17 +430,21 @@ module.exports = {
                             hotsForgotPasswordMailer(address, token);
 
                             let queryUpdateToken = `UPDATE user  SET registration_nr = ? WHERE uid = ?;`
-                            let paramUpdateToken = [token, uid]
+                            let paramUpdateToken = [token, results1[0].uid]
 
                             dbHots.execute(queryUpdateToken, paramUpdateToken, (err2) => {
 
                                 if (err2) {
                                     console.log(timestamp, "forgotPassword", err2)
+                                    res.status(500).send({
+                                        success: false,
+                                        message: "Failed to process your request. Please try again later."
+                                    });
 
                                 } else {
                                     res.status(200).send({
                                         success: true,
-                                        message: "Reset Password Link has been sent into your email",
+                                        message: "Reset Password Link has been sent to your email. Please check your inbox (and spam folder). Note: Email delivery may take a few minutes due to server traffic.",
                                         email: address
                                     });
                                     console.log(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => uid valid send to " + address)
@@ -443,7 +455,7 @@ module.exports = {
                         } else {
                             res.status(200).send({
                                 success: false,
-                                message: "Cannot send email! No email Address founded!",
+                                message: "Your account is not linked to any email address. Please contact IT Department to update your email or reset your password manually."
                             });
                             console.log(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => Cannot send email! No email Address founded!")
 
@@ -454,7 +466,7 @@ module.exports = {
 
                         res.status(200).send({
                             success: false,
-                            message: `UID that you enter is not found! Please enter the correct one `
+                            message: `User not found. Please check your username or email and try again.`
                         })
                     }
 
@@ -463,9 +475,9 @@ module.exports = {
             })
 
         } else {
-            res.status(500).send({
+            res.status(400).send({
                 success: false,
-                message: `email is not provided `
+                message: `Please enter your username or email address.`
             })
         }
 
@@ -586,7 +598,15 @@ module.exports = {
                                 });
                             } else {
 
-                             
+                                // Send password change confirmation email
+                                const confirmationHtml = `
+                                <div style="font-family: Arial, sans-serif; color: #333;">
+                                    <h2>Password Changed Successfully</h2>
+                                    <p>Your password has been successfully changed.</p>
+                                    <p>If you did not make this change, please contact IT support immediately.</p>
+                                    <p>Best regards,<br><strong>HOTS System</strong></p>
+                                </div>`;
+                                hotsMailer(req.dataToken.email, 'Password Changed Successfully', confirmationHtml);
 
                                 res.status(200).send({
                                     success: true,
@@ -920,7 +940,7 @@ module.exports = {
             }
 
             // 🔹 2️⃣ Mark verified
-           
+
 
             // 🔹 3️⃣ Copy to user table
             const [result] = await dbHots.promise().query(
