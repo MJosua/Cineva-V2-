@@ -536,6 +536,54 @@ module.exports = {
     },
 
     /**
+     * GET /hots_customfunction/srf/auto_category/:ticketId
+     * Auto-lookup category (RM/FG/GEN) from t_ticket_work_data + m_sample_category
+     * Uses samplecategory_field_id to lookup samplecat_shortname
+     */
+    getAutoCategory: async (req, res) => {
+        try {
+            const { ticketId } = req.params;
+
+            if (!ticketId) {
+                return res.status(400).json({ success: false, message: 'ticketId is required' });
+            }
+
+            // Lookup samplecat_shortname by joining t_ticket_work_data with m_sample_category
+            const [rows] = await dbHots.promise().query(`
+                SELECT sc.samplecat_shortname, sc.samplecat_name, sc.samplecat_group
+                FROM hots.t_ticket_work_data wd
+                JOIN hots.m_sample_category sc 
+                  ON sc.samplecat_id = CAST(wd.field_value AS UNSIGNED)
+                WHERE wd.ticket_id = ?
+                  AND wd.field_name = 'samplecategory_field_id'
+                LIMIT 1
+            `, [ticketId]);
+
+            if (rows.length > 0) {
+                const shortname = rows[0].samplecat_shortname || rows[0].samplecat_group || 'GEN';
+                console.log(`🔍 [AutoCategory] ticket=${ticketId}, category=${shortname}`);
+                return res.json({
+                    success: true,
+                    category: shortname,
+                    category_name: rows[0].samplecat_name,
+                    auto_detected: true
+                });
+            }
+
+            // Fallback: no auto-detected category
+            return res.json({
+                success: true,
+                category: null,
+                auto_detected: false
+            });
+
+        } catch (err) {
+            console.error('Error in getAutoCategory:', err);
+            return res.status(500).json({ success: false, message: err.message });
+        }
+    },
+
+    /**
      * POST /hots_customfunction/srf/save_number
      * Save the confirmed SRF document number to t_ticket_doc_no
      * Body: { ticket_id, doc_no, factory_id, product_category }
@@ -1257,13 +1305,24 @@ module.exports = {
 
         const getSRFNumber = async (ticket_id) => {
             try {
+                // Priority 1: Check t_ticket_work_data for srf_document_number (set by executor)
+                const [workDataRows] = await dbHots.promise().query(
+                    `SELECT field_value FROM hots.t_ticket_work_data 
+                     WHERE ticket_id = ? AND field_name = 'srf_document_number' LIMIT 1`,
+                    [ticket_id]
+                );
+                if (workDataRows[0]?.field_value) {
+                    return workDataRows[0].field_value;
+                }
+
+                // Priority 2: Fallback to t_ticket_doc_no
                 const [existingSRF] = await dbHots.promise().query(
                     `SELECT doc_no FROM hots.t_ticket_doc_no WHERE ticket_id = ? AND service_id = 6 LIMIT 1`,
                     [ticket_id]
                 );
                 return existingSRF[0]?.doc_no || 'To Be Generated';
             } catch (error) {
-                return 'Error';
+                return 'To Be Generated';
             }
         };
 

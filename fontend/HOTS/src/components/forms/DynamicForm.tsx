@@ -300,7 +300,14 @@ export const DynamicForm: React.FC<{
 
       const json = await res.json();
 
-      if (!json.ok) throw new Error(json.message);
+      if (!json.ok) {
+        // Handle validation errors array
+        if (json.errors && Array.isArray(json.errors)) {
+          const errorMsg = json.errors.map((e: any) => e.message).join(', ');
+          throw new Error(errorMsg || 'Validation failed');
+        }
+        throw new Error(json.message || json.error || 'Unknown error');
+      }
 
       toast({
         title: "Success",

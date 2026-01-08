@@ -75,6 +75,28 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
         if (!ticketId) return;
         try {
             const token = localStorage.getItem('tokek');
+
+            // ✅ NEW: Auto-detect category from m_sample_category via t_ticket_work_data
+            const autoCatRes = await axios.get(
+                `${API_URL}/hots_customfunction/srf/auto_category/${ticketId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            ).catch(() => null);
+
+            if (autoCatRes?.data?.success && autoCatRes?.data?.category) {
+                const cat = autoCatRes.data.category as 'RM' | 'FG' | 'GEN';
+                setProductCategory(cat);
+                console.log('🔑 [SRF] Auto-detected category:', cat);
+            } else {
+                // Fallback: fetch from saved product_category
+                const catRes = await axios.get(
+                    `${API_URL}/engine/ticket/${ticketId}/work-data/product_category`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                ).catch(() => null);
+                if (catRes?.data?.value) {
+                    setProductCategory(catRes.data.value as 'RM' | 'FG' | 'GEN');
+                }
+            }
+
             // Fetch factory_id
             const factoryRes = await axios.get(
                 `${API_URL}/engine/ticket/${ticketId}/work-data/factory_id`,
@@ -83,14 +105,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
             if (factoryRes?.data?.value) {
                 setSelectedFactoryId(parseInt(factoryRes.data.value));
             }
-            // Fetch product_category
-            const catRes = await axios.get(
-                `${API_URL}/engine/ticket/${ticketId}/work-data/product_category`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            ).catch(() => null);
-            if (catRes?.data?.value) {
-                setProductCategory(catRes.data.value as 'RM' | 'FG' | 'GEN');
-            }
+
             // Fetch srf_document_number
             const numRes = await axios.get(
                 `${API_URL}/engine/ticket/${ticketId}/work-data/srf_document_number`,
@@ -122,7 +137,6 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
         }
     }, [ticketId]);
 
-    console.log("document", documents)
 
     const fetchPreviewNumber = async (factoryId: number, category: string) => {
         if (!factoryId || !category) return;
@@ -322,23 +336,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
                         </div>
                     </div>
 
-                    {/* Category Buttons */}
-                    <div className="space-y-2">
-                        <label className="text-xs font-medium text-slate-600">Category</label>
-                        <div className="flex gap-2">
-                            {(['RM', 'FG', 'GEN'] as const).map((cat) => (
-                                <Button
-                                    key={cat}
-                                    variant={productCategory === cat ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => handleCategoryChange(cat)}
-                                    className={`flex-1 ${productCategory === cat ? 'bg-amber-600 hover:bg-amber-700' : ''}`}
-                                >
-                                    {cat}
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
+
 
                     {/* Save Factory Button */}
                     <Button
@@ -347,7 +345,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
                         className="w-full gap-2 bg-amber-600 hover:bg-amber-700"
                     >
                         {factorySaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        Save Factory & Category
+                        Choose Factory
                     </Button>
 
                     {/* Document Number Preview */}

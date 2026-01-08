@@ -3731,6 +3731,38 @@ module.exports = {
             console.log("service", service);
             console.log("=================================================================");
 
+            // ---------- DATA SEPARATION: Build auto-save field name set from service.items ----------
+            const autoSaveFieldNames = new Set();
+            try {
+                const serviceItems = typeof service.items === 'string'
+                    ? JSON.parse(service.items || '[]')
+                    : (service.items || []);
+
+                function collectAutoSaveFields(items) {
+                    for (const item of items) {
+                        // Check direct field
+                        if (item.data?.autoSaveId?.enabled) {
+                            const fieldName = item.data.name || item.data.label?.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                            const suffix = item.data.autoSaveId.suffix || '_id';
+                            autoSaveFieldNames.add(`${fieldName}${suffix}`);
+                        }
+                        // Check section fields
+                        if (item.data?.fields && Array.isArray(item.data.fields)) {
+                            for (const f of item.data.fields) {
+                                if (f.autoSaveId?.enabled) {
+                                    const suffix = f.autoSaveId.suffix || '_id';
+                                    autoSaveFieldNames.add(`${f.name}${suffix}`);
+                                }
+                            }
+                        }
+                    }
+                }
+                collectAutoSaveFields(serviceItems);
+                console.log('🔑 [DataSeparation] Auto-save fields detected:', [...autoSaveFieldNames]);
+            } catch (parseErr) {
+                console.warn('⚠️ [DataSeparation] Failed to parse service.items:', parseErr.message);
+            }
+
             // Parse workflow JSON from DB (wg.definition)
             let workflowJSON = null;
 
@@ -3794,13 +3826,26 @@ module.exports = {
                         const fieldValue = field.value ?? "";
 
                         if (fieldValue !== "" && fieldValue !== undefined && fieldValue !== null) {
-                            detailInsertPromises.push(
-                                dbHots.promise().execute(
-                                    `INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, order_col) VALUES (?, ?, ?, ?)`,
-                                    [ticket_id, fieldValue, fieldName, orderCounter]
-                                )
-                            );
-                            orderCounter++;
+                            // Check if this is an auto-save field
+                            if (autoSaveFieldNames.has(fieldName)) {
+                                // Route to t_ticket_work_data
+                                detailInsertPromises.push(
+                                    dbHots.promise().execute(
+                                        `INSERT INTO hots.t_ticket_work_data (ticket_id, service_id, field_name, field_value, data_type, entity_id) VALUES (?, ?, ?, ?, 'auto_save', 'form_submission')`,
+                                        [ticket_id, service_id, fieldName, fieldValue]
+                                    )
+                                );
+                                console.log(`🔑 [DataSeparation] Routed ${fieldName} to t_ticket_work_data`);
+                            } else {
+                                // Route to t_ticket_detail (normal behavior)
+                                detailInsertPromises.push(
+                                    dbHots.promise().execute(
+                                        `INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, order_col) VALUES (?, ?, ?, ?)`,
+                                        [ticket_id, fieldValue, fieldName, orderCounter]
+                                    )
+                                );
+                                orderCounter++;
+                            }
                         }
                     }
                     continue;
@@ -3809,13 +3854,26 @@ module.exports = {
                 // --- Handle normal fields ---
                 if (type !== "rowgroup") {
                     if (value !== "" && value !== undefined && value !== null) {
-                        detailInsertPromises.push(
-                            dbHots.promise().execute(
-                                `INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, order_col) VALUES (?, ?, ?, ?)`,
-                                [ticket_id, value, label, orderCounter]
-                            )
-                        );
-                        orderCounter++;
+                        // Check if this is an auto-save field
+                        if (autoSaveFieldNames.has(label)) {
+                            // Route to t_ticket_work_data
+                            detailInsertPromises.push(
+                                dbHots.promise().execute(
+                                    `INSERT INTO hots.t_ticket_work_data (ticket_id, service_id, field_name, field_value, data_type, entity_id) VALUES (?, ?, ?, ?, 'auto_save', 'form_submission')`,
+                                    [ticket_id, service_id, label, value]
+                                )
+                            );
+                            console.log(`🔑 [DataSeparation] Routed ${label} to t_ticket_work_data`);
+                        } else {
+                            // Route to t_ticket_detail (normal behavior)
+                            detailInsertPromises.push(
+                                dbHots.promise().execute(
+                                    `INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, order_col) VALUES (?, ?, ?, ?)`,
+                                    [ticket_id, value, label, orderCounter]
+                                )
+                            );
+                            orderCounter++;
+                        }
                     }
                     continue;
                 }

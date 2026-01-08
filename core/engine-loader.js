@@ -47,6 +47,7 @@ class EngineLoader {
         workflow_id: r.workflow_id || r.m_workflow_group || null,
         workflow_json: tryParseJSON(r.workflow_json) || tryParseJSON(r.m_service_workflow) || null,
         trigger_meta: tryParseJSON(r.trigger_meta) || tryParseJSON(r.trigger_json) || null,
+        items: tryParseJSON(r.items) || null,  // Form builder items JSON for data separation
         api_endpoint: r.api_endpoint || null,
         engine_version: r.engine_version || null,
         raw: r

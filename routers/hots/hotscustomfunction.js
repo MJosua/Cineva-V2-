@@ -31,6 +31,7 @@ route.post('/execute-doc-gen/:ticketId', decodeTokenHT, hotscustomfunctionContro
 
 // SRF Number Generation
 route.get('/srf/preview_number', decodeTokenHT, hotscustomfunctionController.getSRFPreviewNumber);
+route.get('/srf/auto_category/:ticketId', decodeTokenHT, hotscustomfunctionController.getAutoCategory);
 route.post('/srf/save_number', decodeTokenHT, hotscustomfunctionController.saveSRFDocumentNumber);
 route.post('/srf/generate', decodeTokenHT, hotscustomfunctionController.generateSRFDocument);
 

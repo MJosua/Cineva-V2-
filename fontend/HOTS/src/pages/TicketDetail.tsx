@@ -851,7 +851,6 @@ const TicketDetail = () => {
   );
 
 
-  console.log("generatedDocuments", generatedDocuments)
 
   return (
     <AppLayout>

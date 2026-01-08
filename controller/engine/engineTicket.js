@@ -48,13 +48,64 @@ async function generateCustomTicketID(db, service_id, user_id) {
 
 function log(...a) { console.log(...a); }
 
-async function saveEav(p, ticketId, form_data, revision = null) {
-  console.log('🔍 [SAVE_EAV] Input form_data:', JSON.stringify(form_data, null, 2));
+async function saveEav(p, ticketId, form_data, revision = null, serviceItems = null, service_id = null) {
+  // console.log('🔍 [SAVE_EAV] Input form_data:', JSON.stringify(form_data, null, 2));
 
-  const rows = [];
+  // ---------- DATA SEPARATION: Build auto-save field name set from serviceItems ----------
+  const autoSaveFieldNames = new Set();
+
+  // If serviceItems is null, try to fetch from DB
+  let items = [];
+  try {
+    if (serviceItems) {
+      items = typeof serviceItems === 'string'
+        ? JSON.parse(serviceItems || '[]')
+        : (serviceItems || []);
+    } else if (service_id) {
+      // Fallback: fetch form_json from m_service and extract .items
+      const [svcRows] = await p.query('SELECT form_json FROM m_service WHERE service_id = ?', [service_id]);
+      if (svcRows[0]?.form_json) {
+        const formJson = typeof svcRows[0].form_json === 'string'
+          ? JSON.parse(svcRows[0].form_json)
+          : svcRows[0].form_json;
+        items = formJson?.items || [];
+        console.log('🔍 [DataSeparation] Fetched form_json.items from DB, count:', items.length);
+      }
+    }
+
+    function collectAutoSaveFields(itemsArr) {
+      for (const item of itemsArr) {
+        // Check direct field
+        if (item.data?.autoSaveId?.enabled) {
+          const fieldName = item.data.name || item.data.label?.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          const suffix = item.data.autoSaveId.suffix || '_id';
+          autoSaveFieldNames.add(`${fieldName}${suffix}`);
+        }
+        // Check section fields
+        if (item.data?.fields && Array.isArray(item.data.fields)) {
+          for (const f of item.data.fields) {
+            if (f.autoSaveId?.enabled) {
+              const suffix = f.autoSaveId.suffix || '_id';
+              autoSaveFieldNames.add(`${f.name}${suffix}`);
+            }
+          }
+        }
+      }
+    }
+    collectAutoSaveFields(items);
+    if (autoSaveFieldNames.size > 0) {
+      console.log('🔑 [DataSeparation] Auto-save fields detected:', [...autoSaveFieldNames]);
+    }
+  } catch (parseErr) {
+    console.warn('⚠️ [DataSeparation] Failed to parse serviceItems:', parseErr.message);
+  }
+
+  const detailRows = [];
+  const workDataRows = [];
+
   for (const key of Object.keys(form_data || {})) {
     const v = form_data[key];
-    console.log(`🔍 [SAVE_EAV] Processing field "${key}":`, v);
+    // console.log(`🔍 [SAVE_EAV] Processing field "${key}":`, v);
 
     const label = v?.label || key;
     const field_id = v?.field_id || null;
@@ -63,25 +114,35 @@ async function saveEav(p, ticketId, form_data, revision = null) {
 
     if (v && typeof v === 'object' && Object.prototype.hasOwnProperty.call(v, 'value')) {
       value = String(v.value ?? '');
-      console.log(`  → Extracted value from object:`, value);
+      // console.log(`  → Extracted value from object:`, value);
     } else if (typeof v === 'object') {
       value = JSON.stringify(v);
-      console.log(`  → Stringified object:`, value);
+      // console.log(`  → Stringified object:`, value);
     } else {
       value = String(v ?? '');
-      console.log(`  → Direct value:`, value);
+      // console.log(`  → Direct value:`, value);
     }
 
-    console.log(`  → Final: cstm_col="${key}", lbl_col="${label}", value="${value}", field_id=${field_id}, field_type=${field_type}`);
+    // console.log(`  → Final: cstm_col="${key}", lbl_col="${label}", value="${value}", field_id=${field_id}, field_type=${field_type}`);
 
-    rows.push([ticketId, key, label, value, field_id, field_type, null, null, revision, JSON.stringify(v?.field_meta || v?.meta || { label, type: field_type })]);
+    // Check if this is an auto-save field
+    if (autoSaveFieldNames.has(key) || autoSaveFieldNames.has(label)) {
+      // Route to t_ticket_work_data
+      workDataRows.push([ticketId, service_id, key, value, 'auto_save', 'form_submission']);
+      console.log(`🔑 [DataSeparation] Routed "${key}" to t_ticket_work_data`);
+    } else {
+      // Route to t_ticket_detail (normal)
+      detailRows.push([ticketId, key, label, value, field_id, field_type, null, null, revision, JSON.stringify(v?.field_meta || v?.meta || { label, type: field_type })]);
+    }
   }
 
-  console.log(`🔍 [SAVE_EAV] Prepared ${rows.length} rows for insertion`);
+  console.log(`📊 [SAVE_EAV] Prepared ${detailRows.length} detail rows, ${workDataRows.length} work_data rows`);
 
-  if (rows.length) {
-    await p.query('INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, value, field_id, field_type, row_index, column_key, revision, field_meta_json) VALUES ?', [rows]);
-    console.log(`🔍 [SAVE_EAV] Inserted ${rows.length} rows successfully`);
+  if (detailRows.length) {
+    await p.query('INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, value, field_id, field_type, row_index, column_key, revision, field_meta_json) VALUES ?', [detailRows]);
+  }
+  if (workDataRows.length) {
+    await p.query('INSERT INTO hots.t_ticket_work_data (ticket_id, service_id, field_name, field_value, data_type, entity_id) VALUES ?', [workDataRows]);
   }
 }
 
@@ -157,8 +218,8 @@ const EngineController = {
               ]
             );
 
-            // insert details (EAV)
-            await saveEav(p, ticket_id, form_data, null);
+            // insert details (EAV) — pass serviceItems for data separation
+            await saveEav(p, ticket_id, form_data, null, module.items, sid);
 
             // build workflow from DB (using module.workflow_id)
             const workflow = await workflowEngine.loadWorkflow(module);
