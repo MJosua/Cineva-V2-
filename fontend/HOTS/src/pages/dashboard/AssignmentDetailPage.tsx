@@ -168,7 +168,7 @@ const AssignmentDetailPage: React.FC = () => {
     }
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 pb-[100px]">
             {/* Sticky Header */}
             <div className="sticky top-0 bg-background/95 backdrop-blur z-10 pb-4 -mt-2 pt-2">
                 <div className="flex items-center justify-between">
@@ -191,10 +191,15 @@ const AssignmentDetailPage: React.FC = () => {
                 </div>
             </div>
 
+
+
             {/* 3-Column Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6  ">
+
+
+
                 {/* Column 1-2: Main Content */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="lg:col-span-2 space-y-6 ">
                     {/* Assignment Info */}
                     <CardCollapsible
                         title="Assignment Information"
@@ -235,48 +240,15 @@ const AssignmentDetailPage: React.FC = () => {
                         )}
                     </CardCollapsible>
 
-                    {/* Work Tools Widgets */}
-                    {widgets.length > 0 && (
-                        <CardCollapsible
-                            title="Work Tools"
-                            description="Service-specific tools and forms"
-                            defaultOpen
-                        >
-                            <div className="space-y-4">
-                                {widgets.map((widgetConfig) => (
-                                    <WidgetRenderer
-                                        key={widgetConfig.id}
-                                        config={widgetConfig}
-                                        data={{
-                                            widgetData: {
-                                                assignmentData: assignment,
-                                                workData: workData
-                                            },
-                                            ticketData: {
-                                                ticket_id: assignment.ticket_id,
-                                                service_id: assignment.service_id
-                                            }
-                                        }}
-                                        context={{
-                                            ticketData: {
-                                                ticket_id: assignment.ticket_id,
-                                                service_id: assignment.service_id
-                                            }
-                                        }}
-                                        serviceId={assignment.service_id}
-                                    />
-                                ))}
-                            </div>
-                        </CardCollapsible>
-                    )}
-
                     {/* Tasks Section with Kanban/Gantt Tabs */}
                     <CardCollapsible
                         title="Tasks"
                         description="Manage your assignment tasks"
                         defaultOpen
+                        className="mb-10 md:mb-32 lg:mb-[400px]"
                     >
-                        <Tabs defaultValue="kanban" className="w-full">
+                        <Tabs defaultValue="kanban" className="w-full"
+                        >
                             <TabsList className="mb-4">
                                 <TabsTrigger value="kanban" className="gap-2">
                                     <LayoutGrid className="w-4 h-4" />
@@ -296,7 +268,47 @@ const AssignmentDetailPage: React.FC = () => {
                         </Tabs>
                     </CardCollapsible>
 
-                    {/* Work Data Table */}
+                    {/* Work Tools Widgets */}
+                    {widgets.length > 0 &&
+                        widgets.some(w => w.componentPath !== "SRFInvoiceInput") && (
+                            <CardCollapsible
+                                title="Work Tools"
+                                description="Service-specific tools and forms"
+                                defaultOpen
+                            >
+                                <div className="space-y-4">
+                                    {widgets
+                                        .filter(w => w.componentPath !== "SRFInvoiceInput")
+                                        .map((widgetConfig) => (
+                                            <WidgetRenderer
+                                                key={widgetConfig.id}
+                                                config={widgetConfig}
+                                                data={{
+                                                    widgetData: {
+                                                        assignmentData: assignment,
+                                                        workData: workData
+                                                    },
+                                                    ticketData: {
+                                                        ticket_id: assignment.ticket_id,
+                                                        service_id: assignment.service_id
+                                                    }
+                                                }}
+                                                context={{
+                                                    ticketData: {
+                                                        ticket_id: assignment.ticket_id,
+                                                        service_id: assignment.service_id
+                                                    }
+                                                }}
+                                                serviceId={assignment.service_id}
+                                            />
+                                        ))}
+                                </div>
+                            </CardCollapsible>
+                        )}
+
+
+
+
                     {Object.keys(workData).length > 0 && (
                         <CardCollapsible
                             title="Work Data"
@@ -339,11 +351,49 @@ const AssignmentDetailPage: React.FC = () => {
                             ))}
                         </CardCollapsible>
                     )}
+
                 </div>
 
                 {/* Column 3: Sidebar */}
                 <div className="space-y-6">
                     {/* Progress Timeline */}
+
+                    {widgets.length > 0 && (
+                        <CardCollapsible
+                            title="Invoice Output"
+                            description="Service-specific tools and forms"
+                            defaultOpen
+                        >
+                            <div className="space-y-4">
+                                {widgets
+                                    .filter(w => w.componentPath === "SRFInvoiceInput")
+                                    .map((widgetConfig) => (
+                                        <WidgetRenderer
+                                            key={widgetConfig.id}
+                                            config={widgetConfig}
+                                            data={{
+                                                widgetData: {
+                                                    assignmentData: assignment,
+                                                    workData: workData
+                                                },
+                                                ticketData: {
+                                                    ticket_id: assignment.ticket_id,
+                                                    service_id: assignment.service_id
+                                                }
+                                            }}
+                                            context={{
+                                                ticketData: {
+                                                    ticket_id: assignment.ticket_id,
+                                                    service_id: assignment.service_id
+                                                }
+                                            }}
+                                            serviceId={assignment.service_id}
+                                        />
+                                    ))}
+                            </div>
+                        </CardCollapsible>
+                    )}
+
                     <CardCollapsible
                         title="Progress Timeline"
                         description="Updates and activity log"

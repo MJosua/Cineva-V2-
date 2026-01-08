@@ -13,7 +13,7 @@ import { API_URL } from '@/config/sourceConfig';
 import { useToast } from '@/hooks/use-toast';
 import {
     Plus, Pencil, Save, X, ChevronDown, ChevronUp,
-    Calculator, History, Database, CheckCircle, Loader2, TrendingUp
+    Calculator, History, Database, CheckCircle, Loader2, TrendingUp, FileText
 } from 'lucide-react';
 
 interface DataRow {
@@ -46,10 +46,18 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
     const { toast } = useToast();
 
     // Factory selection for SRF service (service_id=6)
-    const [factories, setFactories] = useState<{ factory_id: number; factory_name: string }[]>([]);
+    const [factories, setFactories] = useState<{ factory_id: number; factory_name: string; factory_sname?: string }[]>([]);
     const [selectedFactoryId, setSelectedFactoryId] = useState<number | null>(null);
     const [factoryLoading, setFactoryLoading] = useState(false);
     const [factorySaving, setFactorySaving] = useState(false);
+
+    // Invoice number, product category, and document number for SRF
+    const [invoiceNumber, setInvoiceNumber] = useState('');
+    const [productCategory, setProductCategory] = useState<'RM' | 'FG' | 'GEN'>('GEN');
+    const [srfDocumentNumber, setSrfDocumentNumber] = useState<string | null>(null);
+    const [previewNumberLoading, setPreviewNumberLoading] = useState(false);
+    const [invoiceSaving, setInvoiceSaving] = useState(false);
+    const [docNumberSaving, setDocNumberSaving] = useState(false);
 
     // Fix: support both 'id' and 'assignment_id' 
     const assignmentData = widgetData?.assignmentData;
@@ -57,6 +65,7 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
     const serviceId = assignmentData?.service_id || ticketData?.service_id;
     const ticketId = assignmentData?.ticket_id || ticketData?.ticket_id;
     const isSRFService = serviceId === 6;
+
 
 
 
@@ -120,6 +129,10 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             toast({ title: 'Success', description: 'Factory saved to work data' });
+            // Fetch preview number after factory is saved
+            if (productCategory) {
+                fetchSRFPreviewNumber(selectedFactoryId, productCategory);
+            }
         } catch (error) {
             console.error('Error saving factory:', error);
             toast({ title: 'Error', description: 'Failed to save factory', variant: 'destructive' });
@@ -127,6 +140,127 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
             setFactorySaving(false);
         }
     };
+
+    // Fetch existing invoice number and SRF document number from work_data
+    const fetchSRFWorkData = async () => {
+        if (!ticketId) return;
+        try {
+            const token = localStorage.getItem('tokek');
+            // Fetch invoice number
+            const invResponse = await axios.get(
+                `${API_URL}/engine/ticket/${ticketId}/work-data/invoice_number`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            ).catch(() => null);
+            if (invResponse?.data?.value) {
+                setInvoiceNumber(invResponse.data.value);
+            }
+            // Fetch product category
+            const catResponse = await axios.get(
+                `${API_URL}/engine/ticket/${ticketId}/work-data/product_category`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            ).catch(() => null);
+            if (catResponse?.data?.value) {
+                setProductCategory(catResponse.data.value as 'RM' | 'FG' | 'GEN');
+            }
+            // Fetch SRF document number
+            const docResponse = await axios.get(
+                `${API_URL}/engine/ticket/${ticketId}/work-data/srf_document_number`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            ).catch(() => null);
+            if (docResponse?.data?.value) {
+                setSrfDocumentNumber(docResponse.data.value);
+            }
+        } catch (error) {
+            console.error('Error fetching SRF work data:', error);
+        }
+    };
+
+    // Fetch SRF preview number from backend
+    const fetchSRFPreviewNumber = async (factoryId: number, category: string) => {
+        try {
+            setPreviewNumberLoading(true);
+            const token = localStorage.getItem('tokek');
+            const response = await axios.get(
+                `${API_URL}/hots_settings/custom_functions/srf/preview_number`,
+                {
+                    params: { factory_id: factoryId, product_category: category },
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+            if (response.data.success) {
+                setSrfDocumentNumber(response.data.preview_number);
+            }
+        } catch (error) {
+            console.error('Error fetching SRF preview number:', error);
+        } finally {
+            setPreviewNumberLoading(false);
+        }
+    };
+
+    // Save invoice number
+    const handleSaveInvoice = async () => {
+        if (!ticketId) return;
+        try {
+            setInvoiceSaving(true);
+            const token = localStorage.getItem('tokek');
+            await axios.post(
+                `${API_URL}/engine/ticket/${ticketId}/work-data`,
+                { field_name: 'invoice_number', field_value: invoiceNumber },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            toast({ title: 'Success', description: 'Invoice number saved' });
+        } catch (error) {
+            toast({ title: 'Error', description: 'Failed to save invoice number', variant: 'destructive' });
+        } finally {
+            setInvoiceSaving(false);
+        }
+    };
+
+    // Save product category and fetch new preview number
+    const handleCategoryChange = async (newCategory: 'RM' | 'FG' | 'GEN') => {
+        setProductCategory(newCategory);
+        if (!ticketId) return;
+        try {
+            const token = localStorage.getItem('tokek');
+            await axios.post(
+                `${API_URL}/engine/ticket/${ticketId}/work-data`,
+                { field_name: 'product_category', field_value: newCategory },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            // Fetch new preview number
+            if (selectedFactoryId) {
+                fetchSRFPreviewNumber(selectedFactoryId, newCategory);
+            }
+        } catch (error) {
+            console.error('Error saving product category:', error);
+        }
+    };
+
+    // Save SRF document number (lock it)
+    const handleSaveDocumentNumber = async () => {
+        if (!ticketId || !srfDocumentNumber) return;
+        try {
+            setDocNumberSaving(true);
+            const token = localStorage.getItem('tokek');
+            await axios.post(
+                `${API_URL}/engine/ticket/${ticketId}/work-data`,
+                { field_name: 'srf_document_number', field_value: srfDocumentNumber },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            toast({ title: 'Success', description: 'Document number saved: ' + srfDocumentNumber });
+        } catch (error) {
+            toast({ title: 'Error', description: 'Failed to save document number', variant: 'destructive' });
+        } finally {
+            setDocNumberSaving(false);
+        }
+    };
+
+    // Load SRF work data on mount
+    useEffect(() => {
+        if (isSRFService && ticketId) {
+            fetchSRFWorkData();
+        }
+    }, [isSRFService, ticketId]);
 
     const fetchDataRows = async () => {
         try {
@@ -302,6 +436,113 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
                                 >
                                     {factorySaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                     <span className="ml-1">Set</span>
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Invoice Number Input for SRF */}
+                {isSRFService && (
+                    <div className="px-5 py-4 border-b bg-gradient-to-r from-blue-50 to-cyan-50">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-blue-500 text-white">
+                                    <FileText className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-slate-800 text-sm">Invoice Number</p>
+                                    <p className="text-xs text-slate-500">Enter invoice reference</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Input
+                                    value={invoiceNumber}
+                                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                                    placeholder="INV-2026-001"
+                                    className="w-48 h-9 text-sm"
+                                />
+                                <Button
+                                    size="sm"
+                                    onClick={handleSaveInvoice}
+                                    disabled={!invoiceNumber.trim() || invoiceSaving}
+                                    className="bg-blue-500 hover:bg-blue-600"
+                                >
+                                    {invoiceSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    <span className="ml-1">Save</span>
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Product Category for SRF */}
+                {isSRFService && (
+                    <div className="px-5 py-4 border-b bg-gradient-to-r from-purple-50 to-pink-50">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-purple-500 text-white">
+                                    <Database className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-slate-800 text-sm">Product Category</p>
+                                    <p className="text-xs text-slate-500">RM = Raw Material, FG = Finished Goods</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {(['RM', 'FG', 'GEN'] as const).map((cat) => (
+                                    <button
+                                        key={cat}
+                                        onClick={() => handleCategoryChange(cat)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${productCategory === cat
+                                            ? 'bg-purple-500 text-white shadow-md'
+                                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-purple-50'
+                                            }`}
+                                    >
+                                        {cat}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* SRF Document Number Preview */}
+                {isSRFService && (
+                    <div className="px-5 py-4 border-b bg-gradient-to-r from-green-50 to-emerald-50">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-green-500 text-white">
+                                    <CheckCircle className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-slate-800 text-sm">SRF Document Number</p>
+                                    <p className="text-xs text-slate-500">Auto-generated based on factory & category</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {previewNumberLoading ? (
+                                    <div className="flex items-center gap-2 text-slate-500">
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <span className="text-sm">Loading...</span>
+                                    </div>
+                                ) : srfDocumentNumber ? (
+                                    <div className="px-4 py-2 bg-white border-2 border-green-300 rounded-lg font-mono text-green-700 font-semibold">
+                                        {srfDocumentNumber}
+                                    </div>
+                                ) : (
+                                    <div className="px-4 py-2 bg-slate-100 rounded-lg text-slate-400 text-sm">
+                                        Select factory & category first
+                                    </div>
+                                )}
+                                <Button
+                                    size="sm"
+                                    onClick={handleSaveDocumentNumber}
+                                    disabled={!srfDocumentNumber || docNumberSaving}
+                                    className="bg-green-500 hover:bg-green-600"
+                                >
+                                    {docNumberSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    <span className="ml-1">Generate</span>
                                 </Button>
                             </div>
                         </div>

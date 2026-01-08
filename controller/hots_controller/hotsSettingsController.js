@@ -654,8 +654,9 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-                SELECT factory_id, factory_name 
+                SELECT factory_id, factory_name, factory_sname 
                 FROM iod.mst_factory 
+                WHERE active = 1
                 ORDER BY factory_name
             `);
 

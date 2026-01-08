@@ -167,11 +167,9 @@ export const mapUnifiedForm = (
           // 🔹 Prepare an array of results (main + maybe generated)
           const result = [mainField];
 
+          // Legacy: Auto-generate `_id` field for factory (uses filter property)
           const isFactoryField =
             label.toLowerCase().includes("factory") || name.toLowerCase().includes("factory");
-      
-
-          // ✅ Auto-generate `_id` field if selectedObject.filter exists
           if (isFactoryField && selectedObject?.filter !== undefined && selectedObject?.filter !== null) {
             const syntheticField = {
               id: `${item.id}_id`,
@@ -181,6 +179,26 @@ export const mapUnifiedForm = (
               selectedObject: null,
             };
             result.push(syntheticField);
+          }
+
+          // ✅ NEW: Config-driven auto-save ID (from form builder autoSaveId config)
+          const autoSaveConfig = item.data?.autoSaveId;
+          if (autoSaveConfig?.enabled && autoSaveConfig?.idProperty) {
+            const idValue = selectedObject?.[autoSaveConfig.idProperty];
+            if (idValue !== undefined && idValue !== null) {
+              const suffix = autoSaveConfig.suffix || '_id';
+              const syntheticField = {
+                id: `${item.id}${suffix}`,
+                name: `${name}${suffix}`,
+                label: `${item.data.label}${suffix}`,
+                value: String(idValue),
+                selectedObject: null,
+              };
+              result.push(syntheticField);
+              console.log(`🔑 [AutoSaveID] Generated ${name}${suffix} = ${idValue} from ${autoSaveConfig.idProperty}`);
+            } else {
+              console.warn(`⚠️ [AutoSaveID] Property "${autoSaveConfig.idProperty}" not found in selectedObject for field "${name}"`);
+            }
           }
 
           console.log(`🧩 field mapped →`, result);

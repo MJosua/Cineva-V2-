@@ -198,7 +198,6 @@ const TicketDetail = () => {
 
 
 
-
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const handleApprove = async () => {
@@ -852,6 +851,7 @@ const TicketDetail = () => {
   );
 
 
+  console.log("generatedDocuments", generatedDocuments)
 
   return (
     <AppLayout>

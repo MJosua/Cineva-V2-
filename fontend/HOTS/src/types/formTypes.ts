@@ -87,6 +87,16 @@ export interface FormField {
   className?: string;
   cms_page_id?: number;
   cms_content?: any[];
+
+  // Auto-save ID from selected object (for select fields with master data)
+  autoSaveId?: {
+    enabled: boolean;
+    idProperty: string;       // e.g., "samplecat_id" - which property from selectedObject to extract
+    suffix?: string;          // e.g., "_id" (default) - suffix for the auto-generated field name
+  };
+
+  // Other field comparison
+  dependsOtherFieldByValue?: string;
 }
 
 export interface RowData {

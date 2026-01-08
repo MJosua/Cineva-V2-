@@ -1,21 +1,75 @@
 // widgets/SRFDocumentGenerator.tsx
 // Document generation widget for SRF service (service_id = 6)
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { WidgetProps } from '@/types/widgetTypes';
 import axios from 'axios';
 import { API_URL } from '@/config/sourceConfig';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Download, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, Download, Loader2, AlertCircle, FolderOpen, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import { FilePreview } from '@/components/ui/FilePreview';
+
+interface GeneratedDocument {
+    id: number;
+    ticket_id: string;
+    document_type: string;
+    file_path: string;
+    file_name: string;
+    generated_date: string;
+    generated_by: string;
+}
 
 const SRFDocumentGenerator: React.FC<WidgetProps> = ({ ticketData, widgetData }) => {
     const [generating, setGenerating] = useState(false);
-    const [lastGenerated, setLastGenerated] = useState<string | null>(null);
+    const [documents, setDocuments] = useState<GeneratedDocument[]>([]);
+    const [documentsLoading, setDocumentsLoading] = useState(false);
+    const [documentsOpen, setDocumentsOpen] = useState(true);
+    const [hasDocumentNumber, setHasDocumentNumber] = useState(false);
     const { toast } = useToast();
 
     const ticketId = widgetData?.assignmentData?.ticket_id || ticketData?.ticket_id;
+
+    // Fetch existing documents and check for document number on mount
+    useEffect(() => {
+        if (ticketId) {
+            fetchDocuments();
+            checkDocumentNumber();
+        }
+    }, [ticketId]);
+
+    const checkDocumentNumber = async () => {
+        try {
+            const token = localStorage.getItem('tokek');
+            const response = await axios.get(
+                `${API_URL}/engine/ticket/${ticketId}/work-data/srf_document_number`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setHasDocumentNumber(!!response.data?.value);
+        } catch (error) {
+            setHasDocumentNumber(false);
+        }
+    };
+
+    const fetchDocuments = async () => {
+        try {
+            setDocumentsLoading(true);
+            const token = localStorage.getItem('tokek');
+            const response = await axios.get(
+                `${API_URL}/hots_customfunction/documents/${ticketId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (response.data.success) {
+                setDocuments(response.data.data || []);
+            }
+        } catch (error) {
+            console.error('Error fetching documents:', error);
+        } finally {
+            setDocumentsLoading(false);
+        }
+    };
 
     const handleGenerateDocument = async () => {
         if (!ticketId) {
@@ -29,17 +83,19 @@ const SRFDocumentGenerator: React.FC<WidgetProps> = ({ ticketData, widgetData })
 
             // Call document generation API
             const response = await axios.post(
-                `${API_URL}/engine/ticket/${ticketId}/generate-document`,
+                `${API_URL}/hots_customfunction/execute-doc-gen/${ticketId}`,
                 { document_type: 'srf' },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
             if (response.data.success) {
-                setLastGenerated(new Date().toLocaleString());
                 toast({
                     title: 'Document Generated',
                     description: 'SRF document has been created successfully'
                 });
+
+                // Refresh document list
+                fetchDocuments();
 
                 // If a download URL is provided, trigger download
                 if (response.data.download_url) {
@@ -62,6 +118,18 @@ const SRFDocumentGenerator: React.FC<WidgetProps> = ({ ticketData, widgetData })
         } finally {
             setGenerating(false);
         }
+    };
+
+    // Download handler - same method as TicketDetail
+    const handleDownload = (filePath: string, fileName: string) => {
+        const downloadUrl = `${API_URL}/${filePath.replace(/\\/g, '/')}`;
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = fileName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     if (!ticketId) {
@@ -90,18 +158,29 @@ const SRFDocumentGenerator: React.FC<WidgetProps> = ({ ticketData, widgetData })
                             <p className="text-xs text-slate-500">Generate official SRF document</p>
                         </div>
                     </div>
-                    {lastGenerated && (
+                    {documents.length > 0 && (
                         <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Last: {lastGenerated}
+                            <FolderOpen className="w-3 h-3 mr-1" />
+                            {documents.length} document{documents.length > 1 ? 's' : ''}
                         </Badge>
                     )}
                 </div>
             </CardHeader>
-            <CardContent className="pt-4">
+            <CardContent className="pt-4 space-y-4">
+                {/* Warning if no document number */}
+                {!hasDocumentNumber && (
+                    <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <AlertCircle className="w-4 h-4 text-amber-600" />
+                        <span className="text-sm text-amber-700">
+                            Please set Factory & Document Number first
+                        </span>
+                    </div>
+                )}
+
+                {/* Generate Button */}
                 <Button
                     onClick={handleGenerateDocument}
-                    disabled={generating}
+                    disabled={generating || !hasDocumentNumber}
                     className="w-full gap-2"
                 >
                     {generating ? (
@@ -116,9 +195,56 @@ const SRFDocumentGenerator: React.FC<WidgetProps> = ({ ticketData, widgetData })
                         </>
                     )}
                 </Button>
+
+                {/* Documents List - Using FilePreview component like TicketDetail */}
+                {documents.length > 0 && (
+                    <Collapsible open={documentsOpen} onOpenChange={setDocumentsOpen}>
+                        <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                            <div className="flex items-center gap-2">
+                                <FolderOpen className="w-4 h-4 text-slate-500" />
+                                <span className="text-sm font-medium text-slate-700">Generated Documents</span>
+                            </div>
+                            {documentsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="mt-2">
+                            <div className="space-y-3">
+                                {documentsLoading ? (
+                                    <div className="flex items-center gap-2 py-2 text-slate-500">
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <span className="text-sm">Loading...</span>
+                                    </div>
+                                ) : (
+                                    documents.map((doc) => (
+                                        <FilePreview
+                                            key={doc.id}
+                                            generated={true}
+                                            fileName={doc.file_name || `SRF_${doc.ticket_id}.pdf`}
+                                            filePath={doc.file_path}
+                                            uploadDate={doc.generated_date}
+                                            onDownload={() => handleDownload(doc.file_path, doc.file_name || `SRF_${doc.ticket_id}.pdf`)}
+                                        />
+                                    ))
+                                )}
+                            </div>
+                        </CollapsibleContent>
+                    </Collapsible>
+                )}
+
+                {/* Refresh Button */}
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchDocuments}
+                    disabled={documentsLoading}
+                    className="w-full gap-2"
+                >
+                    <RefreshCw className={`w-4 h-4 ${documentsLoading ? 'animate-spin' : ''}`} />
+                    Refresh Documents
+                </Button>
             </CardContent>
         </Card>
     );
 };
 
 export default SRFDocumentGenerator;
+

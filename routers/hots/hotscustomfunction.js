@@ -29,6 +29,11 @@ route.get('/documents/:ticketId', decodeTokenHT, hotscustomfunctionController.ge
 route.get('/download/:documentId', decodeTokenHT, hotscustomfunctionController.downloadDocument);
 route.post('/execute-doc-gen/:ticketId', decodeTokenHT, hotscustomfunctionController.manualGenerateDocument);
 
+// SRF Number Generation
+route.get('/srf/preview_number', decodeTokenHT, hotscustomfunctionController.getSRFPreviewNumber);
+route.post('/srf/save_number', decodeTokenHT, hotscustomfunctionController.saveSRFDocumentNumber);
+route.post('/srf/generate', decodeTokenHT, hotscustomfunctionController.generateSRFDocument);
+
 // Templates
 route.get('/templates', decodeTokenHT, hotscustomfunctionController.getFunctionTemplates);
 route.post('/templates/create', decodeTokenHT, hotscustomfunctionController.createFunctionTemplate);

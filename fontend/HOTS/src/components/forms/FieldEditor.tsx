@@ -309,6 +309,90 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({ field, fields = [], on
         </Card>
       )}
 
+      {/* Auto-Save ID Configuration Section */}
+      {(localField.type === 'select' || localField.type === 'suggestion-insert') && (
+        <Card className="border-green-200 bg-green-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Save className="w-4 h-4 text-green-600" />
+              Auto-Save ID from Selection
+            </CardTitle>
+            <p className="text-xs text-green-600">
+              Automatically save a hidden ID field when user selects an option (for master data lookups)
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={localField.autoSaveId?.enabled || false}
+                onCheckedChange={(checked) => updateField({
+                  autoSaveId: {
+                    ...localField.autoSaveId,
+                    enabled: checked,
+                    idProperty: localField.autoSaveId?.idProperty || '',
+                    suffix: localField.autoSaveId?.suffix || '_id'
+                  }
+                })}
+              />
+              <Label className="text-sm">Enable Auto-Save ID</Label>
+            </div>
+
+            {localField.autoSaveId?.enabled && (
+              <>
+                <div>
+                  <Label className="text-sm">ID Property Name</Label>
+                  <Input
+                    value={localField.autoSaveId?.idProperty || ''}
+                    onChange={(e) => updateField({
+                      autoSaveId: {
+                        ...localField.autoSaveId,
+                        enabled: true,
+                        idProperty: e.target.value,
+                        suffix: localField.autoSaveId?.suffix || '_id'
+                      }
+                    })}
+                    placeholder="e.g., samplecat_id, plant_id, company_id"
+                    className="bg-white"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    The property name from the selected object that contains the ID to save
+                  </p>
+                </div>
+
+                <div>
+                  <Label className="text-sm">Field Name Suffix</Label>
+                  <Input
+                    value={localField.autoSaveId?.suffix || '_id'}
+                    onChange={(e) => updateField({
+                      autoSaveId: {
+                        ...localField.autoSaveId,
+                        enabled: true,
+                        idProperty: localField.autoSaveId?.idProperty || '',
+                        suffix: e.target.value
+                      }
+                    })}
+                    placeholder="_id"
+                    className="bg-white"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Suffix for the auto-generated field (e.g., Category_field → Category_field_id)
+                  </p>
+                </div>
+
+                <div className="p-3 bg-white rounded-lg border border-green-200">
+                  <h4 className="text-sm font-medium text-green-800 mb-2">Preview:</h4>
+                  <div className="text-xs text-green-700 space-y-1">
+                    <p>When user selects an option:</p>
+                    <p>• <strong>{localField.name}</strong> = selected display value (visible)</p>
+                    <p>• <strong>{localField.name}{localField.autoSaveId?.suffix || '_id'}</strong> = {localField.autoSaveId?.idProperty || '???'} (hidden, for backend)</p>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {(localField.type === 'select' || localField.type === 'suggestion-insert') && (
         <div>
           <Label>Options (one per line)</Label>

@@ -1960,7 +1960,7 @@ WHERE
             // TODAY / CURRENT WEEK
             // ===============================
             const todayOpcal = await dbQuery(`
-        SELECT opcal_id 
+            SELECT opcal_id 
             FROM dat_operational_calendar
             WHERE DATE(FROM_UNIXTIME(CONCAT(opcal_id, '00'))) = CURDATE()
             LIMIT 1
@@ -1992,7 +1992,7 @@ WHERE
             SELECT 
                 year,
                 week,
-                MIN(opcal_id) AS first_opcal
+                MIN(concat(opcal_id, '00')) AS first_opcal
             FROM dat_operational_calendar
             WHERE year IN (${years.join(",")})
               AND factory_id = 1

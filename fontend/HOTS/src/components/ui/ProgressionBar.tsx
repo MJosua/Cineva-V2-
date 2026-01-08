@@ -27,7 +27,6 @@ const ProgressionBar = ({ steps, className, showDetails = false }: ProgressionBa
   const { user } = useAppSelector((state) => state.auth);
 
 
-    console.log("steps",steps);
 
   if (!showDetails) {
     // Simple progress bar view
@@ -50,7 +49,7 @@ const ProgressionBar = ({ steps, className, showDetails = false }: ProgressionBa
     return (
       <div className={cn("flex items-center space-x-1", className)}>
         <span className="text-sm font-medium text-muted-foreground mr-2">
-        {filteredSteps.filter(s => s.approval_status === '1').length}/{filteredSteps.length}
+          {filteredSteps.filter(s => s.approval_status === '1').length}/{filteredSteps.length}
         </span>
         {steps
 

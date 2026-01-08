@@ -249,7 +249,7 @@ module.exports = {
             await dbHots.promise().query(
                 `INSERT INTO t_ticket_work_data 
                  (ticket_id, service_id, data_type, entity_id, field_name, field_value, field_type, created_by)
-                 VALUES (?, ?, 'executor_input', 'factory', ?, ?, 'text', ?)`,
+                 VALUES (?, ?, 'executor_input', 'data update', ?, ?, 'text', ?)`,
                 [ticketId, service_id, field_name, field_value, user_id]
             );
 

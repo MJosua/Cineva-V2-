@@ -109,7 +109,6 @@ module.exports = {
     },
 
     decodeTokenHT: (req, res, next) => {
-        console.log('decodeTokenHT - req.token:', req.token ? req.token.substring(0, 30) + '...' : 'undefined');
         jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY_HT, (err, decode) => {
             if (err) {
                 console.log("Invalid Token Read Token HT - Error:", err.message);

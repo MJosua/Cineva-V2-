@@ -162,12 +162,14 @@ export const SYSTEM_VARIABLE_ENTRIES: SystemVariableEntry[] = [
   {
     key: '${srfsamplecategoryes}',
     type: 'array[]',
-    description: 'SRF sample category names',
+    description: 'SRF sample category names with ID for master lookup',
     resolve: (ctx) => {
       if (!Array.isArray(ctx.srfsamplecategoryes)) return [];
       return ctx.srfsamplecategoryes.map(item => ({
         item_name: item.samplecat_name,
-        filter: item.bom_type
+        filter: item.bom_type,
+        samplecat_id: item.samplecat_id,       // ✅ Added for master data lookup
+        samplecat_shortname: item.samplecat_shortname  // ✅ Added for document generation
       }));
     },
   },

@@ -163,6 +163,16 @@ route.post('/trigger-functions', decodeTokenHT, ...triggerFunctionController.cre
 route.put('/trigger-functions/:key', decodeTokenHT, ...triggerFunctionController.updateFunction)
 route.delete('/trigger-functions/:key', decodeTokenHT, ...triggerFunctionController.deleteFunction)
 
+// ============================================
+// SRF Document Preview (for debugging/testing)
+// ============================================
+const customfunctionController = require('../../controller/hots_controller/customfunction/controllers/customfunctionController');
+
+// Preview page with form input
+route.get('/custom_functions/preview', customfunctionController.previewPage)
+// Preview specific ticket (returns raw HTML)
+route.get('/custom_functions/preview_srf/:ticketId', customfunctionController.previewSRFDocument)
+
 module.exports = route
 
 

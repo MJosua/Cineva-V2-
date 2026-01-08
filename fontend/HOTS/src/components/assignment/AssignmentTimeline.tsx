@@ -31,7 +31,7 @@ const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId })
 
     const editor = useEditor({
         extensions: [StarterKit],
-        content: '<p>Add your progress update...</p>',
+        content: '<p></p>',
         editorProps: {
             attributes: {
                 class: 'prose prose-sm max-w-none focus:outline-none min-h-[100px] p-3',
@@ -96,7 +96,7 @@ const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId })
             });
 
             // Clear editor
-            editor.commands.setContent('<p>Add your progress update...</p>');
+            editor.commands.setContent('<p></p>');
 
             // Refresh timeline
             fetchTimeline();

@@ -15,7 +15,12 @@ const puppeteer = require('puppeteer');
 const Mustache = require('mustache');
 // const { PORT, API_URL } = require("../../index");
 
-const { PORT, API_URL } = require("../../../../config/env")
+const { PORT, API_URL: ENV_API_URL } = require("../../../../config/env");
+const profileController = require('../../profile/controllers/profileController');
+
+// Base URL for static files (signatures, images, etc.)
+// Priority: BE_URL_HOTS (HOTS dev) > BE_URL (production) > fallback
+const API_URL = process.env.BE_URL_HOTS || process.env.BE_URL || 'https://backend.indofoodinternational.com:2864';
 
 /**
  * Custom Function Controller
@@ -442,6 +447,314 @@ module.exports = {
                 message: "Get generated documents success"
             });
         } catch (err) {
+            res.status(500).json({
+                success: false,
+                message: err.message
+            });
+        }
+    },
+
+    /**
+     * GET /hots_settings/custom_functions/srf/preview_number
+     * Get preview of the next SRF document number
+     * Query params: factory_id, product_category (RM/FG/GEN)
+     * Format: {SEQ}/SRF/{FACTORY_SNAME}/{CATEGORY}/{ROMAN_MONTH}/{YEAR}
+     * Example: 001/SRF/CBT/GEN/I/2026
+     */
+    getSRFPreviewNumber: async (req, res) => {
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+        let user_id = req.dataToken.user_id;
+        const { factory_id, product_category } = req.query;
+
+        try {
+            if (!factory_id || !product_category) {
+                return res.status(400).json({
+                    success: false,
+                    message: "factory_id and product_category are required"
+                });
+            }
+
+            // Get factory shortname
+            const [factoryResult] = await dbHots.promise().query(`
+                SELECT factory_sname FROM iod.mst_factory WHERE factory_id = ?
+            `, [factory_id]);
+
+            if (factoryResult.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Factory not found"
+                });
+            }
+
+            const factorySname = factoryResult[0].factory_sname || 'UNK';
+            const category = product_category.toUpperCase(); // RM, FG, or GEN
+
+            // Get current month and year
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1; // 1-12
+
+            // Roman numerals for months
+            const romanMonths = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+            const romanMonth = romanMonths[month - 1];
+
+            // Get the next sequence number for this combination
+            // Count existing documents in t_ticket_work_data for this pattern
+            const [countResult] = await dbHots.promise().query(`
+                SELECT COUNT(*) as cnt FROM hots.t_ticket_work_data 
+                WHERE field_name = 'srf_document_number'
+                AND field_value LIKE ?
+            `, [`%/SRF/${factorySname}/${category}/${romanMonth}/${year}`]);
+
+            const nextSeq = (countResult[0]?.cnt || 0) + 1;
+            const seqStr = String(nextSeq).padStart(3, '0');
+
+            // Format: 001/SRF/CBT/GEN/I/2026
+            const previewNumber = `${seqStr}/SRF/${factorySname}/${category}/${romanMonth}/${year}`;
+
+            console.log(`${timestamp}SRF preview number generated for user ${user_id}: ${previewNumber}`);
+
+            res.status(200).json({
+                success: true,
+                preview_number: previewNumber,
+                components: {
+                    sequence: seqStr,
+                    factory_sname: factorySname,
+                    category: category,
+                    roman_month: romanMonth,
+                    year: year
+                }
+            });
+        } catch (err) {
+            console.error(`${timestamp}Error generating SRF preview number:`, err);
+            res.status(500).json({
+                success: false,
+                message: err.message
+            });
+        }
+    },
+
+    /**
+     * POST /hots_customfunction/srf/save_number
+     * Save the confirmed SRF document number to t_ticket_doc_no
+     * Body: { ticket_id, doc_no, factory_id, product_category }
+     */
+    saveSRFDocumentNumber: async (req, res) => {
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+
+        // Use a connection for transaction
+        const connection = await dbHots.promise().getConnection();
+
+        try {
+            const { ticket_id, factory_id, product_category } = req.body;
+
+            if (!ticket_id || !factory_id || !product_category) {
+                return res.status(400).json({
+                    success: false,
+                    message: "ticket_id, factory_id, and product_category are required"
+                });
+            }
+
+            await connection.beginTransaction();
+
+            // 1. Check if this ticket already has a document number in t_ticket_work_data
+            const [existingWorkData] = await connection.query(
+                `SELECT field_value FROM hots.t_ticket_work_data 
+                 WHERE ticket_id = ? AND field_name = 'srf_document_number' 
+                 FOR UPDATE`,
+                [ticket_id]
+            );
+            const existingDocNo = existingWorkData.length > 0 ? existingWorkData[0].field_value : null;
+
+            // 2. Get Factory Shortname
+            const [factoryResult] = await connection.query(`
+                SELECT factory_sname FROM iod.mst_factory WHERE factory_id = ?
+            `, [factory_id]);
+
+            if (factoryResult.length === 0) {
+                await connection.rollback();
+                return res.status(404).json({ success: false, message: "Factory not found" });
+            }
+
+            const factorySname = factoryResult[0].factory_sname || 'UNK';
+            const category = product_category.toUpperCase();
+
+            // Date parts
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const romanMonths = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+            const romanMonth = romanMonths[month - 1];
+
+            // 3. Count existing documents for this pattern
+            const currentPatternSuffix = `/SRF/${factorySname}/${category}/${romanMonth}/${year}`;
+
+            const [countResult] = await connection.query(`
+                SELECT COUNT(*) as cnt FROM hots.t_ticket_work_data 
+                WHERE field_name = 'srf_document_number'
+                AND field_value LIKE ?
+                FOR UPDATE
+            `, [`%${currentPatternSuffix}`]);
+
+            let finalDocNo = '';
+            let sequenceNumber = 0;
+
+            // Check if existing doc matches current pattern (same factory/category/month/year)
+            if (existingDocNo && existingDocNo.endsWith(currentPatternSuffix)) {
+                // Keep existing number if pattern matches
+                finalDocNo = existingDocNo;
+                // Extract sequence from existing string (e.g. "005/SRF/...")
+                sequenceNumber = parseInt(finalDocNo.split('/')[0], 10) || 0;
+            } else {
+                // Generate new number
+                sequenceNumber = (countResult[0]?.cnt || 0) + 1;
+                const seqStr = String(sequenceNumber).padStart(3, '0');
+                finalDocNo = `${seqStr}${currentPatternSuffix}`;
+            }
+
+            // 4. Update t_ticket_doc_no (The Component Analysis Storage)
+            // First, delete existing components for this ticket/service to avoid duplicates/stale data
+            await connection.query(
+                `DELETE FROM hots.t_ticket_doc_no WHERE ticket_id = ? AND service_id = 6`,
+                [ticket_id]
+            );
+
+            // Insert components matching document format: {Number}/SRF/{Factory}/{Category}/{RomanMonth}/{Year}
+            // Plus factory_id for reference/reporting
+            const components = [
+                { lbl: 'number', val: String(sequenceNumber).padStart(3, '0') },
+                { lbl: 'Document', val: 'SRF' },
+                { lbl: 'Factory', val: factorySname },
+                { lbl: 'Category', val: category },
+                { lbl: 'Month', val: romanMonth },
+                { lbl: 'Year', val: year.toString() },
+                { lbl: 'factory_id', val: factory_id.toString() }
+            ];
+
+            for (const comp of components) {
+                // cstm_col = VALUE, lbl_col = KEY/LABEL
+                await connection.query(
+                    `INSERT INTO hots.t_ticket_doc_no (ticket_id, cstm_col, lbl_col, service_id) 
+                     VALUES (?, ?, ?, 6)`,
+                    [ticket_id, comp.val, comp.lbl]
+                );
+            }
+
+            // Also update t_ticket_work_data for backward compatibility/display widgets
+            await connection.query(
+                `INSERT INTO hots.t_ticket_work_data 
+                 (ticket_id, service_id, data_type, entity_id, field_name, field_value, field_type, created_by)
+                 VALUES (?, 6, 'executor_input', 'data update', 'srf_document_number', ?, 'text', ?)
+                 ON DUPLICATE KEY UPDATE field_value = VALUES(field_value)`,
+                [ticket_id, finalDocNo, req.dataToken.user_id]
+            );
+
+            await connection.commit();
+            console.log(`${timestamp}Generated & Saved SRF doc number for ticket ${ticket_id}: ${finalDocNo}`);
+
+            res.status(200).json({
+                success: true,
+                message: "Document number saved successfully",
+                doc_no: finalDocNo
+            });
+
+        } catch (err) {
+            await connection.rollback();
+            console.error(`${timestamp}Error saving SRF document number:`, err);
+            res.status(500).json({
+                success: false,
+                message: err.message
+            });
+        } finally {
+            connection.release();
+        }
+    },
+
+    /**
+     * POST /hots_customfunction/srf/generate
+     * Generate an SRF document (PDF)
+     * Body: { ticket_id }
+     */
+    generateSRFDocument: async (req, res) => {
+        let date = new Date();
+        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+        let user_id = req.dataToken.user_id;
+
+        try {
+            const { ticket_id } = req.body;
+
+            if (!ticket_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "ticket_id is required"
+                });
+            }
+
+            // Get ticket data WITH detail rows (required for srf_document_generator)
+            const [ticketRows] = await dbHots.promise().query(`
+                SELECT t.*, td.lbl_col, td.cstm_col, td.value, td.order_col, 
+                       td.field_type, s.service_name,
+                       CONCAT(u.firstname, ' ', u.lastname) as requester_name
+                FROM hots.t_ticket t 
+                LEFT JOIN hots.t_ticket_detail td ON t.ticket_id = td.ticket_id
+                LEFT JOIN hots.m_service s ON t.service_id = s.service_id
+                LEFT JOIN hots.user u ON t.created_by = u.user_id
+                WHERE t.ticket_id = ?
+            `, [ticket_id]);
+
+            if (ticketRows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Ticket not found"
+                });
+            }
+
+            // Generate the document using existing srf_document_generator
+            const config = { documentType: 'srf_document', service_id: 6 };
+            // Pass requester_name from query result
+            const params = {
+                generated_by: user_id,
+                requester_name: ticketRows[0]?.requester_name || ''
+            };
+
+            // Use module.exports since srf_document_generator is in the same file
+            // Pass the full array (with detail rows), NOT just the first row
+            const documentPath = await module.exports.srf_document_generator(config, ticketRows, params);
+
+            if (!documentPath) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Failed to generate document - no path returned"
+                });
+            }
+
+            // Save generated document info
+            await dbHots.promise().query(`
+                INSERT INTO hots.t_generated_documents 
+                (ticket_id, document_type, file_path, file_name, generated_date, template_used)
+                VALUES (?, ?, ?, ?, NOW(), ?)
+            `, [
+                ticket_id,
+                'srf_document',
+                documentPath,
+                require('path').basename(documentPath),
+                'srf_document'
+            ]);
+
+            console.log(`${timestamp}SRF document generated for ticket ${ticket_id} by user ${user_id}: ${documentPath}`);
+
+            res.status(200).json({
+                success: true,
+                message: "SRF document generated successfully",
+                document: {
+                    file_path: documentPath,
+                    file_name: require('path').basename(documentPath)
+                }
+            });
+        } catch (err) {
+            console.error(`${timestamp}Error generating SRF document:`, err);
             res.status(500).json({
                 success: false,
                 message: err.message
@@ -942,132 +1255,19 @@ module.exports = {
             return romans[month - 1];
         };
 
-        const getSRFNumberDynamic = async (factory, categoryName, service_id, ticket_id, forceRegenerate = false) => {
-            const currentDate = new Date();
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth() + 1;
-            const romanMonth = monthToRoman(month);
-
-            // ✅ Step 0: Check if SRF already exists in t_ticket_detail
-            const [existingSRF] = await dbHots.promise().query(
-                `SELECT cstm_col AS doc_no 
-               FROM t_ticket_detail 
-               WHERE ticket_id = ? AND lbl_col = 'SRF No.' 
-               LIMIT 1`,
-                [ticket_id]
-            );
-
-            if (existingSRF.length > 0 && existingSRF[0].doc_no && !forceRegenerate) {
-                console.log(`🔁 Using existing SRF from t_ticket_detail: ${existingSRF[0].doc_no}`);
-                return existingSRF[0].doc_no;
-            }
-
-            // 🔥 If forceRegenerate and existing SRF, delete old entries first
-            if (forceRegenerate && existingSRF.length > 0) {
-                const oldDocNo = existingSRF[0].doc_no;
-                console.log(`🗑️ [REGENERATE] Deleting old SRF entries: ${oldDocNo}`);
-
-                // Delete old t_ticket_doc_no entries
-                await dbHots.promise().query(
-                    `DELETE FROM t_ticket_doc_no WHERE ticket_id = ? AND doc_no = ?`,
-                    [ticket_id, oldDocNo]
-                );
-
-                // Delete old t_ticket_detail SRF No. entry
-                await dbHots.promise().query(
-                    `DELETE FROM t_ticket_detail WHERE ticket_id = ? AND lbl_col = 'SRF No.'`,
+        const getSRFNumber = async (ticket_id) => {
+            try {
+                const [existingSRF] = await dbHots.promise().query(
+                    `SELECT doc_no FROM hots.t_ticket_doc_no WHERE ticket_id = ? AND service_id = 6 LIMIT 1`,
                     [ticket_id]
                 );
-
-                console.log(`✅ [REGENERATE] Old SRF entries deleted, creating new...`);
-            }
-
-            // Step 1: Resolve category shortname
-            const [catQuery] = await dbHots.promise().query(`
-              SELECT samplecat_shortname 
-              FROM m_sample_category 
-              WHERE samplecat_name LIKE ${dbHots.escape('%' + categoryName + '%')}
-            `);
-            const category = catQuery?.[0]?.samplecat_shortname || "GEN";
-            if (category === "NICI") return "-";
-
-            const factoryPart = category === "/FS" ? "" : `/${factory}`;
-
-            // Step 2: Generate new SRF dynamically
-            const conn = await dbHots.promise().getConnection();
-            try {
-                await conn.beginTransaction();
-
-                const [existing] = await conn.query(
-                    `
-                SELECT MAX(CAST(td.cstm_col AS UNSIGNED)) AS last_seq
-                FROM t_ticket_doc_no td
-                WHERE td.lbl_col = 'sequence'
-                AND td.service_id = ?
-                AND EXISTS (
-                  SELECT 1 FROM t_ticket_doc_no f
-                  WHERE f.doc_no = td.doc_no
-                  AND f.lbl_col = 'factory' AND f.cstm_col = ?
-                )
-                AND EXISTS (
-                  SELECT 1 FROM t_ticket_doc_no c
-                  WHERE c.doc_no = td.doc_no
-                  AND c.lbl_col = 'category' AND c.cstm_col = ?
-                )
-                AND EXISTS (
-                  SELECT 1 FROM t_ticket_doc_no m
-                  WHERE m.doc_no = td.doc_no
-                  AND m.lbl_col = 'month' AND m.cstm_col = ?
-                )
-                AND EXISTS (
-                  SELECT 1 FROM t_ticket_doc_no y
-                  WHERE y.doc_no = td.doc_no
-                  AND y.lbl_col = 'year' AND y.cstm_col = ?
-                )
-                `,
-                    [service_id, factory, category, month.toString(), year.toString()]
-                );
-
-                const nextSeq = (existing?.[0]?.last_seq || 0) + 1;
-                const paddedSeq = String(nextSeq).padStart(3, "0");
-                const srfNumber = `${paddedSeq}/SRF${factoryPart}/${category}/${romanMonth}/${year}`;
-
-                // Step 3: Insert decomposed info dynamically
-                const parts = [
-                    { lbl_col: "factory", cstm_col: factory },
-                    { lbl_col: "category", cstm_col: category },
-                    { lbl_col: "month", cstm_col: month.toString() },
-                    { lbl_col: "year", cstm_col: year.toString() },
-                    { lbl_col: "sequence", cstm_col: nextSeq.toString() },
-                ];
-
-                for (const part of parts) {
-                    await conn.query(
-                        `INSERT INTO t_ticket_doc_no (ticket_id, doc_no, lbl_col, cstm_col, service_id)
-                   VALUES (?, ?, ?, ?, ?)`,
-                        [ticket_id, srfNumber, part.lbl_col, part.cstm_col, service_id]
-                    );
-                }
-
-                // ✅ Step 4: Save SRF number into t_ticket_detail
-                await conn.query(
-                    `INSERT INTO t_ticket_detail (ticket_id, lbl_col, cstm_col)
-                 VALUES (?, 'SRF No.', ?)`,
-                    [ticket_id, srfNumber]
-                );
-
-                await conn.commit();
-
-                console.log(`✅ New SRF created and synced: ${srfNumber}`);
-                return srfNumber;
-            } catch (err) {
-                await conn.rollback();
-                console.error("❌ Error generating dynamic SRF number:", err);
-                throw err;
-            } finally {
-                conn.release();
+                return existingSRF[0]?.doc_no || 'To Be Generated';
+            } catch (error) {
+                return 'Error';
             }
         };
+
+
 
 
 
@@ -1097,7 +1297,7 @@ module.exports = {
 
         // Pass forceRegenerate=true when triggered manually (replaces old SRF)
         const forceRegenerate = params?.manual_trigger === true;
-        const generatesrf = await getSRFNumberDynamic(factory, sample, data?.service_id, data?.ticket_id, forceRegenerate);
+        const generatesrf = await getSRFNumber(data?.ticket_id);
 
 
         // 🔥 Handle Core Engine rowgroup format
@@ -1232,40 +1432,58 @@ module.exports = {
         // Group 2 (Cc)
         const ccPICs = factoryPIC.filter(p => p.flag === 2).map(p => p.pic_name);
 
-        const approvalColumnsHtml = approvallist
-            .filter(a => a.approval_order !== 2) // Hide Logistic Analyst (step 2) signature
-            .map((approver, index) => {
+        // Helper to get signature URL from user_profile or fallback to legacy /ttd/
+        const getSignatureUrl = async (userId) => {
+            const signPath = await profileController.getUserSignaturePath(userId);
+            if (signPath) {
+                return `${API_URL}${signPath}`;
+            }
+            // Fallback to legacy /ttd/ path
+            return `${API_URL}/ttd/sign-${userId}.jpg`;
+        };
 
+        // Build approval columns with proper signature paths
+        const approvalColumnsPromises = approvallist
+            .filter(a => a.approval_order !== 2) // Hide Logistic Analyst (step 2) signature
+            .map(async (approver, index) => {
                 const isApproved = !!approver.approve_date;
 
-                const signBlock = isApproved
-                    ? `
+                let signBlock = '';
+                if (isApproved) {
+                    const signUrl = await getSignatureUrl(approver.approver_id);
+                    signBlock = `
               <div style="height: 100%; max-height:130px; display:flex; align-items:center;">
                 <img
                   alt="sign"
-                  src="https://backend.indofoodinternational.com:2864/ttd/sign-${approver.approver_id}.jpg"
+                  src="${signUrl}"
                   style="width:120px;display:block;margin:0 auto 5px auto;"
                 />
               </div>
-            `
-                    : `
+            `;
+                } else {
+                    signBlock = `
               <div style="height: 100%; max-height:130px; display:flex; align-items:center;"></div>
             `;
+                }
 
                 // Use dynamic step name from workflow definition
                 const positionLabel = approver.step_name || `Step ${approver.approval_order}`;
 
                 return `
-            <td style="padding:10px;vertical-align:top;">
+            <td style="padding:10px 10px 15px 10px;vertical-align:top;">
               ${signBlock}
               <br>
               ${approver.fullname || "—"}
               <br>
-              <span style="font-size:12px;color:#555;">${positionLabel}</span>
+              <span style="font-size:12px;color:#555;display:inline-block;margin-bottom:10px;">${positionLabel}</span>
             </td>
           `;
-            })
-            .join("");
+            });
+
+        const approvalColumnsHtml = (await Promise.all(approvalColumnsPromises)).join("");
+
+        // Get requester signature URL
+        const requesterSignUrl = await getSignatureUrl(data.created_by);
 
 
 
@@ -1277,7 +1495,7 @@ module.exports = {
                   <meta charset="utf-8" />
                   <title>SAMPLE REQUEST FORM ( SRF )</title>
                   <style>
-                    body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; }
+                    body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; min-width: 700px; max-width: 794px; }
                     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
                     th, td { border: 1px solid #000; padding: 5px; text-align: left; }
                     .no-border td { border: none; }
@@ -1285,7 +1503,9 @@ module.exports = {
                     .bold { font-weight: bold; }
                     .section-title { margin-top: 20px; font-weight: bold; font-size: 16px; text-align: center; }
                     .note { border: 1px solid #000; padding: 10px; margin-top: 10px; }
-                    .approval-table td { height: 60px; vertical-align: bottom; text-align: center; }
+                    .approval-table td { height: 60px; vertical-align: bottom; text-align: center; word-break: break-word; overflow-wrap: break-word; }
+                    .approval-table { table-layout: fixed; }
+                    .approval-table td { width: 25%; }
                     .small { font-size: 10px; }
                   </style>
                 </head>
@@ -1424,19 +1644,19 @@ module.exports = {
                 </tr>
                   <tr>
                     
-                    <td style="padding:10px;vertical-align:top;">
+                    <td style="padding:10px 10px 15px 10px;vertical-align:top;">
                             <div style="height: 100%; max-height:130px;display:flex; align-items: center;">
                     
                         <img
                             alt="sign"
-                            src="https://backend.indofoodinternational.com:2864/ttd/sign-${data.created_by}.jpg"
+                            src="${requesterSignUrl}"
                             style="width:120px;display:block;margin:0 auto 5px auto;"
                         />
                         </div>
                         <br>
                         ${data?.requester_name || ''}
                         <br>
-                        <span style="font-size:12px;color:#555;">${data.business_analyst || 'Business Analyst'}</span>
+                        <span style="font-size:12px;color:#555;display:inline-block;margin-bottom:10px;">${data.business_analyst || 'Requester'}</span>
                     </td>
                     
     
@@ -1451,7 +1671,10 @@ module.exports = {
 
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: 'networkidle0' });
+        // Use domcontentloaded instead of networkidle0 to avoid timeout on slow/failed images
+        await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        // Give images a chance to load (signature images, logos)
+        await new Promise(resolve => setTimeout(resolve, 2000));
         await page.pdf({ path: filePath, format: 'A4' });
         await browser.close();
 
@@ -1510,7 +1733,7 @@ module.exports = {
 
             // Save generated document info
             await dbHots.promise().query(`
-                INSERT INTO t_generated_documents 
+                INSERT INTO hots.t_generated_documents 
                 (ticket_id, document_type, file_path, file_name, generated_date, template_used)
                 VALUES (?, ?, ?, ?, NOW(), ?)
             `, [
@@ -1673,6 +1896,717 @@ module.exports = {
                 message: error.message || 'Failed to generate document'
             });
         }
+    },
+
+
+    /**
+     * Preview SRF Document HTML (for testing/debugging)
+     * GET /hots_settings/custom_functions/preview_srf/:ticketId
+     * Returns raw HTML instead of PDF - useful for debugging template
+     */
+    previewSRFDocument: async (req, res) => {
+        try {
+            const { ticketId } = req.params;
+
+            console.log(`📄 [PREVIEW_SRF] ========= START =========`);
+            console.log(`📄 [PREVIEW_SRF] ticketId: ${ticketId}`);
+
+            // Fetch ticket data
+            const [ticketData] = await dbHots.promise().query(
+                'SELECT * FROM t_ticket t LEFT JOIN t_ticket_detail td ON t.ticket_id = td.ticket_id WHERE t.ticket_id = ?',
+                [ticketId]
+            );
+
+            if (!ticketData || ticketData.length === 0) {
+                return res.status(404).send(`<h1>Ticket not found: ${ticketId}</h1>`);
+            }
+
+            // Get requester info
+            const [requesterData] = await dbHots.promise().query(`
+                SELECT CONCAT(u.firstname, ' ', u.lastname) as requester_name, u.email as requester_email
+                FROM t_ticket t
+                JOIN user u ON t.created_by = u.user_id
+                WHERE t.ticket_id = ?
+            `, [ticketId]);
+
+            const params = {
+                requester_name: requesterData[0]?.requester_name || 'Unknown',
+                requester_email: requesterData[0]?.requester_email || '',
+                manual_trigger: true
+            };
+
+            // Generate HTML using existing generator (but intercept before PDF)
+            const html = await module.exports.generateSRFHtml(ticketData, params);
+
+            // Return HTML directly
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.send(html);
+
+        } catch (error) {
+            console.error('❌ [PREVIEW_SRF] Error:', error);
+            res.status(500).send(`<h1>Error</h1><pre>${error.message}\n\n${error.stack}</pre>`);
+        }
+    },
+
+    /**
+     * Preview Page - Simple HTML form to input ticket ID
+     * GET /hots_settings/custom_functions/preview
+     */
+    previewPage: async (req, res) => {
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SRF Document Preview</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #16213e;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        h1 { color: #4fc3f7; margin-bottom: 30px; }
+        input {
+            padding: 15px 20px;
+            font-size: 18px;
+            border: 2px solid #4fc3f7;
+            border-radius: 8px;
+            background: #0f3460;
+            color: #fff;
+            width: 200px;
+            margin-right: 10px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #00e676;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #4fc3f7, #00e676);
+            border: none;
+            border-radius: 8px;
+            color: #1a1a2e;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover { transform: scale(1.05); }
+        .hint {
+            margin-top: 20px;
+            color: #888;
+            font-size: 14px;
+        }
+        .shortcuts {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+        .shortcuts a {
+            color: #4fc3f7;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .shortcuts a:hover { color: #00e676; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 SRF Document Preview</h1>
+        <form id="previewForm">
+            <input type="text" id="ticketId" placeholder="Ticket ID" autofocus />
+            <button type="submit">Preview HTML</button>
+        </form>
+        <p class="hint">Enter a ticket ID to preview the generated SRF document HTML</p>
+        
+        <div class="shortcuts">
+            <strong>Recent Tickets:</strong>
+            <span id="recentTickets">Loading...</span>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('previewForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const ticketId = document.getElementById('ticketId').value.trim();
+            if (ticketId) {
+                window.open('./preview_srf/' + ticketId, '_blank');
+            }
+        });
+        
+        // Load recent SRF tickets
+        fetch('/hots_ticket/tickets?service_id=17&limit=5')
+            .then(r => r.json())
+            .then(data => {
+                if (data.data && data.data.length > 0) {
+                    document.getElementById('recentTickets').innerHTML = data.data.map(t => 
+                        '<a href="./preview_srf/' + t.ticket_id + '" target="_blank">' + t.ticket_id + '</a>'
+                    ).join(' | ');
+                } else {
+                    document.getElementById('recentTickets').textContent = 'No recent tickets';
+                }
+            })
+            .catch(() => {
+                document.getElementById('recentTickets').textContent = 'Could not load';
+            });
+    </script>
+</body>
+</html>`;
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(html);
+    },
+
+    /**
+     * Generate SRF HTML only (without PDF conversion)
+     * Used by both previewSRFDocument and srf_document_generator
+     */
+    generateSRFHtml: async (ticketData, params) => {
+        // ===== Copy the exact logic from srf_document_generator but return HTML =====
+
+        // Normalize ticket data
+        let data = {};
+        let detailRows = [];
+
+        if (Array.isArray(ticketData)) {
+            const baseInfo = {
+                ticket_id: ticketData[0]?.ticket_id,
+                service_id: ticketData[0]?.service_id,
+                status_id: ticketData[0]?.status_id,
+                created_by: ticketData[0]?.created_by,
+                assigned_team: ticketData[0]?.assigned_team,
+                assigned_to: ticketData[0]?.assigned_to,
+                creation_date: ticketData[0]?.creation_date,
+                last_update: ticketData[0]?.last_update,
+                workflow_step: ticketData[0]?.workflow_step,
+            };
+
+            detailRows = ticketData.map(r => ({
+                lbl_col: r.lbl_col,
+                value: r.value,
+                cstm_col: r.cstm_col,
+                order_col: r.order_col,
+                field_type: r.field_type,
+            }));
+
+            data = { ...baseInfo, ...params, detail_rows: detailRows };
+        } else if (ticketData && typeof ticketData === 'object') {
+            data = { ...ticketData, ...params };
+            detailRows = params.detail_rows || ticketData.detail_rows || [];
+        }
+
+        const cleanValue = (value) => {
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed.join(', ') : parsed;
+            } catch {
+                return value;
+            }
+        };
+
+        const getByLabel = (labelKeyword) => {
+            let row = detailRows.find(r =>
+                r.cstm_col?.toLowerCase().includes(labelKeyword.toLowerCase())
+            );
+            if (row) return cleanValue(row?.value || '');
+
+            row = detailRows.find(r =>
+                r.lbl_col?.toLowerCase().includes(labelKeyword.toLowerCase())
+            );
+            return cleanValue(row?.cstm_col || row?.value || '') || 'No Data Found';
+        };
+
+        // Helper functions - simplified versions
+        const getteamleaderEmail = async (teamId) => {
+            try {
+                const [result] = await dbHots.promise().query(`
+                    SELECT GROUP_CONCAT(u.email) AS emails
+                    FROM m_team_members tm
+                    JOIN user u ON tm.user_id = u.user_id
+                    WHERE tm.team_id = ? AND tm.is_leader = 1
+                `, [teamId]);
+                return result[0]?.emails || '';
+            } catch (error) {
+                console.error('Error fetching team leader email:', error);
+                return '';
+            }
+        };
+
+        const getFactoryByFactoryId = async (factoryId) => {
+            try {
+                if (!factoryId) return '';
+                const [result] = await dbHots.promise().query(
+                    'SELECT factory_sname, factory_name FROM mst_factory WHERE factory_id = ?',
+                    [factoryId]
+                );
+                return result[0]?.factory_sname || result[0]?.factory_name || '';
+            } catch (error) {
+                return '';
+            }
+        };
+
+        const getFactoryIdFromWorkData = async (ticketId) => {
+            try {
+                const [result] = await dbHots.promise().query(
+                    `SELECT field_value FROM t_ticket_work_data 
+                     WHERE ticket_id = ? AND field_name = 'factory_id' 
+                     ORDER BY created_at DESC LIMIT 1`,
+                    [ticketId]
+                );
+                return result[0]?.field_value || null;
+            } catch (error) {
+                return null;
+            }
+        };
+
+        const getFactoryPPIC = async (factoryId) => {
+            try {
+                if (!factoryId) return [];
+                const [result] = await dbHots.promise().query(
+                    'SELECT pic_name, flag FROM mst_factory_pic WHERE factory_id = ?',
+                    [factoryId]
+                );
+                return result || [];
+            } catch (error) {
+                return [];
+            }
+        };
+
+        const monthToRoman = (month) => {
+            const romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+            return romans[month - 1];
+        };
+
+        // Get approval list
+        const getApproval = async (ticket_id) => {
+            try {
+                const [ticket] = await dbHots.promise().query(
+                    'SELECT service_id FROM t_ticket WHERE ticket_id = ?',
+                    [ticket_id]
+                );
+                if (!ticket.length) return [];
+
+                const [workflow] = await dbHots.promise().query(
+                    'SELECT definition FROM m_service_workflow WHERE workflow_id = ? AND is_active = 1',
+                    [ticket[0].service_id]
+                );
+                if (!workflow.length) return [];
+
+                const defRaw = workflow[0].definition;
+                const workflowDef = typeof defRaw === 'string' ? JSON.parse(defRaw) : defRaw;
+                const steps = workflowDef.steps || [];
+
+                const [events] = await dbHots.promise().query(`
+                    SELECT 
+                        e.approval_order,
+                        e.approve_date,
+                        e.approver_id,
+                        e.remark,
+                        CONCAT(u.firstname, ' ', u.lastname) AS fullname,
+                        u.email
+                    FROM t_ticket_event e
+                    LEFT JOIN user u ON e.approver_id = u.user_id
+                    WHERE e.ticket_id = ?
+                    AND e.event_type = 'approve'
+                    AND e.approver_leader = '1'
+                    ORDER BY e.approval_order
+                `, [ticket_id]);
+
+                return steps.map((step) => {
+                    const event = events.find(e => e.approval_order === step.level);
+                    return {
+                        approval_order: step.level,
+                        step_name: step.meta?.name || step.meta?.description || `Step ${step.level}`,
+                        approve_date: event?.approve_date || null,
+                        approver_id: event?.approver_id || null,
+                        fullname: event?.fullname || null,
+                        email: event?.email || null,
+                        remark: event?.remark || ''
+                    };
+                });
+            } catch (error) {
+                console.error('Error fetching approvals:', error);
+                return [];
+            }
+        };
+
+        // Get SRF number
+        const getSRFNumber = async (ticket_id) => {
+            try {
+                const [existingSRF] = await dbHots.promise().query(
+                    `SELECT field_value AS doc_no FROM t_ticket_work_data WHERE ticket_id = ? AND field_name = 'srf_document_number' LIMIT 1`,
+                    [ticket_id]
+                );
+                return existingSRF[0]?.doc_no || 'To Be Generated';
+            } catch (error) {
+                return 'Error';
+            }
+        };
+
+        // Signature helper
+        const getSignatureUrl = async (userId) => {
+            const signPath = await profileController.getUserSignaturePath(userId);
+            if (signPath) {
+                return `${API_URL}${signPath}`;
+            }
+            return `${API_URL}/ttd/sign-${userId}.jpg`;
+        };
+
+        // Now build the document data
+        let factory_id = await getFactoryIdFromWorkData(data?.ticket_id);
+        let factory = '';
+
+        if (factory_id) {
+            factory = await getFactoryByFactoryId(factory_id);
+        } else {
+            factory_id = getByLabel('factory_id');
+            factory = getByLabel('factory');
+        }
+
+        const factoryPIC = await getFactoryPPIC(factory_id);
+        const approvallistRaw = await getApproval(data?.ticket_id);
+        const approvallist = approvallistRaw.filter(a => a.approval_order !== 2);
+        const generatesrf = await getSRFNumber(data?.ticket_id);
+
+        // Build item rows
+        let totalPcs = 0, totalCtn = 0;
+        let itemRowsHtml = '';
+
+        const isEngineFormat = detailRows.some(r =>
+            r.field_type === 'rowgroup_item' ||
+            r.lbl_col?.toLowerCase() === 'quantity' ||
+            r.lbl_col?.toLowerCase() === 'item name'
+        );
+
+        if (isEngineFormat) {
+            const itemRows = detailRows.filter(r =>
+                r.lbl_col?.toLowerCase() === 'item name' ||
+                r.field_type === 'rowgroup_item' && r.lbl_col?.toLowerCase().includes('item')
+            );
+
+            const quantityRows = detailRows.filter(r =>
+                r.lbl_col?.toLowerCase() === 'quantity' ||
+                (r.field_type === 'rowgroup_item' && r.lbl_col?.toLowerCase().includes('quantity'))
+            );
+
+            itemRows.forEach((itemRow, i) => {
+                const itemName = itemRow.value || '';
+                const itemIndex = itemRow.cstm_col?.match(/\d+/)?.[0] || i.toString();
+                const qtyRow = quantityRows.find(q => q.cstm_col?.includes(itemIndex)) || quantityRows[i];
+                const qtyValue = qtyRow?.value || '';
+
+                let pcs = '', ctn = '';
+                const cleanQty = qtyValue.replace(/\|/g, '').trim();
+
+                if (cleanQty.toLowerCase().includes('pcs')) {
+                    const val = parseInt(cleanQty);
+                    if (!isNaN(val)) {
+                        totalPcs += val;
+                        pcs = val.toLocaleString();
+                    }
+                }
+                if (cleanQty.toLowerCase().includes('ctn')) {
+                    const val = parseInt(cleanQty);
+                    if (!isNaN(val)) {
+                        totalCtn += val;
+                        ctn = val.toLocaleString();
+                    }
+                }
+
+                itemRowsHtml += `
+                    <tr>
+                      <td>${i + 1}</td>
+                      <td>${itemName}</td>
+                      <td>${pcs}</td>
+                      <td>${ctn}</td>
+                    </tr>`;
+            });
+        } else {
+            const itemRows = detailRows.filter(row =>
+                row.lbl_col?.toLowerCase().includes('item')
+            );
+
+            itemRows.forEach((row, i) => {
+                const itemName = row.value || row.cstm_col || '';
+                const qtyRow = detailRows.find(
+                    r => r.lbl_col?.toLowerCase().includes('quantity') &&
+                        r.order_col === row.order_col + 1
+                ) || detailRows[i + 1];
+
+                const qty = qtyRow?.value || qtyRow?.cstm_col || '';
+                let pcs = '', ctn = '';
+
+                if (qty.toLowerCase().includes('pcs')) {
+                    const val = parseInt(qty);
+                    if (!isNaN(val)) {
+                        totalPcs += val;
+                        pcs = val.toLocaleString();
+                    }
+                }
+
+                if (qty.toLowerCase().includes('ctn')) {
+                    const val = parseInt(qty);
+                    if (!isNaN(val)) {
+                        totalCtn += val;
+                        ctn = val.toLocaleString();
+                    }
+                }
+
+                itemRowsHtml += `
+                    <tr>
+                      <td>${i + 1}</td>
+                      <td>${itemName}</td>
+                      <td>${pcs}</td>
+                      <td>${ctn}</td>
+                    </tr>`;
+            });
+        }
+
+        // Notes
+        let notesHtml = '';
+        approvallistRaw.forEach((approvalData) => {
+            if (approvalData.remark && approvalData.remark.trim() !== '') {
+                const stepInfo = approvalData.step_name ? `(${approvalData.step_name})` : '';
+                notesHtml += `<li>${approvalData.fullname} ${stepInfo}: ${approvalData.remark}</li>`;
+            }
+        });
+
+        const toPICs = factoryPIC.filter(p => p.flag === 1).map(p => p.pic_name);
+        const ccPICs = factoryPIC.filter(p => p.flag === 2).map(p => p.pic_name);
+
+        // Approval columns
+        const approvalColumnsPromises = approvallist
+            .filter(a => a.approval_order !== 2)
+            .map(async (approver) => {
+                const isApproved = !!approver.approve_date;
+                let signBlock = '';
+                if (isApproved) {
+                    const signUrl = await getSignatureUrl(approver.approver_id);
+                    signBlock = `
+              <div style="height: 100%; max-height:130px; display:flex; align-items:center;">
+                <img alt="sign" src="${signUrl}" style="width:120px;display:block;margin:0 auto 5px auto;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%2260%22><text y=%2230%22 fill=%22red%22>Image Error</text></svg>'; this.title='Failed to load: ${signUrl}'"/>
+              </div>`;
+                } else {
+                    signBlock = `<div style="height: 100%; max-height:130px; display:flex; align-items:center;"></div>`;
+                }
+
+                const positionLabel = approver.step_name || `Step ${approver.approval_order}`;
+
+                return `
+            <td style="padding:10px;vertical-align:top;">
+              ${signBlock}
+              <br>
+              ${approver.fullname || "—"}
+              <br>
+              <span style="font-size:12px;color:#555;">${positionLabel}</span>
+            </td>`;
+            });
+
+        const approvalColumnsHtml = (await Promise.all(approvalColumnsPromises)).join("");
+        const requesterSignUrl = await getSignatureUrl(data.created_by);
+
+        // Build final HTML (same as srf_document_generator)
+        const html = `
+              <html>
+                <head>
+                  <meta charset="utf-8" />
+                  <title>SAMPLE REQUEST FORM ( SRF ) - PREVIEW</title>
+                  <style>
+                    body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th, td { border: 1px solid #000; padding: 5px; text-align: left; }
+                    .no-border td { border: none; }
+                    .center { text-align: center; }
+                    .bold { font-weight: bold; }
+                    .section-title { margin-top: 20px; font-weight: bold; font-size: 16px; text-align: center; }
+                    .note { border: 1px solid #000; padding: 10px; margin-top: 10px; }
+                    .approval-table td { height: 60px; vertical-align: bottom; text-align: center; }
+                    .small { font-size: 10px; }
+                    /* Debug styling for preview */
+                    .debug-bar { 
+                        background: #ff6b6b; color: white; padding: 10px; margin-bottom: 20px; 
+                        font-size: 14px; border-radius: 5px; 
+                    }
+                    .debug-bar strong { color: yellow; }
+                  </style>
+                </head>
+                <body>
+    
+                <div class="debug-bar">
+                    🧪 <strong>PREVIEW MODE</strong> | Ticket: ${data.ticket_id} | Created by: ${data.created_by} | 
+                    Factory: ${factory} | SRF: ${generatesrf}
+                </div>
+    
+                <div style="display:flex;justify-content:space-between;width:100%;">
+                    <div>
+                        <img
+                            src="${API_URL}/aset/image/indofood_header_logo.png"
+                            style="height:35px"
+                        />
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;">
+                        <img
+                            src="${API_URL}/aset/image/icbp_header_logo.png"
+                            style="height:35px"
+                        />
+                    </div>
+                </div>
+    
+    
+                <br>
+    
+                <table class="no-border">
+                  <tr>
+                    <td><strong>PT. INDOFOOD CBP SUKSES MAKMUR</strong></td>
+                    <td style="text-align:right;">To&nbsp;: <em> ${toPICs.join(', ')} </em> </td>
+                  </tr>
+                  <tr>
+                    <td><strong>Division</strong>&nbsp;: IOD </td>
+                    <td style="text-align:right;"></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Location</strong>&nbsp;: INDOFOOD TOWER LT.23</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><strong>SRF NO</strong>&nbsp;: ${generatesrf}</td>
+                    <td></td>
+                  </tr>
+                </table>
+          
+                <div class="section-title">SAMPLE REQUEST FORM ( SRF )</div>
+          
+               <style>
+                    .no-border {
+                        width: 100%;
+                        table-layout: fixed;
+                        border-collapse: collapse;
+                    }
+                    .no-border td {
+                        vertical-align: top;
+                        padding: 4px;
+                    }
+                    .label {
+                        width: 12%;
+                        font-weight: bold;
+                    }
+                    .content {
+                        width: 38%;
+                    }
+                </style>
+    
+                <table class="no-border">
+                    <tr>
+                        <td class="label">To</td>
+                        <td class="content">:  ${toPICs.join(', ')}</td>
+                        <td class="label">Name/Title</td>
+                        <td class="content">: ${getByLabel('name')}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Cc</td>
+                        <td class="content">:  ${ccPICs.join(', ')}</td>
+                        <td class="label">Purposes</td>
+                        <td class="content">: ${getByLabel('purpose')}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Deliver to</td>
+                        <td class="content">: ${getByLabel('deliver_to')}</td>
+                        <td class="label">Category</td>
+                        <td class="content">: ${getByLabel('Category_field')}</td>
+                    </tr>
+                </table>
+    
+          
+                <table>
+                  <thead>
+                    <tr>
+                      <th>NO</th>
+                      <th>DESCRIPTION</th>
+                      <th>QUANTITY IN PCS</th>
+                      <th>QUANTITY IN CTN</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+    
+                    ${itemRowsHtml}
+                    <tr>
+                      <td colspan="2" class="bold" style="text-align: right;">TOTAL</td>
+                      <td class="bold">${totalPcs.toLocaleString()} PCS</td>
+                      <td class="bold">${totalCtn.toLocaleString()} CTN</td>
+                    </tr>
+                  </tbody>
+                </table>
+          
+                <div class="note">
+                    <strong>Request Detail:</strong>
+                   ${(() => {
+                const po = getByLabel("PO_Number") || "";
+                return !po.toLowerCase().includes("no data found")
+                    ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${po}</p>`
+                    : "";
+            })()}
+                  
+                    ${getByLabel('Week Delivery') && getByLabel('Week Delivery') !== "No Data Found"
+                ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>`
+                : ''}
+                    <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('field_1761105177705').toLocaleString() === `true` ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
+                </div>
+    
+                <div class="note">
+                    <strong>Note:</strong>
+                   <br>
+                    ${getByLabel('field_1761105303599') ? `<p>${getByLabel('field_1761105303599')}</p>` : ''}
+                     ${notesHtml}
+                  <strong>Thank you</strong>
+                </div>
+          
+                <table class="approval-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
+ 
+                 <tr class="bold">
+                    <td style="text-align:center; vertical-align:middle;">Request by</td>
+                    <td style="text-align:center; vertical-align:middle;">Approved by</td>
+                    <td style="text-align:center; vertical-align:middle;">Approved by</td>
+                    <td style="text-align:center; vertical-align:middle;">Approved by</td>
+                </tr>
+                  <tr>
+                    
+                    <td style="padding:10px;vertical-align:top;">
+                            <div style="height: 100%; max-height:130px;display:flex; align-items: center;">
+                    
+                        <img
+                            alt="sign"
+                            src="${requesterSignUrl}"
+                            style="width:120px;display:block;margin:0 auto 5px auto;"
+                            onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%2260%22><text y=%2230%22 fill=%22red%22>Image Error</text></svg>'; this.title='Failed to load: ${requesterSignUrl}'"
+                        />
+                        </div>
+                        <br>
+                        ${data?.requester_name || ''}
+                        <br>
+                        <span style="font-size:12px;color:#555;">${data.business_analyst || 'Business Analyst'}</span>
+                    </td>
+                    
+
+                    ${approvalColumnsHtml}
+
+                  </tr>
+                </table>
+          
+                </body>
+              </html>
+            `;
+
+        return html;
     },
 
 

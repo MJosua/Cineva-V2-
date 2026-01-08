@@ -3,6 +3,7 @@ import { WidgetConfig } from '@/types/widgetTypes';
 // Extended WidgetConfig with optional serviceIds for service-specific widgets
 interface ExtendedWidgetConfig extends WidgetConfig {
   serviceIds?: number[]; // If set, widget only shows for these service IDs
+  displayOrder?: number; // Optional display order (lower = first)
 }
 
 // Widget registry - all available widgets are listed here
@@ -87,48 +88,34 @@ export const widgetRegistry: Record<string, ExtendedWidgetConfig> = {
     category: "Job Marketplace"
   },
 
-  job_execution_tools: {
-    id: "job_execution_tools",
-    name: "Job Execution Tools",
-    description: "Tools for workers to execute job assignments",
-    componentPath: "JobExecutionTools",
-    applicableTo: ["assignment_detail"],
-    dataRequirements: ["assignmentData", "workData"],
-    category: "Job Marketplace"
-  },
+
 
   // SRF-specific widgets (service_id = 6)
-  data_execution_tools: {
-    id: "data_execution_tools",
-    name: "Data Execution Tools",
-    description: "Factory selection and data management for SRF",
-    componentPath: "DataExecutionTools",
-    applicableTo: ["assignment_detail"],
-    dataRequirements: ["assignmentData", "workData"],
+  // Using unified container with split layout for main area
+
+  srf_workflow_container: {
+    id: "srf_workflow_container",
+    name: "SRF Work Tools",
+    description: "Unified SRF workflow: Factory, Category, Number (left) + Documents (right)",
+    componentPath: "SRFWorkflowContainer",
+    applicableTo: ["assignment_detail", "ticket_detail"],
+    dataRequirements: ["ticketData"],
     category: "SRF Tools",
-    serviceIds: [6] // Only for SRF service
+    serviceIds: [6], // Only for SRF service
+    displayOrder: 1  // Single unified widget
   },
 
-  srf_document_generator: {
-    id: "srf_document_generator",
-    name: "SRF Document Generator",
-    description: "Generate SRF documents with factory and invoice data",
-    componentPath: "SRFDocumentGenerator",
-    applicableTo: ["assignment_detail"],
-    dataRequirements: ["ticketData", "factoryData"],
-    category: "SRF Tools",
-    serviceIds: [6] // Only for SRF service
-  },
-
+  // Invoice widget - shown separately in sidebar (filtered by AssignmentDetailPage)
   srf_invoice_input: {
     id: "srf_invoice_input",
     name: "SRF Invoice Input",
     description: "Input and manage invoice numbers for SRF tickets",
     componentPath: "SRFInvoiceInput",
-    applicableTo: ["assignment_detail"],
+    applicableTo: ["assignment_detail", "ticket_detail"],
     dataRequirements: ["ticketData"],
     category: "SRF Tools",
-    serviceIds: [6] // Only for SRF service
+    serviceIds: [6], // Only for SRF service
+    displayOrder: 10  // Sidebar placement
   },
 
   detail_table: {
