@@ -28,11 +28,26 @@ const initialState: TicketsState = {
     isLoading: false,
     error: null,
   },
+  involvedList: {
+    data: [],
+    totalData: 0,
+    totalPage: 0,
+    currentPage: 1,
+    isLoading: false,
+    error: null,
+  },
   taskCount: 0,
   isSubmitting: false,
   ticketDetail: null,
   isLoadingDetail: false,
   detailError: null,
+  sseSignals: {
+    assignment: 0,
+    comment: 0,
+    document: 0,
+    ticket: 0,
+    processingTicketId: null  // 🆕 Track which specific ticket is generating document
+  }
 };
 
 /* -------------------------------------------------------------------------- */
@@ -87,6 +102,25 @@ export const fetchTaskList = createAsyncThunk(
 
       if (!response.data.success) {
         return rejectWithValue(response.data.message || 'Failed to fetch task list');
+      }
+
+      return { ...response.data, currentPage: page };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
+export const fetchInvolvedTaskList = createAsyncThunk(
+  'tickets/fetchInvolvedTaskList',
+  async (page: number = 1, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/hots_ticket/task_list_involved?page=${page}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` },
+      });
+
+      if (!response.data.success) {
+        return rejectWithValue(response.data.message || 'Failed to fetch involved task list');
       }
 
       return { ...response.data, currentPage: page };
@@ -182,62 +216,35 @@ export const fetchTaskCount = createAsyncThunk(
   }
 );
 
-/* -------------------------------------------------------------------------- */
-/*                         APPROVE / REJECT (LEGACY SYSTEM)                   */
-/* -------------------------------------------------------------------------- */
-
-export const approveTicket = createAsyncThunk(
-  'tickets/approveTicket',
-  async ({ ticketId, approvalOrder, comment }: { ticketId: string; approvalOrder: number; comment?: string }, { rejectWithValue }) => {
-    try {
-      const response = await axios.post(`${API_URL}/hots_ticket/approve/${ticketId}`, {
-        approval_order: approvalOrder,
-        comment: comment || '',
-      });
-
-      if (!response.data.success) {
-        return rejectWithValue(response.data.message || 'Failed to approve ticket');
-      }
-
-      return { ticketId, approvalOrder };
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || error.message);
-    }
-  }
-);
-
-export const rejectTicket = createAsyncThunk(
-  'tickets/rejectTicket',
-  async ({ ticketId, approvalOrder, rejectionRemark }: { ticketId: string; approvalOrder: number; rejectionRemark: string }, { rejectWithValue }) => {
-    try {
-      const response = await axios.post(`${API_URL}/hots_ticket/reject/${ticketId}`, {
-        approval_order: approvalOrder,
-        rejection_remark: rejectionRemark,
-      });
-
-      if (!response.data.success) {
-        return rejectWithValue(response.data.message || 'Failed to reject ticket');
-      }
-
-      return { ticketId, approvalOrder };
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || error.message);
-    }
-  }
-);
 
 /* -------------------------------------------------------------------------- */
 /*                         APPROVE / REJECT (ENGINE v4)                       */
 /* -------------------------------------------------------------------------- */
 
+interface ApproveEnginePayload {
+  ticketId: string;
+  approvalOrder: number;
+  comment?: string;
+  approver_id?: number;
+}
+
+interface RejectEnginePayload {
+  ticketId: string;
+  approvalOrder: number;
+  rejectionRemark: string;
+  approver_id?: number;
+}
+
 export const approveTicketEngine = createAsyncThunk(
   'tickets/approveTicketEngine',
   async (
-    { ticketId, approvalOrder, comment, approver_id },
+    { ticketId, approvalOrder, comment, approver_id }: ApproveEnginePayload,
     { rejectWithValue }
   ) => {
     try {
-
+      if (!approver_id) {
+        console.warn("⚠️ approveTicketEngine: approver_id is missing!");
+      }
 
       const response = await axios.post(
         `${API_URL}/engine/ticket/approve`,
@@ -255,7 +262,7 @@ export const approveTicketEngine = createAsyncThunk(
         }
       );
 
-      console.log("response.data",response.data)
+      console.log("response.data", response.data)
 
       if (!response.data.ok) {
         return rejectWithValue(response.data.error || 'Engine approval failed');
@@ -272,7 +279,7 @@ export const approveTicketEngine = createAsyncThunk(
 export const rejectTicketEngine = createAsyncThunk(
   'tickets/rejectTicketEngine',
   async (
-    { ticketId, approvalOrder, rejectionRemark, approver_id },
+    { ticketId, approvalOrder, rejectionRemark, approver_id }: RejectEnginePayload,
     { rejectWithValue }
   ) => {
     try {
@@ -320,13 +327,23 @@ const ticketsSlice = createSlice({
       state.taskList.error = null;
       state.detailError = null;
     },
-    setCurrentPage: (state, action: PayloadAction<{ type: 'myTickets' | 'allTickets' | 'taskList'; page: number }>) => {
+    setCurrentPage: (state, action: PayloadAction<{ type: 'myTickets' | 'allTickets' | 'taskList' | 'involvedList'; page: number }>) => {
       state[action.payload.type].currentPage = action.payload.page;
     },
     clearTicketDetail: (state) => {
       state.ticketDetail = null;
       state.detailError = null;
     },
+    triggerSSERefresh: (state, action: PayloadAction<'assignment' | 'comment' | 'document' | 'ticket'>) => {
+      // Use simple counters or timestamps to trigger useEffects
+      if (!state.sseSignals) state.sseSignals = { assignment: 0, comment: 0, document: 0, ticket: 0 };
+      state.sseSignals[action.payload] = Date.now();
+    },
+    // 🆕 Track document generation processing state (per-ticket)
+    setDocumentProcessing: (state, action: PayloadAction<string | null>) => {
+      if (!state.sseSignals) state.sseSignals = { assignment: 0, comment: 0, document: 0, ticket: 0 };
+      state.sseSignals.processingTicketId = action.payload;
+    }
   },
 
   extraReducers: (builder) => {
@@ -379,6 +396,22 @@ const ticketsSlice = createSlice({
         state.taskList.error = action.payload as string;
       })
 
+      /* --------------------------- Involved Task List -------------------------- */
+      .addCase(fetchInvolvedTaskList.pending, (state) => {
+        state.involvedList.isLoading = true;
+      })
+      .addCase(fetchInvolvedTaskList.fulfilled, (state, action) => {
+        state.involvedList.isLoading = false;
+        state.involvedList.data = action.payload.data || [];
+        state.involvedList.totalData = action.payload.totalData || 0;
+        state.involvedList.totalPage = action.payload.totalPage || 0;
+        state.involvedList.currentPage = action.payload.currentPage || 1;
+      })
+      .addCase(fetchInvolvedTaskList.rejected, (state, action) => {
+        state.involvedList.isLoading = false;
+        state.involvedList.error = action.payload as string;
+      })
+
       /* ------------------------------ Ticket Detail ---------------------------- */
       .addCase(fetchTicketDetail.pending, (state) => {
         state.isLoadingDetail = true;
@@ -392,51 +425,10 @@ const ticketsSlice = createSlice({
         state.detailError = action.payload as string;
       })
 
+
       /* ------------------------------- Task Count ------------------------------ */
       .addCase(fetchTaskCount.fulfilled, (state, action) => {
         state.taskCount = action.payload;
-      })
-
-      /* --------------------------- Approve (Legacy) ---------------------------- */
-      .addCase(approveTicket.pending, (state) => {
-        state.isSubmitting = true;
-      })
-      .addCase(approveTicket.fulfilled, (state, action) => {
-        state.isSubmitting = false;
-        const ticket = state.taskList.data.find(
-          (t) => t.ticket_id.toString() === action.payload.ticketId
-        );
-
-        if (ticket?.list_approval) {
-          const approval = ticket.list_approval.find(
-            (a) => a.approval_order === action.payload.approvalOrder
-          );
-          if (approval) approval.approval_status = 1;
-        }
-      })
-      .addCase(approveTicket.rejected, (state) => {
-        state.isSubmitting = false;
-      })
-
-      /* --------------------------- Reject (Legacy) ----------------------------- */
-      .addCase(rejectTicket.pending, (state) => {
-        state.isSubmitting = true;
-      })
-      .addCase(rejectTicket.fulfilled, (state, action) => {
-        state.isSubmitting = false;
-        const ticket = state.taskList.data.find(
-          (t) => t.ticket_id.toString() === action.payload.ticketId
-        );
-
-        if (ticket?.list_approval) {
-          const approval = ticket.list_approval.find(
-            (a) => a.approval_order === action.payload.approvalOrder
-          );
-          if (approval) approval.approval_status = 2;
-        }
-      })
-      .addCase(rejectTicket.rejected, (state) => {
-        state.isSubmitting = false;
       })
 
       /* --------------------------- Approve (Engine v4) ------------------------- */
@@ -485,5 +477,5 @@ const ticketsSlice = createSlice({
   },
 });
 
-export const { clearErrors, setCurrentPage, clearTicketDetail } = ticketsSlice.actions;
+export const { clearErrors, setCurrentPage, clearTicketDetail, triggerSSERefresh, setDocumentProcessing } = ticketsSlice.actions;
 export default ticketsSlice.reducer;

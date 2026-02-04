@@ -1,10 +1,14 @@
-import React, { useMemo } from "react";
-import { CardContent } from "@/components/ui/card";
+import React, { useMemo, useState } from "react";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WidgetProps } from "@/types/widgetTypes";
 import { useAppSelector } from "@/hooks/useAppSelector";
 import { CardCollapsible } from "@/components/ui/CardCollapsible";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { format, addDays, subDays, startOfDay } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Booking = {
   id: number;
@@ -40,16 +44,68 @@ const GanttRoomUsageStatic: React.FC<WidgetProps> = ({
   error,
 }) => {
   const { ticketDetail } = useAppSelector((state) => state.tickets);
-  const visibleDates = getNextFiveWeekdays();
+
+  // 🕒 Date Navigation State
+  // 🕒 Date Navigation State: Start from the beginning of the current week (Monday)
+  const getStartOfCurrentWeek = () => {
+    const today = new Date();
+    const day = today.getDay(); // 0 is Sunday
+    const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Adjust when Sunday
+    return startOfDay(new Date(today.setDate(diff)));
+  };
+
+  const [baseDate, setBaseDate] = useState(getStartOfCurrentWeek());
+  const [direction, setDirection] = useState(0);
+
+  const visibleDates = useMemo(() => getNextFiveWeekdays(baseDate), [baseDate]);
+
+  const handlePrevDay = () => {
+    setDirection(-1);
+    setBaseDate(prev => {
+      let d = subDays(prev, 1);
+      if (d.getDay() === 0) d = subDays(d, 2);
+      if (d.getDay() === 6) d = subDays(d, 1);
+      return d;
+    });
+  };
+
+  const handleNextDay = () => {
+    setDirection(1);
+    setBaseDate(prev => {
+      let d = addDays(prev, 1);
+      if (d.getDay() === 0) d = addDays(d, 1);
+      if (d.getDay() === 6) d = addDays(d, 2);
+      return d;
+    });
+  };
+
+  const handleToday = () => {
+    setDirection(baseDate > new Date() ? -1 : 1);
+    setBaseDate(getStartOfCurrentWeek());
+  };
 
   // 🔹 Room data from widgetData (for other bookings)
   const roomData: Booking[] = widgetData?.meetingRoomBookings || [];
 
-  // 🔹 Extract current ticket's info
-  const selectedRoom = ticketDetail?.detail_rows?.find((r) => r.lbl_col === "room")?.cstm_col || "";
-  const selectedDate = ticketDetail?.detail_rows?.find((r) => r.lbl_col === "date")?.cstm_col || "";
-  const startTime = ticketDetail?.detail_rows?.find((r) => r.lbl_col === "start_time")?.cstm_col || "";
-  const endTime = ticketDetail?.detail_rows?.find((r) => r.lbl_col === "end_time")?.cstm_col || "";
+  // 🔹 Extract current ticket's info (Robust Search)
+  const findValue = (keys: string[], labelMatch?: string) => {
+    return ticketDetail?.detail_rows?.find((r) => {
+      const k = r.key?.toLowerCase();
+      const lbl = r.lbl_col?.toLowerCase();
+      const keyMatch = k && keys.includes(k);
+      const labelMatchResult = labelMatch && lbl && lbl.includes(labelMatch.toLowerCase());
+      return keyMatch || labelMatchResult;
+    })?.cstm_col || "";
+  };
+
+  const { rooms } = useAppSelector((state) => state.meetingroom);
+  const rawRoom = findValue(["room", "room_name", "room_id"], "Room Name");
+  // Resolve ID to Name for visual display
+  const selectedRoom = rooms.find(r => r.resource_key === rawRoom || String(r.id) === String(rawRoom))?.room_name || rawRoom;
+
+  const selectedDate = findValue(["date", "booking_date", "start_date"], "Date");
+  const startTime = findValue(["start_time", "time_start", "start"], "Start Time");
+  const endTime = findValue(["end_time", "time_end", "end"], "End Time");
 
   const timeToIndex = (time?: string) => {
     if (!time || typeof time !== "string") return 0;
@@ -58,25 +114,27 @@ const GanttRoomUsageStatic: React.FC<WidgetProps> = ({
     return (h - 8) * 2 + (m >= 30 ? 1 : 0);
   };
 
-  // 🟩 Highlighted slot for current ticket
   const selectedStart = timeToIndex(startTime);
   const selectedEnd = timeToIndex(endTime);
-  const highlightSpan = selectedEnd - selectedStart;
+  const highlightSpan = Math.max(1, selectedEnd - selectedStart);
 
-  // Handle Loading state
+  const variants = {
+    enter: (direction: number) => ({ x: direction > 0 ? 50 : -50, opacity: 0 }),
+    center: { zIndex: 1, x: 0, opacity: 1 },
+    exit: (direction: number) => ({ zIndex: 0, x: direction < 0 ? 50 : -50, opacity: 0 }),
+  };
+
   if (isLoading) {
     return (
       <CardCollapsible title="Loading Room Schedule..." description="Fetching booking data" defaultOpen>
         <CardContent className="flex flex-col space-y-4">
           <Skeleton className="h-8 w-full" />
           <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-8 w-full" />
         </CardContent>
       </CardCollapsible>
     );
   }
 
-  // Handle Error state
   if (error) {
     return (
       <CardCollapsible title="Room Schedule" description="Unable to load booking data" defaultOpen>
@@ -91,97 +149,138 @@ const GanttRoomUsageStatic: React.FC<WidgetProps> = ({
 
   return (
     <CardCollapsible
-      title={`Room ${selectedRoom || "Schedule"}`}
-      description={`Booking Date: ${selectedDate || "N/A"}`}
+      title={`Room: ${selectedRoom || "Schedule"}`}
+      description={selectedDate ? `Booking on ${format(new Date(selectedDate), 'PPPP')}` : "Room Occupancy Overview"}
       defaultOpen
     >
-      <CardContent className="flex flex-col overflow-hidden h-[576px]">
-        <div className="grid" style={{ gridTemplateColumns: `80px repeat(${visibleDates.length}, 1fr)` }}>
+      <CardContent className="flex flex-col p-0 overflow-hidden">
+        {/* Navigation Bar */}
+        <div className="flex items-center justify-between p-2 bg-muted/30 border-b">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-blue-600" />
+            <span className="text-xs font-bold text-blue-800 uppercase tracking-tight">
+              {format(new Date(visibleDates[0]), 'MMM d')} – {format(new Date(visibleDates[4]), 'MMM d')}
+            </span>
+          </div>
+          <div className="flex bg-white rounded-md p-0.5 border shadow-sm">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePrevDay}>
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="sm" className="px-2 h-7 text-[10px] uppercase font-bold" onClick={handleToday}>
+              Today
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNextDay}>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Top Headers */}
+        <div className="grid border-b bg-muted/10" style={{ gridTemplateColumns: `80px repeat(${visibleDates.length}, 1fr)` }}>
+          <div className="h-10 flex items-center justify-center text-[10px] font-bold uppercase text-muted-foreground border-r bg-muted/20">
+            Time
+          </div>
+          {visibleDates.map((dStr) => {
+            const d = new Date(dStr);
+            const isToday = dStr === format(new Date(), 'yyyy-MM-dd');
+            const isTarget = dStr === selectedDate;
+            return (
+              <div
+                key={dStr}
+                className={`h-10 flex flex-col items-center justify-center border-r last:border-r-0 ${isTarget ? "bg-green-50/50" : isToday ? "bg-blue-50/30" : ""}`}
+              >
+                <span className={`text-[10px] uppercase font-bold ${isTarget ? "text-green-600" : isToday ? "text-blue-600" : "text-muted-foreground"}`}>
+                  {format(d, 'eee')}
+                </span>
+                <span className={`text-xs font-black ${isTarget ? "text-green-700" : "text-foreground"}`}>
+                  {format(d, 'MMM d')}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex overflow-hidden h-[540px] relative">
           {/* Time column */}
-          <div className="flex flex-col overflow-hidden h-[576px]">
+          <div className="flex flex-col w-[80px] bg-white z-10 border-r shadow-[1px_0_3px_rgba(0,0,0,0.05)]">
             {timeSlots.map((slot, idx) => (
               <div
                 key={idx}
-                className={`h-8 text-xs border-b flex items-center justify-end pr-2 text-muted-foreground ${
-                  Math.floor(idx / 2) % 2 === 0 ? "bg-muted" : "bg-white"
-                }`}
+                className={`h-8 text-[10px] border-b flex items-center justify-end pr-2 font-medium text-muted-foreground ${Math.floor(idx / 2) % 2 === 0 ? "bg-muted/30" : "bg-white"}`}
               >
                 {slot}
               </div>
             ))}
           </div>
 
-          {/* Date columns */}
-          {visibleDates.map((dateStr) => (
-            <div key={dateStr} className="relative border-l border-gray-200">
-              {/* Background grid */}
-              {timeSlots.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`h-8 border-b border-dashed ${
-                    Math.floor(idx / 2) % 2 === 0 ? "bg-muted/50" : "bg-white"
-                  }`}
-                ></div>
-              ))}
+          {/* Date columns with Animation */}
+          <div className="flex-grow relative overflow-hidden">
+            <AnimatePresence initial={false} custom={direction} mode="wait">
+              <motion.div
+                key={visibleDates.join(',')}
+                custom={direction}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ x: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.15 } }}
+                className="absolute inset-0 grid"
+                style={{ gridTemplateColumns: `repeat(${visibleDates.length}, 1fr)` }}
+              >
+                {visibleDates.map((dateStr) => (
+                  <div key={dateStr} className="relative border-r last:border-r-0">
+                    {/* Background grid */}
+                    {timeSlots.map((_, idx) => (
+                      <div
+                        key={idx}
+                        className={`h-8 border-b border-dashed ${Math.floor(idx / 2) % 2 === 0 ? "bg-muted/10" : "bg-white"}`}
+                      ></div>
+                    ))}
 
-              {/* Booking blocks from all bookings */}
-              {roomData
-                .filter((b) => b.room === selectedRoom && b.date === dateStr)
-                .map((b) => {
-                  const start = timeToIndex(b.startTime);
-                  const end = timeToIndex(b.endTime);
-                  const span = end - start;
-                  return (
-                    <div
-                      key={b.id}
-                      className="absolute left-1 right-1 rounded-md px-2 py-1 text-xs text-white shadow"
-                      style={{
-                        top: `${start * 32}px`,
-                        height: `${span * 32}px`,
-                        backgroundColor: "#3B82F6",
-                        opacity: 0.75,
-                      }}
-                    >
-                      <div className="font-semibold">{b.bookedBy}</div>
-                      <div className="text-[10px]">{b.startTime}–{b.endTime}</div>
-                      <div className="text-[10px]">{b.attendees} attendees</div>
-                    </div>
-                  );
-                })}
+                    {/* Booking blocks */}
+                    {roomData
+                      .filter((b) => b.room === selectedRoom && b.date === dateStr)
+                      .map((b) => {
+                        const start = timeToIndex(b.startTime);
+                        const end = timeToIndex(b.endTime);
+                        const span = Math.max(1, end - start);
+                        return (
+                          <div
+                            key={b.id}
+                            className="absolute left-[3px] right-[3px] rounded px-2 py-1 text-[10px] text-white shadow-sm z-[5]"
+                            style={{
+                              top: `${start * 32 + 2}px`,
+                              height: `${span * 32 - 4}px`,
+                              backgroundColor: "#3B82F6",
+                              opacity: 0.85,
+                            }}
+                          >
+                            <div className="font-bold truncate">{b.bookedBy}</div>
+                          </div>
+                        );
+                      })}
 
-              {/* 🔹 Highlight current ticket booking */}
-              {dateStr === selectedDate && selectedRoom && (
-                <div
-                  className="absolute left-1 right-1 rounded-md px-2 py-1 text-xs text-white shadow border-2 border-green-600"
-                  style={{
-                    top: `${selectedStart * 32}px`,
-                    height: `${highlightSpan * 32}px`,
-                    backgroundColor: "rgba(16, 185, 129, 0.75)",
-                  }}
-                >
-                  <div className="font-semibold">Current Booking</div>
-                  <div className="text-[10px]">{startTime}–{endTime}</div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Day Labels */}
-        <div
-          className="grid mt-4 text-sm font-medium text-center"
-          style={{ gridTemplateColumns: `80px repeat(${visibleDates.length}, 1fr)` }}
-        >
-          <div></div>
-          {visibleDates.map((dateStr, i) => {
-            const date = new Date(dateStr);
-            const label = date.toLocaleDateString(undefined, {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-            });
-            return <div key={i}>{label}</div>;
-          })}
+                    {/* 🔹 Highlight current ticket booking */}
+                    {dateStr === selectedDate && selectedRoom && (
+                      <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="absolute left-[2px] right-[2px] rounded-md px-2 py-1 text-[10px] text-white shadow-md border-2 border-green-600 z-10"
+                        style={{
+                          top: `${selectedStart * 32 + 1}px`,
+                          height: `${highlightSpan * 32 - 2}px`,
+                          backgroundColor: "rgba(16, 185, 129, 0.9)",
+                        }}
+                      >
+                        <div className="font-black uppercase text-[9px]">Your Booking</div>
+                        <div className="font-bold">{startTime}–{endTime}</div>
+                      </motion.div>
+                    )}
+                  </div>
+                ))}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </CardContent>
     </CardCollapsible>

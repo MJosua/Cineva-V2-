@@ -7,19 +7,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { FormField, FormSection, RowGroup, SpecialElement } from '@/types/formTypes';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { FormField, FormSection, RowGroup, SpecialElement, FormStructureItem } from '@/types/formTypes';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Plus, Trash2, GripVertical, Edit3, Package, ChevronDown, ChevronUp, Link, Save, X, Settings, HelpCircle, Copy, Eye, EyeOff } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 import { FieldEditor } from './FieldEditor';
 import { FormLayoutPreview } from './FormLayoutPreview';
 import { RowGroupConfigurator } from './RowGroupConfigurator';
 
-export interface FormStructureItem {
-  id: string;
-  type: 'field' | 'section' | 'rowgroup' | 'specialfunc';
-  order: number;
-  data: FormField | FormSection | RowGroup | SpecialElement;
-}
+// Local re-export or use from types
+// export interface FormStructureItem {
+//   id: string;
+//   type: 'field' | 'section' | 'rowgroup' | 'specialfunc';
+//   order: number;
+//   data: FormField | FormSection | RowGroup | SpecialElement;
+// }
 
 interface UnifiedFormStructureEditorProps {
   items: FormStructureItem[];
@@ -140,7 +142,7 @@ export const UnifiedFormStructureEditor: React.FC<UnifiedFormStructureEditorProp
         title: `${rowGroupData.title || 'Row Group'} (Copy)`
       };
     } else if (item.type === 'specialfunc') {
-      const specialfunc = item.data as specialfunc;
+      const specialfunc = item.data as SpecialElement;
       clonedItem.data = {
         ...specialfunc,
         title: `${specialfunc.title || 'function'} (Copy)`
@@ -1088,7 +1090,6 @@ export const UnifiedFormStructureEditor: React.FC<UnifiedFormStructureEditorProp
       {/* Row Group Configurator */}
       {configuringRowGroup && (
         <RowGroupConfigurator
-          field={items.data}
           rowGroup={items.find(item => item.id === configuringRowGroup)?.data as RowGroup}
           onUpdate={(updatedRowGroup) => {
             updateItem(configuringRowGroup, updatedRowGroup);

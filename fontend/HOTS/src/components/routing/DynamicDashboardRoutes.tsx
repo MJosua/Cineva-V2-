@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from "react";
 import { Route } from "react-router-dom";
-import { AppLayout } from "@/components/layout/AppLayout";
+
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppSelector";
 import { fetchDashboardFunctions } from "@/store/slices/dashboardSlice";
@@ -19,7 +19,7 @@ export const useDynamicDashboardRoutes = () => {
 
   useEffect(() => {
     dispatch(fetchDashboardFunctions());
-}, [dispatch]);
+  }, [dispatch]);
 
 
   const routes = useMemo(() => {
@@ -35,9 +35,7 @@ export const useDynamicDashboardRoutes = () => {
         path={func.path.replace(/^\/+/, "")}
         element={
           <ProtectedRoute>
-            <AppLayout>
-              <DashboardModuleLoader />
-            </AppLayout>
+            <DashboardModuleLoader />
           </ProtectedRoute>
         }
       />

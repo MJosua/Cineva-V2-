@@ -22,6 +22,11 @@ const CUSTOM_COMPONENT_REGISTRY: Record<string, React.LazyExoticComponent<React.
     'ReportPublic': React.lazy(() => import('./report/ReportPublic')),
     'ReportService': React.lazy(() => import('./report/ReportService')),
     'WorkflowSummary': React.lazy(() => import('./report/WorkflowSummary')),
+    'LaporanCuti': React.lazy(() => import('./report/LaporanCuti')),
+    'LaporanIzin': React.lazy(() => import('./report/LaporanIzin')),
+    'LaporanKoreksi': React.lazy(() => import('./report/LaporanKoreksi')),
+    'LaporanLembur': React.lazy(() => import('./report/LaporanLembur')),
+    'CardNameGenerator': React.lazy(() => import('./report/CardNameGenerator')),
 };
 
 // Dynamic component loader - looks up from registry for production compatibility
@@ -40,9 +45,10 @@ const loadCustomComponent = (componentKey: string) => {
 interface PanelContentProps {
     panel: DashboardPanel;
     serviceId?: number;
+    searchValue?: string;
 }
 
-export const PanelContent: React.FC<PanelContentProps> = ({ panel, serviceId }) => {
+export const PanelContent: React.FC<PanelContentProps> = ({ panel, serviceId, searchValue }) => {
     const renderPanel = () => {
         switch (panel.panel_type) {
             case 'summary':
@@ -52,7 +58,7 @@ export const PanelContent: React.FC<PanelContentProps> = ({ panel, serviceId }) 
                 return <AnalyticsPanel config={panel.config} serviceId={serviceId} />;
 
             case 'report':
-                return <GenericReportPanel config={panel.config} serviceId={serviceId} />;
+                return <GenericReportPanel config={panel.config} serviceId={serviceId} searchValue={searchValue} />;
 
             case 'cms':
                 return <CMSPanel config={panel.config} />;
@@ -66,7 +72,7 @@ export const PanelContent: React.FC<PanelContentProps> = ({ panel, serviceId }) 
             case 'custom':
                 if (panel.component_key) {
                     const CustomComponent = loadCustomComponent(panel.component_key);
-                    return <CustomComponent {...panel.config} serviceId={serviceId} />;
+                    return <CustomComponent {...panel.config} serviceId={serviceId} searchValue={searchValue} />;
                 }
                 return (
                     <div className="p-4 text-muted-foreground text-center">

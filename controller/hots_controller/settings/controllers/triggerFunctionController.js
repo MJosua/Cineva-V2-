@@ -455,6 +455,23 @@ const triggerFunctionController = {
 
             console.log(`✅ [TRIGGER-FUNC] Executed: ${key} by user ${userId}, rows: ${Array.isArray(result) ? result.length : 1}`);
 
+            // Log execution to m_service_trigger_log
+            try {
+                await dbHots.promise().query(`
+                    INSERT INTO m_service_trigger_log 
+                    (service_id, function_key, trigger_name, action_type, status, result_summary, created_by, created_at)
+                    VALUES (?, ?, ?, 'execute_api_builder', 'success', ?, ?, NOW())
+                `, [
+                    req.body.service_id || execParams.service_id || null,
+                    key,
+                    func.function_name,
+                    JSON.stringify(result).substring(0, 1000),
+                    userId
+                ]);
+            } catch (logError) {
+                console.error('⚠️ [TRIGGER-FUNC] Failed to log execution:', logError.message);
+            }
+
             res.json({
                 success: true,
                 data: result,
@@ -463,6 +480,25 @@ const triggerFunctionController = {
 
         } catch (error) {
             console.error('❌ [TRIGGER-FUNC] Error executing function:', error);
+
+            // Log error to m_service_trigger_log
+            try {
+                const { key } = req.params;
+                const userId = req.dataToken?.user_id;
+                await dbHots.promise().query(`
+                    INSERT INTO m_service_trigger_log 
+                    (service_id, function_key, action_type, status, error_message, created_by, created_at)
+                    VALUES (?, ?, 'execute_api_builder', 'error', ?, ?, NOW())
+                `, [
+                    req.body.service_id || (req.body.params && req.body.params.service_id) || null,
+                    key,
+                    error.message.substring(0, 500),
+                    userId
+                ]);
+            } catch (logErr) {
+                // Ignore log errors
+            }
+
             res.status(500).json({
                 success: false,
                 message: 'Failed to execute trigger function',

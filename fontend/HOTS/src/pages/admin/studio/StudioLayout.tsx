@@ -42,79 +42,70 @@ export const StudioLayout: React.FC<StudioLayoutProps> = ({
     };
 
     return (
-        <SidebarProvider defaultOpen={false}>
-            <div className="flex h-screen w-screen bg-gray-100 overflow-hidden">
-                {/* Collapsible Sidebar */}
-                <AppSidebar />
-
-                {/* Main Studio Area */}
-                <SidebarInset className="flex flex-col flex-1 overflow-hidden">
-                    {/* Top Bar */}
-                    <div className="h-14 bg-white border-b flex items-center justify-between px-4 shadow-sm z-10 flex-shrink-0">
-                        <div className="flex items-center gap-4">
-                            <SidebarTrigger className="bg-secondary hover:bg-secondary/50" />
-                            <Button variant="ghost" size="sm" onClick={handleBack}>
-                                <ArrowLeft className="w-4 h-4 mr-2" />
-                                Back
-                            </Button>
-                            <div className='flex items-center gap-2'>
-                                <div className="bg-blue-600 p-1.5 rounded-md">
-                                    <Box className="w-4 h-4 text-white" />
-                                </div>
-                                <h1 className="text-lg font-semibold">{title || 'Untitled Service'} <span className="text-gray-400 font-normal text-sm ml-2">Infinity Studio</span></h1>
-                            </div>
+        <div className="flex flex-col h-full bg-gray-100 overflow-hidden rounded-xl border border-border shadow-sm">
+            {/* Top Bar */}
+            <div className="h-14 bg-white border-b flex items-center justify-between px-4 shadow-sm z-10 flex-shrink-0">
+                <div className="flex items-center gap-4">
+                    <Button variant="ghost" size="sm" onClick={handleBack}>
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back
+                    </Button>
+                    <div className='flex items-center gap-2'>
+                        <div className="bg-blue-600 p-1.5 rounded-md">
+                            <Box className="w-4 h-4 text-white" />
                         </div>
-
-                        {/* Mode Switcher - Center */}
-                        {setMode && (
-                            <div className="flex items-center bg-gray-100 p-1 rounded-lg">
-                                <button
-                                    onClick={() => setMode('form')}
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${mode === 'form' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
-                                        }`}
-                                >
-                                    Form Design
-                                </button>
-                                <button
-                                    onClick={() => setMode('workflow')}
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${mode === 'workflow' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
-                                        }`}
-                                >
-                                    Workflow
-                                </button>
-                                <button
-                                    onClick={() => setMode('triggers')}
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${mode === 'triggers' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
-                                        }`}
-                                >
-                                    Triggers
-                                </button>
-                                <button
-                                    onClick={() => setMode('settings')}
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${mode === 'settings' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
-                                        }`}
-                                >
-                                    Settings
-                                </button>
-                            </div>
-                        )}
-
-                        <div className="flex gap-2">
-                            {onSave && (
-                                <Button onClick={onSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
-                                    <Save className="w-4 h-4 mr-2" />
-                                    {isSaving ? 'Saving...' : 'Save Changes'}
-                                </Button>
-                            )}
-                        </div>
+                        <h1 className="text-lg font-semibold">{title || 'Untitled Service'} <span className="text-gray-400 font-normal text-sm ml-2">Infinity Studio</span></h1>
                     </div>
+                </div>
 
-                    {/* Main Content Area - Full height minus header */}
-                    <div className="flex-1 overflow-hidden relative">
-                        {children}
+                {/* Mode Switcher - Center */}
+                {setMode && (
+                    <div className="flex items-center bg-gray-100 p-1 rounded-lg">
+                        <button
+                            onClick={() => setMode('form')}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${mode === 'form' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            Form Design
+                        </button>
+                        <button
+                            onClick={() => setMode('workflow')}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${mode === 'workflow' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            Workflow
+                        </button>
+                        <button
+                            onClick={() => setMode('triggers')}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${mode === 'triggers' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            Triggers
+                        </button>
+                        <button
+                            onClick={() => setMode('settings')}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${mode === 'settings' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            Settings
+                        </button>
                     </div>
-                </SidebarInset>
+                )}
+
+                <div className="flex gap-2">
+                    {onSave && (
+                        <Button onClick={onSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+                            <Save className="w-4 h-4 mr-2" />
+                            {isSaving ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    )}
+                </div>
             </div>
-        </SidebarProvider>
+
+            {/* Main Content Area - Full height minus header */}
+            <div className="flex-1 overflow-hidden relative">
+                {children}
+            </div>
+        </div>
     );
 };

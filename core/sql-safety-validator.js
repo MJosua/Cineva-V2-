@@ -34,7 +34,7 @@ const BLOCKED_KEYWORDS = [
 const ALLOWED_TABLES = [
     // Ticket/Service tables (read + update)
     't_ticket', 't_ticket_detail', 't_ticket_event', 't_ticket_assignment',
-    't_ticket_work_data', 't_generated_documents', 't_custom_function_logs',
+    't_ticket_work_data', 't_file_upload', 'm_service_trigger_log',
     // Master tables (read only - enforced separately)
     'm_service', 'm_team', 'm_department', 'm_ticket_status',
     'm_workflow_step', 'm_service_workflow', 'm_service_triggers',

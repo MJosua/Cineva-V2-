@@ -18,10 +18,10 @@ const customFunctionMapper = {
             for (let i = 1; i <= 16; i++) {
                 const label = ticketDetail[`lbl_col${i}`];
                 const value = ticketDetail[`cstm_col${i}`];
-                
+
                 if (label && value) {
                     const normalizedLabel = label.toLowerCase().trim();
-                    
+
                     // Map based on common field labels
                     if (normalizedLabel.includes('purpose') || normalizedLabel.includes('reason')) {
                         variables.request_purpose = value;
@@ -73,11 +73,11 @@ const customFunctionMapper = {
                             executionResult = await documentGenerator.generateSampleRequestForm(variables, functionData.config || functionData);
                         }
                         break;
-                    
+
                     case 'excel_processing':
                         executionResult = await documentGenerator.processExcelFile(null, variables);
                         break;
-                    
+
                     default:
                         executionResult = {
                             success: true,
@@ -87,21 +87,21 @@ const customFunctionMapper = {
 
                 console.log('Execution result:', executionResult);
 
-                // Insert execution log
+                // Insert execution log - using new m_service_trigger_log
                 const logQuery = `
-                    INSERT INTO t_custom_function_logs (
-                        ticket_id, service_id, function_name, trigger_event, status, 
-                        result_data, error_message, execution_time, created_by
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                    INSERT INTO m_service_trigger_log (
+                        ticket_id, service_id, function_key, trigger_name, action_type,
+                        status, result_summary, error_message, created_by, created_at
+                    ) VALUES (?, ?, ?, ?, 'execute_function', ?, ?, ?, ?, NOW())
                 `;
 
                 dbHots.execute(logQuery, [
                     ticketId,
                     functionData.service_id || null,
                     functionData.name,
-                    functionData.trigger_event || 'on_created',
+                    functionData.trigger_event || 'on_create',
                     executionResult?.success ? 'success' : 'failed',
-                    JSON.stringify(executionResult),
+                    JSON.stringify(executionResult).substring(0, 500),
                     executionResult?.success ? null : (executionResult?.error || 'Unknown error'),
                     functionData.created_by || null
                 ], (logErr) => {
@@ -110,21 +110,21 @@ const customFunctionMapper = {
                     }
                 });
 
-                // If document was generated successfully, save to generated documents table
+                // If document was generated successfully, save to t_file_upload
                 if (executionResult?.success && executionResult?.file_path && functionData.type === 'document_generation') {
                     const docQuery = `
-                        INSERT INTO t_generated_documents (
-                            ticket_id, document_type, file_path, file_name, 
-                            generated_date, template_used
-                        ) VALUES (?, ?, ?, ?, NOW(), ?)
+                        INSERT INTO t_file_upload (
+                            ticket_id, entity_type, entity_id, file_name, file_path,
+                            file_type, upload_date, uploaded_by
+                        ) VALUES (?, 'generated_document', ?, ?, ?, 'document', NOW(), ?)
                     `;
 
                     dbHots.execute(docQuery, [
                         ticketId,
-                        executionResult.document_type || functionData.config?.document_type || 'document',
-                        executionResult.file_path,
+                        ticketId,
                         executionResult.file_name,
-                        executionResult.template_used || functionData.config?.template_id || 'default'
+                        executionResult.file_path,
+                        functionData.created_by || null
                     ], (docErr) => {
                         if (docErr) {
                             console.error('Error inserting generated document:', docErr);
@@ -140,19 +140,19 @@ const customFunctionMapper = {
                 console.error('Error executing custom function:', error);
                 errorMessage = error.message;
 
-                // Insert error log
+                // Insert error log - using new m_service_trigger_log
                 const errorLogQuery = `
-                    INSERT INTO t_custom_function_logs (
-                        ticket_id, service_id, function_name, trigger_event, status, 
-                        result_data, error_message, execution_time, created_by
-                    ) VALUES (?, ?, ?, ?, 'failed', NULL, ?, NOW(), ?)
+                    INSERT INTO m_service_trigger_log (
+                        ticket_id, service_id, function_key, trigger_name, action_type,
+                        status, error_message, created_by, created_at
+                    ) VALUES (?, ?, ?, ?, 'execute_function', 'failed', ?, ?, NOW())
                 `;
 
                 dbHots.execute(errorLogQuery, [
                     ticketId,
                     functionData.service_id || null,
                     functionData.name,
-                    functionData.trigger_event || 'on_created',
+                    functionData.trigger_event || 'on_create',
                     errorMessage,
                     functionData.created_by || null
                 ], (logErr) => {

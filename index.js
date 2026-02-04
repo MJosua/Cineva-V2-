@@ -11,7 +11,7 @@ dotenv.config();
 
 const express = require("express");
 const App = express();
-const { Server } = require("socket.io");
+// const { Server } = require("socket.io");
 
 const bearerToken = require("express-bearer-token");
 const helmet = require("helmet");
@@ -24,6 +24,17 @@ const cors = require("cors");
 const session = require("express-session");
 const os = require('os');
 const { PORT, API_URL } = require("./config/env")
+
+// 🔥 Database Imports (Moved to top for Session Store)
+const {
+  dbConf,
+  dbTM,
+  dbIndomieku,
+  dbHots,
+  dbQueryHots,
+  dbCardGenerator,
+  dbClick
+} = require("./config/db");
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
@@ -69,42 +80,23 @@ let svr = production()
 console.log("Server status is Production?", production());
 
 /* ===================================================================
-   🔥  SOCKET.IO CONFIG
-=================================================================== */
-const io = new Server(svr, {
-  cors: {
-    origin: (origin, callback) => {
-      // Allow all origins dynamically (works with credentials)
-      callback(null, true);
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
-  },
-  connectionStateRecovery: {
-    maxDisconnectionDuration: 2 * 60 * 1000,
-    skipMiddlewares: true,
-  }
-});
+   🔥  SOCKET.IO REMOVED - MIGRATED TO SSE
+   =================================================================== */
+// const io = new Server(svr, { ... }); // REMOVED
 
 /* ===================================================================
    🔥  GLOBAL MIDDLEWARE ORDER FIXED (IMPORTANT)
-=================================================================== */
+   =================================================================== */
 
 // Session store using MySQL (production-safe)
 const MySQLStore = require('express-mysql-session')(session);
-const sessionStoreOptions = {
-  host: production() ? process.env.DB_HOST : process.env.DEV_DB_HOST,
-  port: 3306,
-  user: production() ? process.env.DB_USER : process.env.DEV_DB_USER,
-  password: production() ? process.env.DB_PASSWORD : process.env.DEV_DB_PASSWORD,
-  database: process.env.DB_NAME_HT,
+const sessionStore = new MySQLStore({
   clearExpired: true,
   checkExpirationInterval: 900000, // 15 min
   expiration: 86400000, // 24 hours
   createDatabaseTable: true,
-  connectionLimit: 1,
-  endConnectionOnClose: true,
+  // connectionLimit: 1, // Handled by pool
+  // endConnectionOnClose: true, // Handled by pool
   charset: 'utf8mb4_bin',
   schema: {
     tableName: 'sessions',
@@ -114,8 +106,7 @@ const sessionStoreOptions = {
       data: 'data'
     }
   }
-};
-const sessionStore = new MySQLStore(sessionStoreOptions);
+}, dbHots); // Reuse existing robust connection pool!
 
 // 1️⃣ MUST come FIRST — session + security
 App.use(
@@ -151,7 +142,7 @@ App.options('*', cors({
 }));
 
 // 3️⃣ JSON + Token before routers
-App.use(express.json({ limit: '10mb' }));
+App.use(express.json({ limit: '50mb' }));
 App.use(bearerToken());
 App.use(cookieParser());
 
@@ -164,10 +155,13 @@ App.use(helmet({
 App.use('/public', express.static(path.join(__dirname, 'public')));
 
 /* ===================================================================
-   🔥  SOCKET — LOG WRAPPER
-=================================================================== */
+   🔥  LOG WRAPPER (Updated for SSE)
+   =================================================================== */
 const logs = [];
 const originalLog = console.log;
+
+// Import sseManager early for logging
+const sseManager = require('./core/sse-manager');
 
 if (!global.consoleOverridden) {
   global.consoleOverridden = true;
@@ -176,20 +170,19 @@ if (!global.consoleOverridden) {
     originalLog.apply(console, args);
     const msg = args.map(a => (typeof a === "object" ? JSON.stringify(a) : a)).join(" ");
     logs.push(msg);
-    io.emit("new_log", msg);
+    // 🔥 FIX MEMORY LEAK: Limit logs in memory to last 1000 lines
+    if (logs.length > 1000) logs.shift();
+
+    // 🚀 NEW: Broadcast via SSE to Admins only
+    if (sseManager) {
+      sseManager.broadcastLog(msg);
+    }
   };
 }
 
-global.io = io;
+// global.io = io; // REMOVED
 
-io.on("connection", socket => {
-  socket.emit("logs", logs);
-
-  // Relay messages for chat/updates
-  socket.on("message", (data) => {
-    io.emit("message", data);
-  });
-});
+// io.on("connection", socket => { ... }); // REMOVED
 
 
 /* ===================================================================
@@ -216,7 +209,8 @@ const {
   hotsSettings,
   eventRouter,
   shortener,
-  hotsTps,
+  debugRouter,
+
   srtsRouter,
   projectmngr,
   taskmngr,
@@ -245,6 +239,7 @@ const {
   hotsReporting,
   hotsPreferences,
   hotsProfile,
+  hotsNotification,
   cmsRouter,
   engineModuleRouter,
   engineRouter,
@@ -252,7 +247,10 @@ const {
   engineAssignmentRouter,
   workflowadminRouter,
   triggerRouter,
-  couponRouter
+  couponRouter,
+  sseRouter,
+  eventEnginePublicRouter,
+  eventEnginePrivateRouter
 } = require("./routers");
 
 
@@ -260,15 +258,8 @@ const {
 /* ===================================================================
    🔥  DATABASE POOL CHECKS (kept unchanged)
 =================================================================== */
-const {
-  dbConf,
-  dbTM,
-  dbIndomieku,
-  dbHots,
-  dbQueryHots,
-  dbCardGenerator,
-  dbClick
-} = require("./config/db");
+// DB Imports moved to top
+// const { dbConf, dbTM, dbIndomieku, dbHots, dbQueryHots, dbCardGenerator, dbClick } = require("./config/db");
 
 let totalConnections = 5;
 let doneConnections = 0;
@@ -372,18 +363,51 @@ App.use("/hots_auth", hotsAuth);
 App.use("/hots_admin", hotsAdmin);
 App.use("/hots_ticket", hotsTicket);
 App.use("/hots_settings", hotsSettings);
-App.use("/hots_Tps", hotsTps);
+
 App.use("/hots_customfunction", hotscustomfunction);
 App.use("/hotsdashboard", hotsdashboard);
 App.use("/hots/public", hotspublic);
 App.use("/hotsreporting", hotsReporting);
 App.use("/hotsprefs", hotsPreferences);
 App.use("/hots_profile", hotsProfile);
+App.use("/hots_notifications", hotsNotification);
 
 App.use("/shortener", shortener);
 
+// Debug Router
+App.use("/debugRouter", debugRouter);
+
+
 // Coupon System API
 App.use("/api", couponRouter);
+
+// Meeting Room Generic System
+App.use("/api/rooms", mbrooms);
+App.use("/api/bookings", mbbookings);
+
+// SSE (Server-Sent Events) for real-time updates
+App.use("/sse", sseRouter);
+
+// Event Engine API (Secured)
+const engineAuth = require('./middleware/engineAuth'); // Import Auth Middleware
+
+// 1. PUBLIC (Storefront) - No Auth, but Rate Limited (TODO: Add Rate Limit)
+App.use("/api/event-engine/public", eventEnginePublicRouter);
+
+// 2. PRIVATE (Admin) - Strict Auth
+App.use("/api/event-engine/admin",
+  engineAuth.normalizeUser,
+  engineAuth.requireUser,
+  eventEnginePrivateRouter
+);
+
+
+
+
+// Expose SSE Manager globally for use in controllers
+// Expose SSE Manager globally for use in controllers
+// const sseManager = require('./core/sse-manager'); // Already required at top
+global.sseManager = sseManager;
 
 /* ===================================================================
    🔥 STATIC FILES (Placed AFTER routers)
@@ -408,6 +432,14 @@ App.use('*', (req, res) => {
 =================================================================== */
 svr.listen(PORT, () => {
   console.log(`INTEGRATED API SSL Server running on port ${PORT}`);
+
+  // 🔥 Start Testing CLI
+  try {
+    const { startCLI } = require('./script/testing-utils');
+    startCLI(App);
+  } catch (e) {
+    console.log('Testing CLI not loaded:', e.message);
+  }
 });
 
 

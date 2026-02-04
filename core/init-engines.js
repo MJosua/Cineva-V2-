@@ -15,6 +15,10 @@ const workflowEngine = require('./workflow-engine');
 const triggerEngine = require('./trigger-engine');
 const documentEngine = require('./document-engine');
 const transactionEngine = require('./transaction'); // 🆕 Transaction Engine
+const reportingEngine = new (require('./reporting-engine'))(); // 🆕 Instantiated here for singleton pattern? Or class? 
+// Checking reporting-engine.js export... it exported a class. So we should instantiate it.
+// Wait, `core/reporting-engine.js` exported `class ReportingEngine`.
+// So `require('./reporting-engine')` gives the class.
 
 const { dbQueryHots, dbHots } = require('../config/db');
 
@@ -53,9 +57,12 @@ async function initAll(opts = {}) {
     dbQuery
   });
 
+  // 🆕 init reporting engine
+  reportingEngine.init({ dbPool });
+
   _inited = true;
   console.log('✅ HOTS Engine Initialized!');
 }
 
-module.exports = { initAll, engineLoader, formLoader, workflowEngine, triggerEngine, documentEngine, transactionEngine };
+module.exports = { initAll, engineLoader, formLoader, workflowEngine, triggerEngine, documentEngine, transactionEngine, reportingEngine };
 

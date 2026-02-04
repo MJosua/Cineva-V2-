@@ -77,34 +77,33 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
   const renderPreview = () => {
     const ext = getFileExtension(fileName);
-    const previewUrl = fileUrl || filePath;
+
+    // Always construct full URL using API_URL for file paths
+    let previewUrl = fileUrl || filePath;
     if (!previewUrl) return <p>Preview not available</p>;
 
-    if (ext === 'pdf' && generated === false) {
-      return (
-        <iframe
-          src={previewUrl}
-          className="w-full h-96"
-          title={fileName}
-        />
-      );
-    } else if (ext === 'pdf' && generated === true) {
+    // If path starts with 'public' or contains backslashes, it's a relative backend path
+    const normalizedPath = previewUrl.replace(/\\/g, '/');
+    const fullUrl = normalizedPath.startsWith('http')
+      ? normalizedPath
+      : `${API_URL}/${normalizedPath}`;
+
+
+    if (ext === 'pdf') {
+      // Always use react-pdf-viewer for PDFs (iframe gets blocked by browser security for cross-origin)
       return (
         <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
-
-          <Viewer
-            fileUrl={`${API_URL}/${filePath.replace(/\\/g, '/')}`}
-          />
+          <div style={{ height: '500px' }}>
+            <Viewer fileUrl={fullUrl} />
+          </div>
         </Worker>
-
       );
-
     }
 
     if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
       return (
         <img
-          src={previewUrl}
+          src={fullUrl}
           alt={fileName}
           className="max-w-full max-h-96 object-contain"
         />

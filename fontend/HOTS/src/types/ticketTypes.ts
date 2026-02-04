@@ -1,10 +1,10 @@
 
 export interface Approver {
   approver_id: number;
-  approver_leader?: string;
+  approver_leader?: string | number; // Backend returns 0 or 1
   approver_name: string;
   approval_order: number;
-  approval_status: number;
+  approval_status: number | string; // Backend may return string "1" or number 1
   approval_date?: string;
 }
 
@@ -16,6 +16,8 @@ export interface Ticket {
   approval_level?: number;
   assigned_to: string | null;
   status: string;
+  status_id?: number;  // Added for status color mapping
+  priority?: 'low' | 'medium' | 'high';  // Backend-calculated priority
   color: string;
   team_name: string | null;
   department_name?: string;
@@ -26,7 +28,9 @@ export interface Ticket {
   list_approval: Approver[] | null;
   team_leader_id: number | null;
   created_by_name?: string;
+  creator_name?: string; // From myRequests API
   current_step?: number;
+  workflow_step?: number; // Backend returns this instead of current_step
   files?: Array<{
     upload_id: number;
     filename: string;
@@ -37,7 +41,7 @@ export interface Ticket {
 
 export interface TicketDetail extends Ticket {
   description?: string;
-  priority?: string;
+  // priority and status_id inherited from Ticket
   department?: string;
   department_name?: string;
   requester?: string;
@@ -45,10 +49,11 @@ export interface TicketDetail extends Ticket {
     lbl_col?: string;
     cstm_col?: string;
     order_col?: number;
+    value?: string;
+    key?: string;
   }>;
   assigned_team?: string;
   approver_leader?: string;
-  status_id?: number;
   items?: Array<{
     name: string;
     quantity: number;
@@ -160,9 +165,24 @@ export interface TicketsState {
     isLoading: boolean;
     error: string | null;
   };
+  involvedList: {
+    data: Ticket[];
+    totalData: number;
+    totalPage: number;
+    currentPage: number;
+    isLoading: boolean;
+    error: string | null;
+  };
   taskCount: number;
   isSubmitting: boolean;
   ticketDetail: TicketDetail | null;
   isLoadingDetail: boolean;
   detailError: string | null;
+  sseSignals?: {
+    assignment: number;
+    comment: number;
+    document: number;
+    ticket: number;
+    processingTicketId?: string | null;  // 🆕 Track which specific ticket is generating document
+  };
 }

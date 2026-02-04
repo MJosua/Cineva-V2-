@@ -551,10 +551,11 @@ class TriggerEngine {
       console.log(`🔍 [TRIGGER][QUERY] Found ${rows.length} trigger(s)`);
 
       if (rows.length > 0) {
-        console.log(`🔍 [TRIGGER][QUERY] Triggers:`, rows.map(r => ({
-          trigger_id: r.trigger_id,
-          trigger_name: r.trigger_name,
-          trigger_type: r.trigger_type
+        console.log(`🔍 [TRIGGER][QUERY] Triggers found:`);
+        console.table(rows.map(r => ({
+          id: r.trigger_id,
+          name: r.trigger_name,
+          type: r.trigger_type
         })));
       }
 
@@ -581,7 +582,14 @@ class TriggerEngine {
         }
       }
 
-      console.log(`🔍 [TRIGGER][PARSE] Final triggers array (${triggers.length}):`, triggers);
+      console.log(`🔍 [TRIGGER][PARSE] Final triggers array (${triggers.length}):`);
+      if (triggers.length > 0) {
+        console.table(triggers.map(t => ({
+          action: t.action || t.type,
+          function: t.params?.function || t.function || '-',
+          condition: t.condition ? 'Yes' : 'No'
+        })));
+      }
     } catch (e) {
       console.error(`❌ [TRIGGER][QUERY] Error:`, e);
     }
@@ -621,6 +629,7 @@ class TriggerEngine {
     const results = [];
     for (const t of triggers) {
       console.log(`🔍 [TRIGGER][EXEC] Processing trigger:`, t);
+      const startTime = Date.now();
 
       // Check condition if present
       if (t.condition) {
@@ -633,6 +642,18 @@ class TriggerEngine {
 
         if (!conditionMet) {
           console.log(`⚠️ [TRIGGER][SKIP] Skipping action "${t.action}" - condition not met`);
+          // Log skipped execution
+          await this._logExecution({
+            ticketId: context.ticketId,
+            serviceId: serviceId,
+            triggerName: eventName,
+            functionKey: t.function_key || t.action,
+            actionType: t.action || t.type,
+            status: 'skipped',
+            resultSummary: 'Condition not met',
+            executionTimeMs: Date.now() - startTime,
+            createdBy: context.actor?.user_id
+          });
           continue;
         }
       }
@@ -645,15 +666,51 @@ class TriggerEngine {
       const handler = this.actions[action];
       if (!handler) {
         console.error(`❌ [TRIGGER][EXEC] No handler registered for action: ${action}`);
+        await this._logExecution({
+          ticketId: context.ticketId,
+          serviceId: serviceId,
+          triggerName: eventName,
+          functionKey: t.function_key || action,
+          actionType: action,
+          status: 'failed',
+          errorMessage: `No action handler registered for: ${action}`,
+          executionTimeMs: Date.now() - startTime,
+          createdBy: context.actor?.user_id
+        });
         results.push({ trigger: t, error: `no action registered for ${action}` });
         continue;
       }
       try {
         const res = await handler(context, params);
         console.log(`✅ [TRIGGER][EXEC] Action "${action}" completed:`, res);
+        // Log successful execution
+        await this._logExecution({
+          ticketId: context.ticketId,
+          serviceId: serviceId,
+          triggerName: eventName,
+          functionKey: t.function_key || action,
+          actionType: action,
+          status: 'success',
+          resultSummary: res?.message || (res?.ok ? 'Completed successfully' : JSON.stringify(res).substring(0, 200)),
+          executionTimeMs: Date.now() - startTime,
+          createdBy: context.actor?.user_id,
+          contextSnapshot: { ticketId: context.ticketId, params }
+        });
         results.push({ trigger: t, result: res });
       } catch (e) {
         console.error(`❌ [TRIGGER][EXEC] Action "${action}" failed:`, e);
+        // Log failed execution
+        await this._logExecution({
+          ticketId: context.ticketId,
+          serviceId: serviceId,
+          triggerName: eventName,
+          functionKey: t.function_key || action,
+          actionType: action,
+          status: 'failed',
+          errorMessage: e.message,
+          executionTimeMs: Date.now() - startTime,
+          createdBy: context.actor?.user_id
+        });
         results.push({ trigger: t, error: e.message });
       }
     }
@@ -833,6 +890,36 @@ function tryParseJSON(v) {
   if (typeof v === 'object') return v;
   try { return JSON.parse(String(v)); } catch (e) { return null; }
 }
+
+/**
+ * Log trigger execution to m_service_trigger_log
+ */
+TriggerEngine.prototype._logExecution = async function (data) {
+  try {
+    await this.dbQuery(`
+      INSERT INTO m_service_trigger_log 
+      (ticket_id, service_id, trigger_name, function_key, action_type, 
+       status, result_summary, error_message, execution_time_ms, 
+       context_snapshot, created_by, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    `, [
+      data.ticketId || null,
+      data.serviceId || null,
+      data.triggerName || null,
+      data.functionKey || null,
+      data.actionType || null,
+      data.status || 'success',
+      data.resultSummary ? String(data.resultSummary).substring(0, 500) : null,
+      data.errorMessage || null,
+      data.executionTimeMs || null,
+      data.contextSnapshot ? JSON.stringify(data.contextSnapshot) : null,
+      data.createdBy || null
+    ]);
+  } catch (err) {
+    // Non-blocking: log error but don't fail the trigger
+    console.error(`⚠️ [TRIGGER] Failed to log execution:`, err.message);
+  }
+};
 
 /**
  * Log loop warning to database

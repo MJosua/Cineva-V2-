@@ -6,9 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Check, X, MessageSquare } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppSelector';
-import { approveTicket, rejectTicket, fetchTaskList, fetchTicketDetail } from '@/store/slices/ticketsSlice';
+import { fetchTaskList, fetchTicketDetail } from '@/store/slices/ticketsSlice';
 import { toast } from '@/hooks/use-toast';
 import { approveTicketEngine, rejectTicketEngine } from '../../store/slices/ticketsSlice';
+import { WarningDialog } from '../dialog/warningdialoguser';
 
 interface TaskApprovalActionsProps {
   ticketId: string;
@@ -19,7 +20,7 @@ interface TaskApprovalActionsProps {
   assignedToId?: string | number;
   refreshticketdetail?: boolean;
   setRefreshticketdetail?: (value: boolean) => void;
-  useEngine?: boolean;
+  // useEngine?: boolean; // Deprecated, always true
 }
 
 const TaskApprovalActionsSimple: React.FC<TaskApprovalActionsProps> = ({
@@ -31,7 +32,7 @@ const TaskApprovalActionsSimple: React.FC<TaskApprovalActionsProps> = ({
   assignedToId,
   refreshticketdetail = false,
   setRefreshticketdetail = () => { },
-  useEngine = true // <-- default false (legacy mode)
+  // useEngine = true 
 
 }) => {
   const dispatch = useAppDispatch();
@@ -52,40 +53,35 @@ const TaskApprovalActionsSimple: React.FC<TaskApprovalActionsProps> = ({
 
   const { user } = useAppSelector(state => state.auth);
 
+  // Confirmation State
+  const [warningOpen, setWarningOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'approve' | 'reject' | null>(null);
 
-  const handleApprove = async () => {
-    try {
-      await dispatch(approveTicket({
-        ticketId,
-        approvalOrder,
-        comment: comment.trim()
-      })).unwrap();
-
-      toast({
-        title: "Success",
-        description: "Ticket approved successfully",
-      });
-
-      // Refresh the task list
-      dispatch(fetchTaskList(1));
-      dispatch(fetchTicketDetail(ticketId));
-
-      setRefreshticketdetail(true)
-      setComment('');
-      setShowCommentBox(false);
-    } catch (error) {
+  const confirmAction = (action: 'approve' | 'reject') => {
+    if (action === 'reject' && !comment.trim()) {
       toast({
         title: "Error",
-        description: error as string || "Failed to approve ticket",
+        description: "Rejection reason is required",
         variant: "destructive",
       });
+      return;
     }
+    setPendingAction(action);
+    setWarningOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    if (pendingAction === 'approve') {
+      await handleApproveEngine();
+    } else if (pendingAction === 'reject') {
+      await handleRejectEngine();
+    }
+    setWarningOpen(false);
+    setPendingAction(null);
   };
 
   const handleApproveEngine = async () => {
     try {
-
-
       await dispatch(approveTicketEngine({
         ticketId,
         approvalOrder,
@@ -93,12 +89,13 @@ const TaskApprovalActionsSimple: React.FC<TaskApprovalActionsProps> = ({
         approver_id: user.user_id
       })).unwrap();
 
-
       toast({ title: "Success", description: "Engine v4 approval done" });
       dispatch(fetchTaskList(1));
       setComment('');
       setShowCommentBox(false);
       dispatch(fetchTicketDetail(ticketId));
+      setRefreshticketdetail(true);
+
     } catch (error) {
       toast({
         title: "Error",
@@ -109,28 +106,18 @@ const TaskApprovalActionsSimple: React.FC<TaskApprovalActionsProps> = ({
   };
 
   const handleRejectEngine = async () => {
-    if (!rejectionRemark.trim()) {
-      toast({
-        title: "Error",
-        description: "Rejection reason is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       await dispatch(rejectTicketEngine({
         ticketId,
         approvalOrder,
-        rejectionRemark: rejectionRemark.trim(),
+        rejectionRemark: comment.trim(), // Use comment state for rejection too logic simplified
         approver_id: user.user_id
-
       })).unwrap();
 
       toast({ title: "Success", description: "Engine v4 rejection done" });
       dispatch(fetchTicketDetail(ticketId));
       dispatch(fetchTaskList(1));
-      setRejectionRemark('');
+      setComment('');
       setShowRejectBox(false);
     } catch (error) {
       toast({
@@ -141,180 +128,64 @@ const TaskApprovalActionsSimple: React.FC<TaskApprovalActionsProps> = ({
     }
   };
 
-
-
-
-
-  const handleReject = async () => {
-    if (!rejectionRemark.trim()) {
-      toast({
-        title: "Error",
-        description: "Rejection reason is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      await dispatch(rejectTicket({
-        ticketId,
-        approvalOrder,
-        rejectionRemark: rejectionRemark.trim()
-      })).unwrap();
-
-      toast({
-        title: "Success",
-        description: "Ticket rejected successfully",
-      });
-
-      // Refresh the task list
-      dispatch(fetchTaskList(1));
-      dispatch(fetchTicketDetail(ticketId));
-      setRejectionRemark('');
-      setShowRejectBox(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error as string || "Failed to reject ticket",
-        variant: "destructive",
-      });
-    }
-  };
-
-
-
-  const handleRejectCancel = () => {
-    setRejectionRemark('');
-    setShowRejectBox(false);
-  };
-
-
-
   return (
     <Card className='w-full h-full  items-center justify-center'>
       <CardContent >
         <div className="w-full  bg-primaryspace-y-1  justify-center items-center">
-          <div className="flex gap-3 mt-5">
-            {!useEngine && (
-              <>
-                {/* Legacy HOTS Approve */}
-                <Button
-                  onClick={() => { setShowCommentBox(!showCommentBox); setShowRejectBox(false); }}
-                  disabled={isSubmitting}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Approve (HOTS)
-                </Button>
+          <div className="space-y-2">
+            <Label htmlFor="approval-comment">Approval/Rejection Comment</Label>
+            <Textarea
+              id="approval-comment"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Add a comment for this approval or rejection"
+              rows={3}
+            />
 
-                {/* Legacy HOTS Reject */}
-                <Button
-                  onClick={() => { setShowRejectBox(!showRejectBox); setShowCommentBox(false); }}
-                  disabled={isSubmitting}
-                  className="text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/50"
-                  variant="outline"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Reject (HOTS)
-                </Button>
-              </>
-            )}
+            <div className="flex gap-3 mt-5">
+              {/* ENGINE Approve */}
+              <Button
+                onClick={() => confirmAction('approve')}
+                disabled={isSubmitting}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Check className="w-4 h-4 mr-2" />
+                Approve
+              </Button>
 
-            {useEngine && (
-              <>
-                {/* ENGINE Approve */}
-                <Button
-                  onClick={() => { setShowCommentBox(!showCommentBox); setShowRejectBox(false); }}
-                  disabled={isSubmitting}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Approve
-                </Button>
-
-                {/* ENGINE Reject */}
-                <Button
-                  onClick={() => { setShowRejectBox(!showRejectBox); setShowCommentBox(false); }}
-                  disabled={isSubmitting}
-                  variant="outline"
-                  className="text-red-600 border-red-300 hover:bg-red-50"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Reject
-                </Button>
-              </>
-            )}
+              {/* ENGINE Reject */}
+              <Button
+                onClick={() => confirmAction('reject')}
+                disabled={isSubmitting}
+                variant="outline"
+                className="text-red-600 border-red-300 hover:bg-red-50"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Reject
+              </Button>
+            </div>
           </div>
-
-          {showCommentBox && (
-            <div className="space-y-2">
-              <Label htmlFor="approval-comment">Approval Comment (Optional)</Label>
-              <Textarea
-                id="approval-comment"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Add a comment for this approval..."
-                rows={3}
-              />
-              <div className="flex gap-2">
-                <Button
-                  onClick={useEngine ? handleApproveEngine : handleApprove}
-                  disabled={isSubmitting}
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  Confirm Approval
-                </Button>
-                <Button
-                  onClick={() => setShowCommentBox(false)}
-                  disabled={isSubmitting}
-                  variant="outline"
-                  size="sm"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {showRejectBox && (
-            <div className="space-y-2">
-              <Label htmlFor="rejection-remark">Rejection Reason *</Label>
-              <Textarea
-                id="rejection-remark"
-                value={rejectionRemark}
-                onChange={(e) => setRejectionRemark(e.target.value)}
-                placeholder="Please provide a reason for rejection..."
-                rows={3}
-                required
-              />
-              <div className="flex gap-2">
-                <Button
-                  onClick={useEngine ? handleRejectEngine : handleReject}
-                  disabled={isSubmitting || !rejectionRemark.trim()}
-                  size="sm"
-                  variant="destructive"
-                >
-                  Confirm Rejection
-                </Button>
-                <Button
-                  onClick={handleRejectCancel}
-                  disabled={isSubmitting}
-                  variant="outline"
-                  size="sm"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
       </CardContent>
+
+      <WarningDialog
+        isOpen={warningOpen}
+        onCancel={() => setWarningOpen(false)}
+        onConfirm={handleConfirm}
+        isLoading={isSubmitting}
+        title={pendingAction === 'approve' ? "Confirm Approval" : "Confirm Rejection"}
+        description={pendingAction === 'approve' ? "Are you sure you want to approve this task? The following note will be included with your approval." : "Are you sure you want to reject this task?"}
+        confirmLabel={pendingAction === 'approve' ? "Approve" : "Reject"}
+        confirmButtonColor={pendingAction === 'approve' ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}
+      >
+        <div className="bg-muted/50 p-4 rounded-md text-sm text-foreground italic border">
+          {comment || (
+            <span className="text-muted-foreground not-italic">No comment provided.</span>
+          )}
+        </div>
+      </WarningDialog>
     </Card>
   );
-
-
-
 };
 
 export default TaskApprovalActionsSimple

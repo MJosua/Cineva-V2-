@@ -259,7 +259,7 @@ export const SYSTEM_VARIABLE_ENTRIES: SystemVariableEntry[] = [
     resolve: (ctx) => {
       if (!Array.isArray(ctx.meetingrooms)) return [];
       return ctx.meetingrooms.map(room => ({
-        item_name: room.room_name,
+        item_name: room.room_name || (room as any).name || "Unnamed Room",
         filter: room.id,
       }));
     },

@@ -256,136 +256,134 @@ const ServiceCatalogAdmin = () => {
 
   if (isLoading) {
     return (
-      <AppLayout>
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={() => navigate('/')} disabled>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Service Catalog Admin</h1>
-                <p className="text-gray-600">Manage dynamic service forms and their configurations</p>
-              </div>
-            </div>
-            <Button disabled className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Create Form
+
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={() => navigate('/')} disabled>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
             </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Service Catalog Admin</h1>
+              <p className="text-gray-600">Manage dynamic service forms and their configurations</p>
+            </div>
           </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Form Search</CardTitle>
-              <Input
-                placeholder="Search forms by title or category..."
-                disabled
-              />
-            </CardHeader>
-          </Card>
-
-          <FormSkeleton />
+          <Button disabled className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Create Form
+          </Button>
         </div>
-      </AppLayout>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Form Search</CardTitle>
+            <Input
+              placeholder="Search forms by title or category..."
+              disabled
+            />
+          </CardHeader>
+        </Card>
+
+        <FormSkeleton />
+      </div>
+
     );
   }
 
   if (error) {
     return (
-      <AppLayout>
-        <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => navigate('/')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </div>
-          <div className="flex items-center justify-center h-64">
-            <div className="text-lg text-red-600">Error loading catalog: {error}</div>
-          </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => navigate('/')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
         </div>
-      </AppLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-red-600">Error loading catalog: {error}</div>
+        </div>
+      </div>
+
     );
   }
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
-        <ServiceCatalogHeader
-          onReload={handleReload}
-          onCreate={handleCreate}
-          isReloading={isReloading}
-        />
+    <div className="space-y-6">
+      <ServiceCatalogHeader
+        onReload={handleReload}
+        onCreate={handleCreate}
+        isReloading={isReloading}
+      />
 
-        <ServiceCatalogSearch
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-        />
+      <ServiceCatalogSearch
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+      />
 
-        <ServiceCatalogTable
-          forms={filteredForms}
-          serviceCatalog={serviceCatalog}
-          onEdit={handleEdit}
-          onToggleActive={handleToggleClick}
-          onReload={handleReload}
-          onWidgetConfig={handleWidgetConfig}
-          isToggling={isToggling}
-          isReloading={isReloading}
-        />
+      <ServiceCatalogTable
+        forms={filteredForms}
+        serviceCatalog={serviceCatalog}
+        onEdit={handleEdit}
+        onToggleActive={handleToggleClick}
+        onReload={handleReload}
+        onWidgetConfig={handleWidgetConfig}
+        isToggling={isToggling}
+        isReloading={isReloading}
+      />
 
-        {/* Toggle Status Confirmation Dialog */}
-        <Dialog open={toggleModal.isOpen} onOpenChange={() => handleToggleCancel()}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {toggleModal.currentActive === 1 ? 'Deactivate' : 'Activate'} Service
-              </DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-              <p className="text-sm text-gray-600">
-                Are you sure you want to {toggleModal.currentActive === 1 ? 'deactivate' : 'activate'}{' '}
-                "<strong>{toggleModal.serviceName}</strong>"?
+      {/* Toggle Status Confirmation Dialog */}
+      <Dialog open={toggleModal.isOpen} onOpenChange={() => handleToggleCancel()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {toggleModal.currentActive === 1 ? 'Deactivate' : 'Activate'} Service
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600">
+              Are you sure you want to {toggleModal.currentActive === 1 ? 'deactivate' : 'activate'}{' '}
+              "<strong>{toggleModal.serviceName}</strong>"?
+            </p>
+            {toggleModal.currentActive === 1 && (
+              <p className="text-sm text-amber-600 mt-2">
+                ⚠️ This service will no longer be accessible to users.
               </p>
-              {toggleModal.currentActive === 1 && (
-                <p className="text-sm text-amber-600 mt-2">
-                  ⚠️ This service will no longer be accessible to users.
-                </p>
-              )}
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={handleToggleCancel} disabled={isToggling}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleToggleConfirm}
-                disabled={isToggling}
-                variant={toggleModal.currentActive === 1 ? 'destructive' : 'default'}
-              >
-                {isToggling ? 'Processing...' : (toggleModal.currentActive === 1 ? 'Deactivate' : 'Activate')}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={widgetModal.isOpen} onOpenChange={() => handleWidgetCancel()}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
-            <DialogHeader>
-              <DialogTitle>Service Widget Configuration</DialogTitle>
-            </DialogHeader>
-            {widgetModal.isOpen && (
-              <ServiceWidgetManager
-                serviceId={widgetModal.serviceId}
-                serviceName={widgetModal.serviceName}
-                currentWidgets={widgetModal.currentWidgets}
-                onSave={handleWidgetSave}
-                onClose={handleWidgetCancel}
-              />
             )}
-          </DialogContent>
-        </Dialog>
-      </div>
-    </AppLayout>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleToggleCancel} disabled={isToggling}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleToggleConfirm}
+              disabled={isToggling}
+              variant={toggleModal.currentActive === 1 ? 'destructive' : 'default'}
+            >
+              {isToggling ? 'Processing...' : (toggleModal.currentActive === 1 ? 'Deactivate' : 'Activate')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={widgetModal.isOpen} onOpenChange={() => handleWidgetCancel()}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Service Widget Configuration</DialogTitle>
+          </DialogHeader>
+          {widgetModal.isOpen && (
+            <ServiceWidgetManager
+              serviceId={widgetModal.serviceId}
+              serviceName={widgetModal.serviceName}
+              currentWidgets={widgetModal.currentWidgets}
+              onSave={handleWidgetSave}
+              onClose={handleWidgetCancel}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

@@ -1,180 +1,138 @@
-// Handles all booking-related API calls
-
+// Handles all booking-related API calls using Universal Generic Resource System
 const express = require('express');
 const router = express.Router();
-const { dbmeetingbook } = require('../../config/db');
+const { dbHots } = require('../../config/db');
 
-
-// GET all bookings
+// GET all active bookings
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await dbmeetingbook.query(`SELECT 
-            id,
-            name,
-            user_id,
-            room_id,
-            time_id,
-            purpose,
-            DATE_FORMAT(date, '%Y-%m-%d') AS date
-            FROM bookings;
-`);
-        res.send(rows);
+        const [rows] = await dbHots.promise().query(`
+            SELECT 
+                r.reservation_id AS id,
+                r.resource_key AS room,
+                r.resource_key AS room_id,
+                r.reference_id,
+                DATE_FORMAT(r.start_time, '%Y-%m-%d') AS date,
+                e.event_data
+            FROM resource_t_reservation r
+            INNER JOIN resource_t_event e ON r.reference_id = CAST(e.event_id AS CHAR) COLLATE utf8mb4_unicode_ci
+            WHERE r.resource_category = 'meeting_room' 
+            AND r.status = 'active'
+        `);
+
+        const formatted = rows.map(r => {
+            let data = {};
+            try {
+                data = typeof r.event_data === 'string' ? JSON.parse(r.event_data) : (r.event_data || {});
+            } catch (e) {
+                console.error("Error parsing booking event data:", r.reference_id);
+            }
+
+            return {
+                id: r.id,
+                room: r.room,
+                room_id: r.room_id,
+                user_id: data.user_id,
+                booked_by: data.name || "Unknown",
+                purpose: data.purpose,
+                date: r.date,
+                start_time: data.start_time || data.time_id,
+                end_time: data.end_time || data.time_id
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            data: formatted,
+            message: "Bookings retrieved"
+        });
     } catch (err) {
         console.error("Failed to fetch bookings:", err);
-        res.status(500).json({ error: 'Database query failed' });
+        res.status(500).json({ success: false, message: 'Database query failed' });
     }
 });
-
-
-
-// POST new booking
-// router.post('/', async (req, res) => {
-//     const { user_id, name, purpose, date, room_id, time_id, email } = req.body;
-
-//     if (!name || !user_id || !date || !room_id || !time_id || !email) {
-//         return res.status(400).json({ error: "Missing required booking fields" });
-//     }
-
-//     try {
-//         // Insert user if not already in users table
-//         await dbmeetingbook.query(`
-//             INSERT IGNORE INTO users (uid, name, email)
-//             VALUES (?, ?, ?)
-//         `, [user_id, name, email]);
-
-//         // Insert booking
-//         await dbmeetingbook.query(
-//             'INSERT INTO bookings (name, user_id, purpose, date, room_id, time_id) VALUES (?, ?, ?, ?, ?, ?)',
-//             [name, user_id, purpose, date, room_id, time_id]
-//         );
-
-//         console.log("Booking + user saved:", req.body);
-//         res.status(201).send('Booking and user saved');
-//     } catch (err) {
-//         console.error("Error saving booking and user:", err);
-//         res.status(500).json({ error: 'Failed to save booking and user' });
-//     }
-// });
 
 // POST new booking
 router.post('/', async (req, res) => {
+    const conn = await dbHots.promise().getConnection();
     try {
+        await conn.beginTransaction();
+
         const b = req.body || {};
-
-        // accept both camelCase and snake_case
-        const user_id = b.user_id ?? b.userId;
-        const room_id = Number(b.room_id ?? b.roomId);
-        const time_id = Number(b.time_id ?? b.timeId);
+        const user_id = b.user_id || b.userId || req.dataToken?.user_id || "Unknown";
+        const room_key = b.room_id || b.resource_key || b.room;
         const date = b.date;
-        const name = b.name?.trim();
-        const purpose = b.purpose ?? null;
-        const email = b.email ?? b.userEmail ?? null; // make email OPTIONAL
+        const start_time = b.start_time || b.time_id;
+        const end_time = b.end_time || b.time_id;
+        const name = b.name || b.PIC || b.requested_by || "Anonymous";
+        const purpose = b.purpose || "Meeting";
 
-        if (!name || !user_id || !date || !room_id || !time_id) {
-            return res.status(400).json({
-                success: false,
-                error: "Missing required fields",
-                got: { name: !!name, user_id: !!user_id, date: !!date, room_id: !!room_id, time_id: !!time_id, email: !!email }
-            });
+        if (!user_id || !date || !room_key || !start_time) {
+            return res.status(400).json({ error: "Missing required fields (user_id, date, room_key, start_time)" });
         }
 
-        // Ensure VARCHAR user_id
-        const userIdStr = String(user_id);
+        // 1. Transactional Event Log (Ledger)
+        const [eventResult] = await conn.query(`
+            INSERT INTO resource_t_event (resource_category, resource_key, event_type, event_data, created_by)
+            VALUES (?, ?, ?, ?, ?)
+        `, ['meeting_room', String(room_key), 'ROOM_BOOKED', JSON.stringify({
+            user_id, name, purpose, date, start_time, end_time
+        }), user_id]);
 
-        // Insert user row if you have a users table (email optional)
-        if (email) {
-            await dbmeetingbook.query(
-                `INSERT IGNORE INTO users (uid, name, email) VALUES (?, ?, ?)`,
-                [userIdStr, name, email]
-            );
-        } else {
-            // still ensure presence in users table by uid+name if you rely on JOINs later
-            await dbmeetingbook.query(
-                `INSERT IGNORE INTO users (uid, name) VALUES (?, ?)`,
-                [userIdStr, name]
-            );
-        }
+        const eventId = eventResult.insertId;
 
-        // Insert booking
-        const [result] = await dbmeetingbook.query(
-            `INSERT INTO bookings (name, user_id, purpose, date, room_id, time_id)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-            [name, userIdStr, purpose, date, room_id, time_id]
-        );
+        // 2. Update Current Reservation State
+        // Start/End time handled as DATE for now, 
+        // to be refined with specific timeslot integration
+        await conn.query(`
+            INSERT INTO resource_t_reservation (resource_category, resource_key, reference_id, start_time, end_time, status)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `, ['meeting_room', String(room_key), String(eventId), date, date, 'active']);
 
-        return res.status(201).json({
-            success: true,
-            message: "Booking created successfully",
-            id: result.insertId
-        });
+        await conn.commit();
+        res.status(201).json({ success: true, message: "Booking created successfully", id: eventId });
     } catch (err) {
-        console.error("Error saving booking and user:", err);
-        return res.status(500).json({
-            success: false,
-            error: err.sqlMessage || err.message
-        });
+        await conn.rollback();
+        console.error("Error saving booking:", err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        conn.release();
     }
 });
 
-
-
-// DELETE booking by user
+// DELETE booking
 router.delete('/', async (req, res) => {
-    const { user_id, date, time_id, room_id } = req.body;
-    console.log(` trying to delete ${room_id}`)
-    if (!user_id || !date || !time_id || !room_id) {
-        return res.status(400).json({ error: "Missing required fields for deletion" });
-    }
-
+    const { id, user_id, room_id } = req.body;
+    const conn = await dbHots.promise().getConnection();
     try {
-        const [result] = await dbmeetingbook.query(
-            'DELETE FROM bookings WHERE user_id = ? AND date = ? AND time_id = ? AND room_id = ?',
-            [user_id, date, time_id, room_id]
+        await conn.beginTransaction();
+
+        // 1. Update Reservation to cancelled
+        const [result] = await conn.query(
+            "UPDATE resource_t_reservation SET status = 'cancelled' WHERE reservation_id = ? AND resource_category = 'meeting_room'",
+            [id]
         );
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "No matching booking found to delete" });
+            await conn.rollback();
+            return res.status(404).json({ message: "No matching booking found" });
         }
 
-        console.log("Booking deleted:", req.body);
+        // 2. Log Cancellation Event
+        await conn.query(`
+            INSERT INTO resource_t_event (resource_category, resource_key, event_type, event_data, created_by)
+            VALUES (?, ?, ?, ?, ?)
+        `, ['meeting_room', String(room_id), 'ROOM_CANCELLED', JSON.stringify({ reservation_id: id }), user_id]);
+
+        await conn.commit();
         res.sendStatus(200);
-    } catch (error) {
-        console.error("Error deleting booking:", error);
-        res.status(500).json({ error: 'Failed to delete booking' });
-    }
-});
-
-// PUT update booking (name or purpose) by user
-router.put('/', async (req, res) => {
-    const { name, user_id, purpose, date, time_id, room_id } = req.body;
-
-    if (!name || !user_id || !purpose || !date || !room_id || !time_id) {
-        return res.status(400).json({ error: "Missing required booking fields for update" });
-    }
-
-    try {
-        const [result] = await dbmeetingbook.query(
-            `UPDATE bookings 
-             SET name = ?, purpose = ? 
-             WHERE user_id = ? AND date = ? AND time_id = ? AND room_id = ?`,
-            [name, purpose, user_id, date, time_id, room_id]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: "No matching booking found to update" });
-        }
-
-        console.log("Booking updated:", req.body);
-        res.status(200).json({ message: "Booking updated" });
     } catch (err) {
-        console.error("Error updating booking:", err);
-        res.status(500).json({ error: "Failed to update booking" });
+        await conn.rollback();
+        console.error("Error deleting booking:", err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        conn.release();
     }
 });
-
-
-
 
 module.exports = router;
-
-

@@ -11,7 +11,8 @@ interface ApprovalStep {
   date?: string;
   approver?: string;
   approval_order?: number;
-  approval_status?: number;
+  approval_status?: string | number; // Can be string "1" or number 1
+  approver_leader?: string | number; // Can be string "1" or number 1
 }
 
 interface ProgressionBarProps {
@@ -43,32 +44,30 @@ const ProgressionBar = ({ steps, className, showDetails = false }: ProgressionBa
 
         return userIsApprover || Number(step.approver_leader) === 1;
       })
-      .sort((a, b) => a.approval_order - b.approval_order);
+      .sort((a, b) => (a.approval_order ?? 0) - (b.approval_order ?? 0));
 
 
     return (
       <div className={cn("flex items-center space-x-1", className)}>
         <span className="text-sm font-medium text-muted-foreground mr-2">
-          {filteredSteps.filter(s => s.approval_status === '1').length}/{filteredSteps.length}
+          {filteredSteps.filter(s => String(s.approval_status) === '1').length}/{filteredSteps.length}
         </span>
         {steps
 
           .filter((a) => {
-            Number(a.approver_leader) === 1
-
             return Number(a.approver_leader) === 1;
           })
 
-          .sort((a, b) => a.approval_order - b.approval_order).map((step, index) => (
+          .sort((a, b) => (a.approval_order ?? 0) - (b.approval_order ?? 0)).map((step, index) => (
             <div
               key={`${step.id}-${index}`}
               className={cn(
                 "h-2 w-8 rounded-full",
                 {
-                  "bg-primary": step.approval_status === '1',
-                  "bg-destructive": step.approval_status === '2',
-                  "bg-yellow-500": step.approval_status === '0',
-                  "bg-muted": step.approval_status === '3'
+                  "bg-primary": String(step.approval_status) === '1',
+                  "bg-destructive": String(step.approval_status) === '2',
+                  "bg-yellow-500": String(step.approval_status) === '0',
+                  "bg-muted": String(step.approval_status) === '3'
                 }
               )}
             />
@@ -76,6 +75,7 @@ const ProgressionBar = ({ steps, className, showDetails = false }: ProgressionBa
       </div>
     );
   }
+
 
 
   // Detailed view (for ticket detail page)
@@ -94,7 +94,7 @@ const ProgressionBar = ({ steps, className, showDetails = false }: ProgressionBa
 
           return userIsApprover || Number(a.approver_leader) === 1;
         })
-        .sort((a, b) => a.approval_order - b.approval_order).map((step, index) => (
+        .sort((a, b) => (a.approval_order ?? 0) - (b.approval_order ?? 0)).map((step, index) => (
           <div key={`${step.id}-${step.name}-${index}`} className="flex items-center">
             <div className="flex flex-col items-center">
               <div
@@ -108,7 +108,7 @@ const ProgressionBar = ({ steps, className, showDetails = false }: ProgressionBa
                   }
                 )}
               >
-                {step.approval_status === 1 && <Check className="w-4 h-4" />}
+                {String(step.approval_status) === '1' && <Check className="w-4 h-4" />}
                 {step.status === 'rejected' && <X className="w-4 h-4" />}
                 {step.status === 'pending' && <Clock className="w-4 h-4" />}
                 {step.status === 'waiting' && (index + 1)}

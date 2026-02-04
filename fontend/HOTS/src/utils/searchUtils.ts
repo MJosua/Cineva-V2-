@@ -1,9 +1,12 @@
 
 export const highlightSearchTerm = (text: string, searchTerm: string): string => {
-  if (!searchTerm.trim()) return text;
-  
+  // Handle undefined/null text
+  if (text == null) return '';
+  const textStr = String(text);
+  if (!searchTerm?.trim()) return textStr;
+
   const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-  return text.replace(regex, '<span class="search-highlight ">$1</span>');
+  return textStr.replace(regex, '<span class="search-highlight ">$1</span>');
 };
 
 export const matchesSearchTerm = (text: string, searchTerm: string): boolean => {
@@ -13,12 +16,12 @@ export const matchesSearchTerm = (text: string, searchTerm: string): boolean => 
 
 export const searchInObject = (obj: any, searchTerm: string): boolean => {
   if (!searchTerm.trim()) return true;
-  
-  const searchableValues = Object.values(obj).filter(value => 
+
+  const searchableValues = Object.values(obj).filter(value =>
     typeof value === 'string' || typeof value === 'number'
   );
-  
-  return searchableValues.some(value => 
+
+  return searchableValues.some(value =>
     String(value).toLowerCase().includes(searchTerm.toLowerCase())
   );
 };

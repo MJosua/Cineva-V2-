@@ -48,6 +48,8 @@ async function generateCustomTicketID(db, service_id, user_id) {
 
 function log(...a) { console.log(...a); }
 
+const { hotsMailer } = require('../../service/mailer/hots/hots_mailer');
+
 async function saveEav(p, ticketId, form_data, revision = null, serviceItems = null, service_id = null) {
   // console.log('🔍 [SAVE_EAV] Input form_data:', JSON.stringify(form_data, null, 2));
 
@@ -94,7 +96,8 @@ async function saveEav(p, ticketId, form_data, revision = null, serviceItems = n
     }
     collectAutoSaveFields(items);
     if (autoSaveFieldNames.size > 0) {
-      console.log('🔑 [DataSeparation] Auto-save fields detected:', [...autoSaveFieldNames]);
+      console.log('🔑 [DataSeparation] Auto-save fields detected:');
+      console.table([...autoSaveFieldNames]);
     }
   } catch (parseErr) {
     console.warn('⚠️ [DataSeparation] Failed to parse serviceItems:', parseErr.message);
@@ -137,6 +140,9 @@ async function saveEav(p, ticketId, form_data, revision = null, serviceItems = n
   }
 
   console.log(`📊 [SAVE_EAV] Prepared ${detailRows.length} detail rows, ${workDataRows.length} work_data rows`);
+  if (workDataRows.length > 0) {
+    console.table(workDataRows.map(r => ({ key: r[2], value: r[3].substring(0, 50) + '...' })));
+  }
 
   if (detailRows.length) {
     await p.query('INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, value, field_id, field_type, row_index, column_key, revision, field_meta_json) VALUES ?', [detailRows]);
@@ -147,6 +153,128 @@ async function saveEav(p, ticketId, form_data, revision = null, serviceItems = n
 }
 
 const EngineController = {
+
+  /**
+ * Create User Approval Ticket (Ported from ticketController.js)
+ * 1. Look up department_head from user's department
+ * 2. Fallback to IT Leader (dept 10) + HR Leader (dept 1) if no department_head
+ */
+  async addTicketUserApproval(user_id, department_id, new_user_details) {
+    let timestamp = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString('id') + ' : ';
+    let service_id = 21; // SERVICE_IDS.USER_APPROVAL hardcoded
+
+    try {
+      console.log(timestamp, `🎫 Creating User Approval Ticket (Engine) for user_id: ${user_id}, department_id: ${department_id}`);
+
+      // Step 1: Get department_head and department_name from m_department
+      let approvers = [];
+      let department_name = 'Unknown';
+
+      if (department_id) {
+        const [deptResult] = await dbHots.promise().query(
+          `SELECT department_head, department_name FROM m_department WHERE department_id = ?`,
+          [department_id]
+        );
+
+        if (deptResult.length > 0) {
+          department_name = deptResult[0].department_name || 'Unknown';
+          if (deptResult[0].department_head) {
+            approvers.push(deptResult[0].department_head);
+            console.log(timestamp, `✅ Found Department Head: ${deptResult[0].department_head}`);
+          }
+        }
+      }
+
+      // Step 2: Fallback - If no department_head, get IT Leader (dept 10) and HR Leader (dept 1)
+      if (approvers.length === 0) {
+        console.log(timestamp, `⚠️ No department_head found - using IT & HR fallback`);
+
+        const [fallbackResult] = await dbHots.promise().query(
+          `SELECT department_id, department_head 
+           FROM m_department 
+           WHERE department_id IN (1, 10) 
+           AND department_head IS NOT NULL`
+        );
+
+        for (const dept of fallbackResult) {
+          if (dept.department_head) {
+            approvers.push(dept.department_head);
+            console.log(timestamp, `✅ Fallback approver from dept ${dept.department_id}: ${dept.department_head}`);
+          }
+        }
+      }
+
+      // Step 3: Generate ticket ID using existing helper
+      const ticketId = await generateCustomTicketID(dbHots, service_id, user_id);
+      console.log(timestamp, `🎫 Generated Ticket ID: ${ticketId}`);
+
+      // Step 4: Create ticket with CORRECT ENGINE SCHEMA
+      await dbHots.promise().execute(`
+          INSERT INTO t_ticket (
+              ticket_id, service_id, status_id, created_by, creation_date, last_update, workflow_step
+          ) VALUES (?, ?, 1, ?, NOW(), NOW(), 1)
+      `, [ticketId, service_id, user_id]);
+
+      // Step 5: Insert ticket details (Name, Department, Email)
+      const fullName = `${new_user_details.firstname} ${new_user_details.lastname}`;
+      const detailRows = [
+        [ticketId, 'name', 'Name', fullName, null, 'text', null, null, 0, JSON.stringify({ label: 'Name' })],
+        [ticketId, 'department', 'Proposed Department', department_name, null, 'text', null, null, 0, JSON.stringify({ label: 'Proposed Department' })],
+        [ticketId, 'email', 'Email', new_user_details.email, null, 'text', null, null, 0, JSON.stringify({ label: 'Email' })]
+      ];
+
+      await dbHots.promise().query(
+        'INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, value, field_id, field_type, row_index, column_key, revision, field_meta_json) VALUES ?',
+        [detailRows]
+      );
+
+      console.log(timestamp, `🎫 Ticket created: ${ticketId}`);
+
+      // Step 6: Insert approval events with CORRECT ENGINE SCHEMA
+      if (approvers.length > 0) {
+        for (const approver_id of approvers) {
+          await dbHots.promise().execute(`
+              INSERT INTO t_ticket_event (
+                  ticket_id, approver_id, approval_order, approval_status,
+                  event_type, approver_leader, created_at
+              ) VALUES (?, ?, 1, 0, 'approve', 1, NOW())
+          `, [ticketId, approver_id]);
+          console.log(timestamp, `✅ Added approver: ${approver_id}`);
+        }
+
+        // Send email to all approvers
+        for (const approver_id of approvers) {
+          const [approverData] = await dbHots.promise().query("SELECT email, firstname FROM user WHERE user_id = ?", [approver_id]);
+          if (approverData.length > 0 && approverData[0].email) {
+            hotsMailer(
+              approverData[0].email,
+              'Action Required: New User Approval',
+              `
+              <div>
+                  <p>Dear ${approverData[0].firstname},</p>
+                  <p>A new user <strong>${fullName}</strong> has registered and verified their email.</p>
+                  <p><strong>Proposed Department:</strong> ${department_name}</p>
+                  <p><strong>Email:</strong> ${new_user_details.email}</p>
+                  <p>Please review and approve this request in the HOTS system.</p>
+                  <p>Ticket ID: ${ticketId}</p>
+              </div>
+              `
+            );
+            console.log(timestamp, `📧 Email sent to: ${approverData[0].email}`);
+          }
+        }
+      } else {
+        console.log(timestamp, `⚠️ No approvers found - ticket created without approval events`);
+      }
+
+      console.log(timestamp, "✅ addTicketUserApproval success", ticketId);
+      return { success: true, ticketId };
+
+    } catch (err) {
+      console.log(timestamp, "❌ error addTicketUserApproval", err);
+      return { success: false, error: err.message };
+    }
+  },
 
   /* CREATE */
   async create(req, res) {
@@ -276,6 +404,23 @@ const EngineController = {
         });
       });
 
+      // 🆕 SSE: Notify first approver about new ticket in their inbox
+      console.log(`🔍 [SSE_DEBUG] Checking SSE emit. Manager: ${!!global.sseManager}, NextApprover: ${result.next_approver}`);
+
+      if (global.sseManager && result.next_approver) {
+        console.log(`📡 [SSE_DEBUG] Emitting approval_needed to ${result.next_approver}`);
+        global.sseManager.emitToUser(result.next_approver, 'approval_needed', {
+          ticketId: result.ticket_id,
+          serviceName: module.module_name,
+          url: `/ticket/${result.ticket_id}`
+        }, {
+          title: 'Approval Required',
+          message: `Ticket #${result.ticket_id} (${module.module_name}) requires your approval`
+        });
+      } else {
+        console.warn(`⚠️ [SSE_DEBUG] Skipping emit. conditions not met.`);
+      }
+
       return res.json(result);
     } catch (err) {
       log('create error', err);
@@ -400,6 +545,31 @@ const EngineController = {
         global.io.emit("message", "engine_approve_" + ticket_id);
       }
 
+      // 🆕 SSE: Emit targeted events to relevant users
+      if (global.sseManager) {
+        // Notify ticket creator
+        global.sseManager.emitToUser(header.created_by, 'ticket_status_update', {
+          ticketId: ticket_id,
+          action: 'approved',
+          isFinal: result.final,
+          url: `/ticket/${ticket_id}`
+        }, {
+          title: result.final ? 'Ticket Approved' : `Step ${header.workflow_step} Approved`,
+          message: `Your ticket #${ticket_id} has been ${result.final ? 'fully approved' : `approved at step ${header.workflow_step}`}`
+        });
+
+        // Notify next approver (if exists)
+        if (result.next_approver) {
+          global.sseManager.emitToUser(result.next_approver, 'approval_needed', {
+            ticketId: ticket_id,
+            url: `/ticket/${ticket_id}`
+          }, {
+            title: 'Approval Required',
+            message: `Ticket #${ticket_id} follows up for your approval`
+          });
+        }
+      }
+
       return res.json(result);
 
     } catch (e) {
@@ -467,6 +637,19 @@ const EngineController = {
         global.io.emit("message", "engine_reject_" + ticket_id);
       }
 
+      // 🆕 SSE: Notify ticket creator that their ticket was rejected
+      if (global.sseManager) {
+        global.sseManager.emitToUser(header.created_by, 'ticket_status_update', {
+          ticketId: ticket_id,
+          action: 'rejected',
+          note: note || '',
+          url: `/ticket/${ticket_id}`
+        }, {
+          title: 'Ticket Rejected',
+          message: `Your ticket #${ticket_id} was rejected. Note: ${note || 'No remark'}`
+        });
+      }
+
       return res.json(result);
 
     } catch (e) {
@@ -477,8 +660,111 @@ const EngineController = {
 
 
   /* LIST */
-  async list(req, res) {
+  async addComment(req, res) {
     try {
+      const { ticket_id } = req.params;
+      const { comment, user_id } = req.body;
+      const commenterId = user_id || req.dataToken?.user_id;
+
+      if (!ticket_id || (!comment && (!req.files || req.files.length === 0))) {
+        return res.status(400).json({ ok: false, error: 'ticket_id and comment (or file) are required' });
+      }
+
+      console.log(`💬 [ENGINE] Adding comment to ticket ${ticket_id} by user ${commenterId}`);
+
+      // 1. Insert Comment
+      const [result] = await dbHots.promise().execute(`
+        INSERT INTO t_ticket_comment
+        (ticket_id, user_id, comment, date_created, status)
+        VALUES
+        (?, ?, ?, NOW(), 1)
+      `, [ticket_id, commenterId, comment || '']);
+
+      const commentId = result.insertId;
+
+      // 2. Handle File Uploads (if any)
+      if (req.files && req.files.length > 0) {
+        const insertFileQuery = `
+            INSERT INTO t_file_upload 
+            (entity_type, entity_id, filename, original_name, file_path, file_size, mime_type, uploaded_by) 
+            VALUES ?
+          `;
+
+        const fileValues = req.files.map(file => [
+          'comment',
+          commentId,
+          file.filename,
+          file.originalname,
+          `/public/files/hots/it_support/${file.filename}`, // Assuming this path based on middleware
+          file.size,
+          file.mimetype,
+          commenterId
+        ]);
+
+        await dbHots.promise().query(insertFileQuery, [fileValues]);
+        console.log(`📎 [ENGINE] Attached ${req.files.length} files to comment ${commentId}`);
+      }
+
+      // 3. SSE: Identify Stakeholders and Broadcast
+      if (global.sseManager) {
+        // Fetch commenter name
+        const [userRows] = await dbHots.promise().query('SELECT firstname, lastname FROM user WHERE user_id = ?', [commenterId]);
+        const commenterName = userRows[0] ? `${userRows[0].firstname} ${userRows[0].lastname}` : 'Unknown User';
+
+        // Fetch stakeholders: Creator, Assignees, Approvers, Previous Commenters
+        const [stakeholders] = await dbHots.promise().query(`
+            SELECT DISTINCT user_id FROM (
+                -- Creator
+                SELECT created_by as user_id FROM t_ticket WHERE ticket_id = ?
+                UNION
+                -- Current Assignee (User)
+                SELECT assigned_id as user_id FROM t_ticket_assignment WHERE ticket_id = ? AND assigned_type = 'user'
+                UNION
+                -- Team Members (if assigned to team)
+                SELECT tm.user_id 
+                FROM t_ticket_assignment tta
+                JOIN m_team_member tm ON tm.team_id = tta.assigned_id
+                WHERE tta.ticket_id = ? AND tta.assigned_type = 'team'
+                UNION
+                -- Approvers
+                SELECT approver_id as user_id FROM t_ticket_event WHERE ticket_id = ? AND event_type = 'approve'
+                UNION
+                -- Previous Commenters
+                SELECT user_id FROM t_ticket_comment WHERE ticket_id = ?
+            ) AS all_users
+            WHERE user_id IS NOT NULL AND user_id != ?
+        `, [ticket_id, ticket_id, ticket_id, ticket_id, ticket_id, commenterId]);
+
+        const recipientIds = stakeholders.map(s => s.user_id);
+
+        if (recipientIds.length > 0) {
+          console.log(`📡 [ENGINE] Broadcasting comment to ${recipientIds.length} stakeholders:`, recipientIds);
+
+          // Get service name for context
+          const [ticketInfo] = await dbHots.promise().query('SELECT service_name FROM t_ticket WHERE ticket_id = ? LIMIT 1', [ticket_id]);
+          const serviceName = ticketInfo[0]?.service_name || 'Ticket';
+
+          global.sseManager.emitToUsers(recipientIds, 'new_comment', {
+            ticketId: ticket_id,
+            commenter_name: commenterName,
+            message: comment || 'Sent an attachment',
+            service_name: serviceName,
+            url: `/ticket/${ticket_id}`
+          });
+        }
+      }
+
+      return res.json({ ok: true, message: 'Comment added', commentId });
+    } catch (e) {
+      console.error('addComment error', e);
+      return res.status(500).json({ ok: false, error: e.message });
+    }
+  },
+
+  async list(req, res) {
+    let timestamp = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString('id') + ' : ';
+    try {
+      console.log(timestamp, `🔍 [ENGINE][LIST] Params:`, req.query);
 
       const { status, status_id, service_id, mine } = req.query;
       const user_id = req.dataToken?.user_id || null;
@@ -494,7 +780,7 @@ const EngineController = {
 
       // Handle legacy status filter
       if (status) {
-        conditions += ` AND t.status = ${dbHots.escape(status)} `;
+        conditions += ` AND ts.status_name = ${dbHots.escape(status)} `;
       }
 
       // Handle status_id filter (supports comma-separated values)
@@ -511,16 +797,34 @@ const EngineController = {
       }
 
       const sql = `
-        SELECT t.ticket_id, t.service_id, t.service_name, t.created_by,
+        SELECT t.ticket_id, t.service_id, s.service_name, t.created_by,
                CONCAT(u.firstname, " ", u.lastname) creator_name,
-               ts.status_name, t.status_id, t.workflow_step, t.creation_date, t.last_update
+               ts.status_name, t.status_id, t.workflow_step, t.creation_date, t.last_update,
+               (
+                 SELECT JSON_ARRAYAGG(
+                   JSON_OBJECT(
+                     'approver_id', ae.approver_id,
+                     'approver_leader', ae.approver_leader,
+                     'approval_order', ae.approval_order,
+                     'approver_name', COALESCE(NULLIF(TRIM(CONCAT(IFNULL(u2.firstname, ''), ' ', IFNULL(u2.lastname, ''))), ''), 'Superior'),
+                     'approval_status', ae.approval_status,
+                     'approval_date', ae.approve_date
+                   )
+                 )
+                 FROM t_ticket_event ae
+                 LEFT JOIN user u2 ON u2.user_id = ae.approver_id
+                 WHERE ae.ticket_id = t.ticket_id
+               ) AS list_approval
         FROM t_ticket t
+        LEFT JOIN m_service s ON s.service_id = t.service_id
         LEFT JOIN user u ON u.user_id = t.created_by
-        LEFT JOIN m_ticket_status ts ON ts.status_id = t.status_id
+        LEFT JOIN m_service_status ts ON ts.status_id = t.status_id
         ${conditions}
         ORDER BY t.creation_date DESC
         LIMIT ${startIndex}, ${limit}
       `;
+
+      console.log(timestamp, `🔍 [ENGINE][LIST] SQL:`, sql.replace(/\s+/g, ' ').trim().substring(0, 150) + "...");
 
       const [rows] = await dbHots.promise().query(sql);
 
@@ -531,57 +835,204 @@ const EngineController = {
           [ticket.ticket_id, ticket.ticket_id]
         );
 
-
         // Convert EAV to flat object
         eavRows.forEach(row => {
           ticket[row.cstm_col] = row.value;
         });
       }
 
-      return res.json({ ok: true, page, limit, rows });
+      // Debugging: Show first few rows
+      // if (rows.length > 0) {
+      //   console.table(rows.slice(0, 3).map(r => ({ id: r.ticket_id, svc: r.service_name, st: r.status_name, by: r.creator_name })));
+      // } else {
+      //   console.log(timestamp, "⚠️ [ENGINE][LIST] No rows found");
+      // }
+
+      const [countResult] = await dbHots.promise().query(`
+        SELECT COUNT(*) as total 
+        FROM t_ticket t
+        LEFT JOIN m_service_status ts ON ts.status_id = t.status_id
+        ${conditions}
+      `);
+
+      return res.json({
+        success: true,
+        page,
+        limit,
+        data: rows, // Frontend often uses .data or .rows
+        rows,       // Keep for backward compat
+        totalData: countResult[0].total,
+        totalPage: Math.ceil(countResult[0].total / limit)
+      });
     } catch (e) {
       log('list error', e);
-      return res.status(500).json({ ok: false, error: e.message });
+      return res.status(500).json({ success: false, error: e.message });
     }
   },
 
   /* myRequests */
   async myRequests(req, res) {
+    let timestamp = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString('id') + ' : ';
     try {
       const user_id = req.dataToken.user_id;
-      const [rows] = await dbHots.promise().query('SELECT t.ticket_id, t.service_name, t.status, t.workflow_level, t.creation_date, t.last_update FROM t_ticket t WHERE t.created_by = ? ORDER BY t.creation_date DESC', [user_id]);
-      return res.json({ ok: true, requests: rows });
+      const [rows] = await dbHots.promise().query(`
+        SELECT t.ticket_id, t.service_id, s.service_name, t.status_id, ts.status_name as status, 
+               t.workflow_step as workflow_level, t.creation_date, t.last_update,
+               (
+                 SELECT JSON_ARRAYAGG(
+                   JSON_OBJECT(
+                     'approver_id', ae.approver_id,
+                     'approver_leader', ae.approver_leader,
+                     'approval_order', ae.approval_order,
+                     'approver_name', COALESCE(NULLIF(TRIM(CONCAT(IFNULL(u2.firstname, ''), ' ', IFNULL(u2.lastname, ''))), ''), 'Superior'),
+                     'approval_status', ae.approval_status,
+                     'approval_date', ae.approve_date
+                   )
+                 )
+                 FROM t_ticket_event ae
+                 LEFT JOIN user u2 ON u2.user_id = ae.approver_id
+                 WHERE ae.ticket_id = t.ticket_id
+               ) AS list_approval
+        FROM t_ticket t 
+        LEFT JOIN m_service s ON s.service_id = t.service_id
+        LEFT JOIN m_service_status ts ON ts.status_id = t.status_id
+        WHERE t.created_by = ? 
+        ORDER BY t.creation_date DESC
+      `, [user_id]);
+
+      console.log(timestamp, `🔍 [ENGINE][MY_REQUESTS] Found ${rows.length} request(s)`);
+      if (rows.length > 0) console.table(rows.slice(0, 3).map(r => ({ id: r.ticket_id, status: r.status, approvals: r.list_approval?.length || 0 })));
+
+      return res.json({ success: true, requests: rows, data: rows });
     } catch (e) {
-      return res.status(500).json({ ok: false, error: e.message });
+      return res.status(500).json({ success: false, error: e.message });
     }
   },
 
   /* dashboard */
   async dashboard(req, res) {
+    let timestamp = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString('id') + ' : ';
     try {
       const user_id = req.dataToken.user_id;
-      const [statusRows] = await dbHots.promise().query('SELECT status, COUNT(*) AS total FROM t_ticket GROUP BY status');
+
+      const [statusRows] = await dbHots.promise().query(`
+        SELECT ts.status_name as status, COUNT(*) AS total 
+        FROM t_ticket t 
+        LEFT JOIN m_service_status ts ON ts.status_id = t.status_id
+        GROUP BY ts.status_name
+      `);
       const summary = {}; statusRows.forEach(r => summary[r.status] = r.total);
-      const [approvals] = await dbHots.promise().query('SELECT COUNT(*) AS total FROM t_ticket_event e WHERE e.actor_id = ? AND e.status = ?', [user_id, 'waiting']);
+
+      // Fix: use approver_id and approval_status
+      const [approvals] = await dbHots.promise().query('SELECT COUNT(*) AS total FROM t_ticket_event e WHERE e.approver_id = ? AND e.approval_status = 0', [user_id]);
       summary.my_approvals = approvals[0].total;
+
       const [reqs] = await dbHots.promise().query('SELECT COUNT(*) AS total FROM t_ticket WHERE created_by = ?', [user_id]);
       summary.my_requests = reqs[0].total;
-      const [serviceRows] = await dbHots.promise().query('SELECT service_name, COUNT(*) total FROM t_ticket GROUP BY service_name');
+
+      const [serviceRows] = await dbHots.promise().query(`
+        SELECT s.service_name, COUNT(*) total 
+        FROM t_ticket t 
+        LEFT JOIN m_service s ON s.service_id = t.service_id
+        GROUP BY s.service_name
+      `);
       summary.service_stats = serviceRows;
-      return res.json({ ok: true, summary });
+
+      console.log(timestamp, `🔍 [ENGINE][DASHBOARD] Summary loaded`);
+
+      return res.json({ success: true, summary });
     } catch (e) {
-      return res.status(500).json({ ok: false, error: e.message });
+      return res.status(500).json({ success: false, error: e.message });
     }
   },
 
   /* myApprovals */
   async myApprovals(req, res) {
+    let timestamp = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString('id') + ' : ';
     try {
       const user_id = req.dataToken.user_id;
-      const [rows] = await dbHots.promise().query('SELECT t.ticket_id, t.service_name, t.status, e.approval_order, t.creation_date, t.last_update FROM t_ticket_event e INNER JOIN t_ticket t ON t.ticket_id=e.ticket_id WHERE e.actor_id = ? AND e.status = ? ORDER BY t.creation_date DESC', [user_id, 'waiting']);
-      return res.json({ ok: true, approvals: rows });
+      // Only show tickets where user is pending approver AND ticket is at their approval level
+      const [rows] = await dbHots.promise().query(`
+        SELECT t.ticket_id, t.service_id, s.service_name, t.status_id, ts.status_name, 
+               e.approval_order, t.workflow_step, t.creation_date, t.last_update, 
+               CONCAT(u.firstname, " ", u.lastname) as creator_name,
+               (
+                 SELECT JSON_ARRAYAGG(
+                   JSON_OBJECT(
+                     'approver_id', ae.approver_id,
+                     'approver_leader', ae.approver_leader,
+                     'approval_order', ae.approval_order,
+                     'approver_name', COALESCE(NULLIF(TRIM(CONCAT(IFNULL(u2.firstname, ''), ' ', IFNULL(u2.lastname, ''))), ''), 'Superior'),
+                     'approval_status', ae.approval_status,
+                     'approval_date', ae.approve_date
+                   )
+                 )
+                 FROM t_ticket_event ae
+                 LEFT JOIN user u2 ON u2.user_id = ae.approver_id
+                 WHERE ae.ticket_id = t.ticket_id
+               ) AS list_approval
+        FROM t_ticket_event e 
+        INNER JOIN t_ticket t ON t.ticket_id = e.ticket_id 
+        LEFT JOIN m_service s ON s.service_id = t.service_id
+        LEFT JOIN m_service_status ts ON ts.status_id = t.status_id
+        LEFT JOIN user u ON u.user_id = t.created_by
+        WHERE e.approver_id = ? 
+          AND e.approval_status = 0 
+          AND e.approval_order = t.workflow_step
+        ORDER BY t.creation_date DESC
+      `, [user_id]);
+
+      console.log(timestamp, `🔍 [ENGINE][MY_APPROVALS] Found ${rows.length} approval(s) for user ${user_id}`);
+
+      // Standardize response for frontend task list
+      return res.json({ success: true, approvals: rows, data: rows });
     } catch (e) {
-      return res.status(500).json({ ok: false, error: e.message });
+      return res.status(500).json({ success: false, error: e.message });
+    }
+  },
+
+  /* involvedApprovals */
+  async involvedApprovals(req, res) {
+    let timestamp = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString('id') + ' : ';
+    try {
+      const user_id = req.dataToken.user_id;
+
+      // Show tickets where user is an approver BUT it is NOT their turn (or they already approved)
+      // Logic: In t_ticket_event as approver, but NOT (status=0 AND order=workflow_step)
+      const [rows] = await dbHots.promise().query(`
+      SELECT DISTINCT t.ticket_id, t.service_id, s.service_name, t.status_id, ts.status_name,
+             t.workflow_step, t.creation_date, t.last_update,
+             CONCAT(u.firstname, " ", u.lastname) as creator_name,
+             (
+               SELECT JSON_ARRAYAGG(
+                 JSON_OBJECT(
+                   'approver_id', ae.approver_id,
+                   'approver_leader', ae.approver_leader,
+                   'approval_order', ae.approval_order,
+                   'approver_name', COALESCE(NULLIF(TRIM(CONCAT(IFNULL(u2.firstname, ''), ' ', IFNULL(u2.lastname, ''))), ''), 'Superior'),
+                   'approval_status', ae.approval_status,
+                   'approval_date', ae.approve_date
+                 )
+               )
+               FROM t_ticket_event ae
+               LEFT JOIN user u2 ON u2.user_id = ae.approver_id
+               WHERE ae.ticket_id = t.ticket_id
+             ) AS list_approval
+      FROM t_ticket_event e
+      INNER JOIN t_ticket t ON t.ticket_id = e.ticket_id
+      LEFT JOIN m_service s ON s.service_id = t.service_id
+      LEFT JOIN m_service_status ts ON ts.status_id = t.status_id
+      LEFT JOIN user u ON u.user_id = t.created_by
+      WHERE e.approver_id = ?
+        AND NOT (e.approval_status = 0 AND e.approval_order = t.workflow_step)
+      ORDER BY t.creation_date DESC
+    `, [user_id]);
+
+      console.log(timestamp, `🔍 [ENGINE][INVOLVED] Found ${rows.length} involved ticket(s) for user ${user_id}`);
+
+      return res.json({ success: true, data: rows });
+    } catch (e) {
+      return res.status(500).json({ success: false, error: e.message });
     }
   },
 
@@ -750,10 +1201,257 @@ const EngineController = {
         }
       }
 
+
       return res.json({ ok: true, ticket: header, form_values });
     } catch (e) {
       log('resubmitPrefill error', e);
       return res.status(500).json({ ok: false, error: e.message });
+    }
+  },
+
+  /* DETAIL (Migrated from Legacy) */
+  async detail(req, res) {
+    try {
+      const ticket_id = req.params.ticket_id;
+      if (!ticket_id) {
+        return res.status(400).send({ success: false, message: "ticket_id must be provided" });
+      }
+
+      const queryGetTicketDetail = `
+        SELECT 
+            t.ticket_id,
+            t.creation_date,
+            t.service_id,
+            s.service_name,
+            t.status_id,
+            s.widget,
+            ts.status_name AS status,
+            ts.color_hex AS color,
+
+            -- Assigned single name
+            CASE
+                WHEN tta.assigned_type = 'user' THEN CONCAT(u_as.firstname, ' ', u_as.lastname)
+                WHEN tta.assigned_type = 'team' THEN tm.team_name
+                WHEN tta.assigned_type = 'department' THEN md.department_name
+                ELSE NULL
+            END AS assigned_to,
+
+            -- Assigned list (full JSON)
+            JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'type', tta.assigned_type,
+                    'id', tta.assigned_id,
+                    'name',
+                        CASE tta.assigned_type
+                            WHEN 'user' THEN CONCAT(u_as.firstname, ' ', u_as.lastname)
+                            WHEN 'team' THEN tm.team_name
+                            WHEN 'department' THEN md.department_name
+                            ELSE NULL
+                        END
+                )
+            ) AS assigned_list,
+
+            t.last_update,
+            t.reject_reason AS reason,
+            t.fulfilment_comment,
+            t.workflow_step,
+
+            CONCAT(u_cr.firstname, ' ', u_cr.lastname) AS created_by_name,
+            u_cr.user_id,
+            dpt.department_id AS dept_id,
+            dpt.department_name AS department_name,
+            dpt.department_shortname AS dept_shortname,
+
+            -- Ticket detail rows (ORDERED FIX)
+            (
+                SELECT JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'order_col', x.order_col,
+                        'cstm_col', x.value,
+                        'lbl_col', x.lbl_col,
+                        'key', x.cstm_col
+                    )
+                )
+                FROM (
+                    SELECT td.order_col, td.value, td.lbl_col, td.cstm_col
+                    FROM t_ticket_detail td
+                    WHERE td.ticket_id = t.ticket_id
+                    ORDER BY td.order_col
+                ) AS x
+            ) AS detail_rows,
+
+            -- Current approver name
+            (
+                SELECT CONCAT(u3.firstname, ' ', u3.lastname)
+                FROM t_ticket_event ae3
+                LEFT JOIN user u3 ON u3.user_id = ae3.approver_id
+                WHERE ae3.ticket_id = t.ticket_id 
+                  AND ae3.approval_order = t.workflow_step
+                LIMIT 1
+            ) AS current_approver_name,
+
+            -- Current approver ID
+            (
+                SELECT ae3.approver_id
+                FROM t_ticket_event ae3
+                WHERE ae3.ticket_id = t.ticket_id 
+                  AND ae3.approval_order = t.workflow_step
+                LIMIT 1
+            ) AS current_approver_id,
+
+            -- Approval Status
+            CASE 
+                WHEN EXISTS(SELECT 1 FROM t_ticket_event ae WHERE ae.ticket_id = t.ticket_id AND ae.approval_status = 0)
+                    THEN 0
+                WHEN EXISTS(SELECT 1 FROM t_ticket_event ae WHERE ae.ticket_id = t.ticket_id AND ae.approval_status = 2)
+                    THEN 2
+                ELSE 1
+            END AS approval_status,
+
+            -- File attachments
+            (
+                SELECT JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'upload_id', f.upload_id,
+                        'filename', f.filename,
+                        'path', f.file_path,
+                        'size', f.file_size
+                    )
+                )
+                FROM t_file_upload f
+                WHERE f.entity_type = 'ticket' AND f.entity_id = t.ticket_id
+            ) AS files,
+
+            -- Approval events list
+           (
+            SELECT JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'approver_id', x.approver_id,
+                    'approver_name', x.approver_name,
+                    'approval_order', x.approval_order,
+                    'approval_status', x.approval_status,
+                    'approval_date', x.approval_date,
+                    'remark', x.remark,
+                    'event_type', x.event_type,
+                    'approver_leader', x.approver_leader,
+                    'event_meta', x.event_meta,
+                    'task_name', x.event_meta_task_name,
+                    'assigned_value', x.assigned_value,
+                    'created_at', x.created_at
+                )
+            )
+            FROM (
+                SELECT
+                    ae.approver_id,
+                    CONCAT(u2.firstname, ' ', u2.lastname) AS approver_name,
+                    ae.approval_order,
+                    ae.approval_status,
+                    DATE_FORMAT(ae.approve_date, '%Y-%m-%d %H:%i:%s') AS approval_date,
+                    ae.remark,
+                    ae.event_type,
+                    ae.approver_leader,
+                    ae.event_meta,
+                    ae.created_at,
+                    JSON_UNQUOTE(JSON_EXTRACT(ae.event_meta, '$.task_name')) AS event_meta_task_name, -- Extract task_name
+                    CASE 
+                         WHEN ae.event_type = 'task' THEN 
+                             (SELECT GROUP_CONCAT(COALESCE(u_task.firstname, t_team.team_name) SEPARATOR ', ')
+                              FROM t_ticket_assignment ta_task
+                              LEFT JOIN user u_task ON ta_task.assigned_id = u_task.user_id AND ta_task.assigned_type = 'user'
+                              LEFT JOIN m_team t_team ON ta_task.assigned_id = t_team.team_id AND ta_task.assigned_type = 'team'
+                              WHERE ta_task.ticket_id = ae.ticket_id)
+                         ELSE NULL
+                    END AS assigned_value
+
+                FROM t_ticket_event ae
+                LEFT JOIN user u2 ON u2.user_id = ae.approver_id
+                WHERE ae.ticket_id = t.ticket_id
+                ORDER BY ae.approval_order ASC, ae.event_id ASC -- Fixed ordering
+            ) AS x
+        ) AS list_approval
+
+
+        FROM t_ticket t
+        LEFT JOIN m_service s ON s.service_id = t.service_id
+        LEFT JOIN t_ticket_assignment tta ON t.ticket_id = tta.ticket_id
+
+        LEFT JOIN user u_as ON 
+            u_as.user_id = tta.assigned_id 
+            AND tta.assigned_type = 'user'
+
+        LEFT JOIN m_team tm ON 
+            tm.team_id = tta.assigned_id 
+            AND tta.assigned_type = 'team'
+
+        LEFT JOIN m_department md ON
+            md.department_id = tta.assigned_id
+            AND tta.assigned_type = 'department'
+
+        LEFT JOIN m_service_status ts ON ts.status_id = t.status_id
+
+        LEFT JOIN user u_cr ON u_cr.user_id = t.created_by
+        LEFT JOIN m_department dpt ON dpt.department_id = u_cr.department_id
+
+        WHERE t.ticket_id = ? 
+        GROUP BY t.ticket_id;
+      `;
+
+      const [rows] = await dbHots.promise().query(queryGetTicketDetail, [ticket_id]);
+
+      if (rows.length === 0) {
+        return res.status(404).send({ success: false, message: "Ticket not found" });
+      }
+
+      return res.status(200).send({
+        success: true,
+        data: rows[0]
+      });
+
+    } catch (e) {
+      log('detail error', e);
+      return res.status(500).json({ ok: false, error: e.message || e });
+    }
+  },
+
+  /* UPDATE DETAIL (Migrated from Legacy) */
+  async updateDetail(req, res) {
+    try {
+      const ticket_id = req.params.ticket_id;
+      const { detailFields } = req.body;
+
+      if (!ticket_id || !Array.isArray(detailFields)) {
+        return res.status(400).send({
+          success: false,
+          message: "ticket_id and detailFields[] are required"
+        });
+      }
+
+      const updatePromises = detailFields.map((field) => {
+        const { cstm_col = '', lbl_col = '', order_col } = field;
+        if (!order_col) return null;
+
+        return dbHots.promise().execute(
+          `
+          INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, order_col)
+          VALUES (?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE 
+              cstm_col = VALUES(cstm_col),
+              lbl_col = VALUES(lbl_col)
+          `,
+          [ticket_id, cstm_col, lbl_col, order_col]
+        );
+      }).filter(Boolean);
+
+      await Promise.all(updatePromises);
+
+      return res.status(200).send({
+        success: true,
+        message: "Ticket detail updated successfully"
+      });
+
+    } catch (e) {
+      log('updateDetail error', e);
+      return res.status(500).json({ ok: false, error: e.message || e });
     }
   },
 

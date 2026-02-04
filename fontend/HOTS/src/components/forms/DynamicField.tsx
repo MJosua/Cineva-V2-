@@ -11,6 +11,12 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 import { FormField } from "@/types/formTypes";
 import { SuggestionInsertInput } from "./SuggestionInsertInput";
 import { compareValues } from "@/utils/dependencyResolver";
@@ -29,6 +35,7 @@ interface DynamicFieldProps {
   error?: string;
   isSubmitting?: boolean;
   setIsSubmitting?: React.Dispatch<React.SetStateAction<boolean>>;
+  currentValue?: any;
 }
 
 export const DynamicField: React.FC<DynamicFieldProps> = ({
@@ -77,13 +84,15 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
     if (typeof onBlur === "function") onBlur(field.name);
   }, [field.name, onBlur]);
 
+  const fieldName = field.name || field.label?.toLowerCase()?.replace(/[^a-z0-9]/g, "_") || "unnamed_field";
+
   // 🧩 input renderer
   const renderField = () => {
     switch (field.type) {
       case "text":
         return (
           <Input
-            value={globalValues[field.name] ?? value ?? ""}
+            value={globalValues[fieldName] ?? value ?? ""}
             onChange={(e) => handleChange(e.target.value)}
             placeholder={field.placeholder}
             readOnly={field.readonly}
@@ -91,6 +100,48 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
             className={error ? "border-red-500" : ""}
             onBlur={handleBlur}
           />
+        );
+
+      case "date":
+        const dateVal = globalValues[fieldName] ?? value;
+        // Ensure we can handle string dates safely
+        const parsedDate = dateVal ? new Date(dateVal) : undefined;
+        const isValidDate = parsedDate && !isNaN(parsedDate.getTime());
+
+        return (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                disabled={field.readonly}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !dateVal && "text-muted-foreground",
+                  error ? "border-red-500" : ""
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {isValidDate ? (
+                  format(parsedDate!, "PPP")
+                ) : (
+                  <span>{field.placeholder || "Pick a date"}</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={isValidDate ? parsedDate : undefined}
+                onSelect={(date) => {
+                  const formatted = date ? format(date, "yyyy-MM-dd") : "";
+                  handleChange(formatted);
+                  // Explicitly trigger blur since Calendar doesn't capture focus loss the same way
+                  handleBlur();
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         );
 
       case "number":
@@ -112,7 +163,7 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
         return (
           <Input
             type="number"
-            value={globalValues[field.name] ?? value ?? ""}
+            value={globalValues[fieldName] ?? value ?? ""}
             onChange={handleNumberChange}
             onBlur={handleNumberBlur}
             required={field.required}
@@ -125,7 +176,7 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
       case "textarea":
         return (
           <Textarea
-            value={globalValues[field.name] ?? value ?? ""}
+            value={globalValues[fieldName] ?? value ?? ""}
             onChange={(e) => handleChange(e.target.value)}
             placeholder={field.placeholder}
             required={field.required}
@@ -137,7 +188,7 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
       case "select":
         return (
           <Select
-            value={globalValues[field.name]}
+            value={globalValues[fieldName]}
             required={field.required}
             onValueChange={(newVal) => {
               const found = resolvedOptions.find((opt) => compareValues(opt, newVal));
@@ -443,10 +494,10 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
   return (
     <div
       className={`space-y-2 ${field.columnSpan === 2
-          ? "col-span-2"
-          : field.columnSpan === 3
-            ? "col-span-3"
-            : "col-span-1"
+        ? "col-span-2"
+        : field.columnSpan === 3
+          ? "col-span-3"
+          : "col-span-1"
         }`}
     >
       <Label htmlFor={field.name} className="flex items-center gap-2">

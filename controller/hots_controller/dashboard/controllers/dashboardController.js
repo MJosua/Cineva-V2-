@@ -104,7 +104,7 @@ module.exports = {
                     s.status_name,
                     COUNT(*) as count
                 FROM t_ticket t
-                JOIN m_ticket_status s ON t.status_id = s.status_id
+                JOIN m_service_status s ON t.status_id = s.status_id
                 WHERE YEAR(t.creation_date) = YEAR(CURRENT_DATE)
                 AND MONTH(t.creation_date) = MONTH(CURRENT_DATE)
                 GROUP BY t.status_id, s.status_name
@@ -209,7 +209,7 @@ module.exports = {
 
             const [rows] = await dbHots.promise().query(`
             SELECT f.*, c.name AS category_name
-            FROM m_dashboard_function f
+            FROM m_dashboard_menu f
             LEFT JOIN m_dashboard_category c ON f.category_id = c.id
             WHERE f.is_active = 1
             ORDER BY c.order_index, f.order_index;
@@ -562,7 +562,7 @@ module.exports = {
                         ELSE 'hsl(38, 92%, 50%)'
                     END as color
                 FROM t_ticket t
-                JOIN m_ticket_status s ON t.status_id = s.status_id
+                JOIN m_service_status s ON t.status_id = s.status_id
                 WHERE t.service_id = ? AND t.creation_date >= ?
                 GROUP BY t.status_id, s.status_name
             `, [service_id, startDate]);
@@ -697,7 +697,7 @@ module.exports = {
                     CONCAT(u.firstname, ' ', u.lastname) as requester_name,
                     t.last_update as completed_at
                 FROM t_ticket t
-                JOIN m_ticket_status s ON t.status_id = s.status_id
+                JOIN m_service_status s ON t.status_id = s.status_id
                 LEFT JOIN user u ON t.created_by = u.user_id
                 WHERE t.service_id = ? AND t.creation_date >= ?
                 ORDER BY t.creation_date DESC
@@ -740,7 +740,7 @@ module.exports = {
             const [panels] = await dbHots.promise().query(`
                 SELECT 
                     p.id,
-                    p.dashboard_function_id,
+                    p.dashboard_menu_id,
                     p.panel_type,
                     p.title,
                     p.component_key,
@@ -750,8 +750,8 @@ module.exports = {
                     p.default_collapsed,
                     p.config,
                     p.is_active
-                FROM m_dashboard_panel p
-                WHERE p.dashboard_function_id = ? AND p.is_active = 1
+                FROM m_dashboard_widget p
+                WHERE p.dashboard_menu_id = ? AND p.is_active = 1
                 ORDER BY p.order_index ASC
             `, [dashboard_id]);
 

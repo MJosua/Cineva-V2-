@@ -34,7 +34,6 @@ export const store = configureStore({
 
     srf_todaysweek: srf_todaysweekReducer,
     // srf_po: srf_poSlideRecuder,
-    srf_todaysweek: srf_todaysweekReducer,
 
     dashboard: dashboardReducer,
 

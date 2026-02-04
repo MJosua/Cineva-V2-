@@ -90,6 +90,12 @@ function ContainerTracking({
     const [selectedLocation2, setSelectedLocation2] = useState()
     const [updateat, setUpdateat] = useState("")
     const [loading, setLoading] = useState(false)
+    const [errorState, setErrorState] = useState({
+        hasError: false,
+        errorType: null, // 'not_found_local', 'not_found_searates', 'api_error', 'network_error'
+        message: '',
+        searchedNumber: ''
+    });
 
     // ==========================================================
     // ✅ PATCHED UNIFIED FETCH LOGIC STARTS HERE
@@ -105,17 +111,18 @@ function ContainerTracking({
 
             if (!src) {
                 console.warn("⚠️ No valid data structure found in response");
-                return null;
+                // Throw with context so handleDataFetch can set proper error
+                const notFoundError = new Error('No valid data structure found');
+                notFoundError.type = 'not_found';
+                notFoundError.serverMessage = res.data?.message || '';
+                throw notFoundError;
             }
 
             if (res.data?.data?.data || res.data?.data) {
                 console.log("searatesData", searatesData)
-            }else{
+            } else {
                 console.log("containerData", containerData)
-
             }
-
-            
 
             const normalized = {
                 metadata: src.metadata || {},
@@ -133,12 +140,28 @@ function ContainerTracking({
             return normalized;
         } catch (err) {
             console.error("❌ unifiedFetchSeaRatesData error:", err);
+            // Enrich error with context
+            if (!err.type) {
+                if (err.response?.status === 404) {
+                    err.type = 'not_found';
+                    err.serverMessage = err.response?.data?.message || '';
+                } else if (err.response?.status >= 500) {
+                    err.type = 'server_error';
+                } else if (!err.response) {
+                    err.type = 'network_error';
+                } else {
+                    err.type = 'api_error';
+                }
+            }
             throw err;
         }
     };
 
     const handleDataFetch = async ({ number, so_id, refresh = false }) => {
         setLoading(true);
+        // Clear previous error state
+        setErrorState({ hasError: false, errorType: null, message: '', searchedNumber: '' });
+
         try {
             setContainerName("");
             setoOrderSOIDState("");
@@ -156,10 +179,6 @@ function ContainerTracking({
             setDataContainer([]);
 
             const data = await unifiedFetchSeaRatesData({ number, so_id, refresh });
-            if (!data) {
-                setLoading(false);
-                return;
-            }
 
             setDataContainer(data.containers || []);
             setContainerName(data.containers?.[0]?.container_number || data.metadata?.number || "");
@@ -210,6 +229,37 @@ function ContainerTracking({
             setIsVisible(false);
         } catch (err) {
             console.error("❌ handleDataFetch error:", err);
+
+            // Determine error type and set appropriate message
+            let errorType = 'api_error';
+            let message = 'An error occurred while fetching tracking data.';
+            const serverMsg = err.serverMessage || err.response?.data?.message || '';
+
+            if (err.type === 'not_found') {
+                // Check if it's a SeaRates issue or local DB issue
+                if (serverMsg.toLowerCase().includes('searates') ||
+                    serverMsg.toLowerCase().includes('subscription') ||
+                    serverMsg.toLowerCase().includes('unavailable')) {
+                    errorType = 'not_found_searates';
+                    message = 'SeaRates tracking service is currently unavailable. This may be due to subscription limits or service maintenance.';
+                } else {
+                    errorType = 'not_found_local';
+                    message = `Tracking number "${number}" was not found in our database.`;
+                }
+            } else if (err.type === 'network_error' || !err.response) {
+                errorType = 'network_error';
+                message = 'Could not connect to the server. Please check your internet connection.';
+            } else if (err.type === 'server_error' || err.response?.status >= 500) {
+                errorType = 'server_error';
+                message = 'Something went wrong on the server. Please try again later.';
+            }
+
+            setErrorState({
+                hasError: true,
+                errorType,
+                message,
+                searchedNumber: number
+            });
             setLoading(false);
         }
     };
@@ -725,6 +775,62 @@ function ContainerTracking({
                                 </div>
                             </div>
                         }
+
+                        {/* Error State Card - shows when error occurs */}
+                        {!loading && !containerNameState && errorState.hasError && (
+                            <div className="col-12">
+                                <div className="col-md-5 col-9 ps-5">
+                                    <div className="card shadow bg-white ms-0 px-2 py-2" style={{ zIndex: "999", fontSize: "12px" }}>
+                                        <div className="card w-100 shadow p-3 bg-white rounded" style={{ maxWidth: "600px", maxHeight: "85vh", margin: "auto" }}>
+                                            <Box borderWidth="1px" borderRadius="md" px={4} py={4} bg="white" boxShadow="md">
+                                                <Flex direction="column" align="center" gap={3}>
+                                                    {/* Error Icon */}
+                                                    <Box fontSize="3xl">
+                                                        {errorState.errorType === 'not_found_local' && '🔍'}
+                                                        {errorState.errorType === 'not_found_searates' && '⚠️'}
+                                                        {errorState.errorType === 'server_error' && '❌'}
+                                                        {errorState.errorType === 'network_error' && '🌐'}
+                                                        {errorState.errorType === 'api_error' && '⚠️'}
+                                                    </Box>
+
+                                                    {/* Error Title */}
+                                                    <Text fontSize="md" fontWeight="bold" textAlign="center">
+                                                        {errorState.errorType === 'not_found_local' && 'Tracking Not Found'}
+                                                        {errorState.errorType === 'not_found_searates' && 'External Tracking Unavailable'}
+                                                        {errorState.errorType === 'server_error' && 'Server Error'}
+                                                        {errorState.errorType === 'network_error' && 'Connection Error'}
+                                                        {errorState.errorType === 'api_error' && 'Error'}
+                                                    </Text>
+
+                                                    {/* Error Message */}
+                                                    <Text fontSize="sm" color="gray.600" textAlign="center">
+                                                        {errorState.message}
+                                                    </Text>
+
+                                                    {/* Searched Number Badge */}
+                                                    {errorState.searchedNumber && (
+                                                        <Badge colorScheme="gray" fontSize="xs">
+                                                            Searched: {errorState.searchedNumber}
+                                                        </Badge>
+                                                    )}
+
+                                                    {/* Retry Button */}
+                                                    <Button
+                                                        size="sm"
+                                                        colorScheme="blue"
+                                                        leftIcon={<BiRefresh />}
+                                                        onClick={(e) => handleRefresh(e)}
+                                                        mt={2}
+                                                    >
+                                                        Try Again
+                                                    </Button>
+                                                </Flex>
+                                            </Box>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {containerNameState &&
                             <div className="col-12 ">

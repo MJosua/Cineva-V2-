@@ -4,7 +4,7 @@ import { ServiceDataConfiguration } from '@/types/widgetDataTypes';
 export const serviceDataConfigurations: ServiceDataConfiguration[] = [
   // Meeting Room Service Configuration
   {
-    serviceId: 10, // Meeting room booking service
+    serviceId: 13, // Meeting room booking service (User specified 13)
     dataConfigs: {
       gantt_room_schedule_static: {
         dataSources: [
@@ -13,16 +13,16 @@ export const serviceDataConfigurations: ServiceDataConfiguration[] = [
             endpoint: '/hots_settings/get/meetingroom_static',
             method: 'GET',
             params: {
-              date: '{ticketData.detail_rows[1].cstm_col}',
-              room: '{ticketData.detail_rows[0].cstm_col}',
+              date: '{ticketData.detail_rows[cstm_col=date].value}',
+              room: '{ticketData.detail_rows[cstm_col=room].value}',
             },
             transform: 'meetingRoomBookings',
-            cacheKey: 'meeting_room_{ticketData.detail_rows[0].cstm_col}_{ticketData.detail_rows[1].cstm_col}',
-            dependencies: ['ticketData.detail_rows[0].cstm_col', 'ticketData.detail_rows[1].cstm_col'],
-            condition: '{ticketData.detail_rows[0].cstm_col} && {ticketData.detail_rows[1].cstm_col}',
+            cacheKey: 'meeting_room_static_{ticketData.ticket_id}',
+            dependencies: [], // Depends on full ticket load
+            condition: '{ticketData.ticket_id}',
           },
         ],
-        cacheTime: 300000, // 5 minutes
+        cacheTime: 300000,
         refetchOnMount: false,
         enabled: true,
       },
@@ -30,25 +30,25 @@ export const serviceDataConfigurations: ServiceDataConfiguration[] = [
         dataSources: [
           {
             id: 'meetingRoomBookings',
-            endpoint: '/hots_settings/get/meetingroom_schedule',
+            endpoint: '/hots_settings/get/meetingroom',
             method: 'GET',
             params: {
-              date: '{formData.booking_date}',
-              room: '{formData.room_id}',
+              date: '{formData.date}', // Correct field name from form_json
+              room: '{formData.room}', // Correct field name from form_json
             },
             transform: 'meetingRoomBookings',
-            cacheKey: 'meeting_room_form_{formData.room_id}_{formData.booking_date}',
-            dependencies: ['formData.room_id', 'formData.booking_date'],
-            condition: '{formData.room_id}',
+            cacheKey: 'meeting_room_form_{formData.room}_{formData.date}',
+            dependencies: ['formData.room', 'formData.date'],
+            condition: '{formData.room}',
           },
         ],
-        cacheTime: 180000, // 3 minutes for form data (shorter cache)
+        cacheTime: 180000,
         refetchOnMount: true,
         enabled: true,
       },
     },
   },
-  
+
   // IT Asset Request Service Configuration
   {
     serviceId: 1, // PC/Notebook request service
@@ -93,7 +93,7 @@ export const serviceDataConfigurations: ServiceDataConfiguration[] = [
       },
     },
   },
-  
+
   // IT Support Service Configuration
   {
     serviceId: 7, // IT Support service
@@ -120,7 +120,7 @@ export const serviceDataConfigurations: ServiceDataConfiguration[] = [
       },
     },
   },
-  
+
   // Sample Request Form Service Configuration
   {
     serviceId: 8, // Sample request form service

@@ -13,10 +13,12 @@ const yellowTerminal = '\x1b[33m';
 
 const puppeteer = require('puppeteer');
 const Mustache = require('mustache');
+const QRCode = require('qrcode');
 // const { PORT, API_URL } = require("../../index");
 
 const { PORT, API_URL: ENV_API_URL } = require("../../../../config/env");
 const profileController = require('../../profile/controllers/profileController');
+const encrypts = require('../../../../config/encrypts');
 
 // Base URL for static files (signatures, images, etc.)
 // Priority: BE_URL_HOTS (HOTS dev) > BE_URL (production) > fallback
@@ -27,10 +29,34 @@ const API_URL = process.env.BE_URL_HOTS || process.env.BE_URL || 'https://backen
  * Base Path: /hots_settings/custom_functions/
  */
 
+
+
+// Helper: Convert local image file to Base64 Data URL
+const imageToDataURL = (filePath) => {
+    try {
+        // Remove leading slash if present
+        const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
+        // Resolve absolute path (assuming running from root)
+        const absolutePath = path.resolve(cleanPath);
+
+        if (!fs.existsSync(absolutePath)) {
+            console.warn(`[imageToDataURL] File not found: ${absolutePath}`);
+            return null;
+        }
+        const fileBuffer = fs.readFileSync(absolutePath);
+        const ext = path.extname(absolutePath).toLowerCase().replace('.', '');
+        const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png';
+        return `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
+    } catch (err) {
+        console.error(`[imageToDataURL] Error reading file ${filePath}:`, err);
+        return null;
+    }
+};
+
 module.exports = {
     /**
-     * GET /hots_settings/custom_functions/list
-     * Get all custom functions
+     * GET /hots_settings/custom_functions
+     * Get all trigger functions (migrated from m_custom_functions to m_service_trigger_function)
      */
     getCustomFunctions: async (req, res) => {
         let date = new Date();
@@ -39,20 +65,31 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-                SELECT cf.*, COUNT(scf.id) as usage_count
-                FROM hots.m_custom_functions cf
-                LEFT JOIN hots.t_service_custom_functions scf ON cf.id = scf.function_id
-                WHERE cf.is_deleted = 0
-                GROUP BY cf.id
-                ORDER BY cf.created_date DESC
+                SELECT 
+                    tf.function_id as id,
+                    tf.function_key,
+                    tf.function_name as name,
+                    tf.function_type as type,
+                    tf.handler_path as handler,
+                    tf.handler_params as config,
+                    tf.description,
+                    tf.category,
+                    tf.is_active,
+                    tf.created_at as created_date,
+                    COUNT(st.trigger_id) as usage_count
+                FROM hots.m_service_trigger_function tf
+                LEFT JOIN hots.m_service_triggers st ON JSON_EXTRACT(st.trigger_config, '$.actions[0].function_key') = tf.function_key
+                WHERE tf.is_active = 1
+                GROUP BY tf.function_id
+                ORDER BY tf.created_at DESC
             `);
 
-            console.log(`${timestamp}Trying to get all custom functions success from ${user_id}`);
+            console.log(`${timestamp}Trying to get all trigger functions success from ${user_id}`);
 
             res.status(200).json({
                 data: result,
                 success: true,
-                message: "Get custom functions success"
+                message: "Get trigger functions success"
             });
         } catch (err) {
             res.status(500).json({
@@ -64,7 +101,7 @@ module.exports = {
 
     /**
      * GET /hots_settings/custom_functions/service/:serviceId
-     * Get custom functions for a specific service
+     * Get triggers for a specific service (migrated from t_service_custom_functions to m_service_triggers)
      */
     getServiceCustomFunctions: async (req, res) => {
         let date = new Date();
@@ -74,19 +111,31 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-                SELECT scf.*, cf.name, cf.type, cf.handler, cf.config as function_config
-                FROM hots.t_service_custom_functions scf
-                JOIN hots.m_custom_functions cf ON scf.function_id = cf.id
-                WHERE scf.service_id = ? AND scf.is_active = 1 AND cf.is_active = 1
-                ORDER BY scf.execution_order ASC
+                SELECT 
+                    st.trigger_id as id,
+                    st.service_id,
+                    st.trigger_name,
+                    st.trigger_type,
+                    st.trigger_config,
+                    st.active as is_active,
+                    st.created_at as created_date,
+                    tf.function_name as name,
+                    tf.function_type as type,
+                    tf.handler_path as handler,
+                    tf.handler_params as function_config
+                FROM hots.m_service_triggers st
+                LEFT JOIN hots.m_service_trigger_function tf 
+                    ON JSON_UNQUOTE(JSON_EXTRACT(st.trigger_config, '$.actions[0].function_key')) = tf.function_key
+                WHERE st.service_id = ? AND st.active = 1
+                ORDER BY st.trigger_id ASC
             `, [serviceId]);
 
-            console.log(`${timestamp}Trying to get service custom functions success from ${user_id}`);
+            console.log(`${timestamp}Trying to get service triggers success from ${user_id}`);
 
             res.status(200).json({
                 data: result,
                 success: true,
-                message: "Get service custom functions success"
+                message: "Get service triggers success"
             });
         } catch (err) {
             res.status(500).json({
@@ -196,26 +245,37 @@ module.exports = {
 
     /**
      * POST /hots_settings/custom_functions/assign_service
-     * Assign custom function to a service
+     * Assign trigger function to a service (migrated to m_service_triggers)
      */
     assignFunctionToService: async (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
         let user_id = req.dataToken.user_id;
-        const { service_id, function_id, trigger_event, execution_order, config } = req.body;
+        const { service_id, function_key, trigger_event, config } = req.body;
 
         try {
-            await dbHots.promise().query(`
-                INSERT INTO hots.t_service_custom_functions 
-                (service_id, function_id, trigger_event, execution_order, config, is_active, created_by, created_date)
-                VALUES (?, ?, ?, ?, ?, 1, ?, NOW())
-            `, [service_id, function_id, trigger_event, execution_order, JSON.stringify(config), user_id]);
+            // Build trigger_config JSON
+            const triggerConfig = {
+                actions: [
+                    {
+                        action_type: 'execute_function',
+                        function_key: function_key,
+                        params: config || {}
+                    }
+                ]
+            };
 
-            console.log(`${timestamp}Trying to assign function to service success from ${user_id}`);
+            await dbHots.promise().query(`
+                INSERT INTO hots.m_service_triggers 
+                (service_id, trigger_name, trigger_type, trigger_config, active, created_by, created_at)
+                VALUES (?, ?, 'action', ?, 1, ?, NOW())
+            `, [service_id, trigger_event, JSON.stringify(triggerConfig), user_id]);
+
+            console.log(`${timestamp}Trying to assign trigger to service success from ${user_id}`);
 
             res.status(200).json({
                 success: true,
-                message: "Assign function to service success"
+                message: "Assign trigger to service success"
             });
         } catch (err) {
             res.status(500).json({
@@ -289,18 +349,18 @@ module.exports = {
                 console.log('Function execution error: ' + execError.message);
             }
 
-            // Log function execution
+            // Log function execution - using new m_service_trigger_log
             await dbHots.promise().query(`
-            INSERT INTO t_custom_function_logs 
-            (ticket_id, service_id, function_name, trigger_event, status, result_data, error_message, execution_time, created_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+            INSERT INTO m_service_trigger_log 
+            (ticket_id, service_id, function_key, trigger_name, action_type, status, result_summary, error_message, created_by, created_at)
+            VALUES (?, ?, ?, ?, 'execute_function', ?, ?, ?, ?, NOW())
           `, [
                 ticket_id,
-                func.service_id || 0,
+                func.service_id || null,
                 func.name,
-                isManual ? 'manual' : 'on_created',
+                isManual ? 'manual' : 'on_create',
                 status,
-                JSON.stringify(result),
+                JSON.stringify(result).substring(0, 500),
                 errorMessage,
                 userId
             ]);
@@ -402,9 +462,9 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-                SELECT * FROM hots.t_custom_function_logs 
+                SELECT * FROM hots.m_service_trigger_log 
                 WHERE ticket_id = ? 
-                ORDER BY execution_time DESC
+                ORDER BY created_at DESC
             `, [ticketId]);
 
             console.log(`${timestamp}Trying to get function logs success from ${user_id}`);
@@ -434,9 +494,16 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-                SELECT * FROM hots.t_generated_documents 
-                WHERE ticket_id = ? 
-                ORDER BY generated_date DESC
+                SELECT 
+                    upload_id as id,
+                    entity_id as ticket_id,
+                    filename as file_name,
+                    file_path,
+                    created_at as generated_date,
+                    'srf_document' as template_used
+                FROM hots.t_file_upload 
+                WHERE entity_id = ? AND entity_type = 'generated_document'
+                ORDER BY created_at DESC
             `, [ticketId]);
 
             console.log(`${timestamp}Trying to get generated documents success from ${user_id}`);
@@ -505,6 +572,8 @@ module.exports = {
                 SELECT COUNT(*) as cnt FROM hots.t_ticket_work_data 
                 WHERE field_name = 'srf_document_number'
                 AND field_value LIKE ?
+                ORDER BY created_at DESC
+    LIMIT 1
             `, [`%/SRF/${factorySname}/${category}/${romanMonth}/${year}`]);
 
             const nextSeq = (countResult[0]?.cnt || 0) + 1;
@@ -690,6 +759,12 @@ module.exports = {
                 );
             }
 
+
+            await connection.query(
+                `DELETE FROM hots.t_ticket_work_data WHERE ticket_id = ? AND field_name = 'srf_document_number'`,
+                [ticket_id]
+            );
+
             // Also update t_ticket_work_data for backward compatibility/display widgets
             await connection.query(
                 `INSERT INTO hots.t_ticket_work_data 
@@ -722,13 +797,15 @@ module.exports = {
 
     /**
      * POST /hots_customfunction/srf/generate
-     * Generate an SRF document (PDF)
+     * Generate an SRF document (PDF) - ASYNC with notification
      * Body: { ticket_id }
+     * Returns immediately, document generation runs in background
      */
     generateSRFDocument: async (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
         let user_id = req.dataToken.user_id;
+        const { createNotification, updateNotification } = require('../../notification/notificationController');
 
         try {
             const { ticket_id } = req.body;
@@ -740,73 +817,167 @@ module.exports = {
                 });
             }
 
-            // Get ticket data WITH detail rows (required for srf_document_generator)
-            const [ticketRows] = await dbHots.promise().query(`
-                SELECT t.*, td.lbl_col, td.cstm_col, td.value, td.order_col, 
-                       td.field_type, s.service_name,
-                       CONCAT(u.firstname, ' ', u.lastname) as requester_name
-                FROM hots.t_ticket t 
-                LEFT JOIN hots.t_ticket_detail td ON t.ticket_id = td.ticket_id
-                LEFT JOIN hots.m_service s ON t.service_id = s.service_id
-                LEFT JOIN hots.user u ON t.created_by = u.user_id
-                WHERE t.ticket_id = ?
-            `, [ticket_id]);
-
-            if (ticketRows.length === 0) {
-                return res.status(404).json({
-                    success: false,
-                    message: "Ticket not found"
-                });
-            }
-
-            // Generate the document using existing srf_document_generator
-            const config = { documentType: 'srf_document', service_id: 6 };
-            // Pass requester_name from query result
-            const params = {
-                generated_by: user_id,
-                requester_name: ticketRows[0]?.requester_name || ''
-            };
-
-            // Use module.exports since srf_document_generator is in the same file
-            // Pass the full array (with detail rows), NOT just the first row
-            const documentPath = await module.exports.srf_document_generator(config, ticketRows, params);
-
-            if (!documentPath) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Failed to generate document - no path returned"
-                });
-            }
-
-            // Save generated document info
-            await dbHots.promise().query(`
-                INSERT INTO hots.t_generated_documents 
-                (ticket_id, document_type, file_path, file_name, generated_date, template_used)
-                VALUES (?, ?, ?, ?, NOW(), ?)
-            `, [
-                ticket_id,
-                'srf_document',
-                documentPath,
-                require('path').basename(documentPath),
-                'srf_document'
-            ]);
-
-            console.log(`${timestamp}SRF document generated for ticket ${ticket_id} by user ${user_id}: ${documentPath}`);
-
-            res.status(200).json({
+            // 🆕 RESPOND IMMEDIATELY - Don't wait for PDF generation
+            res.status(202).json({
                 success: true,
-                message: "SRF document generated successfully",
-                document: {
-                    file_path: documentPath,
-                    file_name: require('path').basename(documentPath)
+                message: "Document generation started. You will be notified when complete.",
+                status: 'processing'
+            });
+
+            // 🆕 Create "processing" notification
+            let notificationId = null;
+            try {
+                notificationId = await createNotification({
+                    user_id: user_id,
+                    type: 'doc_generation_started',
+                    title: '📄 Generating Document...',
+                    message: 'SRF document is being generated',
+                    data_payload: {
+                        ticket_id,
+                        status: 'processing',
+                        url: `/ticket/${ticket_id}`
+                    }
+                });
+
+                // 🆕 Broadcast SSE for doc_generation_started so ALL users viewing this ticket see loading card
+                if (global.sseManager) {
+                    global.sseManager.broadcast('doc_generation_started', {
+                        ticket_id,
+                        status: 'processing',
+                        message: `Generating SRF document for ticket ${ticket_id}...`
+                    });
+                    console.log(`📄 [generateSRFDocument] Broadcasted doc_generation_started for ticket ${ticket_id}`);
                 }
-            });
+            } catch (notifErr) {
+                console.error('Failed to create processing notification:', notifErr);
+            }
+
+            // 🆕 ASYNC: Generate document in background
+            (async () => {
+                try {
+                    // Get ticket data WITH detail rows (required for srf_document_generator)
+                    const [ticketRows] = await dbHots.promise().query(`
+                        SELECT t.*, td.lbl_col, td.cstm_col, td.value, td.order_col, 
+                               td.field_type, s.service_name,
+                               CONCAT(u.firstname, ' ', u.lastname) as requester_name
+                        FROM hots.t_ticket t 
+                        LEFT JOIN hots.t_ticket_detail td ON t.ticket_id = td.ticket_id
+                        LEFT JOIN hots.m_service s ON t.service_id = s.service_id
+                        LEFT JOIN hots.user u ON t.created_by = u.user_id
+                        WHERE t.ticket_id = ?
+                    `, [ticket_id]);
+
+                    if (ticketRows.length === 0) {
+                        throw new Error("Ticket not found");
+                    }
+
+                    // Generate the document using existing srf_document_generator
+                    const config = { documentType: 'srf_document', service_id: 6 };
+                    const params = {
+                        generated_by: user_id,
+                        requester_name: ticketRows[0]?.requester_name || ''
+                    };
+
+                    const documentPath = await module.exports.srf_document_generator(config, ticketRows, params);
+
+                    if (!documentPath) {
+                        throw new Error("Failed to generate document - no path returned");
+                    }
+
+                    // Save generated document info (standardized format)
+                    await dbHots.promise().query(`
+                        INSERT INTO hots.t_file_upload 
+                        (entity_type, entity_id, ticket_id, field_name, file_path, filename, original_name, mime_type, upload_date, is_active, uploaded_by, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 1, ?, NOW(), NOW())
+                    `, [
+                        'generated_document',
+                        ticket_id,
+                        ticket_id, // ticket_id column
+                        'srf_document', // field_name
+                        documentPath,
+                        require('path').basename(documentPath),
+                        require('path').basename(documentPath),
+                        'application/pdf',
+                        user_id
+                    ]);
+
+                    console.log(`${timestamp}SRF document generated for ticket ${ticket_id} by user ${user_id}: ${documentPath}`);
+
+                    // 🆕 Update notification to success
+                    if (notificationId) {
+                        try {
+                            await updateNotification(notificationId, {
+                                type: 'doc_generation_complete',
+                                title: '✅ Document Ready',
+                                message: 'SRF document has been generated successfully',
+                                data_payload: {
+                                    ticket_id,
+                                    status: 'success',
+                                    file_path: documentPath,
+                                    url: `/ticket/${ticket_id}`
+                                }
+                            });
+                        } catch (updateErr) {
+                            console.error('Failed to update notification:', updateErr);
+                        }
+                    }
+
+                    // 🆕 Broadcast SSE to notify ALL users viewing this ticket
+                    if (global.sseManager) {
+                        global.sseManager.broadcast('doc_generation_complete', {
+                            ticket_id,
+                            document_path: documentPath,
+                            file_name: require('path').basename(documentPath),
+                            status: 'success',
+                            message: 'SRF document generated successfully'
+                        });
+                        console.log(`📄 [generateSRFDocument] Broadcasted doc_generation_complete for ticket ${ticket_id}`);
+                    }
+
+                } catch (err) {
+                    console.error(`${timestamp}Error generating SRF document (async):`, err);
+
+                    // 🆕 Update notification to error
+                    if (notificationId) {
+                        try {
+                            await updateNotification(notificationId, {
+                                type: 'doc_generation_complete',
+                                title: '❌ Document Error',
+                                message: `Failed to generate document: ${err.message}`,
+                                data_payload: {
+                                    ticket_id,
+                                    status: 'error',
+                                    error: err.message,
+                                    url: `/ticket/${ticket_id}`
+                                }
+                            });
+                        } catch (updateErr) {
+                            console.error('Failed to update error notification:', updateErr);
+                        }
+                    }
+
+                    // 🆕 Broadcast SSE error to notify ALL users viewing this ticket
+                    if (global.sseManager) {
+                        global.sseManager.broadcast('doc_generation_complete', {
+                            ticket_id,
+                            status: 'error',
+                            error: err.message,
+                            message: `Document generation failed: ${err.message}`
+                        });
+                        console.log(`📄 [generateSRFDocument] Broadcasted doc_generation_complete (error) for ticket ${ticket_id}`);
+                    }
+                }
+            })();
+
         } catch (err) {
-            console.error(`${timestamp}Error generating SRF document:`, err);
-            res.status(500).json({
-                success: false,
-                message: err.message
-            });
+            console.error(`${timestamp}Error starting SRF document generation:`, err);
+            // This only catches errors before the async block starts
+            if (!res.headersSent) {
+                res.status(500).json({
+                    success: false,
+                    message: err.message
+                });
+            }
         }
     },
 
@@ -840,7 +1011,7 @@ module.exports = {
             });
         }
     },
-    // Update service function assignment
+    // Update service trigger assignment (migrated to m_service_triggers)
     updateServiceFunctionAssignment: async (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
@@ -848,20 +1019,31 @@ module.exports = {
 
         try {
             const { id } = req.params;
-            const { service_id, function_id, trigger_event, execution_order, config, is_active } = req.body;
+            const { service_id, function_key, trigger_event, config, is_active } = req.body;
+
+            // Build trigger_config JSON
+            const triggerConfig = {
+                actions: [
+                    {
+                        action_type: 'execute_function',
+                        function_key: function_key,
+                        params: config || {}
+                    }
+                ]
+            };
 
             const [result] = await dbHots.promise().query(`
-            UPDATE t_service_custom_functions 
-            SET service_id = ?, function_id = ?, trigger_event = ?, execution_order = ?, 
-                config = ?, is_active = ?, updated_date = NOW()
-            WHERE id = ?
-        `, [service_id, function_id, trigger_event, execution_order, JSON.stringify(config), is_active, id]);
+            UPDATE m_service_triggers 
+            SET service_id = ?, trigger_name = ?, trigger_config = ?, 
+                active = ?, updated_at = NOW()
+            WHERE trigger_id = ?
+        `, [service_id, trigger_event, JSON.stringify(triggerConfig), is_active ? 1 : 0, id]);
 
-            console.log(`Service function assignment updated successfully by ${user_id} at ${timestamp}`);
+            console.log(`Service trigger updated successfully by ${user_id} at ${timestamp}`);
 
             res.status(200).json({
                 success: true,
-                message: "Service function assignment updated successfully"
+                message: "Service trigger updated successfully"
             });
         } catch (err) {
             res.status(500).json({
@@ -871,7 +1053,7 @@ module.exports = {
         }
     },
 
-    // Remove service function assignment
+    // Remove service trigger (migrated to m_service_triggers)
     removeServiceFunctionAssignment: async (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
@@ -881,16 +1063,16 @@ module.exports = {
             const { id } = req.params;
 
             const [result] = await dbHots.promise().query(`
-            UPDATE t_service_custom_functions 
-            SET is_active = 0, finished_date = NOW()
-            WHERE id = ?
+            UPDATE m_service_triggers 
+            SET active = 0, updated_at = NOW()
+            WHERE trigger_id = ?
         `, [id]);
 
-            console.log(`Service function assignment removed successfully by ${user_id} at ${timestamp}`);
+            console.log(`Service trigger deactivated successfully by ${user_id} at ${timestamp}`);
 
             res.status(200).json({
                 success: true,
-                message: "Service function assignment removed successfully"
+                message: "Service trigger deactivated successfully"
             });
         } catch (err) {
             res.status(500).json({
@@ -940,9 +1122,14 @@ module.exports = {
             const { documentId } = req.params;
 
             const [documents] = await dbHots.promise().query(`
-            SELECT * FROM t_generated_documents 
-            WHERE id = ?
-        `, [documentId]);
+
+            SELECT 
+                upload_id as id,
+                filename as file_name,
+                file_path
+            FROM hots.t_file_upload 
+            WHERE upload_id = ?
+                `, [documentId]);
 
             if (documents.length === 0) {
                 return res.status(404).json({
@@ -981,10 +1168,10 @@ module.exports = {
             const { template_name, template_type, template_content, variables } = req.body;
 
             const [result] = await dbHots.promise().query(`
-            INSERT INTO m_function_templates 
-            (template_name, template_type, template_content, variables, is_active, created_by, created_date)
-            VALUES (?, ?, ?, ?, 1, ?, NOW())
-        `, [template_name, template_type, template_content, JSON.stringify(variables), user_id]);
+            INSERT INTO m_function_templates
+                (template_name, template_type, template_content, variables, is_active, created_by, created_date)
+            VALUES(?, ?, ?, ?, 1, ?, NOW())
+                    `, [template_name, template_type, template_content, JSON.stringify(variables), user_id]);
 
             console.log(`Function template created successfully by ${user_id} at ${timestamp}`);
 
@@ -1013,10 +1200,10 @@ module.exports = {
 
             const [result] = await dbHots.promise().query(`
             UPDATE m_function_templates 
-            SET template_name = ?, template_type = ?, template_content = ?, 
+            SET template_name = ?, template_type = ?, template_content = ?,
                 variables = ?, is_active = ?, updated_date = NOW()
             WHERE id = ?
-        `, [template_name, template_type, template_content, JSON.stringify(variables), is_active, id]);
+                `, [template_name, template_type, template_content, JSON.stringify(variables), is_active, id]);
 
             console.log(`Function template updated successfully by ${user_id} at ${timestamp}`);
 
@@ -1045,7 +1232,7 @@ module.exports = {
             UPDATE m_function_templates 
             SET is_active = 0, finished_date = NOW()
             WHERE id = ?
-        `, [id]);
+                `, [id]);
 
             console.log(`Function template deleted successfully by ${user_id} at ${timestamp}`);
 
@@ -1160,7 +1347,7 @@ module.exports = {
                 const query = `
                         SELECT
                             u.email AS team_leader_email,
-                            CONCAT(u.firstname, ' ', u.lastname) AS team_leader_name
+                CONCAT(u.firstname, ' ', u.lastname) AS team_leader_name
                         FROM
                             m_team_member mtm
                         JOIN user u ON mtm.user_id = u.user_id
@@ -1168,7 +1355,7 @@ module.exports = {
                             mtm.team_leader = "1"
                             AND mtm.team_id = ${teamId}
                         LIMIT 1
-                    `;
+                `;
                 const result = await dbQueryHots(query);
                 return result[0] || { team_leader_name: 'Unknown', team_leader_email: '-' };
             } catch (error) {
@@ -1182,12 +1369,12 @@ module.exports = {
                 const query = `
                                   select
                                         pic_name,
-                                        flag
+                flag
                                     from
                                         iod.map_factory_pic
                                     where
                                         plant_id = ?
-                                        and 
+                    and 
                                                 end_date is null
                                     order by
                                         flag
@@ -1208,7 +1395,7 @@ module.exports = {
                     'SELECT factory_name, factory_sname FROM iod.mst_factory WHERE factory_id = ?',
                     [factoryId]
                 );
-                console.log(`📍 [getFactoryByFactoryId] factory_id=${factoryId}, factory_sname=${result[0]?.factory_sname}`);
+                console.log(`📍[getFactoryByFactoryId] factory_id = ${factoryId}, factory_sname = ${result[0]?.factory_sname}`);
                 // Return shortname for SRF number format
                 return result[0]?.factory_sname || result[0]?.factory_name || '';
             } catch (error) {
@@ -1226,7 +1413,7 @@ module.exports = {
                      ORDER BY created_at DESC LIMIT 1`,
                     [ticketId]
                 );
-                console.log(`📍 [getFactoryIdFromWorkData] ticket=${ticketId}, factory_id=${result[0]?.field_value}`);
+                console.log(`📍[getFactoryIdFromWorkData] ticket = ${ticketId}, factory_id = ${result[0]?.field_value}`);
                 return result[0]?.field_value || null;
             } catch (error) {
                 console.error('Error fetching factory_id from work_data:', error);
@@ -1261,42 +1448,47 @@ module.exports = {
                 const workflowDef = typeof defRaw === 'string' ? JSON.parse(defRaw) : defRaw;
                 const steps = workflowDef.steps || [];
 
-                // 3. Get approvals from t_ticket_event
+                // 3. Get approvals from t_ticket_event (only leaders for document signatures)
                 const [events] = await dbHots.promise().query(`
-                    SELECT 
+                    SELECT
                         e.approval_order,
                         e.approve_date,
                         e.approver_id,
+                        e.approver_leader,
                         e.remark,
                         CONCAT(u.firstname, ' ', u.lastname) AS fullname,
                         u.email
                     FROM t_ticket_event e
                     LEFT JOIN user u ON e.approver_id = u.user_id
                     WHERE e.ticket_id = ?
-                    AND e.event_type = 'approve'
-                    AND e.approver_leader = '1'
+                        AND e.event_type = 'approve'
                     ORDER BY e.approval_order
                 `, [ticket_id]);
 
-                // 4. Map workflow steps to actual approvals
-                return steps.map((step) => {
-                    const event = events.find(e => e.approval_order === step.level);
+                // 4. Map workflow steps to actual approvals (only for steps that have a leader approver)
+                return steps
+                    .map((step) => {
+                        const event = events.find(e => e.approval_order === step.level);
 
-                    return {
-                        approval_order: step.level,
-                        step_name: step.meta?.name || step.meta?.description || `Step ${step.level}`,
-                        approve_date: event?.approve_date || null,
-                        approver_id: event?.approver_id || null,
-                        fullname: event?.fullname || null,
-                        email: event?.email || null,
-                        remark: event?.remark || ''
-                    };
-                });
+                        return {
+                            approval_order: step.level,
+                            step_name: step.meta?.name || step.meta?.description || `Step ${step.level}`,
+                            approve_date: event?.approve_date || null,
+                            approver_id: event?.approver_id || null,
+                            approver_leader: event?.approver_leader || null,
+                            fullname: event?.fullname || null,
+                            email: event?.email || null,
+                            remark: event?.remark || ''
+                        };
+                    })
+                    .filter(step => step.approver_id !== null); // Only include steps that have a leader assigned
             } catch (error) {
                 console.error('Error fetching approvals:', error);
                 return [];
             }
         };
+
+
 
         const monthToRoman = (month) => {
             const romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
@@ -1341,16 +1533,17 @@ module.exports = {
         if (factory_id) {
             // Get factory name from mst_factory
             factory = await getFactoryByFactoryId(factory_id);
-            console.log(`📍 [SRF] Using factory from work_data: ${factory} (id: ${factory_id})`);
+            console.log(`📍[SRF] Using factory from work_data: ${factory} (id: ${factory_id})`);
         } else {
             // Fallback to ticket_detail
             factory_id = getByLabel('factory_id');
             factory = getByLabel('factory');
-            console.log(`📍 [SRF] Using factory from ticket_detail: ${factory} (id: ${factory_id})`);
+            console.log(`📍[SRF] Using factory from ticket_detail: ${factory} (id: ${factory_id})`);
         }
 
         const factoryPIC = await getFactoryPPIC(factory_id);
         const approvallistRaw = await getApproval(data?.ticket_id);
+
         const approvallist = approvallistRaw.filter(a => a.approval_order !== 2);
         const sample = getByLabel('sample');
 
@@ -1371,7 +1564,10 @@ module.exports = {
         );
 
         console.log('📊 [DOC_GEN] isEngineFormat:', isEngineFormat);
-        console.log('📊 [DOC_GEN] detailRows sample:', detailRows.slice(0, 5));
+        console.log('📊 [DOC_GEN] detailRows sample:');
+        if (detailRows && detailRows.length > 0) {
+            console.table(detailRows.slice(0, 5));
+        }
 
         if (isEngineFormat) {
             // Core Engine format: find Item Name and Quantity rows
@@ -1399,7 +1595,7 @@ module.exports = {
 
                 const qtyValue = qtyRow?.value || '';
 
-                console.log(`📊 [DOC_GEN] Row ${i}: item="${itemName}", qty="${qtyValue}"`);
+                console.log(`📊[DOC_GEN] Row ${i}: item = "${itemName}", qty = "${qtyValue}"`);
 
                 // Parse quantity: look for pcs or ctn
                 let pcs = '', ctn = '';
@@ -1422,10 +1618,10 @@ module.exports = {
 
                 itemRowsHtml += `
                     <tr>
-                      <td>${i + 1}</td>
-                      <td>${itemName}</td>
-                      <td>${pcs}</td>
-                      <td>${ctn}</td>
+                        <td>${i + 1}</td>
+                        <td>${itemName}</td>
+                        <td>${pcs}</td>
+                        <td>${ctn}</td>
                     </tr>`;
             });
         } else {
@@ -1466,23 +1662,31 @@ module.exports = {
 
                 itemRowsHtml += `
                     <tr>
-                      <td>${i + 1}</td>
-                      <td>${itemName}</td>
-                      <td>${pcs}</td>
-                      <td>${ctn}</td>
+                        <td>${i + 1}</td>
+                        <td>${itemName}</td>
+                        <td>${pcs}</td>
+                        <td>${ctn}</td>
                     </tr>`;
             });
         }
 
         let notesHtml = '';
 
-        console.log("approvallistRaw", approvallistRaw)
+        console.log("approvallistRaw:");
+        if (approvallistRaw && approvallistRaw.length > 0) {
+            console.table(approvallistRaw.map(a => ({
+                order: a.approval_order,
+                step: a.step_name,
+                approver: a.fullname,
+                status: a.approve_date ? 'Approved' : 'Pending'
+            })));
+        } else {
+            console.log("No approvals found");
+        }
         approvallistRaw.forEach((data, i) => {
             if (data.remark && data.remark.trim() !== '') {
                 const stepInfo = data.step_name ? `(${data.step_name})` : '';
-                notesHtml += `
-                <li>${data.fullname} ${stepInfo}: ${data.remark}</li>
-              `;
+                notesHtml += `<li>${data.fullname} ${stepInfo}: ${data.remark}</li>`;
             }
         });
 
@@ -1491,14 +1695,20 @@ module.exports = {
         // Group 2 (Cc)
         const ccPICs = factoryPIC.filter(p => p.flag === 2).map(p => p.pic_name);
 
-        // Helper to get signature URL from user_profile or fallback to legacy /ttd/
+        // Helper to get signature Data URL from user_profile or fallback to legacy /ttd/
         const getSignatureUrl = async (userId) => {
+            // 1. Try profile path
             const signPath = await profileController.getUserSignaturePath(userId);
             if (signPath) {
-                return `${API_URL}${signPath}`;
+                const dataUrl = imageToDataURL(signPath);
+                if (dataUrl) return dataUrl;
             }
-            // Fallback to legacy /ttd/ path
-            return `${API_URL}/ttd/sign-${userId}.jpg`;
+            // 2. Fallback to legacy /ttd/ path (public/ttd/sign-{userId}.jpg)
+            const legacyPath = `public/ttd/sign-${userId}.jpg`;
+            const legacyData = imageToDataURL(legacyPath);
+            if (legacyData) return legacyData;
+
+            return ''; // Return empty string if no signature found (will result in empty image)
         };
 
         // Build approval columns with proper signature paths
@@ -1511,32 +1721,32 @@ module.exports = {
                 if (isApproved) {
                     const signUrl = await getSignatureUrl(approver.approver_id);
                     signBlock = `
-              <div style="height: 100%; max-height:130px; display:flex; align-items:center;">
-                <img
-                  alt="sign"
-                  src="${signUrl}"
-                  style="width:120px;display:block;margin:0 auto 5px auto;"
-                />
-              </div>
-            `;
+                        <div style="height: 100%; max-height:130px; display:flex; align-items:center;">
+                            <img
+                                alt="sign"
+                                src="${signUrl}"
+                                style="width:120px;display:block;margin:0 auto 5px auto;"
+                            />
+                        </div>
+                    `;
                 } else {
                     signBlock = `
-              <div style="height: 100%; max-height:130px; display:flex; align-items:center;"></div>
-            `;
+                        <div style="height: 100%; max-height:130px; display:flex; align-items:center;"></div>
+                    `;
                 }
 
                 // Use dynamic step name from workflow definition
                 const positionLabel = approver.step_name || `Step ${approver.approval_order}`;
 
                 return `
-            <td style="padding:10px 10px 15px 10px;vertical-align:top;">
-              ${signBlock}
-              <br>
-              ${approver.fullname || "—"}
-              <br>
-              <span style="font-size:12px;color:#555;display:inline-block;margin-bottom:10px;">${positionLabel}</span>
-            </td>
-          `;
+                    <td style="padding:10px 10px 15px 10px;vertical-align:top;">
+                        ${signBlock}
+                        <br>
+                        ${approver.fullname || "—"}
+                        <br>
+                        <span style="font-size:12px;color:#555;display:inline-block;margin-bottom:10px;">${positionLabel}</span>
+                    </td>
+                `;
             });
 
         const approvalColumnsHtml = (await Promise.all(approvalColumnsPromises)).join("");
@@ -1549,86 +1759,86 @@ module.exports = {
 
 
         const html = `
-              <html>
-                <head>
-                  <meta charset="utf-8" />
-                  <title>SAMPLE REQUEST FORM ( SRF )</title>
-                  <style>
-                    body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; min-width: 700px; max-width: 794px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                    th, td { border: 1px solid #000; padding: 5px; text-align: left; }
-                    .no-border td { border: none; }
-                    .center { text-align: center; }
-                    .bold { font-weight: bold; }
-                    .section-title { margin-top: 20px; font-weight: bold; font-size: 16px; text-align: center; }
-                    .note { border: 1px solid #000; padding: 10px; margin-top: 10px; }
-                    .approval-table td { height: 60px; vertical-align: bottom; text-align: center; word-break: break-word; overflow-wrap: break-word; }
-                    .approval-table { table-layout: fixed; }
-                    .approval-table td { width: 25%; }
-                    .small { font-size: 10px; }
-                  </style>
-                </head>
-                <body>
-    
-                <div style="display:flex;justify-content:space-between;width:100%;">
-                    <div>
-                        <img
-                            src="https://backend.indofoodinternational.com:2864/aset/image/indofood_header_logo.png"
-                            style="height:35px"
-                        />
-                    </div>
-                    <div style="display:flex;justify-content:flex-end;">
-                        <img
-                            src="https://backend.indofoodinternational.com:2864/aset/image/icbp_header_logo.png"
-                            style="height:35px"
-                        />
-                    </div>
+    <html>
+        <head>
+            <meta charset="utf-8" />
+            <title>SAMPLE REQUEST FORM ( SRF )</title>
+            <style>
+                body {font - family: Arial, sans-serif; font-size: 12px; margin: 40px; min-width: 700px; max-width: 794px; }
+                table {width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th, td {border: 1px solid #000; padding: 5px; text-align: left; }
+                .no-border td {border: none; }
+                .center {text - align: center; }
+                .bold {font - weight: bold; }
+                .section-title {margin - top: 20px; font-weight: bold; font-size: 16px; text-align: center; }
+                .note {border: 1px solid #000; padding: 10px; margin-top: 10px; }
+                .approval-table td {height: 60px; vertical-align: bottom; text-align: center; word-break: break-word; overflow-wrap: break-word; }
+                .approval-table {table - layout: fixed; }
+                .approval-table td {width: 25%; }
+                .small {font - size: 10px; }
+            </style>
+        </head>
+        <body>
+
+            <div style="display:flex;justify-content:space-between;width:100%;">
+                <div>
+                    <img
+                        src="${imageToDataURL('public/aset/image/indofood_header_logo.png')}"
+                        style="height:35px"
+                    />
                 </div>
-    
-    
-                <br>
-    
+                <div style="display:flex;justify-content:flex-end;">
+                    <img
+                        src="${imageToDataURL('public/aset/image/icbp_header_logo.png')}"
+                        style="height:35px"
+                    />
+                </div>
+            </div>
+
+
+            <br>
+
                 <table class="no-border">
-                  <tr>
-                    <td><strong>PT. INDOFOOD CBP SUKSES MAKMUR</strong></td>
-                    <td style="text-align:right;">To&nbsp;: <em> ${toPICs.join(', ')} </em> </td>
-                  </tr>
-                  <tr>
-                    <td><strong>Division</strong>&nbsp;: IOD </td>
-                    <td style="text-align:right;"></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Location</strong>&nbsp;: INDOFOOD TOWER LT.23</td>
-                    <td></td>
-                  </tr>
-                  <tr>
-                    <td><strong>SRF NO</strong>&nbsp;: ${generatesrf}</td>
-                    <td></td>
-                  </tr>
+                    <tr>
+                        <td><strong>PT. INDOFOOD CBP SUKSES MAKMUR</strong></td>
+                        <td style="text-align:right;">To&nbsp;: <em> ${toPICs.join(', ')} </em> </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Division</strong>&nbsp;: IOD </td>
+                        <td style="text-align:right;"></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Location</strong>&nbsp;: INDOFOOD TOWER LT.23</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><strong>SRF NO</strong>&nbsp;: ${generatesrf}</td>
+                        <td></td>
+                    </tr>
                 </table>
-          
+
                 <div class="section-title">SAMPLE REQUEST FORM ( SRF )</div>
-          
-               <style>
+
+                <style>
                     .no-border {
                         width: 100%;
-                        table-layout: fixed;
-                        border-collapse: collapse;
+                    table-layout: fixed;
+                    border-collapse: collapse;
                     }
                     .no-border td {
-                        vertical-align: top;
-                        padding: 4px;
+                        vertical - align: top;
+                    padding: 4px;
                     }
                     .label {
                         width: 12%;
-                        font-weight: bold;
+                    font-weight: bold;
                     }
                     .content {
                         width: 38%;
                     }
-                    </style>
-    
-                    <table class="no-border">
+                </style>
+
+                <table class="no-border">
                     <tr>
                         <td class="label">To</td>
                         <td class="content">:  ${toPICs.join(', ')}</td>
@@ -1647,86 +1857,86 @@ module.exports = {
                         <td class="label">Category</td>
                         <td class="content">: ${getByLabel('Category_field')}</td>
                     </tr>
-                    </table>
-    
-          
-                <table>
-                  <thead>
-                    <tr>
-                      <th>NO</th>
-                      <th>DESCRIPTION</th>
-                      <th>QUANTITY IN PCS</th>
-                      <th>QUANTITY IN CTN</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-    
-                    ${itemRowsHtml}
-                    <tr>
-                      <td colspan="2" class="bold" style="text-align: right;">TOTAL</td>
-                      <td class="bold">${totalPcs.toLocaleString()} PCS</td>
-                      <td class="bold">${totalCtn.toLocaleString()} CTN</td>
-                    </tr>
-                  </tbody>
                 </table>
-          
+
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>NO</th>
+                            <th>DESCRIPTION</th>
+                            <th>QUANTITY IN PCS</th>
+                            <th>QUANTITY IN CTN</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        ${itemRowsHtml}
+                        <tr>
+                            <td colspan="2" class="bold" style="text-align: right;">TOTAL</td>
+                            <td class="bold">${totalPcs.toLocaleString()} PCS</td>
+                            <td class="bold">${totalCtn.toLocaleString()} CTN</td>
+                        </tr>
+                    </tbody>
+                </table>
+
                 <div class="note">
                     <strong>Request Detail:</strong>
-                   ${(() => {
+                    ${(() => {
                 const po = getByLabel("PO_Number") || "";
                 return !po.toLowerCase().includes("no data found")
                     ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${po}</p>`
                     : "";
             })()}
-                  
+
                     ${getByLabel('Week Delivery') && getByLabel('Week Delivery') !== "No Data Found"
                 ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>`
                 : ''}
                     <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('field_1761105177705').toLocaleString() === `true` ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
                 </div>
-    
+
                 <div class="note">
                     <strong>Note:</strong>
-                   <br>
-                    ${getByLabel('field_1761105303599') ? `<p>${getByLabel('field_1761105303599')}</p>` : ''}
-                     ${notesHtml}
-                  <strong>Thank you</strong>
+                    <br>
+                        ${getByLabel('field_1761105303599') ? `<p>${getByLabel('field_1761105303599')}</p>` : ''}
+                        ${notesHtml}
+                        <strong>Thank you</strong>
                 </div>
-          
-                <table class="approval-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
- 
-                 <tr class="bold">
-                    <td style="text-align:center; vertical-align:middle;">Request by</td>
-                    <td style="text-align:center; vertical-align:middle;">Approved by</td>
-                    <td style="text-align:center; vertical-align:middle;">Approved by</td>
-                    <td style="text-align:center; vertical-align:middle;">Approved by</td>
-                </tr>
-                  <tr>
-                    
-                    <td style="padding:10px 10px 15px 10px;vertical-align:top;">
-                            <div style="height: 100%; max-height:130px;display:flex; align-items: center;">
-                    
-                        <img
-                            alt="sign"
-                            src="${requesterSignUrl}"
-                            style="width:120px;display:block;margin:0 auto 5px auto;"
-                        />
-                        </div>
-                        <br>
-                        ${data?.requester_name || ''}
-                        <br>
-                        <span style="font-size:12px;color:#555;display:inline-block;margin-bottom:10px;">${data.business_analyst || 'Requester'}</span>
-                    </td>
-                    
-    
-                    ${approvalColumnsHtml}
 
-                  </tr>
-                </table>
-          
-                </body>
-              </html>
-            `;
+                <table class="approval-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
+
+                    <tr class="bold">
+                        <td style="text-align:center; vertical-align:middle;">Request by</td>
+                        <td style="text-align:center; vertical-align:middle;">Approved by</td>
+                        <td style="text-align:center; vertical-align:middle;">Approved by</td>
+                        <td style="text-align:center; vertical-align:middle;">Approved by</td>
+                    </tr>
+                    <tr>
+
+                        <td style="padding:10px 10px 15px 10px;vertical-align:top;">
+                            <div style="height: 100%; max-height:130px;display:flex; align-items: center;">
+
+                                <img
+                                    alt="sign"
+                                    src="${requesterSignUrl}"
+                                    style="width:120px;display:block;margin:0 auto 5px auto;"
+                                />
+                            </div>
+                            <br>
+                                ${data?.requester_name || ''}
+                                <br>
+                                    <span style="font-size:12px;color:#555;display:inline-block;margin-bottom:10px;">${data.business_analyst || 'Requester'}</span>
+                                </td>
+
+
+                                ${approvalColumnsHtml}
+
+                            </tr>
+                        </table>
+
+                    </body>
+                </html>
+                `;
 
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
@@ -1749,9 +1959,9 @@ module.exports = {
      * Execute Document Generation
      * Dynamically selects document template based on config.template
      * @param {Object} func - Function configuration from m_custom_functions
-     * @param {string} ticketId - Ticket ID
-     * @param {Object} params - Additional parameters
-     */
+                * @param {string} ticketId - Ticket ID
+                * @param {Object} params - Additional parameters
+                */
     executeDocumentGeneration: async (func, ticketId, params) => {
         try {
             const config = typeof func.config === 'string' ? JSON.parse(func.config) : func.config || {};
@@ -1791,16 +2001,20 @@ module.exports = {
             }
 
             // Save generated document info
+            // Save generated document info to t_file_upload (use 'generated_document' entity_type to match getGeneratedDocuments query)
             await dbHots.promise().query(`
-                INSERT INTO hots.t_generated_documents 
-                (ticket_id, document_type, file_path, file_name, generated_date, template_used)
-                VALUES (?, ?, ?, ?, NOW(), ?)
-            `, [
+                INSERT INTO hots.t_file_upload
+                (entity_type, entity_id, ticket_id, field_name, filename, original_name, file_path, upload_date, is_active, created_at, updated_at, uploaded_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 1, NOW(), NOW(), ?)
+                `, [
+                'generated_document', // Changed from 'ticket' to match getGeneratedDocuments query
                 ticketId,
-                config.documentType || 'letter',
-                documentPath || '',
-                path.basename(documentPath || 'unknown.pdf'),
-                templateName
+                ticketId,
+                'srf_document', // field_name
+                path.basename(documentPath || 'unknown.pdf'), // filename
+                path.basename(documentPath || 'unknown.pdf'), // original_name
+                documentPath || '', // file_path
+                0 // uploaded_by (system)
             ]);
 
             return {
@@ -1854,11 +2068,11 @@ module.exports = {
 
         // Get ticket and user data
         const [ticketData] = await dbHots.promise().query(`
-          SELECT t.*, u.email, u.firstname, u.lastname 
-          FROM t_ticket t 
-          JOIN users u ON t.created_by = u.user_id 
-          WHERE t.ticket_id = ?
-        `, [ticketId]);
+                SELECT t.*, u.email, u.firstname, u.lastname
+                FROM t_ticket t
+                JOIN users u ON t.created_by = u.user_id
+                WHERE t.ticket_id = ?
+                `, [ticketId]);
 
         if (ticketData.length === 0) {
             throw new Error('Ticket not found');
@@ -1926,7 +2140,7 @@ module.exports = {
                 FROM t_ticket t
                 JOIN user u ON t.created_by = u.user_id
                 WHERE t.ticket_id = ?
-            `, [ticketId]);
+                `, [ticketId]);
 
             console.log(`📄 [MANUAL_DOC_GEN] Requester data:`, requesterData);
 
@@ -1986,7 +2200,7 @@ module.exports = {
                 FROM t_ticket t
                 JOIN user u ON t.created_by = u.user_id
                 WHERE t.ticket_id = ?
-            `, [ticketId]);
+                `, [ticketId]);
 
             const params = {
                 requester_name: requesterData[0]?.requester_name || 'Unknown',
@@ -2013,115 +2227,115 @@ module.exports = {
      */
     previewPage: async (req, res) => {
         const html = `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>SRF Document Preview</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #1a1a2e;
-            color: #eee;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
+                <!DOCTYPE html>
+                <html>
+                    <head>
+                        <title>SRF Document Preview</title>
+                        <style>
+                            body {
+                                font - family: Arial, sans-serif;
+                            background: #1a1a2e;
+                            color: #eee;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 100vh;
+                            margin: 0;
         }
-        .container {
-            background: #16213e;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            text-align: center;
+                            .container {
+                                background: #16213e;
+                            padding: 40px;
+                            border-radius: 12px;
+                            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                            text-align: center;
         }
-        h1 { color: #4fc3f7; margin-bottom: 30px; }
-        input {
-            padding: 15px 20px;
-            font-size: 18px;
-            border: 2px solid #4fc3f7;
-            border-radius: 8px;
-            background: #0f3460;
-            color: #fff;
-            width: 200px;
-            margin-right: 10px;
+                            h1 {color: #4fc3f7; margin-bottom: 30px; }
+                            input {
+                                padding: 15px 20px;
+                            font-size: 18px;
+                            border: 2px solid #4fc3f7;
+                            border-radius: 8px;
+                            background: #0f3460;
+                            color: #fff;
+                            width: 200px;
+                            margin-right: 10px;
         }
-        input:focus {
-            outline: none;
-            border-color: #00e676;
+                            input:focus {
+                                outline: none;
+                            border-color: #00e676;
         }
-        button {
-            padding: 15px 30px;
-            font-size: 18px;
-            background: linear-gradient(135deg, #4fc3f7, #00e676);
-            border: none;
-            border-radius: 8px;
-            color: #1a1a2e;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s;
+                            button {
+                                padding: 15px 30px;
+                            font-size: 18px;
+                            background: linear-gradient(135deg, #4fc3f7, #00e676);
+                            border: none;
+                            border-radius: 8px;
+                            color: #1a1a2e;
+                            font-weight: bold;
+                            cursor: pointer;
+                            transition: transform 0.2s;
         }
-        button:hover { transform: scale(1.05); }
-        .hint {
-            margin-top: 20px;
-            color: #888;
-            font-size: 14px;
+                            button:hover {transform: scale(1.05); }
+                            .hint {
+                                margin - top: 20px;
+                            color: #888;
+                            font-size: 14px;
         }
-        .shortcuts {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #333;
+                            .shortcuts {
+                                margin - top: 30px;
+                            padding-top: 20px;
+                            border-top: 1px solid #333;
         }
-        .shortcuts a {
-            color: #4fc3f7;
-            text-decoration: none;
-            margin: 0 10px;
+                            .shortcuts a {
+                                color: #4fc3f7;
+                            text-decoration: none;
+                            margin: 0 10px;
         }
-        .shortcuts a:hover { color: #00e676; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🧪 SRF Document Preview</h1>
-        <form id="previewForm">
-            <input type="text" id="ticketId" placeholder="Ticket ID" autofocus />
-            <button type="submit">Preview HTML</button>
-        </form>
-        <p class="hint">Enter a ticket ID to preview the generated SRF document HTML</p>
-        
-        <div class="shortcuts">
-            <strong>Recent Tickets:</strong>
-            <span id="recentTickets">Loading...</span>
-        </div>
-    </div>
-    
-    <script>
-        document.getElementById('previewForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const ticketId = document.getElementById('ticketId').value.trim();
-            if (ticketId) {
-                window.open('./preview_srf/' + ticketId, '_blank');
+                            .shortcuts a:hover {color: #00e676; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <h1>🧪 SRF Document Preview</h1>
+                            <form id="previewForm">
+                                <input type="text" id="ticketId" placeholder="Ticket ID" autofocus />
+                                <button type="submit">Preview HTML</button>
+                            </form>
+                            <p class="hint">Enter a ticket ID to preview the generated SRF document HTML</p>
+
+                            <div class="shortcuts">
+                                <strong>Recent Tickets:</strong>
+                                <span id="recentTickets">Loading...</span>
+                            </div>
+                        </div>
+
+                        <script>
+                            document.getElementById('previewForm').addEventListener('submit', function(e) {
+                                e.preventDefault();
+                            const ticketId = document.getElementById('ticketId').value.trim();
+                            if (ticketId) {
+                                window.open('./preview_srf/' + ticketId, '_blank');
             }
         });
-        
-        // Load recent SRF tickets
-        fetch('/hots_ticket/tickets?service_id=17&limit=5')
+
+                            // Load recent SRF tickets
+                            fetch('/hots_ticket/tickets?service_id=17&limit=5')
             .then(r => r.json())
             .then(data => {
                 if (data.data && data.data.length > 0) {
-                    document.getElementById('recentTickets').innerHTML = data.data.map(t => 
-                        '<a href="./preview_srf/' + t.ticket_id + '" target="_blank">' + t.ticket_id + '</a>'
-                    ).join(' | ');
+                                document.getElementById('recentTickets').innerHTML = data.data.map(t =>
+                                    '<a href="./preview_srf/' + t.ticket_id + '" target="_blank">' + t.ticket_id + '</a>'
+                                ).join(' | ');
                 } else {
-                    document.getElementById('recentTickets').textContent = 'No recent tickets';
+                                document.getElementById('recentTickets').textContent = 'No recent tickets';
                 }
             })
             .catch(() => {
-                document.getElementById('recentTickets').textContent = 'Could not load';
+                                document.getElementById('recentTickets').textContent = 'Could not load';
             });
-    </script>
-</body>
-</html>`;
+                        </script>
+                    </body>
+                </html>`;
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.send(html);
     },
@@ -2189,10 +2403,10 @@ module.exports = {
         const getteamleaderEmail = async (teamId) => {
             try {
                 const [result] = await dbHots.promise().query(`
-                    SELECT GROUP_CONCAT(u.email) AS emails
-                    FROM m_team_members tm
-                    JOIN user u ON tm.user_id = u.user_id
-                    WHERE tm.team_id = ? AND tm.is_leader = 1
+                SELECT GROUP_CONCAT(u.email) AS emails
+                FROM m_team_members tm
+                JOIN user u ON tm.user_id = u.user_id
+                WHERE tm.team_id = ? AND tm.is_leader = 1
                 `, [teamId]);
                 return result[0]?.emails || '';
             } catch (error) {
@@ -2217,9 +2431,9 @@ module.exports = {
         const getFactoryIdFromWorkData = async (ticketId) => {
             try {
                 const [result] = await dbHots.promise().query(
-                    `SELECT field_value FROM t_ticket_work_data 
-                     WHERE ticket_id = ? AND field_name = 'factory_id' 
-                     ORDER BY created_at DESC LIMIT 1`,
+                    `SELECT field_value FROM t_ticket_work_data
+                WHERE ticket_id = ? AND field_name = 'factory_id'
+                ORDER BY created_at DESC LIMIT 1`,
                     [ticketId]
                 );
                 return result[0]?.field_value || null;
@@ -2266,19 +2480,18 @@ module.exports = {
                 const steps = workflowDef.steps || [];
 
                 const [events] = await dbHots.promise().query(`
-                    SELECT 
-                        e.approval_order,
-                        e.approve_date,
-                        e.approver_id,
-                        e.remark,
-                        CONCAT(u.firstname, ' ', u.lastname) AS fullname,
-                        u.email
-                    FROM t_ticket_event e
-                    LEFT JOIN user u ON e.approver_id = u.user_id
-                    WHERE e.ticket_id = ?
-                    AND e.event_type = 'approve'
-                    AND e.approver_leader = '1'
-                    ORDER BY e.approval_order
+                SELECT
+                e.approval_order,
+                e.approve_date,
+                e.approver_id,
+                e.remark,
+                CONCAT(u.firstname, ' ', u.lastname) AS fullname,
+                u.email
+                FROM t_ticket_event e
+                LEFT JOIN user u ON e.approver_id = u.user_id
+                WHERE e.ticket_id = ?
+                AND e.event_type = 'approve'
+                ORDER BY e.approval_order
                 `, [ticket_id]);
 
                 return steps.map((step) => {
@@ -2314,11 +2527,18 @@ module.exports = {
 
         // Signature helper
         const getSignatureUrl = async (userId) => {
+            // 1. Try profile path
             const signPath = await profileController.getUserSignaturePath(userId);
             if (signPath) {
-                return `${API_URL}${signPath}`;
+                const dataUrl = imageToDataURL(signPath);
+                if (dataUrl) return dataUrl;
             }
-            return `${API_URL}/ttd/sign-${userId}.jpg`;
+            // 2. Fallback to legacy /ttd/ path (public/ttd/sign-{userId}.jpg)
+            const legacyPath = `public/ttd/sign-${userId}.jpg`;
+            const legacyData = imageToDataURL(legacyPath);
+            if (legacyData) return legacyData;
+
+            return '';
         };
 
         // Now build the document data
@@ -2383,12 +2603,12 @@ module.exports = {
                 }
 
                 itemRowsHtml += `
-                    <tr>
-                      <td>${i + 1}</td>
-                      <td>${itemName}</td>
-                      <td>${pcs}</td>
-                      <td>${ctn}</td>
-                    </tr>`;
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${itemName}</td>
+                    <td>${pcs}</td>
+                    <td>${ctn}</td>
+                </tr>`;
             });
         } else {
             const itemRows = detailRows.filter(row =>
@@ -2422,12 +2642,12 @@ module.exports = {
                 }
 
                 itemRowsHtml += `
-                    <tr>
-                      <td>${i + 1}</td>
-                      <td>${itemName}</td>
-                      <td>${pcs}</td>
-                      <td>${ctn}</td>
-                    </tr>`;
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${itemName}</td>
+                    <td>${pcs}</td>
+                    <td>${ctn}</td>
+                </tr>`;
             });
         }
 
@@ -2452,9 +2672,9 @@ module.exports = {
                 if (isApproved) {
                     const signUrl = await getSignatureUrl(approver.approver_id);
                     signBlock = `
-              <div style="height: 100%; max-height:130px; display:flex; align-items:center;">
-                <img alt="sign" src="${signUrl}" style="width:120px;display:block;margin:0 auto 5px auto;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%2260%22><text y=%2230%22 fill=%22red%22>Image Error</text></svg>'; this.title='Failed to load: ${signUrl}'"/>
-              </div>`;
+                <div style="height: 100%; max-height:130px; display:flex; align-items:center;">
+                    <img alt="sign" src="${signUrl}" style="width:120px;display:block;margin:0 auto 5px auto;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%2260%22><text y=%2230%22 fill=%22red%22>Image Error</text></svg>'; this.title='Failed to load: ${signUrl}'" />
+                </div>`;
                 } else {
                     signBlock = `<div style="height: 100%; max-height:130px; display:flex; align-items:center;"></div>`;
                 }
@@ -2462,13 +2682,13 @@ module.exports = {
                 const positionLabel = approver.step_name || `Step ${approver.approval_order}`;
 
                 return `
-            <td style="padding:10px;vertical-align:top;">
-              ${signBlock}
-              <br>
-              ${approver.fullname || "—"}
-              <br>
-              <span style="font-size:12px;color:#555;">${positionLabel}</span>
-            </td>`;
+                <td style="padding:10px;vertical-align:top;">
+                    ${signBlock}
+                    <br>
+                        ${approver.fullname || "—"}
+                        <br>
+                            <span style="font-size:12px;color:#555;">${positionLabel}</span>
+                        </td>`;
             });
 
         const approvalColumnsHtml = (await Promise.all(approvalColumnsPromises)).join("");
@@ -2476,196 +2696,981 @@ module.exports = {
 
         // Build final HTML (same as srf_document_generator)
         const html = `
-              <html>
-                <head>
-                  <meta charset="utf-8" />
-                  <title>SAMPLE REQUEST FORM ( SRF ) - PREVIEW</title>
-                  <style>
-                    body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                    th, td { border: 1px solid #000; padding: 5px; text-align: left; }
-                    .no-border td { border: none; }
-                    .center { text-align: center; }
-                    .bold { font-weight: bold; }
-                    .section-title { margin-top: 20px; font-weight: bold; font-size: 16px; text-align: center; }
-                    .note { border: 1px solid #000; padding: 10px; margin-top: 10px; }
-                    .approval-table td { height: 60px; vertical-align: bottom; text-align: center; }
-                    .small { font-size: 10px; }
-                    /* Debug styling for preview */
-                    .debug-bar { 
-                        background: #ff6b6b; color: white; padding: 10px; margin-bottom: 20px; 
-                        font-size: 14px; border-radius: 5px; 
+                        <html>
+                            <head>
+                                <meta charset="utf-8" />
+                                <title>SAMPLE REQUEST FORM ( SRF ) - PREVIEW</title>
+                                <style>
+                                    body {font - family: Arial, sans-serif; font-size: 12px; margin: 40px; }
+                                    table {width: 100%; border-collapse: collapse; margin-top: 10px; }
+                                    th, td {border: 1px solid #000; padding: 5px; text-align: left; }
+                                    .no-border td {border: none; }
+                                    .center {text - align: center; }
+                                    .bold {font - weight: bold; }
+                                    .section-title {margin - top: 20px; font-weight: bold; font-size: 16px; text-align: center; }
+                                    .note {border: 1px solid #000; padding: 10px; margin-top: 10px; }
+                                    .approval-table td {height: 60px; vertical-align: bottom; text-align: center; }
+                                    .small {font - size: 10px; }
+                                    /* Debug styling for preview */
+                                    .debug-bar {
+                                        background: #ff6b6b; color: white; padding: 10px; margin-bottom: 20px;
+                                    font-size: 14px; border-radius: 5px; 
                     }
-                    .debug-bar strong { color: yellow; }
-                  </style>
-                </head>
-                <body>
-    
-                <div class="debug-bar">
-                    🧪 <strong>PREVIEW MODE</strong> | Ticket: ${data.ticket_id} | Created by: ${data.created_by} | 
-                    Factory: ${factory} | SRF: ${generatesrf}
-                </div>
-    
-                <div style="display:flex;justify-content:space-between;width:100%;">
-                    <div>
-                        <img
-                            src="${API_URL}/aset/image/indofood_header_logo.png"
-                            style="height:35px"
-                        />
-                    </div>
-                    <div style="display:flex;justify-content:flex-end;">
-                        <img
-                            src="${API_URL}/aset/image/icbp_header_logo.png"
-                            style="height:35px"
-                        />
-                    </div>
-                </div>
-    
-    
-                <br>
-    
-                <table class="no-border">
-                  <tr>
-                    <td><strong>PT. INDOFOOD CBP SUKSES MAKMUR</strong></td>
-                    <td style="text-align:right;">To&nbsp;: <em> ${toPICs.join(', ')} </em> </td>
-                  </tr>
-                  <tr>
-                    <td><strong>Division</strong>&nbsp;: IOD </td>
-                    <td style="text-align:right;"></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Location</strong>&nbsp;: INDOFOOD TOWER LT.23</td>
-                    <td></td>
-                  </tr>
-                  <tr>
-                    <td><strong>SRF NO</strong>&nbsp;: ${generatesrf}</td>
-                    <td></td>
-                  </tr>
-                </table>
-          
-                <div class="section-title">SAMPLE REQUEST FORM ( SRF )</div>
-          
-               <style>
-                    .no-border {
-                        width: 100%;
-                        table-layout: fixed;
-                        border-collapse: collapse;
+                                    .debug-bar strong {color: yellow; }
+                                </style>
+                            </head>
+                            <body>
+
+                                <div class="debug-bar">
+                                    🧪 <strong>PREVIEW MODE</strong> | Ticket: ${data.ticket_id} | Created by: ${data.created_by} |
+                                    Factory: ${factory} | SRF: ${generatesrf}
+                                </div>
+
+                                <div style="display:flex;justify-content:space-between;width:100%;">
+                                    <div>
+                                        <img
+                                            src="${imageToDataURL('public/aset/image/indofood_header_logo.png')}"
+                                            style="height:35px"
+                                        />
+                                    </div>
+                                    <div style="display:flex;justify-content:flex-end;">
+                                        <img
+                                            src="${imageToDataURL('public/aset/image/icbp_header_logo.png')}"
+                                            style="height:35px"
+                                        />
+                                    </div>
+                                </div>
+
+
+                                <br>
+
+                                    <table class="no-border">
+                                        <tr>
+                                            <td><strong>PT. INDOFOOD CBP SUKSES MAKMUR</strong></td>
+                                            <td style="text-align:right;">To&nbsp;: <em> ${toPICs.join(', ')} </em> </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Division</strong>&nbsp;: IOD </td>
+                                            <td style="text-align:right;"></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Location</strong>&nbsp;: INDOFOOD TOWER LT.23</td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>SRF NO</strong>&nbsp;: ${generatesrf}</td>
+                                            <td></td>
+                                        </tr>
+                                    </table>
+
+                                    <div class="section-title">SAMPLE REQUEST FORM ( SRF )</div>
+
+                                    <style>
+                                        .no-border {
+                                            width: 100%;
+                                        table-layout: fixed;
+                                        border-collapse: collapse;
                     }
-                    .no-border td {
-                        vertical-align: top;
-                        padding: 4px;
+                                        .no-border td {
+                                            vertical - align: top;
+                                        padding: 4px;
                     }
-                    .label {
-                        width: 12%;
-                        font-weight: bold;
+                                        .label {
+                                            width: 12%;
+                                        font-weight: bold;
                     }
-                    .content {
-                        width: 38%;
+                                        .content {
+                                            width: 38%;
                     }
-                </style>
-    
-                <table class="no-border">
-                    <tr>
-                        <td class="label">To</td>
-                        <td class="content">:  ${toPICs.join(', ')}</td>
-                        <td class="label">Name/Title</td>
-                        <td class="content">: ${getByLabel('name')}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Cc</td>
-                        <td class="content">:  ${ccPICs.join(', ')}</td>
-                        <td class="label">Purposes</td>
-                        <td class="content">: ${getByLabel('purpose')}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Deliver to</td>
-                        <td class="content">: ${getByLabel('deliver_to')}</td>
-                        <td class="label">Category</td>
-                        <td class="content">: ${getByLabel('Category_field')}</td>
-                    </tr>
-                </table>
-    
-          
-                <table>
-                  <thead>
-                    <tr>
-                      <th>NO</th>
-                      <th>DESCRIPTION</th>
-                      <th>QUANTITY IN PCS</th>
-                      <th>QUANTITY IN CTN</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-    
-                    ${itemRowsHtml}
-                    <tr>
-                      <td colspan="2" class="bold" style="text-align: right;">TOTAL</td>
-                      <td class="bold">${totalPcs.toLocaleString()} PCS</td>
-                      <td class="bold">${totalCtn.toLocaleString()} CTN</td>
-                    </tr>
-                  </tbody>
-                </table>
-          
-                <div class="note">
-                    <strong>Request Detail:</strong>
-                   ${(() => {
+                                    </style>
+
+                                    <table class="no-border">
+                                        <tr>
+                                            <td class="label">To</td>
+                                            <td class="content">:  ${toPICs.join(', ')}</td>
+                                            <td class="label">Name/Title</td>
+                                            <td class="content">: ${getByLabel('name')}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="label">Cc</td>
+                                            <td class="content">:  ${ccPICs.join(', ')}</td>
+                                            <td class="label">Purposes</td>
+                                            <td class="content">: ${getByLabel('purpose')}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="label">Deliver to</td>
+                                            <td class="content">: ${getByLabel('deliver_to')}</td>
+                                            <td class="label">Category</td>
+                                            <td class="content">: ${getByLabel('Category_field')}</td>
+                                        </tr>
+                                    </table>
+
+
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>NO</th>
+                                                <th>DESCRIPTION</th>
+                                                <th>QUANTITY IN PCS</th>
+                                                <th>QUANTITY IN CTN</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+
+                                            ${itemRowsHtml}
+                                            <tr>
+                                                <td colspan="2" class="bold" style="text-align: right;">TOTAL</td>
+                                                <td class="bold">${totalPcs.toLocaleString()} PCS</td>
+                                                <td class="bold">${totalCtn.toLocaleString()} CTN</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <div class="note">
+                                        <strong>Request Detail:</strong>
+                                        ${(() => {
                 const po = getByLabel("PO_Number") || "";
                 return !po.toLowerCase().includes("no data found")
                     ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${po}</p>`
                     : "";
             })()}
-                  
-                    ${getByLabel('Week Delivery') && getByLabel('Week Delivery') !== "No Data Found"
+
+                                        ${getByLabel('Week Delivery') && getByLabel('Week Delivery') !== "No Data Found"
                 ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>`
                 : ''}
-                    <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('field_1761105177705').toLocaleString() === `true` ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
-                </div>
-    
-                <div class="note">
-                    <strong>Note:</strong>
-                   <br>
-                    ${getByLabel('field_1761105303599') ? `<p>${getByLabel('field_1761105303599')}</p>` : ''}
-                     ${notesHtml}
-                  <strong>Thank you</strong>
-                </div>
-          
-                <table class="approval-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
- 
-                 <tr class="bold">
-                    <td style="text-align:center; vertical-align:middle;">Request by</td>
-                    <td style="text-align:center; vertical-align:middle;">Approved by</td>
-                    <td style="text-align:center; vertical-align:middle;">Approved by</td>
-                    <td style="text-align:center; vertical-align:middle;">Approved by</td>
-                </tr>
-                  <tr>
-                    
-                    <td style="padding:10px;vertical-align:top;">
-                            <div style="height: 100%; max-height:130px;display:flex; align-items: center;">
-                    
-                        <img
-                            alt="sign"
-                            src="${requesterSignUrl}"
-                            style="width:120px;display:block;margin:0 auto 5px auto;"
-                            onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%2260%22><text y=%2230%22 fill=%22red%22>Image Error</text></svg>'; this.title='Failed to load: ${requesterSignUrl}'"
-                        />
-                        </div>
-                        <br>
-                        ${data?.requester_name || ''}
-                        <br>
-                        <span style="font-size:12px;color:#555;">${data.business_analyst || 'Business Analyst'}</span>
-                    </td>
-                    
+                                        <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('field_1761105177705').toLocaleString() === `true` ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
+                                    </div>
 
-                    ${approvalColumnsHtml}
+                                    <div class="note">
+                                        <strong>Note:</strong>
+                                        <br>
+                                            ${getByLabel('field_1761105303599') ? `<p>${getByLabel('field_1761105303599')}</p>` : ''}
+                                            ${notesHtml}
+                                            <strong>Thank you</strong>
+                                    </div>
 
-                  </tr>
-                </table>
-          
-                </body>
-              </html>
-            `;
+                                    <table class="approval-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
+
+                                        <tr class="bold">
+                                            <td style="text-align:center; vertical-align:middle;">Request by</td>
+                                            <td style="text-align:center; vertical-align:middle;">Approved by</td>
+                                            <td style="text-align:center; vertical-align:middle;">Approved by</td>
+                                            <td style="text-align:center; vertical-align:middle;">Approved by</td>
+                                        </tr>
+                                        <tr>
+
+                                            <td style="padding:10px;vertical-align:top;">
+                                                <div style="height: 100%; max-height:130px;display:flex; align-items: center;">
+
+                                                    <img
+                                                        alt="sign"
+                                                        src="${requesterSignUrl}"
+                                                        style="width:120px;display:block;margin:0 auto 5px auto;"
+                                                        onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%2260%22><text y=%2230%22 fill=%22red%22>Image Error</text></svg>'; this.title='Failed to load: ${requesterSignUrl}'"
+                                                    />
+                                                </div>
+                                                <br>
+                                                    ${data?.requester_name || ''}
+                                                    <br>
+                                                        <span style="font-size:12px;color:#555;">${data.business_analyst || 'Business Analyst'}</span>
+                                                    </td>
+
+
+                                                    ${approvalColumnsHtml}
+
+                                                </tr>
+                                            </table>
+
+                                        </body>
+                                    </html>
+                                    `;
 
         return html;
+    },
+
+    /**
+     * Generate Card Name HTML
+     * Creates HTML for business card generation
+     * @param {Object} userData - User data object
+                                    * @param {Object} params - Additional parameters
+                                    * @returns {string} HTML string for the card
+                                    */
+    generateCardNameHTML: async (userData, params = {}) => {
+        // Helper: Phone Formatter (from reference Preview.jsx)
+        const formatPhoneNumber = (phoneNumber) => {
+            if (!phoneNumber || phoneNumber.trim() === "") return "";
+            const cleaned = phoneNumber.replace(/[^\d+]/g, '');
+            if (cleaned.startsWith('0')) {
+                const formatted = cleaned.substring(1);
+                return `+62 ${formatted.slice(0, 3)} ${formatted.slice(3, 7)} ${formatted.slice(7, 11)}`.trim();
+            } else if (cleaned.startsWith('+62')) {
+                const formatted = cleaned.substring(3);
+                return `+62 ${formatted.slice(0, 3)} ${formatted.slice(3, 7)} ${formatted.slice(7, 11)}`.trim();
+            }
+            return phoneNumber;
+        };
+
+        // Map user data to card fields
+        const data = {
+            name: userData.fullname || `${userData.firstname || ''} ${userData.lastname || ''}`.trim() || params.name || '',
+            position: userData.job_title_name || params.position || '',
+            cellPhone: userData.cell_phone || params.cellPhone || '',
+            extPhone: userData.ext_phone || userData.phone || params.extPhone || '',
+            email: userData.email || params.email || '',
+            company: userData.company_name || params.company || 'PT. INDOFOOD CBP SUKSES MAKMUR',
+            department_name: userData.department_name // Added department mapping
+        };
+
+        // Build HTML using EXACT reference pattern from refrence/src/App.css + refrence/src/Component/Preview.jsx
+        // Dimensions: 510.2362px x 311.811px (fixed pixels, not mm)
+        // Asset path: /public/hots/aset/cardgenerator/
+
+        // Use localhost for development, production URL when deployed
+        const ASSET_BASE = 'https://backend.indofoodinternational.com:2864/public/hots/aset/cardgenerator';
+
+        // Calculate email font size based on length
+        const emailLength = data.email.length;
+        let emailFontSize = 'fs-20px'; // default (11.9px)
+        if (emailLength > 35) {
+            emailFontSize = 'fs-12px'; // 9px
+        } else if (emailLength > 30) {
+            emailFontSize = 'fs-14px'; // 10px
+        } else if (emailLength > 25) {
+            emailFontSize = 'fs-16px'; // 11px
+        } else if (emailLength > 22) {
+            emailFontSize = 'fs-18px'; // 11.9px (same as 20px in CSS)
+        }
+
+        // Generate QR Code for profile page
+        const userId = userData.user_id || params.userId;
+        let qrCodeDataUrl = '';
+        if (userId) {
+            try {
+                const encryptedId = encrypts.encryptEmployeeId(userId);
+                // URL encode the encrypted ID for safe URL usage
+                const encodedId = encodeURIComponent(encryptedId);
+                const profileUrl = `https://hots.indofood.com/hots/card/card?employee_id=${encodedId}`;
+                qrCodeDataUrl = await QRCode.toDataURL(profileUrl, {
+                    width: 100,
+                    margin: 1,
+                    color: { dark: '#000000', light: '#ffffff' }
+                });
+            } catch (qrError) {
+                console.error('QR Code generation failed:', qrError);
+                qrCodeDataUrl = ''; // Will show placeholder
+            }
+        }
+
+        const html = `
+                                    <!DOCTYPE html>
+                                    <html>
+                                        <head>
+                                            <meta charset="utf-8" />
+                                            <title>Business Card - ${data.name}</title>
+                                            <style>
+                /* ===== EXACT CSS FROM refrence/src/App.css ===== */
+                                                body, * {
+                                                    font - family: Arial, sans-serif;
+                                                margin: 0;
+                                                padding: 0;
+                                                box-sizing: border-box;
+                }
+
+                                                body {
+                                                    background: #f0f0f0;
+                                                display: flex;
+                                                justify-content: center;
+                                                align-items: center;
+                                                padding: 20px;
+                }
+
+                                                .page-container {
+                                                    display: flex;
+                                                flex-direction: column;
+                                                gap: 20px;
+                }
+
+                                                /* Card base - EXACT dimensions from reference */
+                                                .base-kartunama {
+                                                    width: 510.2362px;
+                                                height: 311.811px;
+                                                border-radius: 5px;
+                                                user-select: none;
+                                                padding: 0px;
+                                                padding-top: 11.33px;
+                                                background: white;
+                                                position: relative;
+                                                border: 1px solid #ddd;
+                                                overflow: hidden; /* IMPORTANT: Keep footer inside card */
+                }
+
+                                                .logo-kartunama {
+                                                    width: 187.0886px;
+                }
+
+                                                .footer-kartunama {
+                                                    border - radius: 0px 0px 5px 5px;
+                                                height: 17.00787px;
+                                                background-color: #083484;
+                }
+
+                                                .nama-kartunama {
+                                                    color: #083484;
+                                                font-size: 17.6px;
+                }
+
+                                                .text-subsidiary {
+                                                    color: #083484;
+                                                font-size: 13.4px;
+                                                font-weight: 500;
+                }
+
+                                                .no-gap {margin - bottom: -5px; }
+                                                .no-gap-print {margin - bottom: -15px; }
+                                                .up-gap {margin - top: 5px; }
+
+                                                .perusahaan-kartunama {
+                                                    color: #0ea8e6;
+                                                position: relative;
+                }
+
+                                                .fs-12px {font - size: 9px; font-weight: 400; }
+                                                .fs-14px {font - size: 10px; font-weight: 400; }
+                                                .fs-16px {font - size: 11px; font-weight: 400; }
+                                                .fs-18px {font - size: 11.9px; }
+                                                .fs-20px {font - size: 11.9px; font-weight: 400; }
+                                                .fs-22px {font - size: 13.4px; font-weight: 400; }
+
+                                                /* Bootstrap-like helpers */
+                                                .container-fluid {width: 100%; padding-left: 15px; padding-right: 15px; }
+                                                .row {display: flex; flex-wrap: wrap; margin-left: -15px; margin-right: -15px; }
+                                                .col-12 {flex: 0 0 100%; max-width: 100%; padding-left: 15px; padding-right: 15px; }
+                                                .col-6 {flex: 0 0 50%; max-width: 50%; padding-left: 15px; padding-right: 15px; }
+                                                .fw-bold {font - weight: bold; }
+                                                .mt-1 {margin - top: 0.25rem; }
+                                                .mt-4 {margin - top: 1.5rem; }
+                                                .mb-1 {margin - bottom: 0.25rem; }
+                                                .mb-3 {margin - bottom: 1rem; }
+                                                .pb-3 {padding - bottom: 1rem; }
+                                                .py-0 {padding - top: 0; padding-bottom: 0; }
+                                                .py-2 {padding - top: 0.5rem; padding-bottom: 0.5rem; }
+                                                .py-4 {padding - top: 1.5rem; padding-bottom: 1.5rem; }
+                                                .px-0 {padding - left: 0; padding-right: 0; }
+                                                .px-2 {padding - left: 0.5rem; padding-right: 0.5rem; }
+                                                .ps-2 {padding - left: 0.5rem; }
+                                                .pe-0 {padding - right: 0; }
+                                                .position-absolute {position: absolute; }
+                                                .position-relative {position: relative; }
+                                                .bottom-0 {bottom: 0; }
+                                                .start-0 {left: 0; }
+                                                .w-100 {width: 100%; }
+                                                .d-flex {display: flex; }
+                                                .justify-content-center {justify - content: center; }
+                                                .align-items-end {align - items: flex-end; }
+                                                .h-100 {height: 100%; }
+
+                                                @media print {
+                                                    body {background: white; }
+                                                .base-kartunama {page -break-after: always; border: none; }
+                }
+                                            </style>
+                                        </head>
+                                        <body>
+                                            <div class="page-container">
+                                                <!-- ===== FRONT CARD ===== -->
+                                                <!-- Reference: refrence/src/Component/Preview.jsx -->
+                                                <div class="base-kartunama px-2 py-0 position-relative">
+                                                    <div class="container-fluid py-0">
+                                                        <div class="col-12 mt-4 py-0">
+                                                            <!-- Logo with negative margin to compensate for image whitespace -->
+                                                            <div class="col-12 py-0 pb-3" style="margin-left: -10px;">
+                                                                <img src="${ASSET_BASE}/logo-indofoodcbp-cbp.png" class="logo-kartunama" alt="Indofood CBP" />
+                                                            </div>
+
+                                                            <div class="container-fluid ps-2 py-2">
+                                                                <div class="row px-0 " style="margin-top: 25px;">
+                                                                    <!-- LEFT COLUMN: User Info -->
+                                                                    <div class="col-6 px-0 py-0">
+                                                                        <div class="container-fluid py-0">
+                                                                            <div class="row py-0">
+                                                                                <!-- Name -->
+                                                                                <div class="col-12 fw-bold nama-kartunama" style="margin-bottom: 2px;">
+                                                                                    ${data.name}
+                                                                                </div>
+                                                                                <!-- Position -->
+                                                                                <div class="col-12 fs-18px" style="margin-bottom: 2px;">
+                                                                                    ${data.position}
+                                                                                </div>
+                                                                                <!-- Division under position (like reference) -->
+                                                                                <div class="col-12 fs-20px" style="margin-bottom: 15px;">
+                                                                                    International Operations Division
+                                                                                </div>
+                                                                                <!-- Phone -->
+                                                                                <div class="col-12 fs-18px" style="margin-bottom: 2px;">
+                                                                                    ${data.cellPhone || ''}
+                                                                                </div>
+                                                                                <!-- Email -->
+                                                                                <div class="col-12 ${emailFontSize}">
+                                                                                    ${data.email}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <!-- RIGHT COLUMN: Company & Address -->
+                                                                    <div class="col-6 px-0 py-0">
+                                                                        <div class="container-fluid py-0 px-0">
+                                                                            <div class="row">
+                                                                                <!-- PT INDOFOOD CBP Logo - ALIGN TOP with Name -->
+                                                                                <div class="col-12 perusahaan-kartunama pe-0 no-gap-print">
+                                                                                    <img src="${ASSET_BASE}/PT-Indofood-cbp-Sukses-Makmur.png"
+                                                                                        class="logo-kartunama"
+                                                                                        style="width: 93%;" />
+                                                                                </div>
+                                                                                <!-- Address Block with proper spacing -->
+                                                                                <div style="margin-top: 8px;">
+                                                                                    <div class="col-12 fs-22px" style="margin-bottom: 1px; margin-top: 8px;">Sudirman asas Plaza</div>
+                                                                                    <div class="col-12 fs-22px" style="margin-bottom: 1px;">Indofood Tower, 23<sup>rd</sup> Floor</div>
+                                                                                    <div class="col-12 fs-22px" style="margin-bottom: 1px;">Jl. Jend. Sudirman Kav. 76 - 78</div>
+                                                                                    <div class="col-12 fs-22px" style="margin-bottom: 1px;">Jakarta 12910, Indonesia</div>
+                                                                                    <div class="col-12 fs-22px" style="margin-bottom: 1px;">T. +6221 5795 8822${data.extPhone && data.extPhone >= 1000 ? ' ext.' + data.extPhone : ''}</div>
+                                                                                    <div class="col-12 fs-22px" style="margin-bottom: 1px;">F. +6221 5793 7422</div>
+                                                                                    <div class="col-12 fs-22px">www.indofoodcbp.com</div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <!-- Blue footer bar -->
+                                                    <div class="col-12 w-100 position-absolute bottom-0 start-0 footer-kartunama"></div>
+                                                </div>
+
+                                                <!-- ===== BACK CARD ===== -->
+                                                <div class="base-kartunama position-relative">
+
+                                                    <!-- CENTER WRAPPER (accounts for footer + padding) -->
+                                                    <div style="
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: calc(100% - 17.00787px); /* footer height */
+        padding-top: 11.33px;           /* same as card */
+        box-sizing: border-box;
+    ">
+
+                                                        <!-- QR Code -->
+                                                        ${qrCodeDataUrl
+                ? `<img src="${qrCodeDataUrl}" style="width:100px;height:100px;margin-bottom:10px;" />`
+                : `<div style="width:100px;height:100px;background:#f8f8f8;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;margin-bottom:10px;">QR Code</div>`
+            }
+
+                                                        <!-- Subsidiary text -->
+                                                        <div class="text-subsidiary" style="margin-bottom:8px;">
+                                                            a subsidiary of:
+                                                        </div>
+
+                                                        <!-- Indofood Logo -->
+                                                        <img src="${ASSET_BASE}/logo-indofood.png" style="width:170px;" />
+                                                    </div>
+
+                                                    <!-- Footer -->
+                                                    <div class="w-100 position-absolute bottom-0 start-0 footer-kartunama"></div>
+                                                </div>
+                                            </div>
+                                        </body>
+                                    </html>
+                                    `;
+        return html;
+    },
+
+    /**
+     * Card Name Document Generator
+     * Generates PDF business card for a user
+     * @param {Object} config - Template configuration
+                                    * @param {number} targetUserId - User ID to generate card for
+                                    * @param {Object} params - Additional parameters
+                                    * @returns {string} File path of generated PDF
+                                    */
+    cardname_document_generator: async (config, targetUserId, params = {}) => {
+        const documentType = 'business_card';
+
+        // Check if document already exists in t_generated_document
+        const [existingDoc] = await dbHots.promise().query(`
+                                    SELECT id, file_path, file_name, generated_date
+                                    FROM t_generated_documents
+                                    WHERE document_type = ? AND created_by = ? AND ticket_id = 0
+                                    ORDER BY generated_date DESC
+                                    LIMIT 1
+                                    `, [documentType, targetUserId]);
+
+        if (existingDoc && existingDoc.length > 0) {
+            const existingPath = existingDoc[0].file_path;
+            // Check if file still exists
+            if (fs.existsSync(existingPath)) {
+                console.log(`📇 [CARD_GEN] Using cached card for user ${targetUserId}: ${existingPath}`);
+                return existingPath;
+            }
+        }
+
+        // Generate new document
+        const fileName = `card_${targetUserId}_${Date.now()}.pdf`;
+        const filePath = path.join('public', 'hots', 'generateddocuments', 'cards', fileName);
+
+        const dirPath = path.dirname(filePath);
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath, { recursive: true });
+        }
+
+        // Fetch user data with job title and profile
+        const [userData] = await dbHots.promise().query(`
+                                    SELECT
+                                    u.user_id,
+                                    u.firstname,
+                                    u.lastname,
+                                    CONCAT(u.firstname, ' ', u.lastname) AS fullname,
+                                    u.email,
+                                    u.phone AS ext_phone,
+                                    jt.job_title AS job_title_name,
+                                    d.department_name
+                                    FROM user u
+                                    LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
+                                    LEFT JOIN m_department d ON u.department_id = d.department_id
+                                    WHERE u.user_id = ?
+                                    `, [targetUserId]);
+
+        if (!userData || userData.length === 0) {
+            throw new Error(`User not found with ID: ${targetUserId}`);
+        }
+
+        const user = userData[0];
+
+        // Fetch cell phone from user_profile
+        const [profileData] = await dbHots.promise().query(`
+                                    SELECT attribute_value
+                                    FROM user_profile
+                                    WHERE user_id = ? AND attribute_name = 'phone' AND is_active = 1
+                                    LIMIT 1
+                                    `, [targetUserId]);
+
+        user.cell_phone = profileData[0]?.attribute_value || '';
+
+        console.log(`📇 [CARD_GEN] Generating card for user ${targetUserId}: ${user.fullname}`);
+
+        // Generate HTML
+        const html = await module.exports.generateCardNameHTML(user, params);
+
+        // Generate PDF using Puppeteer
+        const browser = await puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        const page = await browser.newPage();
+
+        await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Allow fonts/images to load
+
+        // PDF height: 312px × 2 cards + 20px gap = 644px
+        await page.pdf({
+            path: filePath,
+            width: '510px',
+            height: '644px',
+            printBackground: true,
+            margin: { top: 0, right: 0, bottom: 0, left: 0 }
+        });
+
+        await browser.close();
+
+        // Save to t_generated_document to prevent regeneration
+        try {
+            await dbHots.promise().query(`
+                INSERT INTO t_generated_documents 
+                (ticket_id, document_type, file_path, file_name, generated_date, template_used, created_by)
+                VALUES (0, ?, ?, ?, NOW(), 'business_card_v1', ?)
+            `, [documentType, filePath, fileName, targetUserId]);
+            console.log(`📇 [CARD_GEN] Document record saved to t_generated_document`);
+        } catch (dbError) {
+            console.error('Failed to save document record:', dbError);
+            // Don't throw - document was still generated
+        }
+
+        console.log(`📇 [CARD_GEN] Card generated: ${filePath}`);
+
+        return filePath;
+    },
+
+    /**
+     * Get User Card Data (for frontend preview)
+     * Returns user info for the Card Generator widget
+     */
+
+    fetchUserCardData: async (userId) => {
+        const [userData] = await dbHots.promise().query(`
+                                    SELECT
+                                    u.user_id,
+                                    u.nik,
+                                    u.firstname,
+                                    u.lastname,
+                                    CONCAT(u.firstname, ' ', u.lastname) AS fullname,
+                                    u.email,
+                                    u.phone AS ext_phone,
+                                    jt.job_title AS job_title_name,
+                                    d.department_name
+                                    FROM user u
+                                    LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
+                                    LEFT JOIN m_department d ON u.department_id = d.department_id
+                                    WHERE u.user_id = ?
+                                    `, [userId]);
+
+        if (!userData || userData.length === 0) {
+            return null;
+        }
+
+        const user = userData[0];
+
+        // Fetch cell phone from user_profile
+        const [profileData] = await dbHots.promise().query(`
+                                    SELECT attribute_value
+                                    FROM user_profile
+                                    WHERE user_id = ? AND attribute_name = 'phone' AND is_active = 1
+                                    LIMIT 1
+                                    `, [userId]);
+
+        // Check for existing active card
+        const [existingCard] = await dbHots.promise().query(`
+                                    SELECT id, file_path, file_name, generated_date
+                                    FROM t_generated_documents
+                                    WHERE document_type = 'business_card' AND created_by = ? AND ticket_id = 0
+                                    ORDER BY generated_date DESC
+                                    LIMIT 1
+                                    `, [userId]);
+
+        user.cell_phone = profileData[0]?.attribute_value || '';
+
+        // Return normalized object directly
+        return {
+            user_id: user.user_id,
+            nik: user.nik,
+            fullname: user.fullname,
+            company_name: 'PT. INDOFOOD CBP SUKSES MAKMUR', // Default company
+            job_title_name: user.job_title_name || '', // Use correct property name matching generateCardNameHTML expectation
+            department_name: user.department_name || '',
+            email: user.email,
+            cell_phone: user.cell_phone || '',
+            ext_phone: user.ext_phone || '',
+            existing_card: existingCard[0] || null // Return existing card if any
+        };
+    },
+
+    getUserCardData: async (req, res) => {
+        try {
+            const { userId } = req.params;
+            const data = await module.exports.fetchUserCardData(userId);
+
+            if (!data) {
+                return res.status(404).json({ success: false, message: 'User not found' });
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    ...data,
+                    // Frontend expects these specific keys for display
+                    job_title: data.job_title_name,
+                    department: data.department_name
+                }
+            });
+        } catch (error) {
+            console.error('❌ [getUserCardData] Error:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
+    /**
+     * Get Card Profile (PUBLIC - no auth required)
+     * GET /hots_settings/card/profile?employee_id=xxx
+     * Used by QR code to display user's digital business card
+     */
+    getCardProfile: async (req, res) => {
+        try {
+            const { employee_id } = req.query;
+
+            if (!employee_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Employee ID is required'
+                });
+            }
+
+            // Decrypt the employee ID (or accept raw user_id for testing)
+            let userId;
+            try {
+                userId = encrypts.decryptEmployeeId(decodeURIComponent(employee_id));
+            } catch (decryptError) {
+                // Fallback: accept raw user_id for testing purposes
+                if (/^\d+$/.test(employee_id)) {
+                    userId = employee_id;
+                    console.log(`⚠️ [getCardProfile] Using raw user_id for testing: ${userId}`);
+                } else {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Invalid employee ID'
+                    });
+                }
+            }
+
+            // Fetch user data
+            const [userData] = await dbHots.promise().query(`
+                                    SELECT
+                                    u.user_id,
+                                    u.firstname,
+                                    u.lastname,
+                                    CONCAT(u.firstname, ' ', u.lastname) AS fullname,
+                                    u.email,
+                                    u.phone AS ext_phone,
+                                    jt.job_title AS job_title_name,
+                                    d.department_name
+                                    FROM user u
+                                    LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
+                                    LEFT JOIN m_department d ON u.department_id = d.department_id
+                                    WHERE u.user_id = ? AND u.active = 1
+                                    `, [userId]);
+
+            if (!userData || userData.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
+
+            const user = userData[0];
+
+            // Fetch profile attributes (phone, linkedin)
+            const [profileData] = await dbHots.promise().query(`
+                                    SELECT attribute_name, attribute_value
+                                    FROM user_profile
+                                    WHERE user_id = ? AND is_active = 1
+                                    `, [userId]);
+
+            // Map profile attributes
+            const profileMap = {};
+            profileData.forEach(attr => {
+                profileMap[attr.attribute_name] = attr.attribute_value;
+            });
+
+            // Check for existing business card (latest)
+            const [cards] = await dbHots.promise().query(
+                'SELECT file_path FROM t_generated_documents WHERE document_type = ? AND created_by = ? AND ticket_id = 0 ORDER BY generated_date DESC LIMIT 1',
+                ['business_card', userId]
+            );
+
+            let downloadUrl = null;
+            if (cards.length > 0) {
+                const rawPath = cards[0].file_path;
+                const normalizedPath = rawPath.replace(/\\/g, '/');
+                downloadUrl = `${process.env.APP_URL || 'https://backend.indofoodinternational.com:2864'}/${normalizedPath}`;
+            }
+
+            // Build response with social links
+            const response = {
+                success: true,
+                data: {
+                    user_id: user.user_id,
+                    fullname: user.fullname,
+                    position: user.job_title_name || '',
+                    department: user.department_name || 'International Operations Division',
+                    email: user.email,
+                    phone: profileMap.phone || user.ext_phone || '',
+                    linkedin: profileMap.linkedin || '',
+                    // Fixed company info
+                    company: 'PT. INDOFOOD CBP SUKSES MAKMUR Tbk',
+                    website: 'https://www.indofoodcbp.com/',
+                    location: 'https://www.google.com/maps/place/Indofood+Tower,+Jl.+Jenderal+Sudirman+No.76-78,+RT.3%2FRW.3,+Kuningan,+Setia+Budi,+Kecamatan+Setiabudi,+Kota+Jakarta+Selatan,+Daerah+Khusus+Ibukota+Jakarta+10250/@-6.2082454,106.8224468,17z',
+                    address: 'Sudirman Plaza, Indofood Tower 23rd Floor, Jl. Jend. Sudirman Kav. 76-78, Jakarta 12910',
+                    // Encrypted ID for card download
+                    encrypted_id: employee_id,
+                    download_url: downloadUrl // Public download URL
+                }
+            };
+
+            res.json(response);
+        } catch (error) {
+            console.error('❌ [getCardProfile] Error:', error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    },
+
+    /**
+     * Generate Card for User (API endpoint)
+     * POST /hots_settings/custom_functions/generate_card
+     */
+    generateCard: async (req, res) => {
+        try {
+            const { target_user_id } = req.body;
+            const requestingUserId = req.dataToken?.user_id;
+
+            // Dual mode: Use target_user_id if provided, else use self
+            const userIdToGenerate = target_user_id || requestingUserId;
+
+            if (!userIdToGenerate) {
+                return res.status(400).json({ success: false, message: 'No user ID provided' });
+            }
+
+            console.log(`📇 [CARD_API] Generating card for user ${userIdToGenerate} (requested by ${requestingUserId})`);
+
+            const filePath = await module.exports.cardname_document_generator({}, userIdToGenerate, {});
+
+            // Save to generated documents
+            await dbHots.promise().query(`
+                                    INSERT INTO t_generated_documents
+                                    (ticket_id, document_type, file_path, file_name, generated_date, template_used, created_by)
+                                    VALUES (0, 'card_name', ?, ?, NOW(), 'cardname_document', ?)
+                                    `, [filePath, path.basename(filePath), requestingUserId]);
+
+            res.json({
+                success: true,
+                message: 'Card generated successfully',
+                data: {
+                    file_path: filePath,
+                    file_name: path.basename(filePath),
+                    download_url: `/${filePath.replace(/\\/g, '/')}`
+                }
+            });
+        } catch (error) {
+            console.error('❌ [generateCard] Error:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
+    /**
+     * Delete Generated Card
+     * POST /hots_settings/custom_functions/delete_card
+     */
+    deleteUserCard: async (req, res) => {
+        try {
+            const { target_user_id } = req.body;
+
+            if (!target_user_id) {
+                return res.status(400).json({ success: false, message: 'User ID is required' });
+            }
+
+            // Find the latest card
+            const [cards] = await dbHots.promise().query(`
+                                    SELECT id, file_path
+                                    FROM t_generated_documents
+                                    WHERE document_type = 'business_card' AND created_by = ? AND ticket_id = 0
+                                    ORDER BY generated_date DESC
+                                    LIMIT 1
+                                    `, [target_user_id]);
+
+            if (cards.length === 0) {
+                return res.status(404).json({ success: false, message: 'No card found to delete' });
+            }
+
+            const card = cards[0];
+
+            // Delete file if exists
+            if (card.file_path && fs.existsSync(card.file_path)) {
+                try {
+                    fs.unlinkSync(card.file_path);
+                    console.log(`🗑️ [CARD_DELETE] Deleted file: ${card.file_path}`);
+                } catch (err) {
+                    console.error(`⚠️ [CARD_DELETE] Failed to delete file: ${err.message}`);
+                }
+            }
+
+            // Delete record from DB
+            await dbHots.promise().query(`
+                                    DELETE FROM t_generated_documents WHERE id = ?
+                                    `, [card.id]);
+
+            console.log(`🗑️ [CARD_DELETE] Deleted record ID: ${card.id} for user ${target_user_id}`);
+
+            res.json({ success: true, message: 'Card deleted successfully' });
+
+        } catch (error) {
+            console.error('❌ [deleteUserCard] Error:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
+    /**
+     * Preview Card Name HTML
+     * Returns HTML string for immediate frontend preview
+     */
+    previewCard: async (req, res) => {
+        try {
+            const { target_user_id } = req.params;
+            const requestingUserId = req.dataToken?.user_id;
+
+            // Use target user or requester
+            const userId = target_user_id || requestingUserId;
+
+            if (!userId) {
+                return res.status(400).send('User ID required');
+            }
+
+            // Fetch user data using internal helper
+            const userData = await module.exports.fetchUserCardData(userId);
+
+            if (!userData) {
+                return res.status(404).send('User not found');
+            }
+
+            // Generate HTML
+            const html = await module.exports.generateCardNameHTML(userData);
+
+            res.send(html);
+        } catch (error) {
+            console.error('❌ [previewCard] Error:', error);
+            res.status(500).send('Error generating preview');
+        }
+    },
+
+    /**
+     * Search Users for Card Generator
+     * GET /hots_settings/custom_functions/search_users?q=searchterm
+     */
+    searchUsersForCard: async (req, res) => {
+        try {
+            const { q } = req.query;
+            const searchTerm = `%${q || ''}%`;
+
+            const [users] = await dbHots.promise().query(`
+                                    SELECT
+                                    u.user_id,
+                                    u.nik,
+                                    CONCAT(u.firstname, ' ', u.lastname) AS fullname,
+                                    jt.job_title AS job_title_name,
+                                    d.department_name
+                                    FROM user u
+                                    LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
+                                    LEFT JOIN m_department d ON u.department_id = d.department_id
+                                    WHERE u.active = 1
+                                    AND (
+                                    CONCAT(u.firstname, ' ', u.lastname) LIKE ?
+                                    OR u.nik LIKE ?
+                                    OR u.email LIKE ?
+                                    )
+                                    ORDER BY u.firstname ASC
+                                    LIMIT 20
+                                    `, [searchTerm, searchTerm, searchTerm]);
+
+            res.json({
+                success: true,
+                data: users.map(u => ({
+                    value: u.user_id,
+                    label: `${u.fullname} | ${u.nik || 'No NIK'}`,
+                    job_title: u.job_title_name,
+                    department: u.department_name
+                }))
+            });
+        } catch (error) {
+            console.error('❌ [searchUsersForCard] Error:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
     },
 
 

@@ -90,7 +90,12 @@ const AVAILABLE_COLUMNS = [
     { key: 'Status', label: 'Status', default: true },
 ];
 
-const SRFReportPage: React.FC = () => {
+interface SRFReportPageProps {
+    searchValue?: string;
+    serviceId?: number; // Added for consistency with other panels
+}
+
+const SRFReportPage: React.FC<SRFReportPageProps> = ({ searchValue }) => {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<SRFData[]>([]);
     const [summary, setSummary] = useState<Summary>({ total: 0, pending: 0, approved: 0, rejected: 0 });
@@ -130,7 +135,9 @@ const SRFReportPage: React.FC = () => {
                 ...(filters.country && { country: filters.country }),
                 ...(filters.type && { type: filters.type }),
                 // Pass category based on activeTab
-                ...(activeTab !== 'all' && { category: activeTab })
+                ...(activeTab !== 'all' && { category: activeTab }),
+                // Global Search
+                ...(searchValue && { search: searchValue })
             });
 
             const res = await axios.get(`${API_URL}/hotsdashboard/report_srf?${params}`, { headers });
@@ -153,7 +160,7 @@ const SRFReportPage: React.FC = () => {
 
     useEffect(() => {
         fetchData();
-    }, [filters, pagination.page, activeTab]);
+    }, [filters, pagination.page, activeTab, searchValue]);
 
     const handleFilterChange = (key: string, value: string) => {
         setFilters(prev => ({ ...prev, [key]: value }));

@@ -16,23 +16,23 @@
 
 const authRouter = require('./auth')
 const authTmRouter = require('./authTM')
-const cartRouter = require('./cart')
-const userRouter = require('./user')
-const orderRouter = require('./order')
-const eventRouter = require('./event')
-const productRouter = require('./product')
-const adminRouter = require('./admin')
-const spectatorRouter = require('./spectator')
+const cartRouter = require('./OnlineOrder/cart')
+const userRouter = require('./OnlineOrder/user')
+const orderRouter = require('./OnlineOrder/order')
+const eventRouter = require('./OnlineOrder/event/event')
+const productRouter = require('./OnlineOrder/product')
+const adminRouter = require('./OnlineOrder/admin')
+const spectatorRouter = require('./OnlineOrder/spectator')
 const trademarkRouter = require('./trademark')
 const authRouterTest = require('./auth_test')
-const productRouterTest = require('./product_test')
+const debugRouter = require('./debug')
 const cardGenerator = require('./cardGenerator')
 
-const shortener = require('./shortener')
+const shortener = require('./shortener/shortener')
 const srtsRouter = require('./searates/srtsRouter')
 
 // HOTS
-const hotsTps = require('./hots/hotsTps')
+
 const hotsAuth = require('./hots/hotsAuth')
 const hotsAdmin = require('./hots/hotsAdmin')
 const hotsTicket = require('./hots/hotsTicket')
@@ -43,6 +43,7 @@ const hotspublic = require('./hots/hotsPublic')
 const hotsReporting = require('./hots/hotsReporting')
 const hotsPreferences = require('./hots/hotsPreferences')
 const hotsProfile = require('./hots/hotsProfile')
+const hotsNotification = require('./hots/hotsNotification')
 
 // Project Manager routes
 const projectmngr = require('./project_manager/project_routes')
@@ -76,10 +77,12 @@ const workflowadminRouter = require('./engine/workflowAdminRouters')
 const triggerRouter = require('./engine/triggerRouters')
 const engineWorkDataRouter = require('./engine/engineWorkData')
 const engineAssignmentRouter = require('./engine/engineAssignment')
-const cmsRouter = require('./cms/cmsRouter');
-
-// Coupon System
-const couponRouter = require('./coupon');
+const engineReportRouter = require('./engine/engineReport')
+const cmsRouter = require('./cms/cmsRouter')
+const couponRouter = require('./coupon')
+const sseRouter = require('./hots/sse')
+const eventEnginePublicRouter = require('./eventEngine/public')
+const eventEnginePrivateRouter = require('./eventEngine/private')
 
 module.exports = {
     authRouter,
@@ -92,7 +95,7 @@ module.exports = {
     spectatorRouter,
     trademarkRouter,
     authRouterTest,
-    productRouterTest,
+
     cardGenerator,
     eventRouter,
     shortener,
@@ -100,7 +103,7 @@ module.exports = {
     srtsRouter,
 
     // hots
-    hotsTps,
+
     hotscustomfunction,
     hotsAuth,
     hotsAdmin,
@@ -111,6 +114,7 @@ module.exports = {
     hotsReporting,
     hotsPreferences,
     hotsProfile,
+    hotsNotification,
 
 
     // Project Manager modules
@@ -146,8 +150,20 @@ module.exports = {
     triggerRouter,
     engineWorkDataRouter,
     engineAssignmentRouter,
+    engineReportRouter, // 🆕 Reporting Router
     cmsRouter,
 
     // Coupon System
-    couponRouter
+    couponRouter,
+
+    // SSE
+    sseRouter,
+
+    // Debug
+    debugRouter,
+
+    // Event Engine
+    // Event Engine
+    eventEnginePublicRouter,
+    eventEnginePrivateRouter
 }

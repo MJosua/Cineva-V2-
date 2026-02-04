@@ -8,7 +8,7 @@ const {
     dbQuery
 } = require("../../../../config/db");
 
-const { uploadFile } = require("../../../order");
+const { uploadFile } = require("../../../OnlineOrder/order");
 const { hotsMailer } = require('../../../../service/mailer/hots/hots_mailer');
 const { ConsoleInfo } = require("../../../../script/Utility/consoleinfo");
 

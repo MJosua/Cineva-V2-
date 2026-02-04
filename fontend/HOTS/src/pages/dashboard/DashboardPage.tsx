@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import axios from "axios";
 import { API_URL } from "@/config/sourceConfig";
+import { useHeader } from "@/contexts/HeaderContext";
 
 // Type for service summary data from API
 interface ServiceSummary {
@@ -76,8 +77,22 @@ const DashboardPage: React.FC = () => {
         fetchSummaries();
     }, [data]);
 
+    // Filter data based on search value
+    const { searchValue, setSearchPlaceholder } = useHeader();
+
+    useEffect(() => {
+        setSearchPlaceholder("Search dashboard...");
+    }, [setSearchPlaceholder]);
+
+    const filteredData = data.filter(func =>
+        !searchValue ||
+        func.title.toLowerCase().includes(searchValue.toLowerCase()) ||
+        (func.description && func.description.toLowerCase().includes(searchValue.toLowerCase())) ||
+        (func.category_name && func.category_name.toLowerCase().includes(searchValue.toLowerCase()))
+    );
+
     // Group by category
-    const grouped = data.reduce<Record<string, typeof data>>((acc, func) => {
+    const grouped = filteredData.reduce<Record<string, typeof data>>((acc, func) => {
         const category = func.category_name || "General";
         if (!acc[category]) acc[category] = [];
         acc[category].push(func);
@@ -104,43 +119,55 @@ const DashboardPage: React.FC = () => {
     };
 
     return (
-        <AppLayout>
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Dashboard Item</h1>
-                        <p className="text-gray-600">Browse all reporting function available in HOTS</p>
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Dashboard Item</h1>
+                    <p className="text-gray-600">Browse all reporting function available in HOTS</p>
+                </div>
+            </div>
+
+            {loading && (
+                <Skeleton className="h-48 w-full">
+                </Skeleton>
+            )}
+
+            {grouped && Object.keys(grouped).length === 0 && !loading && (
+                <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                    <Database className="w-12 h-12 mb-4 opacity-20" />
+                    <p className="text-lg font-medium">
+                        {searchValue ? `No dashboard items match "${searchValue}"` : "You don't have access to any dashboard reports."}
+                    </p>
+                    {searchValue ? (
+                        <p className="text-sm">Try using different keywords.</p>
+                    ) : (
+                        <p className="text-sm">Contact your administrator if you believe this is an error.</p>
+                    )}
+                </div>
+            )}
+
+            {grouped && Object.entries(grouped).map(([category, functions]) => (
+                <div key={category}>
+
+                    <div className="flex items-center space-x-3 mb-4">
+                        <div className={`p-2 rounded-lg rounded-lg bg-green-100`}>
+                            <Database className="w-6 h-6 text-green-700" />
+                        </div>
+                        <h2 className="text-xl font-semibold text-green-900">{category}</h2>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        {functions.map((func) => (
+                            <DashboardCardEnhanced
+                                key={func.id}
+                                func={func}
+                                summary={getCardSummary(func)}
+                            />
+                        ))}
                     </div>
                 </div>
-
-                {loading && (
-                    <Skeleton className="h-48 w-full">
-                    </Skeleton>
-                )}
-
-                {grouped && Object.entries(grouped).map(([category, functions]) => (
-                    <div key={category}>
-
-                        <div className="flex items-center space-x-3 mb-4">
-                            <div className={`p-2 rounded-lg rounded-lg bg-green-100`}>
-                                <Database className="w-6 h-6 text-green-700" />
-                            </div>
-                            <h2 className="text-xl font-semibold text-green-900">{category}</h2>
-                        </div>
-
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                            {functions.map((func) => (
-                                <DashboardCardEnhanced
-                                    key={func.id}
-                                    func={func}
-                                    summary={getCardSummary(func)}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </AppLayout>
+            ))}
+        </div>
     );
 };
 

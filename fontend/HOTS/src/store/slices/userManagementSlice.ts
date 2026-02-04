@@ -50,6 +50,7 @@ export interface Department {
   department_head?: number;
   description?: string;
   head_name?: string;
+  head_fullname?: string;
   is_deleted: number;
   created_date: string;
   finished_date?: string | null;

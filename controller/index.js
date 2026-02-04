@@ -1,15 +1,16 @@
-const authController = require('./auth');
+const authController = require('./OnlineOrder/auth');
 const authTmController = require('./authTM');
-const cartController = require('./cart');
+const cartController = require('./OnlineOrder/cart');
 const userController = require('./user');
-const orderController = require('./order');
-const eventController = require('./event');
-const productController = require('./product');
+const orderController = require('./OnlineOrder/order');
+const debug_controller = require('./debug_controller');
+const eventController = require('./OnlineOrder/event');
+const productController = require('./OnlineOrder/product');
 const adminController = require('./admin');
-const spectatorController = require('./spectator');
+const spectatorController = require('./OnlineOrder/spectator');
 const trademarkController = require('./trademark')
 const authControllerTest = require('./auth_test')
-const productControllerTest = require('./product_test')
+const productControllerTest = require('./debug_controller')
 
 const cardGenerator = require('./cardGenerator')
 
@@ -17,7 +18,7 @@ const cardGenerator = require('./cardGenerator')
 
 const hotsAuth = require('./hots_controller/auth/controllers/authController'); // HOTS authentication (organized in auth folder)
 const hotsAdmin = require('./hots_controller/admin/controllers/adminController'); // 🔧 Phase 5: Moved to module
-const hotsTicket = require('./hots_controller/ticketing/controllers/ticketController'); // 🔧 Reorganized: moved under hots_controller
+const hotsTicket = require('./hots_controller/_old/hotsTicket_legacy'); // 🔧 Reorganized: moved to _old
 const hotsSettingsController = require('./hots_controller/settings/controllers/settingsController'); // 🔧 Phase 5: Moved to module
 const hotsTps = require('./hots_controller/tps/controllers/tpsController'); // 🔧 Phase 5: Moved to module
 const hotscustomfunctionController = require('./hots_controller/customfunction/controllers/customfunctionController'); // 🔧 Phase 5: Moved to module
@@ -25,7 +26,7 @@ const hotsSRFController = require('./hots_controller/srf/controllers/srfControll
 const hotsPublicController = require('./hots_controller/public/controllers/publicController'); // 🔧 Phase 5: Moved to module
 
 
-const shortenerController = require('./shortenerController')
+const shortenerController = require('./shortener/shortenerController')
 
 
 const srtsController = require('./searates/srtsController')

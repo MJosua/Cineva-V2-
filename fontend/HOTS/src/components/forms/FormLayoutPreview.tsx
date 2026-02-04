@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FormField, FormSection, RowGroup, FormStructureItem } from '@/types/formTypes';
+import { FormField, FormSection, RowGroup, FormStructureItem, SpecialElement } from '@/types/formTypes';
 import { GripVertical } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -128,14 +128,11 @@ export const FormLayoutPreview: React.FC<FormLayoutPreviewProps> = ({ items, onU
               </div>
             )
           } else if (item.type === 'specialfunc') {
-            const specialfunc = item.data as specialfunc;
+            const specialfunc = item.data as SpecialElement;
             return (
               <div key={item.id} className="p-3 bg-pink-50 border border-orange-200 rounded-lg">
                 <div className="text-sm font-semibold text-orange-800">
                   🗂️ {specialfunc.title || 'function'}
-                </div>
-                <div className="text-xs text-orange-600 mt-1">
-                  Max rows: {specialfunc.maxRows || 10}
                 </div>
               </div>
             )
@@ -260,7 +257,7 @@ export const FormLayoutPreview: React.FC<FormLayoutPreviewProps> = ({ items, onU
                       </Draggable>
                     );
                   } else if (item.type === 'specialfunc') {
-                    const specialfunc = item.data as specialfunc;
+                    const specialfunc = item.data as SpecialElement;
                     const cstmCol = `cstm_col${fieldCounter}`;
                     const lblCol = `lbl_col${fieldCounter}`;
                     fieldCounter++;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { AppLayout } from "@/components/layout/AppLayout";
+// import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,9 @@ import { FilePreview } from "@/components/ui/FilePreview";
 import TaskApprovalActions from "@/components/ui/TaskApprovalActions";
 import WidgetRenderer from "@/widgets/WidgetRenderer";
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppSelector';
-import { fetchTicketDetail, approveTicket, rejectTicket, clearTicketDetail } from '@/store/slices/ticketsSlice';
+/* REMOVED LEGACY IMPORTS - ADDED ENGINE IMPORTS */
+// import { fetchTicketDetail, approveTicket, rejectTicket, clearTicketDetail } from '@/store/slices/ticketsSlice';
+import { fetchTicketDetail, approveTicketEngine, rejectTicketEngine, clearTicketDetail } from '@/store/slices/ticketsSlice';
 import { fetchGeneratedDocuments, fetchFunctionLogs } from '@/store/slices/customFunctionSlice';
 import { useToast } from '@/hooks/use-toast';
 import { API_URL } from '@/config/sourceConfig';
@@ -33,7 +35,7 @@ import { SuggestionInsertInput } from '@/components/forms/SuggestionInsertInput'
 import { fetchUsers } from '@/store/slices/userManagementSlice';
 import { SuggestionInsertInputWrapper } from '@/components/forms/SuggestionInsertInputWrapper';
 import axios from 'axios';
-import { socket } from '@/lib/socket';
+// import { socket } from '@/lib/socket'; // Removed during SSE migration
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 
@@ -47,11 +49,27 @@ const TicketDetail = () => {
   const [refreshticketdetail, setRefreshticketdetail] = useState(false)
   const [selectedToEmails, setSelectedToEmails] = useState("");
 
-  const { ticketDetail, isLoadingDetail, detailError, isSubmitting } = useAppSelector(state => state.tickets);
+  const { ticketDetail, isLoadingDetail, detailError, isSubmitting, sseSignals } = useAppSelector(state => state.tickets);
 
 
   const [isDeleteTicketOpen, setIsDeleteTicketOpen] = useState(false);
   const [isCloseTicketOpen, setIsCloseTicketOpen] = useState(false);
+
+  // 🆕 SSE Signal Listener for Comments and Documents
+  useEffect(() => {
+    if (sseSignals?.comment) {
+      console.log('📡 SSE Signal: Refreshing Comments');
+      getData_comment();
+    }
+  }, [sseSignals?.comment]);
+
+  useEffect(() => {
+    if (sseSignals?.document && id) {
+      console.log('📡 SSE Signal: Refreshing Documents & Detail');
+      dispatch(fetchTicketDetail(id));
+      dispatch(fetchGeneratedDocuments(parseInt(id)));
+    }
+  }, [sseSignals?.document, id, dispatch]);
 
   const handleDeleteTicket = async () => {
     if (!ticketDetail || !id) {
@@ -201,14 +219,15 @@ const TicketDetail = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const handleApprove = async () => {
-    if (!ticketDetail || !id) return;
+    if (!ticketDetail || !id || !user) return;
 
     const currentStep = ticketDetail.workflow_step || 1;
 
     try {
-      await dispatch(approveTicket({
+      await dispatch(approveTicketEngine({
         ticketId: id,
-        approvalOrder: currentStep
+        approvalOrder: currentStep,
+        approver_id: user.user_id
       })).unwrap();
 
       toast({
@@ -339,15 +358,16 @@ const TicketDetail = () => {
 
 
   const handleReject = async (reason: string) => {
-    if (!ticketDetail || !id) return;
+    if (!ticketDetail || !id || !user) return;
 
     const currentStep = ticketDetail.workflow_step || 1;
 
     try {
-      await dispatch(rejectTicket({
+      await dispatch(rejectTicketEngine({
         ticketId: id,
         approvalOrder: currentStep,
-        rejectionRemark: reason
+        rejectionRemark: reason,
+        approver_id: user.user_id
       })).unwrap();
 
       toast({
@@ -586,7 +606,8 @@ const TicketDetail = () => {
       setComment('');
       setImage(null);
       getData_comment();
-      socket.emit('message', comment.trim());
+      getData_comment();
+      // socket.emit('message', comment.trim()); // Removed during SSE migration
     }).catch(() => {
       setIsLoading(false);
       toast({
@@ -628,18 +649,9 @@ const TicketDetail = () => {
 
 
 
-  useEffect(() => {
-    const onMessage = () => {
-      getData_comment();
-      scrollToBottom();
-    };
-
-    socket.on('message', onMessage);
-
-    return () => {
-      socket.off('message', onMessage);
-    };
-  }, []);
+  // Socket.io logic removed - migration to SSE
+  // Effect for receiving messages via socket removed as SSE handles 'new_comment' event now via useSSE hook
+  // which triggers getData_comment() when sseSignals.comment is true.
 
   useEffect(() => {
     scrollToBottom();
@@ -666,6 +678,7 @@ const TicketDetail = () => {
   const [imagePreview, setImagePreview] = useState(null);
 
   const [url, setURL] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePaste = (event) => {
     const items = event.clipboardData.items;
@@ -777,14 +790,12 @@ const TicketDetail = () => {
 
   if (isLoadingDetail) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="flex flex-col items-center space-y-4">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <p className="text-muted-foreground">Loading ticket details...</p>
-          </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-muted-foreground">Loading ticket details...</p>
         </div>
-      </AppLayout>
+      </div>
     );
   }
 
@@ -810,7 +821,7 @@ const TicketDetail = () => {
 
       return userIsApprover || Number(step.approver_leader) === 1;
     })
-    .sort((a, b) => a.approval_order - b.approval_order);
+    .sort((a, b) => a.order - b.order);
 
   if (
     !hasFetchedUsersRef.current &&
@@ -827,19 +838,17 @@ const TicketDetail = () => {
 
   if (detailError || !ticketDetail) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center space-y-4">
-            <X className="h-12 w-12 text-destructive mx-auto" />
-            <h2 className="text-xl font-semibold">Failed to Load Ticket</h2>
-            <p className="text-muted-foreground">{detailError || 'Ticket not found'}</p>
-            <Button onClick={() => navigate('/task-list')} variant="outline">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Tasks
-            </Button>
-          </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <X className="h-12 w-12 text-destructive mx-auto" />
+          <h2 className="text-xl font-semibold">Failed to Load Ticket</h2>
+          <p className="text-muted-foreground">{detailError || 'Ticket not found'}</p>
+          <Button onClick={() => navigate('/task-list')} variant="outline">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Tasks
+          </Button>
         </div>
-      </AppLayout>
+      </div>
     );
   }
 
@@ -853,7 +862,7 @@ const TicketDetail = () => {
 
 
   return (
-    <AppLayout>
+    <>
       <div className="space-y-6 relative z-0">
         <div className="sticky top-[80px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 pb-4">
           <div className="flex items-center justify-between">
@@ -1046,10 +1055,12 @@ const TicketDetail = () => {
 
             {/* Files Attached */}
             {ticketDetail.files && ticketDetail.files.length > 0 && (
-              <Card className="bg-card shadow-sm border">
-                <CardHeader className="bg-muted/50 border-b">
-                  <CardTitle className="text-lg">Attached Files</CardTitle>
-                </CardHeader>
+
+              <CardCollapsible
+                title="Attached Files"
+                description="File Approval Items Organized Here"
+                defaultOpen
+              >
                 <CardContent className="p-6">
                   <div className="space-y-3">
                     {ticketDetail.files.map((file) => (
@@ -1058,22 +1069,36 @@ const TicketDetail = () => {
                         fileName={file.filename}
                         filePath={file.path}
                         fileSize={file.size}
+                        uploadDate={file.generated_date}
+
                         onDownload={() => handleFileDownload(file.path, file.filename)}
                       />
                     ))}
                   </div>
                 </CardContent>
-              </Card>
+
+              </CardCollapsible>
+
             )}
 
             {/* Generated Documents */}
-            {(isLoadingCustomFunction || (generatedDocuments && generatedDocuments.length > 0)) && (
+            {(isLoadingCustomFunction || (sseSignals?.processingTicketId && sseSignals.processingTicketId === id) || (generatedDocuments && generatedDocuments.length > 0)) && (
               <CardCollapsible
                 title="Ticket Item"
                 description="Generated or Uploaded Items Organized Here"
                 defaultOpen
               >
                 <CardContent className="p-6">
+                  {/* 🆕 Processing Card - Shows only for THIS ticket, not globally */}
+                  {sseSignals?.processingTicketId && sseSignals.processingTicketId === id && (
+                    <div className="flex items-center gap-3 p-4 mb-4 bg-blue-50 border border-blue-200 rounded-lg animate-pulse">
+                      <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-blue-800">Generating Document...</p>
+                        <p className="text-xs text-blue-600">This may take a few seconds. You'll be notified when ready.</p>
+                      </div>
+                    </div>
+                  )}
                   {isLoadingCustomFunction ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="flex flex-col items-center space-y-2">
@@ -1098,7 +1123,7 @@ const TicketDetail = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground text-center py-4">No generated documents found</p>
+                    <p className="text-muted-foreground text-center py-4">Waiting for generated document</p>
                   )}
                 </CardContent>
               </CardCollapsible>
@@ -1160,13 +1185,11 @@ const TicketDetail = () => {
               )}
 
 
-
             <CardCollapsible
               title="Approval Progress"
-              color="bg-white"
+              color={ticketDetail.status_id === 7 ? "bg-red-400" : "bg-white"}
               description="Details about the current progress"
               defaultOpen
-              color={ticketDetail.status_id === 7 && "bg-red-400"}
 
             >
 
@@ -1254,36 +1277,42 @@ const TicketDetail = () => {
                           </div>
 
                           {(messages as any[]).map((msg) => (
-                            <div
-                              key={msg.id}
-                              className={`flex mb-1 ${msg.sender_id === user.user_id ? 'justify-end' : 'justify-start'}`}
-                            >
-                              <div
-                                className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${msg.sender_id === user.user_id
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-muted text-foreground'
-                                  }`}
-                              >
-                                <p className="text-xs font-medium mb-1">{msg.sender}</p>
-                                <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                                <p className="text-xs opacity-75 mt-1 text-end">{msg.time_created}</p>
-                              </div>
+                            <div key={msg.comment_id} className="flex flex-col space-y-1 mb-2">
 
-                              {msg.attachment_url && (
-                                <div className="px-4 pt-3">
-                                  <div className="relative inline-block max-w-fit">
-                                    <img
-                                      onClick={() => {
-                                        setURL(`${API_URL}${msg.attachment_url}`);
-                                        // onOpenModalViewImage();
-                                      }}
-                                      className="rounded shadow h-[90px] w-[90px] cursor-pointer object-cover"
-                                      src={`${API_URL}${msg.attachment_url}`}
-                                      alt="Uploaded"
-                                    />
+                              {/* Text Message Bubble */}
+                              {msg.text && (
+                                <div className={`flex ${msg.sender_id === user.user_id ? 'justify-end' : 'justify-start'}`}>
+                                  <div
+                                    className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${msg.sender_id === user.user_id
+                                      ? 'bg-primary text-primary-foreground'
+                                      : 'bg-muted text-foreground'
+                                      }`}
+                                  >
+                                    <p className="text-xs font-medium mb-1">{msg.sender}</p>
+                                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                                    <p className="text-xs opacity-75 mt-1 text-end">{msg.time_created}</p>
                                   </div>
                                 </div>
                               )}
+
+                              {/* Attachment Bubble (Separate Row) */}
+                              {msg.attachment_url && (
+                                <div className={`flex ${msg.sender_id === user.user_id ? 'justify-end' : 'justify-start'}`}>
+                                  <div className="max-w-xs lg:max-w-md">
+                                    <img
+                                      onClick={() => {
+                                        setURL(`${API_URL}${msg.attachment_url}`);
+                                        setIsPreviewOpen(true);
+                                      }}
+                                      className="rounded-lg shadow-sm border h-32 w-auto object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                      src={`${API_URL}${msg.attachment_url}`}
+                                      alt="Attachment"
+                                    />
+                                    {/* Optional: Show timestamp for image if no text, or just leave it clean */}
+                                  </div>
+                                </div>
+                              )}
+
                             </div>
                           ))}
                         </div>
@@ -1294,6 +1323,20 @@ const TicketDetail = () => {
 
                   </div>
                 </div>
+
+                {/* Image Preview Modal */}
+                <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+                  <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden bg-black/90 border-none">
+                    <div className="relative w-full h-full flex items-center justify-center p-4">
+                      {/* Close button handled by Dialog default, but we can add extra if needed */}
+                      <img
+                        src={url}
+                        alt="Preview"
+                        className="max-w-full max-h-[85vh] object-contain rounded-md"
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
                 <div className="border-t p-4">
                   <div className="w-full mb-3">
                     <form
@@ -1319,9 +1362,15 @@ const TicketDetail = () => {
                       </div>
 
                       <div className="absolute right-2 flex space-x-2">
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          className="hidden"
+                          onChange={handleImage}
+                        />
                         <button
                           type="button"
-                          // onClick={onOpenModalUploadImage}
+                          onClick={() => fileInputRef.current?.click()}
                           disabled={isLoading || Number(ticketDetail.status) >= 2}
                           className="text-gray-600 hover:text-gray-800 disabled:opacity-50"
                         >
@@ -1437,8 +1486,7 @@ const TicketDetail = () => {
           </div>
         )
       }
-
-    </AppLayout >
+    </>
   );
 };
 

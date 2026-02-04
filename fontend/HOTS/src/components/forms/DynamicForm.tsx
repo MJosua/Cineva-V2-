@@ -14,6 +14,7 @@ import { mapUnifiedForm, getMaxFormFields, convertUnifiedToEngineEav, mapFormDat
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppSelector";
 import { createTicket } from "@/store/slices/ticketsSlice";
 import { selectServiceWidgets } from "@/store/slices/catalogSlice";
+import { fetchMeetingRooms } from "@/store/slices/meetingroom_slice";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { resolveSystemVariable } from "@/utils/systemVariableResolver";
@@ -59,6 +60,20 @@ export const DynamicForm: React.FC<{
   const [systemVarsVersion, setSystemVarsVersion] = useState(0);
   const [isOpenwarning, setIsOpenwarning] = useState(false);
 
+  // 🧩 Specialized setter for widgets to keep react-hook-form in sync
+  const setGlobalValuesWithSync = useCallback((updater: any) => {
+    setGlobalValues((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      // Sync with react-hook-form
+      Object.entries(next).forEach(([key, val]) => {
+        if (val !== prev[key]) {
+          form.setValue(key, val);
+        }
+      });
+      return next;
+    });
+  }, [form]);
+
   const systemContext = useSystemVariableContext();
   const serviceWidgetIds = useAppSelector((s) =>
     serviceId ? selectServiceWidgets(s, parseInt(serviceId)) : []
@@ -88,7 +103,9 @@ export const DynamicForm: React.FC<{
       const normalized = normalizeSchema(config);
       setNormalizedSchema(normalized);
     }
-  }, [config]);
+    // 🏠 Populate meeting rooms for potential `${meetingrooms}` resolution
+    dispatch(fetchMeetingRooms());
+  }, [config, dispatch]);
 
   // 🧩 Assign service widgets
   const assignedWidgets = useMemo(() => {
@@ -449,7 +466,7 @@ export const DynamicForm: React.FC<{
           handleReload={handleReload}
           data={{
             formData: globalValues,
-            setGlobalValues,   // 🧩 ADD THIS
+            setGlobalValues: setGlobalValuesWithSync,   // 🧩 UPDATED
             userData: user,
             serviceId
           }}

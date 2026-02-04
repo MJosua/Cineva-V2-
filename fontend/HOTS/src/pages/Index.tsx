@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { AppLayout } from "@/components/layout/AppLayout";
+// import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Clock, CheckSquare, Users, FileText, Loader2 } from 'lucide-react';
@@ -50,7 +50,7 @@ const Index = () => {
       const totalTickets = allTickets.totalData || 0;
       const pendingTickets = taskCount || 0;
       const completedTickets = Math.max(0, totalTickets - pendingTickets);
-      
+
       setStats({
         totalTickets,
         pendingTickets,
@@ -63,13 +63,13 @@ const Index = () => {
   useEffect(() => {
     const loadDashboardData = async () => {
       setIsLoading(true);
-      
+
       await Promise.all([
         dispatch(fetchTaskCount()),
         dispatch(fetchMyTickets(1)),
         dispatch(fetchAllTickets(1)),
         fetchDashboardStats()
-        
+
       ]);
       setIsLoading(false);
     };
@@ -87,63 +87,62 @@ const Index = () => {
   ];
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Welcome to HOTS - Helpdesk Operation Ticket System</p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-600">Welcome to HOTS - Helpdesk Operation Ticket System</p>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
         </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <FileText className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Total Tickets</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalTickets}</p>
-                    </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <FileText className="w-5 h-5 text-blue-600" />
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-orange-100 rounded-lg">
-                      <Clock className="w-5 h-5 text-orange-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Pending</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.pendingTickets}</p>
-                    </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Total Tickets</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.totalTickets}</p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <CheckSquare className="w-5 h-5 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Completed</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.completedTickets}</p>
-                    </div>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Clock className="w-5 h-5 text-orange-600" />
                   </div>
-                </CardContent>
-              </Card>
+                  <div>
+                    <p className="text-sm text-gray-600">Pending</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.pendingTickets}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-              {/* <Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <CheckSquare className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Completed</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.completedTickets}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-3">
                     <div className="p-2 bg-purple-100 rounded-lg">
@@ -156,28 +155,27 @@ const Index = () => {
                   </div>
                 </CardContent>
               </Card> */}
-            </div>
+          </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Monthly Tickets Overview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={dashboardData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="tickets" fill="#3b82f6" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </div>
-    </AppLayout>
+          <Card>
+            <CardHeader>
+              <CardTitle>Monthly Tickets Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={dashboardData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="tickets" fill="#3b82f6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
   );
 };
 

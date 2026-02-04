@@ -197,7 +197,7 @@ module.exports = {
                     service_id,
                     trigger_name,
                     trigger_config,
-                    is_active,
+                    active,
                     created_at,
                     updated_at
                 FROM m_service_triggers
@@ -224,15 +224,15 @@ module.exports = {
             let workflowDefinition = null;
             try {
                 const queryGetWorkflow = `
-                    SELECT workflow_json
-                    FROM m_workflow
+                    SELECT definition
+                    FROM m_service_workflow
                     WHERE workflow_id = ?
                 `;
                 const [workflowResults] = await dbHots.promise().query(queryGetWorkflow, [service_id]);
-                if (workflowResults.length && workflowResults[0].workflow_json) {
-                    workflowDefinition = typeof workflowResults[0].workflow_json === 'string'
-                        ? JSON.parse(workflowResults[0].workflow_json)
-                        : workflowResults[0].workflow_json;
+                if (workflowResults.length && workflowResults[0].definition) {
+                    workflowDefinition = typeof workflowResults[0].definition === 'string'
+                        ? JSON.parse(workflowResults[0].definition)
+                        : workflowResults[0].definition;
                 }
             } catch (e) {
                 console.log('No workflow definition found for service:', service_id);
@@ -589,7 +589,7 @@ module.exports = {
         const queryGetData = `
         SELECT *
         FROM 
-        m_ticket_status
+        m_service_status
         `;
 
         dbHots.execute(queryGetData, [user_id], (err1, results1) => {
@@ -870,9 +870,7 @@ module.exports = {
                 team_id,
                 api_endpoint,
                 JSON.stringify(form_json), // ensure JSON safety
-                m_service_workflow
             ]);
-            console.log("m_service_workflow", m_service_workflow)
             console.log(`${timestamp} Success insertupdateServiceCatalog for user ${user_id}`);
 
             res.status(200).json({
@@ -963,7 +961,7 @@ module.exports = {
                     hots.m_team mt on 
                     u.department_id = mt.department_id 
                     left join 
-                    hots.m_role mr on
+                    hots.user_role mr on
                     u.role_id = mr.role_id
                     left join
                     hots.m_job_title mjt on
@@ -1160,7 +1158,7 @@ module.exports = {
                     role_description,
                     creation_date,
                     finished_date
-                FROM hots.m_role 
+                FROM hots.user_role 
                 ORDER BY role_name ASC
             `);
 
@@ -1188,7 +1186,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-                INSERT INTO hots.m_role (role_name, role_description, creation_date) 
+                INSERT INTO hots.user_role (role_name, role_description, creation_date) 
                 VALUES (?, ?, NOW())
             `, [role_name, role_description]);
 
@@ -1217,7 +1215,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-                UPDATE hots.m_role 
+                UPDATE hots.user_role 
                 SET role_name = ?, role_description = ?
                 WHERE role_id = ? AND finished_date IS NULL
             `, [role_name, role_description, role_id]);
@@ -1265,7 +1263,7 @@ module.exports = {
             }
 
             const [result] = await dbHots.promise().query(`
-                UPDATE hots.m_role 
+                UPDATE hots.user_role 
                 SET finished_date = NOW() 
                 WHERE role_id = ? AND finished_date IS NULL
             `, [role_id]);
@@ -1296,20 +1294,21 @@ module.exports = {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
-        let user_id = req.dataToken.user_id;
-
         try {
+            let user_id = req.dataToken?.user_id || 'unknown';
+
             const [result] = await dbHots.promise().query(`
                 SELECT 
                     jobtitle_id,
                     job_title,
                     department_id,
+                    description,
                     creation_date,
                     finished_date
                 FROM 
                     hots.m_job_title 
                 WHERE 
-                    finished_date IS NULL OR finished_date = ''
+                    finished_date IS NULL
                 ORDER BY 
                     job_title ASC
             `);
@@ -1322,6 +1321,7 @@ module.exports = {
                 message: "Service get job title success"
             });
         } catch (err) {
+            console.error('getAllJobTitle ERROR:', err);
             res.status(500).json({
                 success: false,
                 message: err.message
@@ -1360,16 +1360,27 @@ module.exports = {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
-        let user_id = req.dataToken.user_id;
-        const { id } = req.params;
-        const { job_title, department_id } = req.body;
-
         try {
-            const [result] = await dbHots.promise().query(`
-                UPDATE hots.m_job_title 
-                SET job_title = ?, department_id = ?
-                WHERE jobtitle_id = ?
-            `, [job_title, department_id, id]);
+            let user_id = req.dataToken?.user_id || 'unknown';
+            const { id } = req.params;
+            const { job_title, department_id, description } = req.body;
+
+            // Log payload for debugging
+            // console.log('updateJobTitle payload:', { id, job_title, department_id, description });
+
+            let sql = `UPDATE hots.m_job_title SET job_title = ?, description = ?`;
+            let params = [job_title, description];
+
+            // Only update department_id if it's explicitly provided (not undefined)
+            if (department_id !== undefined) {
+                sql += `, department_id = ?`;
+                params.push(department_id);
+            }
+
+            sql += ` WHERE jobtitle_id = ?`;
+            params.push(id);
+
+            const [result] = await dbHots.promise().query(sql, params);
 
             console.log(`Job title updated successfully by ${user_id} at ${timestamp}`);
 
@@ -1378,6 +1389,7 @@ module.exports = {
                 message: "Job title updated successfully"
             });
         } catch (err) {
+            console.error('updateJobTitle ERROR:', err);
             res.status(500).json({
                 success: false,
                 message: err.message
@@ -1752,65 +1764,6 @@ module.exports = {
 
 
 
-
-    // Create Job Title
-    createJobTitle: async (req, res) => {
-        let date = new Date();
-        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-
-        let user_id = req.dataToken.user_id;
-        const { job_title_name, job_title_description } = req.body;
-
-        try {
-            const [result] = await dbHots.promise().query(`
-            INSERT INTO hots.m_job_title (job_title_name, job_title_description, creation_date)
-            VALUES (?, ?, NOW())
-        `, [job_title_name, job_title_description]);
-
-            console.log(`Job title created successfully by ${user_id} at ${timestamp}`);
-
-            res.status(200).json({
-                success: true,
-                message: "Job title created successfully",
-                data: { job_title_id: result.insertId }
-            });
-        } catch (err) {
-            res.status(500).json({
-                success: false,
-                message: err.message
-            });
-        }
-    },
-
-    // Update Job Title
-    updateJobTitle: async (req, res) => {
-        let date = new Date();
-        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-
-        let user_id = req.dataToken.user_id;
-        const { id } = req.params;
-        const { job_title_name, job_title_description } = req.body;
-
-        try {
-            const [result] = await dbHots.promise().query(`
-            UPDATE hots.m_job_title 
-            SET job_title_name = ?, job_title_description = ?
-            WHERE jobtitle_id = ? AND finished_date IS NULL
-        `, [job_title_name, job_title_description, id]);
-
-            console.log(`Job title updated successfully by ${user_id} at ${timestamp}`);
-
-            res.status(200).json({
-                success: true,
-                message: "Job title updated successfully"
-            });
-        } catch (err) {
-            res.status(500).json({
-                success: false,
-                message: err.message
-            });
-        }
-    },
 
 
     // Get All Services
@@ -2511,27 +2464,28 @@ module.exports = {
 
 
         try {
+            console.log(`[DEBUG] Executing getmeetingroom with +/- 3 MONTHS scope at ${timestamp}`);
             const [room] = await dbHots.promise().query(`
-                     SELECT
+            SELECT
                 t.ticket_id,
-                MAX(CASE WHEN d.lbl_col = 'room' THEN d.cstm_col END) AS room,
-                MAX(CASE WHEN d.lbl_col = 'start_time' THEN d.cstm_col END) AS start_time,
-                MAX(CASE WHEN d.lbl_col = 'end_time' THEN d.cstm_col END) AS end_time,
-                MAX(CASE WHEN d.lbl_col = 'PIC' THEN d.cstm_col END) AS PIC,
+                MAX(CASE WHEN LOWER(d.lbl_col) IN ('room', 'room_name', 'room_id', 'room name') THEN d.value END) AS room,
+                MAX(CASE WHEN LOWER(d.lbl_col) IN ('start_time', 'time_start', 'start', 'start time') THEN d.value END) AS start_time,
+                MAX(CASE WHEN LOWER(d.lbl_col) IN ('end_time', 'time_end', 'end', 'end time') THEN d.value END) AS end_time,
+                MAX(CASE WHEN LOWER(d.lbl_col) IN ('pic', 'p.i.c', 'organizer') THEN d.value END) AS PIC,
+                MAX(CASE WHEN LOWER(d.lbl_col) IN ('purpose', 'purpose of meeting', 'title', 'event') THEN d.value END) AS purpose,
                 dpt.department_name AS booked_by,
-                MAX(CASE WHEN d.lbl_col = 'date' THEN d.cstm_col END) AS date
-                FROM t_ticket t
-                LEFT JOIN t_ticket_detail d ON d.ticket_id = t.ticket_id
-                left join user u on u.user_id = t.created_by
-                left join m_department dpt on u.department_id = dpt.department_id
-                WHERE t.service_id = 13
-                GROUP BY t.ticket_id
-                HAVING 
-                STR_TO_DATE(MAX(CASE WHEN d.lbl_col = 'date' THEN d.cstm_col END), '%Y-%m-%d') BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 5 DAY)
-                AND DAYOFWEEK(STR_TO_DATE(MAX(CASE WHEN d.lbl_col = 'date' THEN d.cstm_col END), '%Y-%m-%d')) NOT IN (1, 7)
-                ORDER BY t.ticket_id DESC;
-
-            `);
+                MAX(CASE WHEN LOWER(d.lbl_col) IN ('date', 'booking_date', 'start_date') THEN d.value END) AS date
+            FROM t_ticket t
+            LEFT JOIN t_ticket_detail d ON d.ticket_id = t.ticket_id
+            LEFT JOIN user u ON u.user_id = t.created_by
+            LEFT JOIN m_department dpt ON u.department_id = dpt.department_id
+            WHERE t.service_id = 13
+            GROUP BY t.ticket_id
+            HAVING 
+            STR_TO_DATE(MAX(CASE WHEN LOWER(d.lbl_col) IN ('date', 'booking_date', 'start_date') THEN d.value END), '%Y-%m-%d') BETWEEN DATE_SUB(CURDATE(), INTERVAL 3 MONTH) AND DATE_ADD(CURDATE(), INTERVAL 3 MONTH)
+            AND DAYOFWEEK(STR_TO_DATE(MAX(CASE WHEN LOWER(d.lbl_col) IN ('date', 'booking_date', 'start_date') THEN d.value END), '%Y-%m-%d')) NOT IN (1, 7)
+            ORDER BY t.ticket_id DESC;
+        `);
 
             console.log(`Room Widget API retrieved successfully by ${user_id} at ${timestamp}`);
 
@@ -2547,8 +2501,6 @@ module.exports = {
                 message: err.message
             });
         }
-
-
 
     },
 
@@ -2570,12 +2522,13 @@ module.exports = {
             const query = `
                 SELECT
                     t.ticket_id,
-                   MAX(CASE WHEN d.lbl_col = 'room' THEN d.cstm_col END) AS room,
-                MAX(CASE WHEN d.lbl_col = 'start_time' THEN d.cstm_col END) AS start_time,
-                MAX(CASE WHEN d.lbl_col = 'end_time' THEN d.cstm_col END) AS end_time,
+                   MAX(CASE WHEN LOWER(d.lbl_col) IN ('room', 'room_name', 'room_id', 'room name') THEN d.value END) AS room,
+                MAX(CASE WHEN LOWER(d.lbl_col) IN ('start_time', 'time_start', 'start', 'start time') THEN d.value END) AS start_time,
+                MAX(CASE WHEN LOWER(d.lbl_col) IN ('end_time', 'time_end', 'end', 'end time') THEN d.value END) AS end_time,
                 dpt.department_name AS booked_by,
-                MAX(CASE WHEN d.lbl_col = 'date' THEN d.cstm_col END) AS date
-                MAX(CASE WHEN d.lbl_col = 'PIC' THEN d.cstm_col END) AS PIC,
+                MAX(CASE WHEN LOWER(d.lbl_col) IN ('date', 'booking_date', 'start_date') THEN d.value END) AS date,
+                MAX(CASE WHEN LOWER(d.lbl_col) IN ('pic', 'p.i.c', 'organizer') THEN d.value END) AS PIC,
+                MAX(CASE WHEN LOWER(d.lbl_col) IN ('purpose', 'purpose of meeting', 'title', 'event') THEN d.value END) AS purpose
                 FROM t_ticket t
                 LEFT JOIN t_ticket_detail d ON d.ticket_id = t.ticket_id
                 LEFT JOIN user u ON u.user_id = t.created_by
@@ -2583,10 +2536,10 @@ module.exports = {
                 WHERE t.service_id = 13
                 GROUP BY t.ticket_id
                 HAVING
-                    MAX(CASE WHEN d.lbl_col = 'date' THEN d.cstm_col END) = ?
-                    ${room ? "AND MAX(CASE WHEN d.lbl_col = 'Meeting Room' THEN d.cstm_col END) = ?" : ""}
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('date', 'booking_date', 'start_date') THEN d.value END) = ?
+                    ${room ? "AND MAX(CASE WHEN LOWER(d.lbl_col) IN ('room', 'room_id', 'room_name', 'meeting room', 'room name') THEN d.value END) = ?" : ""}
                 ORDER BY t.ticket_id DESC
-            `;
+        `;
 
             const params = [date];
             if (room) params.push(room);

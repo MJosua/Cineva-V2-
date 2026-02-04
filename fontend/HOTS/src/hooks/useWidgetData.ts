@@ -44,7 +44,7 @@ export const useWidgetData = (options: UseWidgetDataOptions) => {
 
   // Generate cache keys for each data source
   const cacheKeys = useMemo(() => {
-    return dataSources.map(source => 
+    return dataSources.map(source =>
       source.cacheKey || `${source.endpoint}_${JSON.stringify(source.params || {})}`
     );
   }, [dataSources]);
@@ -57,7 +57,7 @@ export const useWidgetData = (options: UseWidgetDataOptions) => {
     dataSources.forEach((source, index) => {
       const cacheKey = cacheKeys[index];
       const cached = dataCache.get(cacheKey);
-      
+
       if (cached && Date.now() < cached.expiry) {
         cachedData[cacheKey] = cached.data;
       } else {
@@ -71,7 +71,7 @@ export const useWidgetData = (options: UseWidgetDataOptions) => {
   // Fetch data from API
   const fetchData = useCallback(async (source: DataSource, index: number) => {
     const cacheKey = cacheKeys[index];
-    
+
     // Check if request is already in progress
     if (activeRequests.has(cacheKey)) {
       return activeRequests.get(cacheKey);
@@ -91,7 +91,7 @@ export const useWidgetData = (options: UseWidgetDataOptions) => {
     const requestPromise = (async () => {
       try {
         cancelTokenSource = axios.CancelToken.source();
-        
+
         const response = await axios({
           method: source.method || 'GET',
           url: `${API_URL}${source.endpoint}`,
@@ -101,7 +101,7 @@ export const useWidgetData = (options: UseWidgetDataOptions) => {
         });
 
         let responseData = response.data?.data || response.data;
-        
+
         // Apply transformation if provided
         if (source.transform) {
           responseData = source.transform(responseData);
@@ -147,7 +147,7 @@ export const useWidgetData = (options: UseWidgetDataOptions) => {
       }
 
       // Fetch all data sources in parallel
-      const promises = dataSources.map((source, index) => 
+      const promises = dataSources.map((source, index) =>
         fetchData(source, index).then(result => ({
           key: cacheKeys[index],
           data: result,
@@ -220,21 +220,31 @@ export const resolveParams = (
       // Extract path like {formData.date} or {ticketData.detail_rows[0].cstm_col}
       const path = value.slice(1, -1);
       const pathParts = path.split('.');
-      
+
       let resolvedValue = context;
       for (const part of pathParts) {
         if (part.includes('[') && part.includes(']')) {
-          // Handle array access like detail_rows[0]
+          // Handle array access
           const [arrayName, indexStr] = part.split('[');
-          const index = parseInt(indexStr.replace(']', ''));
-          resolvedValue = resolvedValue?.[arrayName]?.[index];
+          const content = indexStr.replace(']', '');
+
+          if (content.includes('=')) {
+            // Handle find: detail_rows[cstm_col=date]
+            const [key, val] = content.split('=');
+            const cleanVal = val.replace(/["']/g, "").toLowerCase(); // Remove quotes & lowercase
+            resolvedValue = resolvedValue?.[arrayName]?.find((item: any) => item?.[key]?.toString().toLowerCase() == cleanVal);
+          } else {
+            // Handle index: detail_rows[0]
+            const index = parseInt(content);
+            resolvedValue = resolvedValue?.[arrayName]?.[index];
+          }
         } else {
           resolvedValue = resolvedValue?.[part];
         }
-        
+
         if (resolvedValue === undefined) break;
       }
-      
+
       resolved[key] = resolvedValue;
     } else {
       resolved[key] = value;

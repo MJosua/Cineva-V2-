@@ -52,7 +52,12 @@ const formatNumber = (num: number | null | undefined): string => {
     return num.toLocaleString('en-US');
 };
 
-const EOrderReporting: React.FC = () => {
+interface EOrderReportingProps {
+    searchValue?: string;
+    serviceId?: number;
+}
+
+const EOrderReporting: React.FC<EOrderReportingProps> = ({ searchValue }) => {
     const [uomType, setUomType] = useState<'pack' | 'carton'>('pack');
     const [dateRange, setDateRange] = useState<'7' | '30' | '90' | '365'>('30');
     const [loading, setLoading] = useState(true);
@@ -89,6 +94,17 @@ const EOrderReporting: React.FC = () => {
     useEffect(() => {
         fetchAllData();
     }, [uomType, dateRange]);
+
+    // Client-side filtering for the tables
+    const filteredCountries = topCountries.filter(c =>
+        !searchValue || c.country_name.toLowerCase().includes(searchValue.toLowerCase())
+    );
+
+    const filteredDistributors = topDistributors.filter(d =>
+        !searchValue ||
+        d.company_name.toLowerCase().includes(searchValue.toLowerCase()) ||
+        d.txt.toLowerCase().includes(searchValue.toLowerCase())
+    );
 
     const dateRangeLabels: Record<string, string> = {
         '7': 'Last 7 Days',
@@ -276,14 +292,14 @@ const EOrderReporting: React.FC = () => {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {topCountries.length === 0 ? (
+                                {filteredCountries.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={3} className="text-center text-muted-foreground">
                                             No data available
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    topCountries.map((country, idx) => (
+                                    filteredCountries.map((country, idx) => (
                                         <TableRow key={idx}>
                                             <TableCell className="font-medium">{idx + 1}</TableCell>
                                             <TableCell>{country.country_name || 'Unknown'}</TableCell>
@@ -317,14 +333,14 @@ const EOrderReporting: React.FC = () => {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {topDistributors.length === 0 ? (
+                                {filteredDistributors.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={4} className="text-center text-muted-foreground">
                                             No data available
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    topDistributors.map((dist, idx) => (
+                                    filteredDistributors.map((dist, idx) => (
                                         <TableRow key={idx}>
                                             <TableCell className="font-medium">{idx + 1}</TableCell>
                                             <TableCell className="max-w-[200px] truncate" title={dist.company_name}>

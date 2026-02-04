@@ -23,113 +23,134 @@ module.exports = {
             const user_id = req.dataToken.user_id;
             const { dbConf } = require("../../config/db");
 
-            // 1. My pending approvals (from t_ticket_event)
-            const [approvalRows] = await dbHots.promise().query(`
-                SELECT COUNT(*) as total 
-                FROM t_ticket_event e 
-                INNER JOIN t_ticket t ON e.ticket_id = t.ticket_id
-                WHERE e.approver_id = ? 
-                AND e.approval_status = 0
-                AND t.status_id NOT IN (6, 7, 99)
-            `, [user_id]);
+            // 🔥 OPTIMIZATION: Run all independent queries in parallel
+            console.time(timestamp + "DashboardQueries");
 
-            // 2. My open tickets (created by me, not completed)
-            const [myTicketsRows] = await dbHots.promise().query(`
-                SELECT COUNT(*) as total 
-                FROM t_ticket 
-                WHERE created_by = ? 
-                AND status_id NOT IN (6, 7, 99)
-            `, [user_id]);
+            const results = await Promise.allSettled([
+                // 1. My pending approvals
+                dbHots.promise().query(`
+                    SELECT COUNT(*) as total 
+                    FROM t_ticket_event e 
+                    INNER JOIN t_ticket t ON e.ticket_id = t.ticket_id
+                    WHERE e.approver_id = ? 
+                    AND e.approval_status = 0
+                    AND t.status_id NOT IN (6, 7, 99)
+                `, [user_id]),
 
-            // 3. My active assignments
-            const [assignmentRows] = await dbHots.promise().query(`
-                SELECT COUNT(*) as total
-                FROM t_ticket_assignment ta
-                WHERE ta.assignment_status = 'active'
-                AND (
-                    (ta.assigned_type = 'user' AND ta.assigned_id = ?)
-                    OR (ta.assigned_type = 'team' AND ta.assigned_id IN (
-                        SELECT team_id FROM m_team_member WHERE user_id = ?
-                    ))
-                )
-            `, [user_id, user_id]);
+                // 2. My open tickets
+                dbHots.promise().query(`
+                    SELECT COUNT(*) as total 
+                    FROM t_ticket 
+                    WHERE created_by = ? 
+                    AND status_id NOT IN (6, 7, 99)
+                `, [user_id]),
 
-            // 4. Tickets this week (all users)
-            const [weekTicketsRows] = await dbHots.promise().query(`
-                SELECT COUNT(*) as total 
-                FROM t_ticket 
-                WHERE creation_date >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
-            `);
+                // 3. My active assignments
+                dbHots.promise().query(`
+                    SELECT COUNT(*) as total
+                    FROM t_ticket_assignment ta
+                    WHERE ta.assignment_status = 'active'
+                    AND (
+                        (ta.assigned_type = 'user' AND ta.assigned_id = ?)
+                        OR (ta.assigned_type = 'team' AND ta.assigned_id IN (
+                            SELECT team_id FROM m_team_member WHERE user_id = ?
+                        ))
+                    )
+                `, [user_id, user_id]),
 
-            // 5. Tickets this month (all users)
-            const [monthTicketsRows] = await dbHots.promise().query(`
-                SELECT COUNT(*) as total 
-                FROM t_ticket 
-                WHERE YEAR(creation_date) = YEAR(CURRENT_DATE)
-                AND MONTH(creation_date) = MONTH(CURRENT_DATE)
-            `);
+                // 4. Tickets this week
+                dbHots.promise().query(`
+                    SELECT COUNT(*) as total 
+                    FROM t_ticket 
+                    WHERE creation_date >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+                `),
 
-            // 6. SRF tickets this month (service_id = 6 for SRF)
-            const [srfRows] = await dbHots.promise().query(`
-                SELECT 
-                    COUNT(*) as total,
-                    SUM(CASE WHEN status_id IN (1,2,3) THEN 1 ELSE 0 END) as pending,
-                    SUM(CASE WHEN status_id = 6 THEN 1 ELSE 0 END) as approved,
-                    SUM(CASE WHEN status_id = 7 THEN 1 ELSE 0 END) as rejected
-                FROM t_ticket 
-                WHERE service_id = 6
-                AND YEAR(creation_date) = YEAR(CURRENT_DATE)
-                AND MONTH(creation_date) = MONTH(CURRENT_DATE)
-            `);
+                // 5. Tickets this month
+                dbHots.promise().query(`
+                    SELECT COUNT(*) as total 
+                    FROM t_ticket 
+                    WHERE YEAR(creation_date) = YEAR(CURRENT_DATE)
+                    AND MONTH(creation_date) = MONTH(CURRENT_DATE)
+                `),
 
-            // 7. E-Order volume MTD (from iod.m_order)
-            let orderVolume = 0;
-            try {
-                const [orderRows] = await dbConf.promise().query(`
+                // 6. SRF tickets this month
+                dbHots.promise().query(`
+                    SELECT 
+                        COUNT(*) as total,
+                        SUM(CASE WHEN status_id IN (1,2,3) THEN 1 ELSE 0 END) as pending,
+                        SUM(CASE WHEN status_id = 6 THEN 1 ELSE 0 END) as approved,
+                        SUM(CASE WHEN status_id = 7 THEN 1 ELSE 0 END) as rejected
+                    FROM t_ticket 
+                    WHERE service_id = 6
+                    AND YEAR(creation_date) = YEAR(CURRENT_DATE)
+                    AND MONTH(creation_date) = MONTH(CURRENT_DATE)
+                `),
+
+                // 7. E-Order volume
+                dbConf.promise().query(`
                     SELECT SUM(COALESCE(ms.qty, 0)) as total
                     FROM iod.m_order mo
                     INNER JOIN iod.m_summary ms ON mo.order_id = ms.order_id AND mo.company_id = ms.company_id
                     WHERE MONTH(mo.po_date) = MONTH(NOW())
                     AND YEAR(mo.po_date) = YEAR(NOW())
                     AND mo.status NOT IN (0, 77, 99)
-                `);
-                orderVolume = orderRows[0]?.total || 0;
-            } catch (e) {
-                console.warn(timestamp + "Could not fetch E-Order volume:", e.message);
-            }
+                `),
 
-            // 8. Status breakdown (all tickets this month)
-            const [statusRows] = await dbHots.promise().query(`
-                SELECT 
-                    s.status_name,
-                    COUNT(*) as count
-                FROM t_ticket t
-                JOIN m_ticket_status s ON t.status_id = s.status_id
-                WHERE YEAR(t.creation_date) = YEAR(CURRENT_DATE)
-                AND MONTH(t.creation_date) = MONTH(CURRENT_DATE)
-                GROUP BY t.status_id, s.status_name
-            `);
+                // 8. Status breakdown
+                dbHots.promise().query(`
+                    SELECT 
+                        s.status_name,
+                        COUNT(*) as count
+                    FROM t_ticket t
+                    JOIN m_service_status s ON t.status_id = s.status_id
+                    WHERE YEAR(t.creation_date) = YEAR(CURRENT_DATE)
+                    AND MONTH(t.creation_date) = MONTH(CURRENT_DATE)
+                    GROUP BY t.status_id, s.status_name
+                `),
 
+                // 9. Service stats
+                dbHots.promise().query(`
+                    SELECT 
+                        s.service_name,
+                        COUNT(*) as total_tickets,
+                        SUM(CASE WHEN t.status_id NOT IN (6, 7, 99) THEN 1 ELSE 0 END) as open_tickets,
+                        SUM(CASE WHEN t.status_id IN (6, 7, 99) THEN 1 ELSE 0 END) as closed_tickets
+                    FROM t_ticket t
+                    JOIN m_service s ON t.service_id = s.service_id
+                    WHERE YEAR(t.creation_date) = YEAR(CURRENT_DATE)
+                    GROUP BY t.service_id, s.service_name
+                    ORDER BY total_tickets DESC
+                `)
+            ]);
+
+            console.timeEnd(timestamp + "DashboardQueries");
+
+            // Extract results safely
+            const getVal = (res, index) => {
+                if (res[index].status === 'fulfilled') {
+                    // query returns [rows, fields], we want rows (index 0)
+                    return res[index].value[0];
+                }
+                console.warn(`${timestamp} Query ${index + 1} failed:`, res[index].reason);
+                return [];
+            };
+
+            const approvalRows = getVal(results, 0);
+            const myTicketsRows = getVal(results, 1);
+            const assignmentRows = getVal(results, 2);
+            const weekTicketsRows = getVal(results, 3);
+            const monthTicketsRows = getVal(results, 4);
+            const srfRows = getVal(results, 5);
+            const orderRows = getVal(results, 6); // Note: E-order might fail independently
+            const statusRows = getVal(results, 7);
+            const serviceStatsRows = getVal(results, 8);
+
+            // Process specific data
+            const orderVolume = orderRows[0]?.total || 0;
             const byStatus = {};
             statusRows.forEach(r => byStatus[r.status_name] = r.count);
 
-            console.log(timestamp, "GET Dashboard Summary SUCCESS");
-
-            // 9. Service stats (for Service Report - ID 10)
-            const [serviceStatsRows] = await dbHots.promise().query(`
-                SELECT 
-                    s.service_name,
-                    COUNT(*) as total_tickets,
-                    SUM(CASE WHEN t.status_id NOT IN (6, 7, 99) THEN 1 ELSE 0 END) as open_tickets,
-                    SUM(CASE WHEN t.status_id IN (6, 7, 99) THEN 1 ELSE 0 END) as closed_tickets
-                FROM t_ticket t
-                JOIN m_service s ON t.service_id = s.service_id
-                WHERE YEAR(t.creation_date) = YEAR(CURRENT_DATE)
-                GROUP BY t.service_id, s.service_name
-                ORDER BY total_tickets DESC
-            `);
-
-            console.log(timestamp, "GET Dashboard Summary SUCCESS");
+            console.log(timestamp, "GET Dashboard Summary SUCCESS (Parallel)");
 
             res.json({
                 success: true,
@@ -209,7 +230,7 @@ module.exports = {
 
             const [rows] = await dbHots.promise().query(`
             SELECT f.*, c.name AS category_name
-            FROM m_dashboard_function f
+            FROM m_dashboard_menu f
             LEFT JOIN m_dashboard_category c ON f.category_id = c.id
             WHERE f.is_active = 1
             ORDER BY c.order_index, f.order_index;
@@ -352,6 +373,19 @@ module.exports = {
             if (country) {
                 sql += ` AND sr.\`Country\` LIKE ?`;
                 params.push(`%${country}%`);
+            }
+            // Generic Search
+            if (req.query.search) {
+                const term = `%${req.query.search}%`;
+                sql += ` AND (
+                    sr.\`SRF No.\` LIKE ? OR 
+                    sr.\`Distributor\` LIKE ? OR 
+                    sr.\`Product\` LIKE ? OR 
+                    sr.\`Requester\` LIKE ? OR 
+                    sr.\`Remarks\` LIKE ? OR
+                    sr.\`Country\` LIKE ?
+                )`;
+                params.push(term, term, term, term, term, term);
             }
 
             // RM vs FG Filter
@@ -592,7 +626,7 @@ module.exports = {
                         ELSE 'hsl(38, 92%, 50%)'
                     END as color
                 FROM t_ticket t
-                JOIN m_ticket_status s ON t.status_id = s.status_id
+                JOIN m_service_status s ON t.status_id = s.status_id
                 WHERE t.service_id = ? AND t.creation_date >= ?
                 GROUP BY t.status_id, s.status_name
             `, [service_id, startDate]);
@@ -700,7 +734,7 @@ module.exports = {
 
     /**
      * GET /hotsdashboard/service_tickets/:service_id
-     * Returns all tickets for a service (for basic table view)
+     * Returns all tickets for a service (Reference + Work Data flattened)
      */
     getServiceTickets: async (req, res) => {
         let date = new Date();
@@ -717,6 +751,7 @@ module.exports = {
             const days = range === '7d' ? 7 : range === '90d' ? 90 : range === 'YTD' ? 365 : 30;
             const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+            // 1. Fetch Basic Ticket Data
             const [rows] = await dbHots.promise().query(`
                 SELECT 
                     t.ticket_id,
@@ -727,12 +762,46 @@ module.exports = {
                     CONCAT(u.firstname, ' ', u.lastname) as requester_name,
                     t.last_update as completed_at
                 FROM t_ticket t
-                JOIN m_ticket_status s ON t.status_id = s.status_id
+                JOIN m_service_status s ON t.status_id = s.status_id
                 LEFT JOIN user u ON t.created_by = u.user_id
                 WHERE t.service_id = ? AND t.creation_date >= ?
                 ORDER BY t.creation_date DESC
                 LIMIT ?, ?
             `, [service_id, startDate, offset, limitNum]);
+
+            // 2. Fetch Work Data (Dynamic Fields) for these tickets
+            if (rows.length > 0) {
+                const ticketIds = rows.map(r => r.ticket_id);
+
+                // Use a safe IN clause
+                const placeholders = ticketIds.map(() => '?').join(',');
+                const [workDataRows] = await dbHots.promise().query(`
+                    SELECT ticket_id, field_name, field_value 
+                    FROM t_ticket_work_data 
+                    WHERE ticket_id IN (${placeholders})
+                `, ticketIds);
+
+                // 3. Merge Work Data into Ticket Objects
+                const workDataMap = {};
+
+                // Group by ticket_id
+                workDataRows.forEach(wd => {
+                    if (!workDataMap[wd.ticket_id]) {
+                        workDataMap[wd.ticket_id] = {};
+                    }
+                    // Clean field name for JSON key (remove special chars if needed, but usually fine)
+                    // We prioritize showing meaningful columns
+                    if (wd.field_name && wd.field_value) {
+                        workDataMap[wd.ticket_id][wd.field_name] = wd.field_value;
+                    }
+                });
+
+                // Attach to rows
+                rows.forEach(row => {
+                    const extraData = workDataMap[row.ticket_id] || {};
+                    Object.assign(row, extraData);
+                });
+            }
 
             // Get total count
             const [countRows] = await dbHots.promise().query(`
@@ -770,7 +839,7 @@ module.exports = {
             const [panels] = await dbHots.promise().query(`
                 SELECT 
                     p.id,
-                    p.dashboard_function_id,
+                    p.dashboard_menu_id,
                     p.panel_type,
                     p.title,
                     p.component_key,
@@ -780,8 +849,8 @@ module.exports = {
                     p.default_collapsed,
                     p.config,
                     p.is_active
-                FROM m_dashboard_panel p
-                WHERE p.dashboard_function_id = ? AND p.is_active = 1
+                FROM m_dashboard_widget p
+                WHERE p.dashboard_menu_id = ? AND p.is_active = 1
                 ORDER BY p.order_index ASC
             `, [dashboard_id]);
 
@@ -818,7 +887,7 @@ module.exports = {
             // 1. Get function with card_config
             const [funcRows] = await dbHots.promise().query(`
                 SELECT id, title, card_config, related_service_id 
-                FROM m_dashboard_function 
+                FROM m_dashboard_menu 
                 WHERE id = ?
             `, [function_id]);
 
@@ -926,11 +995,11 @@ module.exports = {
                     const [orderStats] = await dbConf.promise().query(`
                         SELECT 
                             COUNT(*) as total,
-                            SUM(CASE WHEN order_status IN ('pending', 'confirmed') THEN 1 ELSE 0 END) as pending,
-                            SUM(CASE WHEN order_status = 'delivered' THEN 1 ELSE 0 END) as completed,
-                            SUM(CASE WHEN order_status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
+                            SUM(CASE WHEN status IN ('pending', 'confirmed') THEN 1 ELSE 0 END) as pending,
+                            SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as completed,
+                            SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
                         FROM iod.m_order
-                        WHERE YEAR(creation_date) = YEAR(CURRENT_DATE)
+                        WHERE YEAR(po_date) = YEAR(CURRENT_DATE)
                     `);
 
                     return res.json({

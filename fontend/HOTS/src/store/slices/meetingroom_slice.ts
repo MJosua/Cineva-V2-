@@ -4,7 +4,9 @@ import { API_URL } from "@/config/sourceConfig";
 
 export interface MeetingRoom {
   id: number;
-  name: string;
+  name?: string;      // Legacy support
+  room_name: string;  // New Universal System
+  resource_key?: string;
   capacity?: number;
   location?: string;
 }
@@ -18,6 +20,7 @@ export interface MeetingBooking {
   booked_by: string;
   attendees?: number;
   purpose?: string;
+  PIC?: string;
 }
 
 interface MeetingRoomState {
@@ -63,6 +66,7 @@ export const fetchMeetingBookings = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("tokek");
+      // Changed to use the HOTS settings endpoint to match t_ticket source of truth
       const res = await axios.get(`${API_URL}/hots_settings/get/meetingroom`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -70,7 +74,16 @@ export const fetchMeetingBookings = createAsyncThunk(
         throw new Error("Invalid meeting booking response structure");
       }
 
-      return res.data.data as MeetingBooking[];
+      // Map t_ticket data to MeetingBooking interface
+      return res.data.data.map((item: any) => ({
+        id: item.ticket_id,
+        room: item.room,
+        date: item.date,
+        start_time: item.start_time,
+        end_time: item.end_time,
+        booked_by: item.booked_by,
+        PIC: item.PIC,
+      })) as MeetingBooking[];
     } catch (err: any) {
       console.error("fetchMeetingBookings Error:", err);
       return rejectWithValue(err.response?.data?.message || err.message);

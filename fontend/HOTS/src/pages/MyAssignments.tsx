@@ -36,22 +36,36 @@ interface Assignment {
     creator_name: string;
 }
 
+import { useHeader } from '@/contexts/HeaderContext';
+import { searchInObject } from '@/utils/searchUtils';
+
 export const MyAssignments: React.FC = () => {
     const navigate = useNavigate();
+    const { searchValue, setSearchPlaceholder } = useHeader();
     const [assignments, setAssignments] = useState<Assignment[]>([]);
     const [filteredAssignments, setFilteredAssignments] = useState<Assignment[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
     const { user } = useAppSelector(state => state.auth);
+    const { sseSignals } = useAppSelector(state => state.tickets);
 
     useEffect(() => {
         fetchAssignments();
-    }, []);
+        setSearchPlaceholder("Search assignments...");
+    }, [setSearchPlaceholder]);
+
+    // 🆕 SSE Signal Listener
+    useEffect(() => {
+        if (sseSignals?.assignment) {
+            console.log('📡 SSE Signal: Refreshing MyAssignments');
+            fetchAssignments(false);
+        }
+    }, [sseSignals?.assignment]);
 
     useEffect(() => {
         filterAssignments();
-    }, [assignments, statusFilter]);
+    }, [assignments, statusFilter, searchValue]);
 
     const fetchAssignments = async (isRefresh = false) => {
         if (isRefresh) setRefreshing(true);
@@ -75,11 +89,17 @@ export const MyAssignments: React.FC = () => {
     };
 
     const filterAssignments = () => {
-        if (statusFilter === 'all') {
-            setFilteredAssignments(assignments);
-        } else {
-            setFilteredAssignments(assignments.filter(a => a.assignment_status === statusFilter));
+        let result = assignments;
+
+        if (statusFilter !== 'all') {
+            result = result.filter(a => a.assignment_status === statusFilter);
         }
+
+        if (searchValue) {
+            result = result.filter(a => searchInObject(a, searchValue));
+        }
+
+        setFilteredAssignments(result);
     };
 
     const getStatusConfig = (status: string) => {
@@ -268,10 +288,10 @@ export const MyAssignments: React.FC = () => {
                             <Card
                                 key={assignment.assignment_id}
                                 className={`group cursor-pointer transition-all hover:shadow-lg border-l-4 ${assignment.assignment_status === 'active'
-                                        ? 'border-l-blue-500 hover:border-l-blue-600'
-                                        : assignment.assignment_status === 'completed'
-                                            ? 'border-l-green-500'
-                                            : 'border-l-gray-300'
+                                    ? 'border-l-blue-500 hover:border-l-blue-600'
+                                    : assignment.assignment_status === 'completed'
+                                        ? 'border-l-green-500'
+                                        : 'border-l-gray-300'
                                     }`}
                                 onClick={() => navigate(`/assignment/${assignment.ticket_id}`)}
                             >

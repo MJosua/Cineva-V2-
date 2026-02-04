@@ -10,6 +10,8 @@
 | Component | Location |
 |-----------|----------|
 | **Ticket Controller** | `controller/hots_controller/ticketing/controllers/ticketController.js` |
+| **Notifications** | `controller/hots_controller/notification/notificationController.js` |
+| **Team Management** | `routers/project_manager/team_routes.js` (and frontend `pages/admin/TeamManagement.tsx`) |
 | **Constants** | `script/Utility/hotsConstants.js` |
 | **ID Generator** | `script/Utility/idGenerator.js` |
 | **Email Templates** | `controller/hots_controller/ticketing/notifications/templates.js` |
@@ -146,3 +148,5 @@ knowledge/
 2. **Phase 5** - Apply same pattern to other HOTS controllers (hotsAdmin, hotsSettings)
 3. **Phase 6** - Create Inventory module following same structure
 4. **Phase 7** - Consolidate workflow-engine as the single approval source
+5. **Phase 8 (Completed)** - Implement Actionable Notification System (`user_notification`)
+6. **Phase 9 (Completed)** - Refactor Team Management to dedicated page

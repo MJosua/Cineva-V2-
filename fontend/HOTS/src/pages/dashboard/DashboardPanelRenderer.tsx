@@ -11,7 +11,7 @@ import { BarChart3, FileText, LayoutDashboard, Settings } from 'lucide-react';
 
 export interface DashboardPanel {
     id: number;
-    dashboard_function_id: number;
+    dashboard_menu_id: number;
     panel_type: 'summary' | 'analytics' | 'analytics_cards' | 'report' | 'cms' | 'chart' | 'custom';
     title: string;
     component_key?: string;
@@ -37,10 +37,17 @@ const PANEL_ICONS: Record<string, React.ReactNode> = {
     custom: <Settings className="w-4 h-4" />,
 };
 
+import { useHeader } from '@/contexts/HeaderContext';
+
 const DashboardPanelRenderer: React.FC<DashboardPanelRendererProps> = ({ dashboardId, serviceId }) => {
     const [panels, setPanels] = useState<DashboardPanel[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<string>('');
+    const { searchValue, setSearchPlaceholder } = useHeader();
+
+    useEffect(() => {
+        setSearchPlaceholder("Search report...");
+    }, [setSearchPlaceholder]);
 
     useEffect(() => {
         fetchPanels();
@@ -102,12 +109,12 @@ const DashboardPanelRenderer: React.FC<DashboardPanelRendererProps> = ({ dashboa
                         title={panel.title}
                         defaultOpen={!panel.default_collapsed}
                     >
-                        <PanelContent panel={panel} serviceId={serviceId} />
+                        <PanelContent panel={panel} serviceId={serviceId} searchValue={searchValue} />
                     </CardCollapsible>
                 ) : (
                     <div key={panel.id} className="rounded-lg border bg-card p-4">
                         <h3 className="font-semibold mb-4">{panel.title}</h3>
-                        <PanelContent panel={panel} serviceId={serviceId} />
+                        <PanelContent panel={panel} serviceId={serviceId} searchValue={searchValue} />
                     </div>
                 )
             ))}
@@ -125,7 +132,7 @@ const DashboardPanelRenderer: React.FC<DashboardPanelRendererProps> = ({ dashboa
                     </TabsList>
                     {tabPanels.map(panel => (
                         <TabsContent key={panel.id} value={String(panel.id)} className="mt-4">
-                            <PanelContent panel={panel} serviceId={serviceId} />
+                            <PanelContent panel={panel} serviceId={serviceId} searchValue={searchValue} />
                         </TabsContent>
                     ))}
                 </Tabs>

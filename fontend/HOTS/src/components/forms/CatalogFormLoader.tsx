@@ -112,9 +112,18 @@ export const CatalogFormLoader: React.FC<CatalogFormLoaderProps> = ({ servicePat
       setServiceInfo(service);
 
       // Try to parse form_json, fall back to default if invalid
-      if (service.form_json && service.form_json.trim() !== '') {
+      if (service.form_json) {
         try {
-          const parsedConfig = JSON.parse(service.form_json);
+          let parsedConfig;
+
+          if (typeof service.form_json === 'object') {
+            parsedConfig = service.form_json;
+          } else if (typeof service.form_json === 'string' && service.form_json.trim() !== '') {
+            parsedConfig = JSON.parse(service.form_json);
+          } else {
+            throw new Error("Empty or invalid form_json string");
+          }
+
           setFormConfig(parsedConfig);
           setUsingFallback(false);
           setError(null);
@@ -151,7 +160,7 @@ export const CatalogFormLoader: React.FC<CatalogFormLoaderProps> = ({ servicePat
     return iconMap[category?.category_name || ''] || '📋';
   };
 
-  const [delayedLoading, setDelayedLoading] = useState()
+  const [delayedLoading, setDelayedLoading] = useState(false)
   useEffect(() => {
     let timer: NodeJS.Timeout;
 

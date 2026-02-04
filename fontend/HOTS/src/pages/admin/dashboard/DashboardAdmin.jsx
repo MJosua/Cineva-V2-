@@ -31,7 +31,7 @@ import { clearSeasonStorage } from "../../../action/cartAction";
 import { useLocation } from "react-router-dom"
 import { seasonOut, loginAction, logoutAction } from "../../../action/userAction";
 
-import { io } from "socket.io-client";
+// import { io } from "socket.io-client"; // Removed
 import { API_URL } from "../../../config";
 import { SearchIcon } from "@chakra-ui/icons";
 
@@ -39,16 +39,38 @@ const DashboardAdmin = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
-    const socket = io(API_URL);
+    // const socket = io(API_URL); // Socket.io removed
     const [logs, setLogs] = useState([]);
 
     useEffect(() => {
-        socket.on("logs", (logs) => setLogs(logs)); // Load old logs
-        socket.on("new_log", (log) => setLogs((prevLogs) => [...prevLogs, log]));
+        const token = localStorage.getItem('tokek');
+        if (!token) return;
+
+        console.log("🔌 Connecting to Admin Log Stream via SSE...");
+        const eventSource = new EventSource(`${API_URL}/sse/logs?token=${token}`);
+
+        eventSource.onopen = () => {
+            console.log("✅ Admin Log Stream Connected");
+        };
+
+        eventSource.addEventListener('new_log', (e) => {
+            try {
+                const parsed = JSON.parse(e.data);
+                const logMsg = parsed.data; // content is in .data property
+                setLogs((prevLogs) => [...prevLogs, logMsg]);
+            } catch (err) {
+                console.error("Error parsing log:", err);
+            }
+        });
+
+        eventSource.onerror = (err) => {
+            console.error("❌ Admin Log Stream Error:", err);
+            eventSource.close();
+        };
 
         return () => {
-            socket.off("logs");
-            socket.off("new_log");
+            console.log("🔌 Disconnecting Admin Log Stream...");
+            eventSource.close();
         };
     }, []);
 
@@ -101,7 +123,7 @@ const DashboardAdmin = () => {
             }
         }
     };
-   
+
 
     useEffect(() => {
         sessionStorage.removeItem('truckOrders');

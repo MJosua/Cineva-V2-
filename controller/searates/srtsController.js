@@ -16,40 +16,315 @@ function formatDate(date) {
 const key = process.env.SECURITY_API_SEARATES_KEY;
 
 
-// ✅ Safe global HTTP helper
-async function callaxios(url) {
+// ============================================
+// 🔧 INTERNAL HELPERS (Not Exported)
+// ============================================
+
+/**
+ * Safe HTTP GET with timeout and retry
+ * @param {string} url - The URL to fetch
+ * @returns {object|null} - Response data or null on failure
+ */
+async function _callSeaRatesAPI(url) {
     const controller = new AbortController();
-    const timeoutMs = 8000;
+    const timeoutMs = 10000;
     const timer = setTimeout(() => controller.abort(), timeoutMs);
+
     try {
-        const res = await axios.get(url, { signal: controller.signal });
+        const res = await axios.get(url, {
+            signal: controller.signal,
+            headers: { Accept: "application/json" },
+        });
         return res.data;
     } catch (err) {
-        if (err.name === 'AbortError' || err.code === 'ECONNABORTED') {
+        if (err.name === "AbortError" || err.code === "ECONNABORTED") {
             console.warn(`⚠️ SeaRates timeout: ${url}`);
-            await new Promise(r => setTimeout(r, 2000));
+            await new Promise((r) => setTimeout(r, 2000));
             try {
-                const retry = await axios.get(url, { signal: controller.signal });
+                const retry = await axios.get(url, { timeout: timeoutMs });
                 return retry.data;
             } catch (retryErr) {
                 console.error("❌ Retry failed:", retryErr.message);
-                throw retryErr;
+                return null;
             }
         }
         console.error("❌ Axios error:", err.message);
-        throw err;
+        return null;
     } finally {
         clearTimeout(timer);
     }
 }
 
-// ✅ Crash guards
-process.on("unhandledRejection", err => {
-    console.error("⚠️ Unhandled Promise Rejection:", err);
-});
-process.on("uncaughtException", err => {
-    console.error("💥 Uncaught Exception:", err);
-});
+/**
+ * Validate SeaRates API response has required structure
+ * @param {object} data - The data object to validate
+ * @returns {boolean} - True if valid, false otherwise
+ */
+function _isValidSeaRatesResponse(data) {
+    if (!data) return false;
+    if (data.status === "error") return false;
+    if (!data.metadata) return false;
+    return true;
+}
+
+/**
+ * Normalize SeaRates response to consistent shape
+ * Handles both { data: {...} } wrapper and direct {...} structures
+ * @param {object} rawResponse - Raw axios response body
+ * @returns {object|null} - Normalized data or null if invalid
+ */
+function _normalizeSeaRatesData(rawResponse) {
+    if (!rawResponse) return null;
+
+    // Handle wrapped response: { data: { metadata: {...} } }
+    const data = rawResponse?.data || rawResponse;
+
+    if (!_isValidSeaRatesResponse(data)) {
+        console.warn("⚠️ SeaRates response failed validation:", JSON.stringify(data)?.substring(0, 200));
+        return null;
+    }
+
+    return {
+        metadata: data.metadata || {},
+        containers: data.containers || [],
+        locations: data.locations || [],
+        vessels: data.vessels || [],
+        route: data.route || {},
+        route_data: data.route_data || {}
+    };
+}
+
+/**
+ * UNIFIED: Save SeaRates tracking data to database
+ * @param {object} record - { so_id, shipment_id, cont_id, data }
+ * @param {string} number - Tracking number for logging
+ * @returns {number|null} - shipment_id on success, null on failure
+ */
+async function _saveSearatesRecord(record, number) {
+    // ====== VALIDATION ======
+    if (!record?.data) {
+        console.warn(`⚠️ Cannot save: record.data is missing for ${number}`);
+        return null;
+    }
+
+    const metadata = record.data.metadata;
+    if (!metadata) {
+        console.warn(`⚠️ Cannot save: metadata is missing for ${number}`);
+        return null;
+    }
+
+    let connection;
+    try {
+        connection = await dbConf.promise().getConnection();
+
+        // ====== SHIPMENT ======
+        const shipmentQuery = `
+            INSERT INTO shipments (
+                shipment_id, number, so_id, type, sealine, sealine_name, status, last_updated_date
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE
+                type=VALUES(type),
+                sealine=VALUES(sealine),
+                sealine_name=VALUES(sealine_name),
+                status=VALUES(status),
+                last_updated_date=NOW();
+        `;
+
+        const shipmentResult = await dbQuerySR(shipmentQuery, [
+            record.shipment_id ?? null,
+            number ?? metadata.number ?? null,
+            record.so_id ?? 0,
+            metadata.type ?? null,
+            metadata.sealine ?? null,
+            metadata.sealine_name ?? null,
+            metadata.status ?? null,
+        ]);
+
+        const shipmentId =
+            shipmentResult.insertId ||
+            (await dbQuerySR("SELECT shipment_id FROM shipments WHERE number = ?", [metadata.number ?? number]))?.[0]?.[0]?.shipment_id;
+
+        if (!shipmentId) {
+            console.error(`❌ No valid shipment_id found for ${number}`);
+            return null;
+        }
+
+        console.log(`✅ Shipment saved (${number}) → ID: ${shipmentId}`);
+
+        // ====== LOCATIONS ======
+        const locations = record.data.locations || [];
+        if (locations.length) {
+            const locQuery = `
+                INSERT INTO locations (location_id, name, state, country, locode, lat, lng, shipment_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    name=VALUES(name), state=VALUES(state), country=VALUES(country),
+                    locode=VALUES(locode), lat=VALUES(lat), lng=VALUES(lng);
+            `;
+            for (const l of locations) {
+                await dbQuerySR(locQuery, [
+                    l.id ?? l.location_id ?? null,
+                    l.name ?? null,
+                    l.state ?? null,
+                    l.country ?? null,
+                    l.locode ?? null,
+                    l.lat ?? null,
+                    l.lng ?? null,
+                    shipmentId
+                ]);
+            }
+        }
+
+        // ====== ROUTE POL ======
+        const route = record.data.route || {};
+        if (route.pol) {
+            const pol = route.pol;
+            await dbQuerySR(`
+                INSERT INTO pol(location_id, date, actual, shipment_id, last_updated_date)
+                VALUES (?, ?, ?, ?, NOW())
+                ON DUPLICATE KEY UPDATE date=VALUES(date), actual=VALUES(actual), last_updated_date=NOW();
+            `, [pol.location ?? null, pol.date ?? null, pol.actual ?? null, shipmentId]);
+        }
+
+        // ====== ROUTE POD ======
+        if (route.pod) {
+            const pod = route.pod;
+            await dbQuerySR(`
+                INSERT INTO pod(location_id, date, predictive_eta, actual, shipment_id, last_updated_date)
+                VALUES (?, ?, ?, ?, ?, NOW())
+                ON DUPLICATE KEY UPDATE date=VALUES(date), predictive_eta=VALUES(predictive_eta), actual=VALUES(actual), last_updated_date=NOW();
+            `, [pod.location ?? null, pod.date ?? null, pod.predictive_eta ?? null, pod.actual ?? null, shipmentId]);
+        }
+
+        // ====== ROUTE PIN ======
+        const routeData = record.data.route_data || {};
+        if (routeData.pin?.length >= 2) {
+            const [lat, lng] = routeData.pin;
+            const updateResult = await dbQuerySR(
+                `UPDATE route SET lat = ?, \`long\` = ? WHERE shipment_id = ?`,
+                [lat, lng, shipmentId]
+            );
+            if (updateResult.affectedRows === 0) {
+                await dbQuerySR(
+                    `INSERT INTO route(lat, \`long\`, shipment_id) VALUES (?, ?, ?)`,
+                    [lat, lng, shipmentId]
+                );
+            }
+        }
+
+        // ====== VESSELS ======
+        const vessels = record.data.vessels || [];
+        if (vessels.length) {
+            const vesselQuery = `
+                INSERT INTO vessel(vessel_id, imo, name, shipment_id)
+                VALUES (?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    imo=VALUES(imo),
+                    name=VALUES(name);
+            `;
+            for (const v of vessels) {
+                await dbQuerySR(vesselQuery, [
+                    v.id ?? v.vessel_id ?? null,
+                    v.imo ?? null,
+                    v.name ?? null,
+                    shipmentId
+                ]);
+            }
+            console.log("✅ Vessels saved");
+        }
+
+        // ====== CONTAINERS + EVENTS ======
+        const containers = record.data.containers || [];
+        if (containers.length) {
+            const containersQuery = `
+                INSERT INTO containers (container_id, container_number, iso_code, size_type, status, shipment_id)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    iso_code=VALUES(iso_code),
+                    size_type=VALUES(size_type),
+                    status=VALUES(status);
+            `;
+            const eventQuery = `
+                INSERT INTO events (
+                    order_id, location_id, description, event_type, event_code, date, actual,
+                    vessel_id, voyage, container_id, shipment_id, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    description=VALUES(description),
+                    date=VALUES(date),
+                    vessel_id=VALUES(vessel_id),
+                    voyage=VALUES(voyage),
+                    status=VALUES(status);
+            `;
+
+            for (const [i, c] of containers.entries()) {
+                await dbQuerySR(containersQuery, [
+                    i + 1,
+                    c.number ?? c.container_number ?? null,
+                    c.iso_code ?? null,
+                    c.size_type ?? null,
+                    c.status ?? null,
+                    shipmentId,
+                ]);
+
+                const events = c.events || [];
+                for (const e of events) {
+                    await dbQuerySR(eventQuery, [
+                        e.order_id ?? null,
+                        e.location ?? e.location_id ?? null,
+                        e.description ?? null,
+                        e.event_type ?? null,
+                        e.event_code ?? null,
+                        e.date ?? null,
+                        e.actual ?? null,
+                        e.vessel ?? e.vessel_id ?? null,
+                        e.voyage ?? null,
+                        i + 1,
+                        shipmentId,
+                        e.status ?? null,
+                    ]);
+                }
+            }
+            console.log("✅ Containers and events upserted");
+        }
+
+        console.log(`✅ _saveSearatesRecord complete for shipment_id = ${shipmentId}`);
+        return shipmentId;
+
+    } catch (err) {
+        console.error(`❌ _saveSearatesRecord failed for ${number}:`, err.message);
+        return null;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+/**
+ * Enrich vessels with voyage info from container events
+ * @param {object} data - Normalized SeaRates data
+ * @returns {object} - Data with enriched vessels
+ */
+function _enrichVesselsWithVoyage(data) {
+    if (!data?.vessels?.length || !data?.containers?.length) return data;
+
+    data.vessels = data.vessels.map(vessel => {
+        const eventWithVoyage = data.containers
+            .flatMap(c => c.events || [])
+            .find(e => (e.vessel === vessel.id || e.vessel_id === vessel.id) && e.voyage);
+
+        return {
+            ...vessel,
+            voyage: eventWithVoyage?.voyage || null
+        };
+    });
+
+    return data;
+}
+
+
+// ============================================
+// ✅ EXPORTED CONTROLLER FUNCTIONS
+// ============================================
 
 module.exports = {
 
@@ -59,7 +334,7 @@ module.exports = {
 
         const number = req.params.number;
         const refresh = req.query.refresh;
-        const so_id = req.params.so_id || "0"; // ✅ ensure defined
+        const so_id = req.params.so_id || "0";
 
         if (!req.dataToken?.user_id) {
             console.log(timestamp + " Unauthorized!");
@@ -257,219 +532,6 @@ module.exports = {
 
         console.log("so_id dari GetSeaRatesTrackNumber", so_id);
 
-        // ✅ Reuse one global axios wrapper (abort-safe)
-        async function callaxios(url) {
-            const controller = new AbortController();
-            const timeoutMs = 8000;
-            const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-            try {
-                const res = await axios.get(url, {
-                    signal: controller.signal,
-                    headers: { Accept: "application/json" },
-                });
-                return res.data;
-            } catch (err) {
-                if (err.name === "AbortError" || err.code === "ECONNABORTED") {
-                    console.warn(`⚠️ SeaRates timeout: ${url}`);
-                    await new Promise((r) => setTimeout(r, 2000));
-                    try {
-                        const retry = await axios.get(url, { signal: controller.signal });
-                        return retry.data;
-                    } catch (retryErr) {
-                        console.error("❌ Retry failed:", retryErr.message);
-                        throw retryErr;
-                    }
-                }
-                console.error("❌ Axios error:", err.message);
-                throw err;
-            } finally {
-                clearTimeout(timer);
-            }
-        }
-
-        // ✅ Function to save fetched data into DB (same as before)
-        async function saveSearatesRecord(record) {
-            let connection;
-            try {
-                connection = await dbConf.promise().getConnection();
-                const metadata = record.data.metadata;
-
-
-                const shipmentQuery = `
-                INSERT INTO shipments (
-                    shipment_id, number, so_id, type, sealine, sealine_name, status, last_updated_date
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
-                ON DUPLICATE KEY UPDATE
-                    type=VALUES(type),
-                    sealine=VALUES(sealine),
-                    sealine_name=VALUES(sealine_name),
-                    status=VALUES(status),
-                    last_updated_date=NOW();
-            `;
-
-                const shipmentResult = await dbQuerySR(shipmentQuery, [
-                    record.shipment_id ?? null,
-                    number ?? metadata.number,
-                    record.so_id,
-                    metadata.type ?? null,
-                    metadata.sealine ?? null,
-                    metadata.sealine_name ?? null,
-                    metadata.status ?? null,
-                ]);
-
-                const shipmentId =
-                    shipmentResult.insertId ||
-                    (await dbQuerySR("SELECT shipment_id FROM shipments WHERE number = ?", [metadata.number]))[0]?.[0]?.shipment_id;
-
-                if (!shipmentId) {
-                    console.error("❌ No valid shipment_id found for", metadata.number);
-                    throw new Error("Shipment ID not found after insert");
-                }
-
-                console.log(`✅ Shipment saved (${metadata.number}) → ID: ${shipmentId}`);
-
-                // Locations
-                if (record.data.locations?.length) {
-                    const locQuery = `
-                        INSERT INTO locations (location_id, name, lat, lng, shipment_id)
-                        VALUES (?, ?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE
-                            name=VALUES(name), lat=VALUES(lat), lng=VALUES(lng);
-                    `;
-                    for (const l of record.data.locations)
-                        await dbQuerySR(locQuery, [l.id, l.name, l.lat, l.lng, shipmentId]);
-                }
-
-                // Routes (POL/POD)
-                if (record.data.route?.pol) {
-                    const pol = record.data.route.pol;
-                    await dbQuerySR(`
-                        INSERT INTO pol(location_id, date, actual, shipment_id)
-                        VALUES (?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE date=VALUES(date), actual=VALUES(actual);
-                    `, [pol.location, pol.date, pol.actual, shipmentId]);
-                }
-
-                if (record.data.route?.pod) {
-                    const pod = record.data.route.pod;
-                    await dbQuerySR(`
-                        INSERT INTO pod(location_id, date, actual, shipment_id)
-                        VALUES (?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE date=VALUES(date), actual=VALUES(actual);
-                    `, [pod.location, pod.date, pod.actual, shipmentId]);
-                }
-
-                // Route pin - UPDATE first to prevent duplicates
-                if (record.data.route_data?.pin?.length >= 2) {
-                    const [lat, lng] = record.data.route_data.pin;
-
-                    // Try UPDATE first
-                    const updateResult = await dbQuerySR(
-                        `UPDATE route SET lat = ?, \`long\` = ? WHERE shipment_id = ?`,
-                        [lat, lng, shipmentId]
-                    );
-
-                    // If no rows updated, INSERT new row
-                    if (updateResult.affectedRows === 0) {
-                        await dbQuerySR(
-                            `INSERT INTO route(lat, \`long\`, shipment_id) VALUES (?, ?, ?)`,
-                            [lat, lng, shipmentId]
-                        );
-                    }
-                }
-
-
-                // ==========================================
-                // 🔹 VESSELS - Save all vessel details first
-                // ==========================================
-                if (record.data.vessels?.length) {
-                    const vesselQuery = `
-                        INSERT INTO vessel(vessel_id, imo, name, shipment_id)
-                        VALUES (?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE
-                            imo=VALUES(imo),
-                            name=VALUES(name);
-                    `;
-                    for (const v of record.data.vessels) {
-                        await dbQuerySR(vesselQuery, [
-                            v.id ?? null,
-                            v.imo ?? null,
-                            v.name ?? null,
-                            shipmentId
-                        ]);
-                    }
-                    console.log("✅ Vessels saved");
-                }
-
-                // ==========================================
-                // 🔹 CONTAINERS + EVENTS
-                // ==========================================
-                if (record.data.containers) {
-                    const containersQuery = `
-                INSERT INTO containers (container_id, container_number, iso_code, size_type, status, shipment_id)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                    iso_code=VALUES(iso_code),
-                    size_type=VALUES(size_type),
-                    status=VALUES(status);
-            `;
-                    const eventQuery = `
-                INSERT INTO events (
-                    order_id, location_id, description, event_type, event_code, date, actual,
-                    vessel_id, voyage, container_id, shipment_id, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                    description=VALUES(description),
-                    date=VALUES(date),
-                    vessel_id=VALUES(vessel_id),
-                    voyage=VALUES(voyage),
-                    status=VALUES(status);
-            `;
-
-                    for (const [i, c] of record.data.containers.entries()) {
-                        await dbQuerySR(containersQuery, [
-                            i + 1,
-                            c.number ?? null,
-                            c.iso_code ?? null,
-                            c.size_type ?? null,
-                            c.status ?? null,
-                            shipmentId,
-                        ]);
-
-                        if (c.events) {
-                            for (const e of c.events) {
-                                await dbQuerySR(eventQuery, [
-                                    e.order_id ?? null,
-                                    e.location ?? null,
-                                    e.description ?? null,
-                                    e.event_type ?? null,
-                                    e.event_code ?? null,
-                                    e.date ?? null,
-                                    e.actual ?? null,
-                                    e.vessel ?? null,  // vessel ID reference
-                                    e.voyage ?? null,
-                                    i + 1,
-                                    shipmentId,
-                                    e.status ?? null,
-                                ]);
-                            }
-                        }
-                    }
-                    console.log("✅ Containers and events upserted");
-                }
-
-                console.log("✅ saveSearatesRecord complete with shipment id = ", shipmentId);
-                return shipmentId;
-            } catch (err) {
-                console.error("❌ saveSearatesRecord failed:", err);
-                throw err;
-            } finally {
-                if (connection) connection.release();
-            }
-        }
-
-
         let connection;
 
         // 🟣 Main execution flow
@@ -477,7 +539,7 @@ module.exports = {
 
             connection = await dbConf.promise().getConnection();
 
-
+            // 1️⃣ CHECK LOCAL DATABASE FIRST
             const results = await dbQuerySR(`
                 SELECT 
                        s.shipment_id ,
@@ -521,12 +583,9 @@ module.exports = {
                    order by e.order_id ASC 
            `, [number, number, so_id, so_id]);
 
-            // 🔄 Determine if we need to fetch fresh data
-            // If refresh=true is explicitly passed, always fetch fresh data
-            // Otherwise, auto-refresh only if data is > 5 hours old or so_id is missing
+            // 2️⃣ DETERMINE IF REFRESH NEEDED
             let reload = false;
             if (refresh) {
-                // User explicitly requested refresh - always fetch fresh data
                 reload = true;
                 console.log(`🔄 Refresh requested for ${number}, fetching fresh data from SeaRates...`);
             } else if (results.length) {
@@ -534,7 +593,7 @@ module.exports = {
                 reload = diffHours >= 5 || !results[0].so_id;
             }
 
-            // 🔁 Fetch fresh data if missing or outdated
+            // 3️⃣ FETCH FROM SEARATES IF NEEDED
             if (!results.length || reload) {
                 const checkQuery = so_id === "0" ? `
                    SELECT ti.bl_no, tso.so_id, s.so_id, s.last_updated_date
@@ -542,72 +601,66 @@ module.exports = {
                    LEFT JOIN trs_sales_order tso ON tr.so_id = tso.so_id
                    LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
                    LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
-                   WHERE s.number = "${number}" ORDER BY s.last_updated_date DESC LIMIT 1
+                   WHERE s.number = ? ORDER BY s.last_updated_date DESC LIMIT 1
                ` : `
                    SELECT ti.bl_no, tso.so_id, s.so_id, s.last_updated_date
                    FROM trs_realization tr
                    LEFT JOIN trs_sales_order tso ON tr.so_id = tso.so_id
                    LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
                    LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
-                   WHERE s.so_id = "${so_id}" ORDER BY s.last_updated_date DESC LIMIT 1
+                   WHERE s.so_id = ? ORDER BY s.last_updated_date DESC LIMIT 1
                `;
 
-                const checkresult = await dbQuery(checkQuery);
+                const checkresult = await dbQuery(checkQuery, [so_id === "0" ? number : so_id]);
                 const bl_no = checkresult[0]?.bl_no;
-                const contIdClean = checkresult[0]?.cont_id?.replace("-", "");
 
                 const url = bl_no
                     ? `https://tracking.searates.com/tracking?api_key=${key}&number=${bl_no}&sealine=${sealine}&force_update=false&type=bl&route=true&ais=false`
                     : `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=${sealine}&force_update=false&route=true&ais=false`;
 
-                let searatesRes = await callaxios(url);
-                if (!searatesRes?.data?.metadata?.sealine_name) { // remove one `.data`
-                    console.warn(`⚠️ Missing sealine name for ${number}, retrying with auto`);
+                let searatesRes = await _callSeaRatesAPI(url);
+
+                // 4️⃣ VALIDATE API RESPONSE
+                let normalizedData = _normalizeSeaRatesData(searatesRes);
+
+                if (!normalizedData) {
+                    console.warn(`⚠️ First attempt failed for ${number}, retrying with auto sealine...`);
                     const fallbackUrl = `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=auto&force_update=false&route=true&ais=false`;
-                    searatesRes = await callaxios(fallbackUrl);
+                    searatesRes = await _callSeaRatesAPI(fallbackUrl);
+                    normalizedData = _normalizeSeaRatesData(searatesRes);
                 }
 
-                const record = {
-                    so_id: so_id ?? checkresult[0]?.so_id ?? 0,
-                    shipment_id: checkresult[0]?.shipment_id ?? null,
-                    cont_id: number,
-                    data: searatesRes.data
-                };
+                // 5️⃣ SAVE ONLY IF VALID
+                if (normalizedData) {
+                    const record = {
+                        so_id: so_id ?? checkresult[0]?.so_id ?? 0,
+                        shipment_id: checkresult[0]?.shipment_id ?? null,
+                        cont_id: number,
+                        data: normalizedData
+                    };
 
-                if (record.data) {
-                    await saveSearatesRecord(record);
+                    await _saveSearatesRecord(record, number);
 
-                    // Enrich vessels with voyage from events
-                    if (searatesRes.data?.vessels && searatesRes.data?.containers) {
-                        searatesRes.data.vessels = searatesRes.data.vessels.map(vessel => {
-                            // Find first event that references this vessel and has a voyage
-                            const eventWithVoyage = searatesRes.data.containers
-                                .flatMap(c => c.events || [])
-                                .find(e => e.vessel === vessel.id && e.voyage);
-
-                            return {
-                                ...vessel,
-                                voyage: eventWithVoyage?.voyage || null
-                            };
-                        });
-                    }
+                    // Enrich vessels with voyage
+                    const enrichedData = _enrichVesselsWithVoyage(normalizedData);
 
                     return res.status(200).send({
                         message: "Fetched from SeaRates and saved",
-                        data: searatesRes
+                        data: { data: enrichedData }
                     });
                 } else {
+                    console.warn(`⚠️ No valid data from SeaRates for ${number}`);
                     return res.status(404).send({ message: "No data from SeaRates" });
                 }
             }
 
-            // 🟢 Otherwise, respond from DB
+            // 6️⃣ RETURN CACHED DATA FROM DB
             const shipmentData = {};
             for (const row of results) {
                 const id = row.shipment_id;
                 if (!shipmentData[id]) {
                     shipmentData[id] = {
-                        so_id: so_id ?? checkresult[0]?.so_id ?? 0,
+                        so_id: so_id ?? results[0]?.so_id ?? 0,
                         shipment_id: id,
                         metadata: {
                             last_updated_date: row.last_updated_date,
@@ -724,224 +777,12 @@ module.exports = {
         console.log("number:", number);
         console.log("so_id:", so_id);
 
-        // ✅ Helper to call SeaRates API with timeout + retry
-        async function callaxios(url) {
-            const controller = new AbortController();
-            const timeoutMs = 8000;
-            const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-            try {
-                const res = await axios.get(url, {
-                    signal: controller.signal,
-                    headers: { Accept: "application/json" },
-                });
-                return res.data;
-            } catch (err) {
-                if (err.name === "AbortError" || err.code === "ECONNABORTED") {
-                    console.warn(`⚠️ SeaRates timeout: ${url}`);
-                    await new Promise((r) => setTimeout(r, 2000));
-                    try {
-                        const retry = await axios.get(url, { signal: controller.signal });
-                        return retry.data;
-                    } catch (retryErr) {
-                        console.error("❌ Retry failed:", retryErr.message);
-                        throw retryErr;
-                    }
-                }
-                console.error("❌ Axios error:", err.message);
-                throw err;
-            } finally {
-                clearTimeout(timer);
-            }
-        }
-
-        // ✅ Function to save fetched data into DB (same as before)
-        async function saveSearatesRecord(record) {
-            let connection;
-            try {
-                connection = await dbConf.promise().getConnection();
-                const metadata = record.data.metadata;
-
-
-                const shipmentQuery = `
-                INSERT INTO shipments (
-                    shipment_id, number, so_id, type, sealine, sealine_name, status, last_updated_date
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
-                ON DUPLICATE KEY UPDATE
-                    type=VALUES(type),
-                    sealine=VALUES(sealine),
-                    sealine_name=VALUES(sealine_name),
-                    status=VALUES(status),
-                    last_updated_date=NOW();
-            `;
-
-                const shipmentResult = await dbQuerySR(shipmentQuery, [
-                    record.shipment_id ?? null,
-                    number ?? metadata.number,
-                    record.so_id,
-                    metadata.type ?? null,
-                    metadata.sealine ?? null,
-                    metadata.sealine_name ?? null,
-                    metadata.status ?? null,
-                ]);
-
-                const shipmentId =
-                    shipmentResult.insertId ||
-                    (await dbQuerySR("SELECT shipment_id FROM shipments WHERE number = ?", [metadata.number]))[0]?.[0]?.shipment_id;
-
-                if (!shipmentId) {
-                    console.error("❌ No valid shipment_id found for", metadata.number);
-                    throw new Error("Shipment ID not found after insert");
-                }
-
-                console.log(`✅ Shipment saved (${metadata.number}) → ID: ${shipmentId}`);
-
-                // Locations
-                if (record.data.locations?.length) {
-                    const locQuery = `
-                        INSERT INTO locations (location_id, name, lat, lng, shipment_id)
-                        VALUES (?, ?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE
-                            name=VALUES(name), lat=VALUES(lat), lng=VALUES(lng);
-                    `;
-                    for (const l of record.data.locations)
-                        await dbQuerySR(locQuery, [l.id, l.name, l.lat, l.lng, shipmentId]);
-                }
-
-                // Routes (POL/POD)
-                if (record.data.route?.pol) {
-                    const pol = record.data.route.pol;
-                    await dbQuerySR(`
-                        INSERT INTO pol(location_id, date, actual, shipment_id)
-                        VALUES (?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE date=VALUES(date), actual=VALUES(actual);
-                    `, [pol.location, pol.date, pol.actual, shipmentId]);
-                }
-
-                if (record.data.route?.pod) {
-                    const pod = record.data.route.pod;
-                    await dbQuerySR(`
-                        INSERT INTO pod(location_id, date, actual, shipment_id)
-                        VALUES (?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE date=VALUES(date), actual=VALUES(actual);
-                    `, [pod.location, pod.date, pod.actual, shipmentId]);
-                }
-
-                // Route pin - UPDATE first to prevent duplicates
-                if (record.data.route_data?.pin?.length >= 2) {
-                    const [lat, lng] = record.data.route_data.pin;
-
-                    // Try UPDATE first
-                    const updateResult = await dbQuerySR(
-                        `UPDATE route SET lat = ?, \`long\` = ? WHERE shipment_id = ?`,
-                        [lat, lng, shipmentId]
-                    );
-
-                    // If no rows updated, INSERT new row
-                    if (updateResult.affectedRows === 0) {
-                        await dbQuerySR(
-                            `INSERT INTO route(lat, \`long\`, shipment_id) VALUES (?, ?, ?)`,
-                            [lat, lng, shipmentId]
-                        );
-                    }
-                }
-
-
-                // ==========================================
-                // 🔹 VESSELS - Save all vessel details first
-                // ==========================================
-                if (record.data.vessels?.length) {
-                    const vesselQuery = `
-                        INSERT INTO vessel(vessel_id, imo, name, shipment_id)
-                        VALUES (?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE
-                            imo=VALUES(imo),
-                            name=VALUES(name);
-                    `;
-                    for (const v of record.data.vessels) {
-                        await dbQuerySR(vesselQuery, [
-                            v.id ?? null,
-                            v.imo ?? null,
-                            v.name ?? null,
-                            shipmentId
-                        ]);
-                    }
-                    console.log("✅ Vessels saved");
-                }
-
-                // ==========================================
-                // 🔹 CONTAINERS + EVENTS
-                // ==========================================
-                if (record.data.containers) {
-                    const containersQuery = `
-                INSERT INTO containers (container_id, container_number, iso_code, size_type, status, shipment_id)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                    iso_code=VALUES(iso_code),
-                    size_type=VALUES(size_type),
-                    status=VALUES(status);
-            `;
-                    const eventQuery = `
-                INSERT INTO events (
-                    order_id, location_id, description, event_type, event_code, date, actual,
-                    vessel_id, voyage, container_id, shipment_id, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                    description=VALUES(description),
-                    date=VALUES(date),
-                    vessel_id=VALUES(vessel_id),
-                    voyage=VALUES(voyage),
-                    status=VALUES(status);
-            `;
-
-                    for (const [i, c] of record.data.containers.entries()) {
-                        await dbQuerySR(containersQuery, [
-                            i + 1,
-                            c.number ?? null,
-                            c.iso_code ?? null,
-                            c.size_type ?? null,
-                            c.status ?? null,
-                            shipmentId,
-                        ]);
-
-                        if (c.events) {
-                            for (const e of c.events) {
-                                await dbQuerySR(eventQuery, [
-                                    e.order_id ?? null,
-                                    e.location ?? null,
-                                    e.description ?? null,
-                                    e.event_type ?? null,
-                                    e.event_code ?? null,
-                                    e.date ?? null,
-                                    e.actual ?? null,
-                                    e.vessel ?? null,  // vessel ID reference
-                                    e.voyage ?? null,
-                                    i + 1,
-                                    shipmentId,
-                                    e.status ?? null,
-                                ]);
-                            }
-                        }
-                    }
-                    console.log("✅ Containers and events upserted");
-                }
-
-                console.log("✅ saveSearatesRecord complete with shipment id = ", shipmentId);
-                return shipmentId;
-            } catch (err) {
-                console.error("❌ saveSearatesRecord failed:", err);
-                throw err;
-            } finally {
-                if (connection) connection.release();
-            }
-        }
-
         // 🟣 Main flow
         let connection;
         try {
             connection = await dbConf.promise().getConnection();
 
-            // 🟢 Get existing cached data
+            // 1️⃣ CHECK LOCAL DATABASE FIRST
             const results = await dbQuerySR(`
                  SELECT 
                         s.shipment_id ,
@@ -984,12 +825,9 @@ module.exports = {
                     order by e.order_id ASC 
             `, [number, so_id]);
 
-            // 🔄 Determine if we need to fetch fresh data
-            // If refresh=true is explicitly passed, always fetch fresh data
-            // Otherwise, auto-refresh only if data is > 5 hours old or so_id is missing
+            // 2️⃣ DETERMINE IF REFRESH NEEDED
             let reload = false;
             if (refresh) {
-                // User explicitly requested refresh - always fetch fresh data
                 reload = true;
                 console.log(`🔄 Refresh requested for ${number}, fetching fresh data from SeaRates...`);
             } else if (results.length) {
@@ -997,7 +835,7 @@ module.exports = {
                 reload = diffHours >= 5 || !results[0].so_id;
             }
 
-            // 🔁 Fetch fresh data if missing or outdated
+            // 3️⃣ FETCH FROM SEARATES IF NEEDED
             if (!results.length || reload) {
                 const checkQuery = so_id === "0" ? `
                     SELECT ti.bl_no, tso.so_id, s.so_id, s.last_updated_date
@@ -1005,42 +843,48 @@ module.exports = {
                     LEFT JOIN trs_sales_order tso ON tr.so_id = tso.so_id
                     LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
                     LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
-                    WHERE s.number = "${number}" ORDER BY s.last_updated_date DESC LIMIT 1
+                    WHERE s.number = ? ORDER BY s.last_updated_date DESC LIMIT 1
                 ` : `
                     SELECT ti.bl_no, tso.so_id, s.so_id, s.last_updated_date
                     FROM trs_realization tr
                     LEFT JOIN trs_sales_order tso ON tr.so_id = tso.so_id
                     LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
                     LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
-                    WHERE s.so_id = "${so_id}" ORDER BY s.last_updated_date DESC LIMIT 1
+                    WHERE s.so_id = ? ORDER BY s.last_updated_date DESC LIMIT 1
                 `;
 
-                const checkresult = await dbQuery(checkQuery);
+                const checkresult = await dbQuery(checkQuery, [so_id === "0" ? number : so_id]);
                 const bl_no = checkresult[0]?.bl_no;
+
                 const url = bl_no
                     ? `https://tracking.searates.com/tracking?api_key=${key}&number=${bl_no}&sealine=${sealine}&force_update=false&type=bl&route=true&ais=false`
                     : `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=${sealine}&force_update=false&route=true&ais=false`;
 
-                let searatesRes = await callaxios(url);
-                if (!searatesRes.data?.data?.metadata?.sealine_name) {
-                    console.warn(`⚠️ Missing sealine name for ${number}, retrying with auto`);
+                let searatesRes = await _callSeaRatesAPI(url);
+
+                // 4️⃣ VALIDATE API RESPONSE
+                let normalizedData = _normalizeSeaRatesData(searatesRes);
+
+                if (!normalizedData) {
+                    console.warn(`⚠️ First attempt failed for ${number}, retrying with auto sealine...`);
                     const fallbackUrl = `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=auto&force_update=false&route=true&ais=false`;
-                    searatesRes = await callaxios(fallbackUrl);
+                    searatesRes = await _callSeaRatesAPI(fallbackUrl);
+                    normalizedData = _normalizeSeaRatesData(searatesRes);
                 }
 
-                const record = {
-                    so_id: so_id ?? checkresult[0]?.so_id ?? 0,
-                    shipment_id: checkresult[0]?.shipment_id ?? null,
-                    cont_id: number,
-                    data: searatesRes.data
-                };
+                // 5️⃣ SAVE ONLY IF VALID
+                if (normalizedData) {
+                    const record = {
+                        so_id: so_id ?? checkresult[0]?.so_id ?? 0,
+                        shipment_id: checkresult[0]?.shipment_id ?? null,
+                        cont_id: number,
+                        data: normalizedData
+                    };
 
+                    await _saveSearatesRecord(record, number);
 
-                if (record.data) {
-
-
-                    // Flatten and deduplicate events across all containers
-                    const allEvents = (searatesRes.data.containers || []).flatMap(c => c.events || []);
+                    // Flatten and deduplicate events
+                    const allEvents = (normalizedData.containers || []).flatMap(c => c.events || []);
                     const uniqueEvents = allEvents.reduce((acc, event) => {
                         const exists = acc.some(e =>
                             e.order_id === event.order_id &&
@@ -1051,55 +895,42 @@ module.exports = {
                         return acc;
                     }, []);
 
+                    const enrichedData = _enrichVesselsWithVoyage(normalizedData);
+
                     const normalized = {
                         shipment_id: checkresult[0]?.shipment_id ?? null,
                         so_id: so_id ?? checkresult[0]?.so_id ?? 0,
-                        metadata: searatesRes.data.metadata,
-                        container: searatesRes.data.containers || [],
+                        metadata: enrichedData.metadata,
+                        container: enrichedData.containers || [],
                         events: uniqueEvents,
-                        locations: searatesRes.data.locations || [],
-                        vessels: searatesRes.data.vessels || [],
+                        locations: enrichedData.locations || [],
+                        vessels: enrichedData.vessels || [],
                         dataRoute: [{
-                            pol: searatesRes.data.route?.pol ? [searatesRes.data.route.pol] : [],
-                            pod: searatesRes.data.route?.pod ? [searatesRes.data.route.pod] : []
+                            pol: enrichedData.route?.pol ? [enrichedData.route.pol] : [],
+                            pod: enrichedData.route?.pod ? [enrichedData.route.pod] : []
                         }],
-                        pin_location: searatesRes.data.route_data?.pin
-                            ? { lat: searatesRes.data.route_data.pin[0], lng: searatesRes.data.route_data.pin[1] }
+                        pin_location: enrichedData.route_data?.pin
+                            ? { lat: enrichedData.route_data.pin[0], lng: enrichedData.route_data.pin[1] }
                             : {}
                     };
 
-                    await saveSearatesRecord(record);
-
-                    // Enrich vessels with voyage from events
-                    if (searatesRes.data?.vessels && searatesRes.data?.containers) {
-                        searatesRes.data.vessels = searatesRes.data.vessels.map(vessel => {
-                            // Find first event that references this vessel and has a voyage
-                            const eventWithVoyage = searatesRes.data.containers
-                                .flatMap(c => c.events || [])
-                                .find(e => e.vessel === vessel.id && e.voyage);
-
-                            return {
-                                ...vessel,
-                                voyage: eventWithVoyage?.voyage || null
-                            };
-                        });
-                    }
-
                     return res.status(200).send({
                         message: "Fetched from SeaRates and saved",
-                        data: searatesRes
+                        data: { data: enrichedData }
                     });
                 }
+
+                console.warn(`⚠️ No valid data from SeaRates for ${number}`);
                 return res.status(404).send({ message: "No data from SeaRates" });
             }
 
-            // 🟢 Return cached data
+            // 6️⃣ RETURN CACHED DATA FROM DB
             const shipmentData = {};
             for (const row of results) {
                 const id = row.shipment_id;
                 if (!shipmentData[id]) {
                     shipmentData[id] = {
-                        so_id: so_id ?? checkresult[0]?.so_id ?? 0,
+                        so_id: so_id ?? results[0]?.so_id ?? 0,
                         shipment_id: id,
                         metadata: {
                             last_updated_date: row.last_updated_date,
@@ -1212,199 +1043,9 @@ module.exports = {
 
         console.log(`${timestamp} 🔎 Running SearatesCheck for e_order: ${number}`);
 
-        // ✅ Unified axios with AbortController
-        async function callaxios(url) {
-            const controller = new AbortController();
-            const timeoutMs = 10000;
-            const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-            try {
-                const res = await axios.get(url, {
-                    signal: controller.signal,
-                    headers: { 'Accept': 'application/json' },
-                });
-                return res.data;
-            } catch (err) {
-                if (err.name === 'AbortError' || err.code === 'ECONNABORTED') {
-                    console.warn(`⚠️ SeaRates timeout: ${url}`);
-                    await new Promise(r => setTimeout(r, 2000)); // wait before retry
-                    try {
-                        const retry = await axios.get(url, { signal: controller.signal });
-                        return retry.data;
-                    } catch (retryErr) {
-                        console.error("❌ Retry failed:", retryErr.message);
-                        throw retryErr;
-                    }
-                }
-                console.error("❌ Axios error:", err.message);
-                throw err;
-            } finally {
-                clearTimeout(timer);
-            }
-        }
-
-        // ✅ Database save logic with safe connection handling
-        async function saveSearatesRecord(record) {
-            let connection;
-            try {
-                connection = await dbConf.promise().getConnection();
-                const metadata = record.data.metadata;
-                console.log("metadata", metadata);
-
-                const shipmentQuery = `
-                    INSERT INTO shipments (
-                        shipment_id, number, so_id, type, sealine, sealine_name, status, last_updated_date
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
-                    ON DUPLICATE KEY UPDATE
-                        type=VALUES(type),
-                        sealine=VALUES(sealine),
-                        sealine_name=VALUES(sealine_name),
-                        status=VALUES(status),
-                        last_updated_date=NOW();
-                `;
-
-                const shipmentResult = await dbQuerySR(shipmentQuery, [
-                    record.shipment_id ?? null,
-                    number,
-                    record.so_id ?? 0,
-                    metadata.type ?? null,
-                    metadata.sealine ?? null,
-                    metadata.sealine_name ?? null,
-                    metadata.status ?? null,
-                ]);
-
-                const shipmentId =
-                    shipmentResult.insertId ||
-                    (await dbQuerySR("SELECT id FROM shipments WHERE number = ?", [metadata.number]))[0]?.id;
-
-                console.log(`✅ Shipment saved: ${metadata.number}`);
-
-                // 🟢 First event
-                await dbQuerySR(`
-                    INSERT INTO events (
-                        order_id, location_id, description, event_type, event_code, date,
-                        actual, vessel_id, voyage, container_id, shipment_id, status
-                    ) VALUES (0,0,'First time API-CALL','system','FIRST_CALL',NOW(),1,NULL,NULL,0,?,'start')
-                    ON DUPLICATE KEY UPDATE description=VALUES(description), date=VALUES(date), status=VALUES(status);
-                `, [shipmentId]);
-
-                // 🟢 Locations
-                if (record.data.locations?.length) {
-                    const locQuery = `
-                        INSERT INTO locations (location_id, name, state, country, locode, lat, lng, shipment_id)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE
-                            name=VALUES(name), state=VALUES(state), country=VALUES(country),
-                            locode=VALUES(locode), lat=VALUES(lat), lng=VALUES(lng);
-                    `;
-                    for (const l of record.data.locations) {
-                        await dbQuerySR(locQuery, [l.id, l.name, l.state, l.country, l.locode, l.lat, l.lng, shipmentId]);
-                    }
-                }
-
-                // 🟢 Route pin - UPDATE first to prevent duplicates
-                if (record.data.route_data?.pin?.length >= 2) {
-                    const [lat, long] = record.data.route_data.pin;
-
-                    // Try UPDATE first
-                    const updateResult = await dbQuerySR(
-                        `UPDATE route SET lat = ?, \`long\` = ? WHERE shipment_id = ?`,
-                        [lat, long, shipmentId]
-                    );
-
-                    // If no rows updated, INSERT new row
-                    if (updateResult.affectedRows === 0) {
-                        await dbQuerySR(
-                            `INSERT INTO route(lat, \`long\`, shipment_id) VALUES (?, ?, ?)`,
-                            [lat, long, shipmentId]
-                        );
-                        console.log("✅ Route inserted successfully");
-                    } else {
-                        console.log("✅ Route updated successfully");
-                    }
-                } else {
-                    console.warn("⚠️ No route pin available");
-                }
-
-                // 🟢 POL
-                if (record.data.route?.pol) {
-                    const pol = record.data.route.pol;
-                    await dbQuerySR(`
-                        INSERT INTO pol(location_id, date, actual, shipment_id, last_updated_date)
-                        VALUES (?, ?, ?, ?, NOW())
-                        ON DUPLICATE KEY UPDATE date=VALUES(date), actual=VALUES(actual);
-                    `, [pol.location, pol.date, pol.actual, shipmentId]);
-                }
-
-                // 🟢 POD
-                if (record.data.route?.pod) {
-                    const pod = record.data.route.pod;
-                    await dbQuerySR(`
-                        INSERT INTO pod(location_id, date, predictive_eta, actual, shipment_id, last_updated_date)
-                        VALUES (?, ?, ?, ?, ?, NOW())
-                        ON DUPLICATE KEY UPDATE date=VALUES(date), predictive_eta=VALUES(predictive_eta), actual=VALUES(actual);
-                    `, [pod.location, pod.date, pod.predictive_eta, pod.actual, shipmentId]);
-                }
-
-                // 🟢 Vessels - Save all vessel details first
-                if (record.data.vessels?.length) {
-                    const vesselQuery = `
-                        INSERT INTO vessel(vessel_id, imo, name, shipment_id)
-                        VALUES (?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE
-                            imo=VALUES(imo),
-                            name=VALUES(name);
-                    `;
-                    for (const v of record.data.vessels) {
-                        await dbQuerySR(vesselQuery, [
-                            v.id ?? null,
-                            v.imo ?? null,
-                            v.name ?? null,
-                            shipmentId
-                        ]);
-                    }
-                    console.log("✅ Vessels saved");
-                }
-
-                // 🟢 Containers & events
-                if (record.data.containers?.length) {
-                    const contQuery = `
-                        INSERT INTO containers(container_id, container_number, iso_code, size_type, status, shipment_id)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE iso_code=VALUES(iso_code), size_type=VALUES(size_type), status=VALUES(status);
-                    `;
-                    const eventQuery = `
-                        INSERT INTO events(order_id, location_id, description, event_type, event_code, date,
-                                           actual, vessel_id, voyage, container_id, shipment_id, status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE description=VALUES(description), date=VALUES(date), status=VALUES(status);
-                    `;
-                    for (const [i, c] of record.data.containers.entries()) {
-                        await dbQuerySR(contQuery, [i + 1, c.number, c.iso_code, c.size_type, c.status, shipmentId]);
-                        if (c.events?.length) {
-                            for (const e of c.events) {
-                                await dbQuerySR(eventQuery, [
-                                    e.order_id, e.location, e.description, e.event_type, e.event_code,
-                                    e.date, e.actual, e.vessel, e.voyage, i + 1, shipmentId, e.status
-                                ]);
-                            }
-                        }
-                    }
-                }
-
-                console.log("✅ saveSearatesRecord complete");
-                return shipmentId;
-
-            } catch (err) {
-                console.error("❌ saveSearatesRecord failed:", err);
-                throw err;
-            } finally {
-                if (connection) connection.release?.();
-            }
-        }
-
         // 🟣 Main Process
         try {
+            // 1️⃣ CHECK LOCAL DATABASE FIRST (with parameterized query - FIXED SQL INJECTION)
             const query = `
                 SELECT ti.bl_no, tso.so_id, s.so_id, s.shipment_id, tr.cont_id, s.last_updated_date
                 FROM trs_realization tr
@@ -1412,7 +1053,7 @@ module.exports = {
                 LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
                 LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
                 LEFT JOIN sea_rates.pod pod ON s.shipment_id = pod.shipment_id
-                WHERE tso.e_order = ${number}
+                WHERE tso.e_order = ?
                 AND (
                     s.last_updated_date >= NOW() - INTERVAL 2 WEEK
                     OR (pod.date <= NOW() AND pod.actual = 1)
@@ -1420,69 +1061,80 @@ module.exports = {
             `;
 
             const results = await dbQuery(query, [number]);
-            if (!results.length) {
-                console.log(`🔄 No data found locally, fetching new for e_order: ${number}`);
 
-                const querycheck_so_Id = `
-                    SELECT ti.bl_no, tso.so_id, s.so_id, s.shipment_id, tr.cont_id, s.last_updated_date
-                    FROM trs_realization tr
-                    LEFT JOIN trs_sales_order tso ON tr.so_id = tso.so_id
-                    LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
-                    LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
-                    WHERE tso.e_order = ${number};
-                `;
+            // 2️⃣ IF DATA EXISTS AND IS VALID, RETURN IT
+            if (results.length) {
+                console.log(`✅ Using cached Searates data for SO ID: ${results[0].so_id}`);
+                return res.status(200).send(results);
+            }
 
-                const checkresult = await dbQuery(querycheck_so_Id);
-                if (!checkresult.length) return res.status(404).send({ message: "No matching record found in DB" });
+            // 3️⃣ NO LOCAL DATA - FETCH FROM SEARATES
+            console.log(`🔄 No data found locally, fetching new for e_order: ${number}`);
 
-                const contIdClean = checkresult[0]?.cont_id?.replace("-", "");
-                const bl_no = checkresult[0]?.bl_no;
+            const querycheck_so_Id = `
+                SELECT ti.bl_no, tso.so_id, s.so_id, s.shipment_id, tr.cont_id, s.last_updated_date
+                FROM trs_realization tr
+                LEFT JOIN trs_sales_order tso ON tr.so_id = tso.so_id
+                LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
+                LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
+                WHERE tso.e_order = ?;
+            `;
 
-                const url = bl_no
-                    ? `https://tracking.searates.com/tracking?api_key=${key}&number=${bl_no}&sealine=auto&force_update=false&route=true&ais=false`
-                    : `https://tracking.searates.com/tracking?api_key=${key}&number=${contIdClean}&sealine=auto&force_update=false&route=true&ais=false`;
+            const checkresult = await dbQuery(querycheck_so_Id, [number]);
+            if (!checkresult.length) {
+                return res.status(200).send({ message: "No matching record found in DB" });
+            }
 
-                let searatesRes = await callaxios(url);
+            const contIdClean = checkresult[0]?.cont_id?.replace("-", "") ?? "";
+            const bl_no = checkresult[0]?.bl_no;
 
-                if (!searatesRes.data?.data?.metadata?.sealine_name) {
-                    console.warn("⚠️ Missing sealine, retrying with contIdClean...");
-                    const fallbackUrl = `https://tracking.searates.com/tracking?api_key=${key}&number=${contIdClean}&sealine=auto&force_update=false&route=true&ais=false`;
-                    searatesRes = await callaxios(fallbackUrl);
-                }
+            const url = bl_no
+                ? `https://tracking.searates.com/tracking?api_key=${key}&number=${bl_no}&sealine=auto&force_update=false&route=true&ais=false`
+                : `https://tracking.searates.com/tracking?api_key=${key}&number=${contIdClean}&sealine=auto&force_update=false&route=true&ais=false`;
 
-                const record = {
-                    so_id: checkresult[0]?.so_id,
-                    shipment_id: checkresult[0]?.shipment_id,
-                    cont_id: contIdClean,
-                    data: searatesRes.data.data
-                };
+            let searatesRes = await _callSeaRatesAPI(url);
 
-                await saveSearatesRecord(record);
-                console.log(`✅ Saved new tracking for SO ID: ${checkresult[0]?.so_id}`);
+            // 4️⃣ VALIDATE API RESPONSE
+            let normalizedData = _normalizeSeaRatesData(searatesRes);
 
-                // Enrich vessels with voyage from events
-                if (searatesRes.data?.data?.vessels && searatesRes.data?.data?.containers) {
-                    searatesRes.data.data.vessels = searatesRes.data.data.vessels.map(vessel => {
-                        // Find first event that references this vessel and has a voyage
-                        const eventWithVoyage = searatesRes.data.data.containers
-                            .flatMap(c => c.events || [])
-                            .find(e => e.vessel === vessel.id && e.voyage);
+            if (!normalizedData) {
+                console.warn(`⚠️ First attempt failed, retrying with contIdClean: ${contIdClean}`);
+                const fallbackUrl = `https://tracking.searates.com/tracking?api_key=${key}&number=${contIdClean}&sealine=auto&force_update=false&route=true&ais=false`;
+                searatesRes = await _callSeaRatesAPI(fallbackUrl);
+                normalizedData = _normalizeSeaRatesData(searatesRes);
+            }
 
-                        return {
-                            ...vessel,
-                            voyage: eventWithVoyage?.voyage || null
-                        };
-                    });
-                }
-
+            // 5️⃣ SAVE ONLY IF VALID
+            if (!normalizedData) {
+                console.warn(`⚠️ SeaRates returned no valid data for e_order: ${number}`);
                 return res.status(200).send({
-                    message: "Saved from fallback (Searates)",
-                    data: searatesRes.data
+                    message: "Tracking data not available. SeaRates may be unreachable or subscription expired."
                 });
             }
 
-            console.log(`✅ Using cached Searates data for SO ID: ${results[0].so_id}`);
-            return res.status(200).send(results);
+            const record = {
+                so_id: checkresult[0]?.so_id,
+                shipment_id: checkresult[0]?.shipment_id,
+                cont_id: contIdClean,
+                data: normalizedData
+            };
+
+            const savedShipmentId = await _saveSearatesRecord(record, contIdClean || bl_no || number);
+
+            if (!savedShipmentId) {
+                console.warn(`⚠️ Failed to save SeaRates data for ${number}`);
+                return res.status(500).send({ message: "Failed to save tracking data" });
+            }
+
+            console.log(`✅ Saved new tracking for SO ID: ${checkresult[0]?.so_id}`);
+
+            // Enrich vessels with voyage
+            const enrichedData = _enrichVesselsWithVoyage(normalizedData);
+
+            return res.status(200).send({
+                message: "Saved from SeaRates",
+                data: { data: enrichedData }
+            });
 
         } catch (error) {
             console.error(timestamp + " ❌ Error at SearatesCheck:", error);

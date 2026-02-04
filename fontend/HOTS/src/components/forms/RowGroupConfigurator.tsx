@@ -18,6 +18,8 @@ interface RowGroupConfiguratorProps {
   onUpdate: (rowGroup: RowGroup) => void;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  field?: any;
+  fields: FormField[];
 }
 
 export const RowGroupConfigurator: React.FC<RowGroupConfiguratorProps> = ({
@@ -683,68 +685,68 @@ export const RowGroupConfigurator: React.FC<RowGroupConfiguratorProps> = ({
                     </Select>
 
                     {(localRowGroup.structure?.thirdColumn?.type === 'select') && (
-                    <>
-                      {localRowGroup.structure?.thirdColumn?.options?.map((opt, i) => (
-                        <div key={i} className="flex gap-2 mb-2">
-                          <Input
-                            value={typeof opt === "string" ? opt : opt.label || ""}
-                            placeholder={`Option ${i + 1}`}
-                            onChange={(e) => {
-                              const newOptions = [...(localRowGroup.structure.thirdColumn.options || [])];
-                              newOptions[i] = e.target.value;
-                              updateRowGroup({
-                                structure: {
-                                  ...localRowGroup.structure,
-                                  thirdColumn: {
-                                    ...localRowGroup.structure.thirdColumn,
-                                    options: newOptions
+                      <>
+                        {localRowGroup.structure?.thirdColumn?.options?.map((opt, i) => (
+                          <div key={i} className="flex gap-2 mb-2">
+                            <Input
+                              value={typeof opt === "string" ? opt : opt.label || ""}
+                              placeholder={`Option ${i + 1}`}
+                              onChange={(e) => {
+                                const newOptions = [...(localRowGroup.structure.thirdColumn.options || [])];
+                                newOptions[i] = e.target.value;
+                                updateRowGroup({
+                                  structure: {
+                                    ...localRowGroup.structure,
+                                    thirdColumn: {
+                                      ...localRowGroup.structure.thirdColumn,
+                                      options: newOptions
+                                    }
                                   }
-                                }
-                              });
-                            }}
-                          />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const newOptions = localRowGroup.structure.thirdColumn.options.filter(
-                                (_, idx) => idx !== i
-                              );
-                              updateRowGroup({
-                                structure: {
-                                  ...localRowGroup.structure,
-                                  thirdColumn: {
-                                    ...localRowGroup.structure.thirdColumn,
-                                    options: newOptions
+                                });
+                              }}
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newOptions = localRowGroup.structure.thirdColumn.options.filter(
+                                  (_, idx) => idx !== i
+                                );
+                                updateRowGroup({
+                                  structure: {
+                                    ...localRowGroup.structure,
+                                    thirdColumn: {
+                                      ...localRowGroup.structure.thirdColumn,
+                                      options: newOptions
+                                    }
                                   }
+                                });
+                              }}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newOptions = [...(localRowGroup.structure.thirdColumn.options || []), ""];
+                            updateRowGroup({
+                              structure: {
+                                ...localRowGroup.structure,
+                                thirdColumn: {
+                                  ...localRowGroup.structure.thirdColumn,
+                                  options: newOptions
                                 }
-                              });
-                            }}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const newOptions = [...(localRowGroup.structure.thirdColumn.options || []), ""];
-                          updateRowGroup({
-                            structure: {
-                              ...localRowGroup.structure,
-                              thirdColumn: {
-                                ...localRowGroup.structure.thirdColumn,
-                                options: newOptions
                               }
-                            }
-                          });
-                        }}
-                      >
-                        + Add Option
-                      </Button>
-                    </>
-                  )}
+                            });
+                          }}
+                        >
+                          + Add Option
+                        </Button>
+                      </>
+                    )}
 
 
                     <div className='col-span-3'>
@@ -906,33 +908,33 @@ export const RowGroupConfigurator: React.FC<RowGroupConfiguratorProps> = ({
                     )} */}
 
 
+                    </div>
+
+
+
+
+
                   </div>
-
-
-
-                 
-
                 </div>
-              </div>
-            </CardContent>
+              </CardContent>
             </Card>
 
 
           )}
 
-        {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            <X className="w-4 h-4 mr-2" />
-            Cancel
-          </Button>
-          <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
-            <Save className="w-4 h-4 mr-2" />
-            Save Configuration
-          </Button>
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+            <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
+              <Save className="w-4 h-4 mr-2" />
+              Save Configuration
+            </Button>
+          </div>
         </div>
-      </div>
-    </DialogContent>
+      </DialogContent>
     </Dialog >
   );
 };

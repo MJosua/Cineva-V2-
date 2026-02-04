@@ -40,6 +40,8 @@ interface DataTableReportProProps<T> {
   searchKeys?: (keyof T)[];
   ticketKey?: keyof T;
   detailKey?: keyof T;
+  updateUrl?: string; // 🆕 Dynamic Update URL
+  externalSearch?: string;
 }
 
 export function DataTableReportPro<T extends Record<string, any>>({
@@ -50,6 +52,8 @@ export function DataTableReportPro<T extends Record<string, any>>({
   searchKeys = [],
   ticketKey,
   detailKey,
+  updateUrl,
+  externalSearch,
 }: DataTableReportProProps<T>) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -101,7 +105,8 @@ export function DataTableReportPro<T extends Record<string, any>>({
   // === FILTER + SORT + SEARCH ===
   const filteredData = useMemo(() => {
     let result = [...data];
-    const term = search.toLowerCase();
+    // Use external search if provided, otherwise local search
+    const term = (externalSearch !== undefined ? externalSearch : search).toLowerCase();
 
     if (term && searchKeys.length > 0) {
       result = result.filter((row) =>
@@ -125,7 +130,7 @@ export function DataTableReportPro<T extends Record<string, any>>({
     }
 
     return result;
-  }, [data, search, filters, sort]);
+  }, [data, search, externalSearch, filters, sort]);
 
   // === PAGINATION ===
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
@@ -168,16 +173,28 @@ export function DataTableReportPro<T extends Record<string, any>>({
   ) => {
     try {
       const token = localStorage.getItem("tokek");
-      await axios.post(
-        `${API_URL}/hotsdashboard/report_detail/upsert`,
-        {
+      const url = updateUrl || `${API_URL}/hotsdashboard/report_detail/upsert`;
+
+      const payload = updateUrl
+        ? {
+          ticket_id,
+          field_name: lbl_col,
+          value: newValue,
+          service_id: null,
+          detail_id: detail_id && detail_id !== "null" ? detail_id : null,
+        }
+        : {
           ticket_id,
           detail_id,
           lbl_col,
           cstm_col: newValue,
           color_code: color || null,
           visible_to: "admin",
-        },
+        };
+
+      await axios.post(
+        url,
+        payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -210,15 +227,17 @@ export function DataTableReportPro<T extends Record<string, any>>({
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <Input
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            className="w-64"
-          />
+          {externalSearch === undefined && (
+            <Input
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="w-64"
+            />
+          )}
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm">
@@ -280,8 +299,8 @@ export function DataTableReportPro<T extends Record<string, any>>({
                     <th
                       key={idx}
                       className={`p-2 text-${col.align || "left"} font-semibold whitespace-nowrap ${col.sticky
-                          ? `sticky ${col.sticky} bg-white z-[20] shadow-sm`
-                          : ""
+                        ? `sticky ${col.sticky} bg-white z-[20] shadow-sm`
+                        : ""
                         }`}
                     >
                       <div className="flex items-center gap-1">
@@ -295,8 +314,8 @@ export function DataTableReportPro<T extends Record<string, any>>({
                             {col.header}
                             <ArrowUpDown
                               className={`ml-1 w-3 h-3 ${sort.column === col.accessor
-                                  ? "text-blue-600"
-                                  : "text-gray-400"
+                                ? "text-blue-600"
+                                : "text-gray-400"
                                 }`}
                             />
                           </Button>
@@ -364,8 +383,8 @@ export function DataTableReportPro<T extends Record<string, any>>({
                           <td
                             key={j}
                             className={`p-2 text-${col.align || "left"} whitespace-nowrap ${col.sticky
-                                ? `sticky ${col.sticky} bg-white z-[10] border-r`
-                                : ""
+                              ? `sticky ${col.sticky} bg-white z-[10] border-r`
+                              : ""
                               }`}
                             style={{
                               backgroundColor:

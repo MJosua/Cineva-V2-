@@ -13,6 +13,7 @@ import { API_URL } from '@/config/sourceConfig';
 import { useToast } from '@/hooks/use-toast';
 import { Factory, Save, Loader2, CheckCircle, Hash, Package, FileText, Download, RefreshCw, FolderOpen, AlertCircle } from 'lucide-react';
 import { FilePreview } from '@/components/ui/FilePreview';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 interface FactoryOption {
     factory_id: number;
@@ -49,6 +50,9 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
     const [documentsLoading, setDocumentsLoading] = useState(false);
     const [generating, setGenerating] = useState(false);
 
+    // 🆕 Subscribe to SSE signals from Redux for real-time updates
+    const { sseSignals } = useAppSelector(state => state.tickets);
+
     // Fetch factories on mount
     useEffect(() => {
         if (ticketId) {
@@ -58,6 +62,28 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
             setLoading(false);
         }
     }, [ticketId]);
+
+    // 🆕 SSE Signal Listener: Refresh documents when SSE signal received
+    useEffect(() => {
+        if (sseSignals?.document && ticketId) {
+            console.log('📡 [SRFWorkflowContainer] SSE Signal: Refreshing Documents');
+            // Inline fetch to avoid referencing fetchDocuments before declaration
+            (async () => {
+                try {
+                    const token = localStorage.getItem('tokek');
+                    const response = await axios.get(`${API_URL}/hots_customfunction/documents/${ticketId}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (response.data?.success) {
+                        setDocuments(response.data.data || []);
+                        console.log('✅ [SRFWorkflowContainer] Documents refreshed:', response.data.data?.length);
+                    }
+                } catch (error) {
+                    console.error('Error refreshing documents:', error);
+                }
+            })();
+        }
+    }, [sseSignals?.document, ticketId]);
 
     const fetchFactories = async () => {
         try {
@@ -397,15 +423,26 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
                     {/* Generate Button */}
                     <Button
                         onClick={handleGenerateDocument}
-                        disabled={!canGenerate || generating}
+                        disabled={!canGenerate || generating || (sseSignals?.processingTicketId === ticketId?.toString())}
                         className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
                     >
-                        {generating ? (
+                        {generating || (sseSignals?.processingTicketId === ticketId?.toString()) ? (
                             <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
                         ) : (
                             <><FileText className="w-4 h-4" /> Generate SRF Document</>
                         )}
                     </Button>
+
+                    {/* 🆕 Processing Card - Shows while document is generating in background */}
+                    {sseSignals?.processingTicketId && sseSignals.processingTicketId === ticketId?.toString() && (
+                        <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg animate-pulse">
+                            <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-blue-800">Generating Document...</p>
+                                <p className="text-xs text-blue-600">This may take a few seconds. You'll be notified when ready.</p>
+                            </div>
+                        </div>
+                    )}
                     {!canGenerate && (
                         <p className="text-xs text-muted-foreground text-center">
                             Complete factory, category, and confirm number first

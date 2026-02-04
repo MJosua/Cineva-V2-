@@ -1,0 +1,3 @@
+<Context path="/" docBase="C:/Softwares/apache-tomcat-10.0.0-M4/webapps/ROOT/">
+  <Valve className="org.apache.catalina.valves.rewrite.RewriteValve" />
+</Context>

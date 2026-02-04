@@ -30,6 +30,7 @@ import StudioLanding from "./pages/admin/StudioLanding";
 import UserManagement from "./pages/admin/UserManagement";
 import TeamManagement from "./pages/admin/TeamManagement";
 import DepartmentManagement from "./pages/admin/DepartmentManagement";
+import JobTitleManagement from "./pages/admin/JobTitleManagement";
 import SystemSettings from "./pages/admin/SystemSettings";
 import CustomFunctionManagement from "./pages/admin/CustomFunctionManagement";
 import FunctionLogsManagement from "./pages/admin/FunctionLogsManagement";
@@ -40,6 +41,7 @@ import TriggerFunctionManager from "./pages/admin/TriggerFunctionManager";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { useDynamicServiceRoutes } from "./components/routing/DynamicServiceRoutes";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { HeaderProvider } from "@/contexts/HeaderContext";
 
 import { fetchDepartments } from "@/store/slices/userManagementSlice";
 import { fetchSRF } from "./store/slices/srf_slice";
@@ -56,6 +58,7 @@ import { DashboardPage } from "@/pages/dashboard";
 import { useDynamicDashboardRoutes } from "./components/routing/DynamicDashboardRoutes";
 import MeetingRoomStandalone from "./standalone/meetingbook/MeetingRoomStandalone";
 import VerifyPage from "./pages/verify/VerifyRegister";
+import { useSSE } from "./hooks/useSSE";
 
 //cms
 import CmsPublicPage from "@/pages/cms/CmsPublicPage";
@@ -79,6 +82,8 @@ import JobListPage from "./pages/dashboard/report/JobListPage";
 import AssignmentDetailPage from "./pages/dashboard/AssignmentDetailPage";
 import ServiceAnalyticsView from "./pages/dashboard/ServiceAnalyticsView";
 import DashboardView from "./pages/dashboard/DashboardView";
+import CardGeneratorPage from "./pages/CardGeneratorPage";
+import CardProfilePage from "./pages/public/CardProfilePage";
 
 
 const queryClient = new QueryClient();
@@ -91,6 +96,9 @@ const AppContentInner = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   const { taskCount } = useAppSelector(state => state.tickets);
+
+  // 🆕 SSE: Connect to real-time event stream for live updates
+  useSSE();
 
   const handleServiceSubmit = useCallback((data: any) => {
     // console.log("Service form submitted:", data);
@@ -108,81 +116,83 @@ const AppContentInner = () => {
           <Route path="/register" element={<Registerpage />} />
           <Route path="/verify" element={<VerifyPage />} />
           <Route path="/forgot-password/:token" element={<ResetPasswordPage />} />
+          <Route path="/card/card" element={<CardProfilePage />} />
 
 
           {/* Protected Routes */}
-          <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="/my-tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
-          <Route path="/ticket/:id" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
-          <Route path="/task-list" element={<ProtectedRoute><TaskList /></ProtectedRoute>} />
-          <Route path="/help-center" element={<ProtectedRoute><HelpCenter /></ProtectedRoute>} />
-          <Route path="/help/user-guide" element={<ProtectedRoute><HelpCenter /></ProtectedRoute>} />
-          <Route path="/help/faq" element={<ProtectedRoute><UserGuide /></ProtectedRoute>} />
-          <Route path="/user-guide" element={<ProtectedRoute><UserGuide /></ProtectedRoute>} />
-          <Route path="/faq" element={<ProtectedRoute><UserGuide /></ProtectedRoute>} />
+          {/* ✅ Optimized Layout Routes (Persistent Search & Sidebar) */}
+          <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/my-tickets" element={<MyTickets />} />
+            <Route path="/admin/users" element={<UserManagement />} />
+            <Route path="/admin/teams" element={<TeamManagement />} />
 
-          {/* Admin Routes */}
-          <Route path="/admin/service-catalog" element={<ProtectedRoute><ServiceCatalogAdmin /></ProtectedRoute>} />
-          <Route path="/admin/service-catalog/new" element={<ProtectedRoute><ServiceFormEditor /></ProtectedRoute>} />
-          <Route path="/admin/service-catalog/create" element={<ProtectedRoute><ServiceFormEditor /></ProtectedRoute>} />
-          <Route path="/admin/service-catalog/edit/:id" element={<ProtectedRoute><ServiceFormEditor /></ProtectedRoute>} />
-          <Route path="/admin/studio" element={<ProtectedRoute><StudioLanding /></ProtectedRoute>} />
-          <Route path="/admin/studio/:id" element={<ProtectedRoute><StudioPage /></ProtectedRoute>} />
-          <Route path="/admin/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
-          <Route path="/admin/teams" element={<ProtectedRoute><TeamManagement /></ProtectedRoute>} />
-          <Route path="/admin/departments" element={<ProtectedRoute><DepartmentManagement /></ProtectedRoute>} />
-          <Route path="/admin/divisions" element={<ProtectedRoute><DepartmentManagement /></ProtectedRoute>} />
-          <Route path="/admin/settings" element={<ProtectedRoute><SystemSettings /></ProtectedRoute>} />
-          <Route path="/admin/custom-functions" element={<ProtectedRoute><CustomFunctionManagement /></ProtectedRoute>} />
-          <Route path="/admin/function-logs" element={<ProtectedRoute><FunctionLogsManagement /></ProtectedRoute>} />
-          <Route path="/admin/api-builder" element={<ProtectedRoute><AppLayout><TriggerFunctionManager /></AppLayout></ProtectedRoute>} />
-          <Route path="/admin/guide" element={<ProtectedRoute><AdminGuide /></ProtectedRoute>} />
+            {/* Admin Routes */}
+            <Route path="/admin/service-catalog" element={<ServiceCatalogAdmin />} />
+            <Route path="/admin/service-catalog/new" element={<ServiceFormEditor />} />
+            <Route path="/admin/service-catalog/create" element={<ServiceFormEditor />} />
+            <Route path="/admin/service-catalog/edit/:id" element={<ServiceFormEditor />} />
+            <Route path="/admin/studio" element={<StudioLanding />} />
+            <Route path="/admin/studio/:id" element={<StudioPage />} />
+            <Route path="/admin/departments" element={<DepartmentManagement />} />
+            <Route path="/admin/divisions" element={<DepartmentManagement />} />
+            <Route path="/admin/job-titles" element={<JobTitleManagement />} />
+            <Route path="/admin/settings" element={<SystemSettings />} />
+            <Route path="/admin/custom-functions" element={<CustomFunctionManagement />} />
+            <Route path="/admin/function-logs" element={<FunctionLogsManagement />} />
+            <Route path="/admin/api-builder" element={<TriggerFunctionManager />} />
+            <Route path="/admin/guide" element={<AdminGuide />} />
 
-          {/* ✅ Dynamic Service Routes (generated from catalog) */}
-          <Route path="/service-catalog" element={<ProtectedRoute><ServiceCatalog /></ProtectedRoute>} />
-          {dynamicServiceRoutes}
+            {/* Engine & Module Admin */}
+            <Route path="/admin/cms" element={<CmsAdminList />} />
+            <Route path="/admin/cms/new" element={<CmsAdminEditor />} />
+            <Route path="/admin/cms/edit/:id" element={<CmsAdminEditor />} />
 
-          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="/dashboard/analytics/:serviceId" element={<ProtectedRoute><ServiceAnalyticsView /></ProtectedRoute>} />
-          <Route path="/dashboard/view/:dashboardId" element={<ProtectedRoute><DashboardView /></ProtectedRoute>} />
-          {dynamicDashboardRoutes}
+            <Route path="/engine-module/:moduleKey" element={<EngineModulePage />} />
+            <Route path="/engine-modules-admin" element={<EngineModuleAdminPage />} />
+            <Route path="/admin/workflow" element={<WorkflowAdminPage />} />
+            <Route path="/admin/workflow/params/:workflow_id" element={<WorkflowParamEditorPage />} />
 
-          {/* Catch-all */}
-          <Route path="*" element={<AppLayout><NotFound /></AppLayout>} />
+            <Route path="/admin/tickets" element={<TicketListPage />} />
+            <Route path="/admin/tickets/:ticket_id" element={<TicketDetailPage />} />
 
+            <Route path="/tickets" element={<TicketListViewPage />} />
+            <Route path="/tickets/:ticket_id" element={<TicketViewPage />} />
 
-          {/* //standalone */}
+            {/* My Assignments & Marketplace */}
+            <Route path="/job-marketplace" element={<JobMarketplace />} />
+            <Route path="/my-assignments" element={<MyAssignments />} />
+            <Route path="/assignment/:ticket_id" element={<AssignmentDetailPage />} />
 
-          <Route path="/meetingbook" element={<MeetingRoomStandalone />} />
+            {/* User & Help Routes */}
+            <Route path="/task-list" element={<TaskList />} />
+            <Route path="/service-catalog" element={<ServiceCatalog />} />
+            <Route path="/help-center" element={<HelpCenter />} />
+            <Route path="/help/user-guide" element={<HelpCenter />} />
+            <Route path="/help/faq" element={<UserGuide />} />
+            <Route path="/user-guide" element={<UserGuide />} />
+            <Route path="/faq" element={<UserGuide />} />
 
+            <Route path="/ticket/:id" element={<TicketDetail />} />
+            <Route path="/tickets" element={<TicketListViewPage />} />
+            <Route path="/tickets/:ticket_id" element={<TicketViewPage />} />
 
-          {/* CMS Public Page */}
-          <Route path="/page/:slug" element={<AppLayout><CmsPublicPage /></AppLayout>} />
+            {/* Dashboard & Reports (Moved inside) */}
+            <Route path="/dashboard/analytics/:serviceId" element={<ServiceAnalyticsView />} />
+            <Route path="/dashboard/view/:dashboardId" element={<DashboardView />} />
+            <Route path="/dashboard/job-list" element={<JobListPage />} />
+            <Route path="/card-generator" element={<CardGeneratorPage />} />
 
-          {/* CMS Admin Pages (role 4 only — enforced by server) */}
-          <Route path="/admin/cms" element={<AppLayout><CmsAdminList /></AppLayout>} />
-          <Route path="/admin/cms/new" element={<AppLayout><CmsAdminEditor /></AppLayout>} />
-          <Route path="/admin/cms/edit/:id" element={<AppLayout><CmsAdminEditor /></AppLayout>} />
+            {dynamicDashboardRoutes}
+            {dynamicServiceRoutes}
+          </Route>
 
-          <Route path="/engine-module/:moduleKey" element={<AppLayout><EngineModulePage /></AppLayout>} />
-          <Route path="/engine-modules-admin" element={<AppLayout><EngineModuleAdminPage /></AppLayout>} />
-          <Route path="/admin/workflow" element={<AppLayout><WorkflowAdminPage /></AppLayout>} />
-          <Route path="/admin/workflow/params/:workflow_id" element={<ProtectedRoute><WorkflowParamEditorPage /></ProtectedRoute>} />
-
-
-          <Route path="/admin/tickets" element={<AppLayout><TicketListPage /></AppLayout>} />
-          <Route path="/admin/tickets/:ticket_id" element={<AppLayout><TicketDetailPage /></AppLayout>} />
-
-          <Route path="/tickets" element={<AppLayout><TicketListViewPage /></AppLayout>} />
-          <Route path="/tickets/:ticket_id" element={<AppLayout><TicketViewPage /></AppLayout>} />
-
-          {/* Job Marketplace */}
-          <Route path="/job-marketplace" element={<ProtectedRoute><AppLayout><JobMarketplace /></AppLayout></ProtectedRoute>} />
-          <Route path="/dashboard/job-list" element={<ProtectedRoute><JobListPage /></ProtectedRoute>} />
-
-          {/* My Assignments - Standalone page per user request */}
-          <Route path="/my-assignments" element={<ProtectedRoute><AppLayout><MyAssignments /></AppLayout></ProtectedRoute>} />
-          <Route path="/assignment/:ticket_id" element={<ProtectedRoute><AppLayout><AssignmentDetailPage /></AppLayout></ProtectedRoute>} />
+          {/* Public / Semi-Public with Layout */}
+          <Route element={<AppLayout />}>
+            <Route path="/page/:slug" element={<CmsPublicPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
 
         </Routes>
 
@@ -199,11 +209,11 @@ const App = () => {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-          <SidebarProvider>
+        <HeaderProvider>
+          <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
             <AppContent />
-          </SidebarProvider>
-        </ThemeProvider>
+          </ThemeProvider>
+        </HeaderProvider>
       </QueryClientProvider>
     </Provider>
   );

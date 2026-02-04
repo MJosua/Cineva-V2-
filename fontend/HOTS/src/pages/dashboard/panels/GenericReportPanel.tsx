@@ -24,9 +24,10 @@ interface GenericReportPanelProps {
         detailKey?: string;
     };
     serviceId?: number;
+    searchValue?: string;
 }
 
-const GenericReportPanel: React.FC<GenericReportPanelProps> = ({ config, serviceId }) => {
+const GenericReportPanel: React.FC<GenericReportPanelProps> = ({ config, serviceId, searchValue }) => {
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -67,6 +68,39 @@ const GenericReportPanel: React.FC<GenericReportPanelProps> = ({ config, service
         }
     };
 
+    // Keys that should not be auto-generated as columns
+    const ignoreKeys = new Set([
+        'ticket_id', 'title', 'status_id', 'status_name', 'requester_name',
+        'creation_date', 'last_update', 'created_by', 'service_id', 'completed_at'
+    ]);
+
+    // Dynamically generate columns from data keys
+    // MOVED UP: Must be called before conditional returns to avoid "Rendered more hooks" error
+    const dynamicColumns: ColumnConfig[] = React.useMemo(() => {
+        if (!data || data.length === 0) return [];
+
+        // Inspect first row (or first few rows) to find new keys
+        const firstRow = data[0];
+        const keys = Object.keys(firstRow);
+
+        const newCols: ColumnConfig[] = [];
+
+        keys.forEach(key => {
+            if (!ignoreKeys.has(key)) {
+                // Determine alignment or type based on value?
+                // For now default to left/string
+                newCols.push({
+                    header: key.replace(/_/g, ' '), // Simple readable format
+                    accessor: key,
+                    sortable: true,
+                    filterable: true
+                });
+            }
+        });
+
+        return newCols;
+    }, [data]);
+
     if (loading) {
         return <Skeleton className="h-96 w-full" />;
     }
@@ -80,7 +114,9 @@ const GenericReportPanel: React.FC<GenericReportPanelProps> = ({ config, service
         { header: 'Created', accessor: 'creation_date', sortable: true },
     ];
 
-    const tableColumns = columns.length > 0 ? columns : defaultColumns;
+    const tableColumns = columns.length > 0
+        ? columns
+        : [...defaultColumns, ...dynamicColumns];
 
     return (
         <div className="w-full overflow-hidden">
@@ -91,7 +127,8 @@ const GenericReportPanel: React.FC<GenericReportPanelProps> = ({ config, service
                 ticketKey={ticketKey}
                 detailKey={detailKey}
                 columns={tableColumns}
-                searchKeys={searchKeys.length > 0 ? searchKeys : ['ticket_id', 'title']}
+                searchKeys={searchKeys.length > 0 ? searchKeys : ['ticket_id', 'title', ...dynamicColumns.map(c => c.accessor)]}
+                externalSearch={searchValue}
             />
         </div>
     );

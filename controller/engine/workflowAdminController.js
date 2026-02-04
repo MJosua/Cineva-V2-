@@ -40,8 +40,7 @@ module.exports = {
 
       const rows = await dbQueryHots(
         `SELECT * FROM m_service_workflow
-         WHERE workflow_id = ?
-         ORDER BY level ASC`,
+         WHERE workflow_id = ?`,
         [service_id]
       );
 
@@ -207,61 +206,86 @@ module.exports = {
     try {
       logDebug("GET DEFINITION → service_id", service_id);
 
-      // First try to get from m_service_workflow by service_id (workflow_id)
+      // Fetch ALL rows for this service/workflow
       const rows = await dbQueryHots(
-        `SELECT workflow_id, name, definition, is_active, created_at, updated_at
+        `SELECT workflow_id, name, definition, level, resolver, approver_user, is_active, created_at, updated_at
          FROM m_service_workflow
          WHERE workflow_id = ?`,
         [service_id]
       );
 
-      if (rows.length > 0 && rows[0].definition) {
-        const workflow = rows[0];
-        let definition = workflow.definition;
+      if (rows.length === 0) {
+        logDebug("GET DEFINITION → No workflow found for service_id", service_id);
+        return res.json({ ok: true, workflow_id: null, definition: { steps: [], tasks: [] } });
+      }
+
+      // 1. Try to find if any row has a JSON definition
+      const mainRow = rows.find(r => r.definition && r.definition.length > 5);
+      let definition = null;
+      let workflowName = rows[0].name || `Workflow ${service_id}`;
+
+      if (mainRow) {
+        definition = mainRow.definition;
+        workflowName = mainRow.name || workflowName;
         if (typeof definition === 'string') {
           try { definition = JSON.parse(definition); } catch (e) { /* keep as string */ }
         }
-
-        logDebug("GET DEFINITION → Found", { workflow_id: workflow.workflow_id, definition });
-        logDebug("GET DEFINITION → Time", `${Date.now() - start}ms`);
-
-        return res.json({
-          ok: true,
-          workflow_id: workflow.workflow_id,
-          name: workflow.name,
-          definition,
-          is_active: workflow.is_active
-        });
       }
 
-      // Fallback: Try to build definition from individual levels
-      const levels = await dbQueryHots(
-        `SELECT * FROM m_service_workflow
-         WHERE workflow_id = ?
-         ORDER BY level ASC`,
-        [service_id]
-      );
+      // 2. If no definition or it's empty, build from legacy rows
+      if (!definition || !definition.steps || definition.steps.length === 0) {
+        const legacyRows = rows.filter(r => r.level);
+        if (legacyRows.length > 0) {
+          logDebug("GET DEFINITION → Bridging legacy data for service_id", service_id);
 
-      if (levels.length > 0) {
-        const steps = levels.map(lv => ({
-          level: lv.level,
-          step_type: lv.resolver || 'team',
-          assigned_value: lv.approver_user || '',
-          description: lv.resolver || `Level ${lv.level}`,
-        }));
+          const bridgedSteps = legacyRows.map(row => {
+            let step_type = 'team';
+            let assigned_value = row.resolver;
 
-        logDebug("GET DEFINITION → Built from levels", { steps });
-        logDebug("GET DEFINITION → Time", `${Date.now() - start}ms`);
+            if (row.approver_user) {
+              step_type = 'specific_user';
+              assigned_value = row.approver_user;
+            } else if (['superior', 'finalsuperior', 'direct_superior', 'superior_final'].includes(row.resolver)) {
+              step_type = 'superior';
+            } else if (!isNaN(Number(row.resolver)) && row.resolver !== '') {
+              step_type = 'team';
+              assigned_value = Number(row.resolver);
+            }
 
-        return res.json({
-          ok: true,
-          workflow_id: service_id,
-          definition: { steps, tasks: [] }
-        });
+            return {
+              level: row.level,
+              step_type,
+              assigned_value,
+              resolver: row.resolver,
+              description: row.approver_user
+                ? `Specific User Approval (${row.approver_user})`
+                : `Level ${row.level} Approval (${row.resolver})`,
+              approver: assigned_value
+            };
+          }).sort((a, b) => a.level - b.level);
+
+          definition = {
+            steps: bridgedSteps,
+            tasks: []
+          };
+        }
       }
 
-      logDebug("GET DEFINITION → No workflow found");
-      return res.json({ ok: true, workflow_id: null, definition: null });
+      // 3. Fallback to empty if still nothing
+      if (!definition) {
+        definition = { steps: [], tasks: [] };
+      }
+
+      logDebug("GET DEFINITION → Final Result", { workflow_id: service_id, definition });
+      logDebug("GET DEFINITION → Time", `${Date.now() - start}ms`);
+
+      return res.json({
+        ok: true,
+        workflow_id: service_id,
+        name: workflowName,
+        definition,
+        is_active: rows[0].is_active
+      });
 
     } catch (err) {
       logError("GET DEFINITION", err);

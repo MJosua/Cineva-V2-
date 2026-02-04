@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { Department } from '@/store/slices/userManagementSlice';
+import { Combobox } from "@/components/ui/combobox";
 
 interface DepartmentModalProps {
   isOpen: boolean;
@@ -20,32 +20,12 @@ interface DepartmentModalProps {
 const DepartmentModal = ({ isOpen, onClose, department, mode, onSave }: DepartmentModalProps) => {
   const { users } = useAppSelector(state => state.userManagement);
   const [formData, setFormData] = useState({
-    department_name: '',
-    department_shortname: '',
-    description: '',
-    department_head: '',
-    status: 'active'
+    department_name: department?.department_name || '',
+    department_shortname: department?.department_shortname || '',
+    description: department?.description || '',
+    department_head: department?.department_head?.toString() || '',
+    status: department?.finished_date ? 'inactive' : 'active'
   });
-
-  useEffect(() => {
-    if (department && mode === 'edit') {
-      setFormData({
-        department_name: department.department_name,
-        department_shortname: department.department_shortname,
-        description: department.description || '',
-        department_head: department.department_head?.toString() || '',
-        status: department.finished_date ? 'inactive' : 'active'
-      });
-    } else {
-      setFormData({
-        department_name: '',
-        department_shortname: '',
-        description: '',
-        department_head: '',
-        status: 'active'
-      });
-    }
-  }, [department, mode, isOpen]);
 
   const handleSave = () => {
     const departmentToSave = {
@@ -95,23 +75,12 @@ const DepartmentModal = ({ isOpen, onClose, department, mode, onSave }: Departme
           </div>
           <div className="space-y-2">
             <Label htmlFor="head">Department Head</Label>
-            <Select
+            <Combobox
+              options={users.map(u => ({ value: u.user_id?.toString() || '', label: `${u.firstname} ${u.lastname}` }))}
               value={formData.department_head}
-              onValueChange={(value) =>
-                setFormData({ ...formData, department_head: value })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select department head" />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map((user) => (
-                  <SelectItem key={user.user_id} value={user.user_id.toString()}>
-                    {user.firstname} {user.lastname}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(value) => setFormData({ ...formData, department_head: value })}
+              placeholder="Select department head..."
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>

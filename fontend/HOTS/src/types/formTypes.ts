@@ -140,7 +140,7 @@ export interface RowGroup {
 // Legacy type - kept for backward compatibility
 export interface FormStructureItem {
   id: string;
-  type: 'field' | 'section' | 'rowgroup';
+  type: 'field' | 'section' | 'rowgroup' | 'specialfunc';
   order: number;
-  data: FormField | FormSection | RowGroup;
+  data: FormField | FormSection | RowGroup | SpecialElement;
 }

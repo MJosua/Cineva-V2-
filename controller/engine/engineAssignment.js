@@ -186,12 +186,15 @@ module.exports = {
             const { assignmentId } = req.params;
             const { completion_note, completion_data } = req.body;
             const user_id = req.dataToken.user_id;
+            const user_name = `${req.dataToken.firstname || ''} ${req.dataToken.lastname || ''}`.trim() || 'Someone';
 
-            // Get assignment details with service_id
+            // Get assignment details with service_id, title, and service_name
             const [assignments] = await dbHots.promise().query(
-                `SELECT ta.*, t.service_id 
+                `SELECT ta.*, ta.title as assignment_title, t.service_id, t.created_by,
+                        s.service_name
                  FROM t_ticket_assignment ta
                  JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                 LEFT JOIN m_service s ON s.service_id = t.service_id
                  WHERE ta.id = ?`,
                 [assignmentId]
             );
@@ -210,18 +213,6 @@ module.exports = {
                 [assignmentId]
             );
 
-            // Run completion triggers
-            await triggerEngine.runTriggersForEvent(
-                assignment.service_id,
-                'on_assignment_complete',
-                {
-                    assignmentId,
-                    ticketId: assignment.ticket_id,
-                    actor: { user_id },
-                    completion_data
-                }
-            );
-
             // Check if all assignments for this ticket are complete
             const [remaining] = await dbHots.promise().query(
                 `SELECT COUNT(*) as count FROM t_ticket_assignment 
@@ -232,22 +223,79 @@ module.exports = {
             // If no more active assignments, update ticket status to Fulfilled (2)
             if (remaining[0].count === 0) {
                 await dbHots.promise().query(
-                    'UPDATE t_ticket SET status_id = 2 WHERE ticket_id = ?',
+                    'UPDATE t_ticket SET status_id = 1 WHERE ticket_id = ?',
                     [assignment.ticket_id]
                 );
             }
 
             console.log(`✅ [ASSIGNMENT] Assignment ${assignmentId} completed by user ${user_id}`);
 
-            if (global.io) {
-                global.io.emit("message", "assignment_complete_" + assignmentId);
-            }
-
+            // 🆕 RESPOND IMMEDIATELY (non-blocking)
             res.json({
                 ok: true,
                 message: 'Assignment completed successfully',
                 all_assignments_complete: remaining[0].count === 0
             });
+
+            // 🆕 ASYNC: Run completion triggers (fire-and-forget with notification)
+            if (global.sseManager && assignment.created_by) {
+                // Create "processing" notification for trigger execution
+                const notifId = await global.sseManager.emitToUser(assignment.created_by, 'doc_generation_started', {
+                    assignmentId,
+                    ticketId: assignment.ticket_id,
+                    message: 'Processing completion triggers...'
+                }, { persist: true, title: '⏳ Processing...', message: 'Running completion actions' });
+
+                // Fire triggers async
+                triggerEngine.runTriggersForEvent(
+                    assignment.service_id,
+                    'on_assignment_complete',
+                    {
+                        assignmentId,
+                        ticketId: assignment.ticket_id,
+                        actor: { user_id },
+                        completion_data
+                    }
+                ).then(() => {
+                    // Update notification to success
+                    if (notifId?.notificationId) {
+                        global.sseManager.updateNotification(notifId.notificationId, {
+                            type: 'doc_generation_complete',
+                            title: '✅ Processing Complete',
+                            message: 'All completion actions finished'
+                        });
+                    }
+                    // Emit completion SSE
+                    global.sseManager.emitToUser(assignment.created_by, 'assignment_update', {
+                        assignmentId,
+                        ticketId: assignment.ticket_id,
+                        action: 'completed',
+                        allComplete: remaining[0].count === 0,
+                        assignment_title: assignment.assignment_title || 'Assignment',
+                        service_name: assignment.service_name,
+                        actor_name: user_name,
+                        timestamp: new Date().toISOString()
+                    }, {
+                        persist: true,
+                        title: '✅ Assignment Complete',
+                        message: `${user_name} completed ${assignment.assignment_title || 'assignment'}`
+                    });
+                }).catch(err => {
+                    console.error('Trigger execution error:', err);
+                    // Update notification to error
+                    if (notifId?.notificationId) {
+                        global.sseManager.updateNotification(notifId.notificationId, {
+                            type: 'assignment_update',
+                            title: '⚠️ Trigger Error',
+                            message: `Completion actions failed: ${err.message}`
+                        });
+                    }
+                });
+            }
+
+            if (global.io) {
+                global.io.emit("message", "assignment_complete_" + assignmentId);
+            }
 
         } catch (error) {
             console.error('Error completing assignment:', error);
@@ -371,6 +419,36 @@ module.exports = {
 
             console.log(`✅ [TIMELINE] Update ${entityId} added to assignment ${assignmentId} by user ${user_id}`);
 
+            // 🆕 Phase 3: SSE - Notify ticket creator about timeline update
+            if (global.sseManager) {
+                dbHots.promise().query(
+                    `SELECT ta.ticket_id, t.created_by, s.service_name, 
+                            CONCAT(u.firstname, ' ', u.lastname) as updater_name
+                     FROM t_ticket_assignment ta
+                     JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                     LEFT JOIN m_service s ON s.service_id = t.service_id
+                     LEFT JOIN user u ON u.user_id = ?
+                     WHERE ta.id = ?`,
+                    [user_id, assignmentId]
+                ).then(([[info]]) => {
+                    const updater_name = info?.updater_name || 'Someone';
+                    const service_name = info?.service_name || 'Assignment';
+
+                    if (info?.created_by && info.created_by !== user_id) {
+                        global.sseManager.emitToUser(info.created_by, 'assignment_update', {
+                            assignmentId,
+                            ticketId: info.ticket_id,
+                            action: 'timeline_update',
+                            updater_name: updater_name,
+                            content_preview: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+                            service_name: service_name,
+                            timestamp: new Date().toISOString(),
+                            message: `${updater_name} posted a timeline update`
+                        }, { persist: true, title: '📋 Timeline Update', message: `${updater_name} updated ${service_name} assignment` });
+                    }
+                }).catch(() => { });
+            }
+
             res.json({
                 ok: true,
                 message: 'Timeline update added successfully',
@@ -439,6 +517,16 @@ module.exports = {
             );
 
             console.log(`✅ [ASSIGN] Assignment ${assignmentId} created successfully`);
+
+            // 🆕 SSE: Notify assignee about new assignment
+            if (global.sseManager && assigned_type === 'user') {
+                global.sseManager.emitToUser(assigned_id, 'badge_update', {
+                    type: 'assignment_inbox',
+                    action: 'new_item',
+                    assignmentId,
+                    ticketId
+                });
+            }
 
             return res.json({
                 ok: true,
@@ -663,8 +751,8 @@ module.exports = {
                   (SELECT id FROM t_ticket_assignment WHERE ticket_id = app_ticket.parent_ticket_id AND assigned_id = ? LIMIT 1) as assignment_id
                 FROM t_ticket app_ticket
                 LEFT JOIN t_ticket job_ticket ON job_ticket.ticket_id = app_ticket.parent_ticket_id
-                LEFT JOIN m_ticket_status app_status ON app_status.status_id = app_ticket.status_id
-                LEFT JOIN m_ticket_status job_status ON job_status.status_id = job_ticket.status_id
+                LEFT JOIN m_service_status app_status ON app_status.status_id = app_ticket.status_id
+                LEFT JOIN m_service_status job_status ON job_status.status_id = job_ticket.status_id
                 WHERE app_ticket.created_by = ?
                   AND app_ticket.parent_ticket_id IS NOT NULL
                   AND app_ticket.service_id = 19
@@ -925,6 +1013,39 @@ module.exports = {
             await Promise.all(updatePromises);
 
             console.log(`✅ [TASKS] Updated task ${taskId} with:`, Object.keys(updates));
+
+            // 🆕 Phase 3: SSE - Notify ticket creator about task status change
+            if (global.sseManager && updates.status) {
+                const user_id = req.dataToken.user_id;
+
+                dbHots.promise().query(
+                    `SELECT ta.ticket_id, t.created_by, s.service_name,
+                            CONCAT(u.firstname, ' ', u.lastname) as updater_name
+                     FROM t_ticket_assignment ta
+                     JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                     LEFT JOIN m_service s ON s.service_id = t.service_id
+                     LEFT JOIN user u ON u.user_id = ?
+                     WHERE ta.id = ?`,
+                    [user_id, assignmentId]
+                ).then(([[info]]) => {
+                    const updater_name = info?.updater_name || 'Someone';
+                    const service_name = info?.service_name || 'Task';
+
+                    if (info?.created_by && info.created_by !== user_id) {
+                        global.sseManager.emitToUser(info.created_by, 'assignment_update', {
+                            assignmentId,
+                            ticketId: info.ticket_id,
+                            taskId,
+                            action: 'task_status_change',
+                            new_status: updates.status,
+                            updater_name: updater_name,
+                            service_name: service_name,
+                            timestamp: new Date().toISOString(),
+                            message: `${updater_name} moved task to ${updates.status}`
+                        }, { persist: true, title: '📌 Task Update', message: `Task moved to ${updates.status}` });
+                    }
+                }).catch(() => { });
+            }
 
             res.json({
                 ok: true,

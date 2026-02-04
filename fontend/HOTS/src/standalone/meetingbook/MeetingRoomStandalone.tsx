@@ -9,6 +9,7 @@ import { API_URL } from "@/config/sourceConfig";
 import { loginUser } from "@/store/slices/authSlice";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useToast } from '@/hooks/use-toast';
+import { fetchMeetingBookings } from "@/store/slices/meetingroom_slice";
 
 interface UserProfile {
     firstname?: string;
@@ -110,15 +111,35 @@ const MeetingRoomStandalone: React.FC = () => {
     const handleSubmitBooking = async () => {
         setSubmitting(true);
         try {
-            const payload = {
+            // 🧹 Use high-fidelity field objects for the standard HOTS "Successful" format
+            // We translate Canonical IDs back to Display Names for the database records.
+            const selectedRoomName = String(globalValues.room || ""); // Default to ID if name not found
+
+            const formData: Record<string, any> = {
                 ...globalValues,
-                purpose,
-                PIC,
-                requested_by: userProfile?.name || userProfile?.firstname || "Anonymous",
+                // Map the room ID to the Display Name for the EAV "Room Name" record
+                room: { type: "field", label: "Room Name", value: selectedRoomName, field_id: "room_field" },
+                room_id: { type: "field", label: "Room ID", value: String(globalValues.room_id || globalValues.room || ""), field_id: "room_id_field" },
+                date: { type: "field", label: "Date", value: globalValues.date, field_id: "date_field" },
+                start_time: { type: "field", label: "Start Time", value: globalValues.start_time, field_id: "start_time_field" },
+                end_time: { type: "field", label: "End Time", value: globalValues.end_time, field_id: "end_time_field" },
+
+                // Native form fields
+                purpose: { type: "field", label: "Purpose of Meeting", value: purpose, field_id: "purpose_field" },
+                PIC: { type: "field", label: "PIC", value: PIC, field_id: "PIC_field" },
+                requested_by: { type: "field", label: "Requested By", value: userProfile?.name || userProfile?.firstname || "Anonymous", field_id: "requested_by_field" }
             };
-            await axios.post(`${API_URL}/api/meeting-room`, payload, {
+
+            const payload = {
+                form_data: formData
+            };
+            await axios.post(`${API_URL}/hots_ticket/create/ticket/13`, payload, {
                 headers: { Authorization: `Bearer ${token}` },
             });
+
+            // ✅ Auto-refresh schedule
+            dispatch(fetchMeetingBookings());
+
             toast({
                 title: "Meeting room booked successfully!.",
             });
@@ -222,9 +243,9 @@ const MeetingRoomStandalone: React.FC = () => {
                         </h3>
 
                         <div className="space-y-2 text-sm text-gray-700 mb-4">
-                            <p><b>Room:</b> {globalValues.room}</p>
-                            <p><b>Date:</b> {globalValues.date}</p>
-                            <p><b>Time:</b> {globalValues.start_time} – {globalValues.end_time}</p>
+                            <p><b>Room:</b> {String(globalValues.room || "")}</p>
+                            <p><b>Date:</b> {String(globalValues.date || "")}</p>
+                            <p><b>Time:</b> {String(globalValues.start_time || "")} – {String(globalValues.end_time || "")}</p>
                         </div>
 
                         <div className="space-y-3">

@@ -66,7 +66,7 @@ function ReportingDashboard() {
                         <div className="row">
                             <div className="col-6 col-sm-12"></div>
                             <div className="col-6 col-sm-12">
-                                  <Sidebar />
+                                <Sidebar />
                             </div>
                         </div>
                     </div>
@@ -127,24 +127,27 @@ function ReportingDashboard() {
                                                     </div>
 
                                                     <div className="col-2">
-
                                                         <Select
                                                             className=" text_grey border_radius_10px shadow-sm  "
                                                             onChange={(e) => { setOptiontype(e.target.value) }}
                                                             size="sm"
                                                         >
-
                                                             <option value="pack">
                                                                 pack
                                                             </option>
-
                                                             <option value="carton">
                                                                 carton
                                                             </option>
-
                                                         </Select>
+                                                    </div>
 
-
+                                                    <div className="col-2">
+                                                        <button
+                                                            className="btn btn-primary btn-sm w-100 border_radius_10px"
+                                                            onClick={() => navigate("/e-order/report-engine/6")}
+                                                        >
+                                                            View SRF Report
+                                                        </button>
                                                     </div>
 
 

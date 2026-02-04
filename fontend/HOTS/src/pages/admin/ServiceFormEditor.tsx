@@ -6,10 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Eye, Zap, GitBranch, Layers } from 'lucide-react';
-import { FormConfig, FormField, FormSection, RowGroup, FormItem } from '@/types/formTypes';
+import { FormConfig, FormField, FormSection, RowGroup, FormItem, FormStructureItem } from '@/types/formTypes';
 import { DynamicForm } from '@/components/forms/DynamicForm';
 import { useCatalogData } from '@/hooks/useCatalogData';
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppSelector';
@@ -18,7 +17,7 @@ import axios from 'axios';
 import { API_URL } from '@/config/sourceConfig';
 import { useToast } from '@/hooks/use-toast';
 import { getMaxFormFields } from '@/utils/formFieldMapping';
-import { UnifiedFormStructureEditor, FormStructureItem } from '@/components/forms/UnifiedFormStructureEditor';
+import { UnifiedFormStructureEditor } from '@/components/forms/UnifiedFormStructureEditor';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { ComponentPalette } from '@/components/forms/builder/ComponentPalette';
 import { VisualFormCanvas } from '@/components/forms/builder/VisualFormCanvas';
@@ -121,6 +120,57 @@ const ServiceFormEditor = () => {
     }
   };
 
+  // Migration: Convert legacy structure to unified structure
+  const migrateLegacyConfig = (config: any): FormStructureItem[] => {
+    let items = config.items || [];
+    if (items.length === 0) {
+      const migratedItems: FormStructureItem[] = [];
+      let order = 0;
+
+      // 1. Add loose fields
+      if (Array.isArray(config.fields)) {
+        config.fields.forEach((f: any) => {
+          migratedItems.push({
+            id: f.id || `field-${Date.now()}-${order}`,
+            type: 'field',
+            order: order++,
+            data: f
+          });
+        });
+      }
+
+      // 2. Add sections
+      if (Array.isArray(config.sections)) {
+        config.sections.forEach((s: any) => {
+          migratedItems.push({
+            id: s.id || `section-${Date.now()}-${order}`,
+            type: 'section',
+            order: order++,
+            data: s
+          });
+        });
+      }
+
+      // 3. Add row groups
+      if (Array.isArray(config.rowGroups)) {
+        config.rowGroups.forEach((rg: any) => {
+          migratedItems.push({
+            id: rg.id || `rowgroup-${Date.now()}-${order}`,
+            type: 'rowgroup',
+            order: order++,
+            data: rg
+          });
+        });
+      }
+
+      if (migratedItems.length > 0) {
+        console.log("🔄 Migrated legacy form structure to unified items", migratedItems.length);
+        items = migratedItems;
+      }
+    }
+    return items;
+  };
+
   useEffect(() => {
     const loadServiceData = async () => {
       if (!isEdit || !id) return;
@@ -128,7 +178,7 @@ const ServiceFormEditor = () => {
       try {
         // Use the unified API that joins m_service + m_service_triggers + m_workflow
         const response = await axios.get(`${API_URL}/hots_settings/get_service/${id}`, {
-          headers: { 'tokek': localStorage.getItem('tokek') }
+          headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
         });
 
         if (response.data.success && response.data.data) {
@@ -166,7 +216,10 @@ const ServiceFormEditor = () => {
           }
 
           setConfig(parsedConfig);
-          setFormStructure(parsedConfig.items || []);
+
+          // Apply migration
+          const initialItems = migrateLegacyConfig(parsedConfig);
+          setFormStructure(initialItems);
 
           // Load triggers using same endpoint as StudioPage (which works)
           await loadTriggersFromAPI(parseInt(id));
@@ -209,7 +262,9 @@ const ServiceFormEditor = () => {
 
             if (serviceData.form_json) {
               try {
-                const jsonConfig = JSON.parse(serviceData.form_json);
+                const jsonConfig = typeof serviceData.form_json === 'string'
+                  ? JSON.parse(serviceData.form_json)
+                  : serviceData.form_json;
                 parsedConfig = { ...parsedConfig, ...jsonConfig, id: serviceData.service_id.toString(), category: categoryName };
               } catch (error) {
                 console.error('Failed to parse form_json:', error);
@@ -217,7 +272,9 @@ const ServiceFormEditor = () => {
             }
 
             setConfig(parsedConfig);
-            setFormStructure(parsedConfig.items || []);
+            // Apply migration in fallback too
+            const initialItems = migrateLegacyConfig(parsedConfig);
+            setFormStructure(initialItems);
             if (serviceData.m_workflow_groups) setSelectedWorkflowGroup(serviceData.m_workflow_groups);
             if (serviceData.team_id) setSelectedAssignment(serviceData.team_id);
 
@@ -522,318 +579,312 @@ const ServiceFormEditor = () => {
 
   if (previewMode) {
     return (
-      <AppLayout>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={() => setPreviewMode(false)}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Editor
-              </Button>
-              {config.category && (
-                <div className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryColor(config.category)}`}>
-                  <span className="mr-2">{getCategoryIcon(config.category)}</span>
-                  Form Preview
-                </div>
-              )}
-            </div>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={() => setPreviewMode(false)}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Editor
+            </Button>
+            {config.category && (
+              <div className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryColor(config.category)}`}>
+                <span className="mr-2">{getCategoryIcon(config.category)}</span>
+                Form Preview
+              </div>
+            )}
           </div>
-          <DynamicForm
-            config={config}
-            setConfig={setConfig}
-            onSubmit={(data) => {
-              toast({
-                title: "Form Submitted",
-                description: JSON.stringify(data, null, 2),
-              });
-            }}
-          />
-
-
-
         </div>
-      </AppLayout>
+        <DynamicForm
+          config={config}
+          setConfig={setConfig}
+          onSubmit={(data) => {
+            console.log("Form Data:", data);
+            toast({
+              title: "Form Submission Preview",
+              description: JSON.stringify(data, null, 2),
+            });
+          }}
+        />
+      </div>
     );
   }
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => navigate('/admin/service-catalog')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            <div className="flex items-center gap-3">
-              {config.category && (
-                <div className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryColor(config.category)}`}>
-                  <span className="mr-2">{getCategoryIcon(config.category)}</span>
-                  {config.category}
-                </div>
-              )}
-              <h1 className="text-2xl font-bold">{isEdit ? 'Edit' : 'Create'} Service Form</h1>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setPreviewMode(true)}>
-              <Eye className="w-4 h-4 mr-2" />
-              Preview
-            </Button>
-            <Button onClick={handleSave} disabled={isLoading}>
-              <Save className="w-4 h-4 mr-2" />
-              {isLoading ? 'Saving...' : 'Save Form'}
-            </Button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => navigate('/admin/service-catalog')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+          <div className="flex items-center gap-3">
+            {config.category && (
+              <div className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryColor(config.category)}`}>
+                <span className="mr-2">{getCategoryIcon(config.category)}</span>
+                {config.category}
+              </div>
+            )}
+            <h1 className="text-2xl font-bold">{isEdit ? 'Edit' : 'Create'} Service Form</h1>
           </div>
         </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setPreviewMode(true)}>
+            <Eye className="w-4 h-4 mr-2" />
+            Preview
+          </Button>
+          <Button onClick={handleSave} disabled={isLoading}>
+            <Save className="w-4 h-4 mr-2" />
+            {isLoading ? 'Saving...' : 'Save Form'}
+          </Button>
+        </div>
+      </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="basic">⚙️ Basic</TabsTrigger>
-            <TabsTrigger value="form-builder">🛠️ Form Builder</TabsTrigger>
-            <TabsTrigger value="workflow">🔄 Workflow</TabsTrigger>
-            <TabsTrigger value="triggers">⚡ Triggers</TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="basic">⚙️ Basic</TabsTrigger>
+          <TabsTrigger value="form-builder">🛠️ Form Builder</TabsTrigger>
+          <TabsTrigger value="workflow">🔄 Workflow</TabsTrigger>
+          <TabsTrigger value="triggers">⚡ Triggers</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="basic" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Basic Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="title">Form Title</Label>
-                    <Input
-                      id="title"
-                      value={config.title}
-                      onChange={(e) => setConfig({ ...config, title: e.target.value })}
-                      placeholder="e.g., IT Support Request"
-                    />
-                  </div>
+        <TabsContent value="basic" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Basic Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="title">Form Title</Label>
+                  <Input
+                    id="title"
+                    value={config.title}
+                    onChange={(e) => setConfig({ ...config, title: e.target.value })}
+                    placeholder="e.g., IT Support Request"
+                  />
+                </div>
 
-                  <div>
-                    <Label htmlFor="url">URL Path</Label>
-                    <Input
-                      id="url"
-                      value={config.url}
-                      onChange={(e) => setConfig({ ...config, url: e.target.value })}
-                      placeholder="e.g., /it-support"
-                    />
-                  </div>
+                <div>
+                  <Label htmlFor="url">URL Path</Label>
+                  <Input
+                    id="url"
+                    value={config.url}
+                    onChange={(e) => setConfig({ ...config, url: e.target.value })}
+                    placeholder="e.g., /it-support"
+                  />
+                </div>
 
-                  <div>
-                    <Label htmlFor="category">Category</Label>
-                    <Select value={config.category} onValueChange={(value) => setConfig({ ...config, category: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categoryList.map((category) => (
-                          <SelectItem key={category.category_id} value={category.category_name}>
-                            <span className="mr-2">{getCategoryIcon(category.category_name)}</span>
-                            {category.category_name}
+                <div>
+                  <Label htmlFor="category">Category</Label>
+                  <Select value={config.category} onValueChange={(value) => setConfig({ ...config, category: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoryList.map((category) => (
+                        <SelectItem key={category.category_id} value={category.category_name}>
+                          <span className="mr-2">{getCategoryIcon(category.category_name)}</span>
+                          {category.category_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={config.description}
+                    onChange={(e) => setConfig({ ...config, description: e.target.value })}
+                    placeholder="Brief description of the form"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="apiEndpoint">API Endpoint</Label>
+                  <Input
+                    id="apiEndpoint"
+                    value={config.apiEndpoint}
+                    onChange={(e) => setConfig({ ...config, apiEndpoint: e.target.value })}
+                    placeholder="e.g., /api/it-support"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Workflow Assignment</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="workflowGroup">Workflow Group</Label>
+                  <Select
+                    value={selectedWorkflowGroup?.toString() || ''}
+                    onValueChange={(value) => setSelectedWorkflowGroup(parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select workflow group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {workflowGroups
+                        .filter(wg => wg.is_active && wg.id != null)
+                        .map((workflowGroup) => (
+                          <SelectItem key={workflowGroup.id} value={String(workflowGroup.id)}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{workflowGroup.name}</span>
+                              <span className="text-sm text-gray-500">{workflowGroup.description}</span>
+                            </div>
                           </SelectItem>
                         ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Select the workflow group that will handle the approval process for this service.
+                  </p>
+                </div>
 
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={config.description}
-                      onChange={(e) => setConfig({ ...config, description: e.target.value })}
-                      placeholder="Brief description of the form"
-                    />
+                {selectedWorkflowGroup && (
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <strong>Selected Workflow:</strong> {workflowGroups.find(wg => wg.id === selectedWorkflowGroup)?.name}
+                    </p>
+                    <p className="text-sm text-blue-600 mt-1">
+                      {workflowGroups.find(wg => wg.id === selectedWorkflowGroup)?.description}
+                    </p>
                   </div>
+                )}
 
-                  <div>
-                    <Label htmlFor="apiEndpoint">API Endpoint</Label>
-                    <Input
-                      id="apiEndpoint"
-                      value={config.apiEndpoint}
-                      onChange={(e) => setConfig({ ...config, apiEndpoint: e.target.value })}
-                      placeholder="e.g., /api/it-support"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                <div >
+                  <Label htmlFor="workflowGroup">Assignment</Label>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Workflow Assignment</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="workflowGroup">Workflow Group</Label>
+                  <div className=" mt-2">
                     <Select
-                      value={selectedWorkflowGroup?.toString() || ''}
-                      onValueChange={(value) => setSelectedWorkflowGroup(parseInt(value))}
+                      value={selectedAssignment?.toString() || ''}
+                      onValueChange={(value) => setSelectedAssignment(parseInt(value))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select workflow group" />
+                        <SelectValue placeholder="Select Task Team" />
                       </SelectTrigger>
                       <SelectContent>
-                        {workflowGroups
-                          .filter(wg => wg.is_active && wg.id != null)
-                          .map((workflowGroup) => (
-                            <SelectItem key={workflowGroup.id} value={String(workflowGroup.id)}>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{workflowGroup.name}</span>
-                                <span className="text-sm text-gray-500">{workflowGroup.description}</span>
+                        {teams
+                          .slice() // create a shallow copy
+                          .sort((a, b) => a.team_name.localeCompare(b.team_name))
+                          .map((team) => (
+                            <SelectItem key={team.team_id} value={team.team_id.toString()}>
+                              <div className="flex flex-col text-start">
+                                <span className="font-medium">{team.team_name}</span>
+                                <span className="text-sm text-gray-500">Dept ID: {team.department_id} </span>
                               </div>
                             </SelectItem>
                           ))}
+
                       </SelectContent>
                     </Select>
                     <p className="text-sm text-gray-500 mt-1">
-                      Select the workflow group that will handle the approval process for this service.
+                      Select the task assignment that will handle the approval process for this service. Leaving this field blank will assign the task to the user.
                     </p>
                   </div>
+                </div>
 
-                  {selectedWorkflowGroup && (
-                    <div className="p-3 bg-blue-50 rounded-lg">
-                      <p className="text-sm text-blue-800">
-                        <strong>Selected Workflow:</strong> {workflowGroups.find(wg => wg.id === selectedWorkflowGroup)?.name}
-                      </p>
-                      <p className="text-sm text-blue-600 mt-1">
-                        {workflowGroups.find(wg => wg.id === selectedWorkflowGroup)?.description}
-                      </p>
-                    </div>
-                  )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
-                  <div >
-                    <Label htmlFor="workflowGroup">Assignment</Label>
-
-                    <div className=" mt-2">
-                      <Select
-                        value={selectedAssignment?.toString() || ''}
-                        onValueChange={(value) => setSelectedAssignment(parseInt(value))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Task Team" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {teams
-                            .slice() // create a shallow copy
-                            .sort((a, b) => a.team_name.localeCompare(b.team_name))
-                            .map((team) => (
-                              <SelectItem key={team.team_id} value={team.team_id.toString()}>
-                                <div className="flex flex-col text-start">
-                                  <span className="font-medium">{team.team_name}</span>
-                                  <span className="text-sm text-gray-500">Dept ID: {team.department_id} </span>
-                                </div>
-                              </SelectItem>
-                            ))}
-
-                        </SelectContent>
-                      </Select>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Select the task assignment that will handle the approval process for this service. Leaving this field blank will assign the task to the user.
-                      </p>
-                    </div>
-                  </div>
-
-                </CardContent>
-              </Card>
+        {/* FORM BUILDER TAB - Unified Structure Editor */}
+        <TabsContent value="form-builder" className="space-y-4">
+          {/* Field count info */}
+          <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div>
+              <p className="text-sm text-blue-800">
+                <strong>Database Mapping:</strong> {totalFieldCount} of {getMaxFormFields()} fields used
+              </p>
+              <p className="text-xs text-blue-600 mt-0.5">
+                Fields will be mapped to database columns automatically
+              </p>
             </div>
-          </TabsContent>
-
-          {/* FORM BUILDER TAB - Unified Structure Editor */}
-          <TabsContent value="form-builder" className="space-y-4">
-            {/* Field count info */}
-            <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div>
-                <p className="text-sm text-blue-800">
-                  <strong>Database Mapping:</strong> {totalFieldCount} of {getMaxFormFields()} fields used
-                </p>
-                <p className="text-xs text-blue-600 mt-0.5">
-                  Fields will be mapped to database columns automatically
-                </p>
+            {totalFieldCount >= getMaxFormFields() && (
+              <div className="text-red-600 text-sm font-medium">
+                ⚠️ Maximum field limit reached
               </div>
-              {totalFieldCount >= getMaxFormFields() && (
-                <div className="text-red-600 text-sm font-medium">
-                  ⚠️ Maximum field limit reached
+            )}
+          </div>
+
+          {/* Enhanced Form Structure Editor */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle>Form Structure Builder</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Add fields, sections, row groups, and special elements. Click any element to configure its properties including visibility conditions and field rules.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <UnifiedFormStructureEditor
+                items={formStructure}
+                onUpdate={handleStructureUpdate}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* WORKFLOW TAB */}
+        <TabsContent value="workflow" className="h-[calc(100vh-300px)]">
+          <Card className="h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2">
+                <GitBranch className="w-5 h-5" />
+                Visual Workflow Editor
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="h-[calc(100%-60px)]">
+              {workflowDefinition ? (
+                <VisualWorkflowEditor
+                  workflowDefinition={workflowDefinition}
+                  onChange={setWorkflowDefinition}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <div className="text-center">
+                    <GitBranch className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>No workflow definition found for this service.</p>
+                    <p className="text-sm mt-2">Workflow will be created when you save.</p>
+                  </div>
                 </div>
               )}
-            </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            {/* Enhanced Form Structure Editor */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle>Form Structure Builder</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Add fields, sections, row groups, and special elements. Click any element to configure its properties including visibility conditions and field rules.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <UnifiedFormStructureEditor
-                  items={formStructure}
-                  onUpdate={handleStructureUpdate}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
+        {/* TRIGGERS TAB */}
+        <TabsContent value="triggers" className="h-[calc(100vh-300px)]">
+          <Card className="h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-500" />
+                Service Triggers
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="h-[calc(100%-60px)]">
+              {id && (
+                <div className="h-full">
 
-          {/* WORKFLOW TAB */}
-          <TabsContent value="workflow" className="h-[calc(100vh-300px)]">
-            <Card className="h-full">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2">
-                  <GitBranch className="w-5 h-5" />
-                  Visual Workflow Editor
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-[calc(100%-60px)]">
-                {workflowDefinition ? (
-                  <VisualWorkflowEditor
-                    workflowDefinition={workflowDefinition}
-                    onChange={setWorkflowDefinition}
+                  <VisualTriggerBuilder
+                    serviceId={parseInt(id)}
+                    triggers={triggers}
+                    onChange={(updated) => {
+                      console.log("🔄 Triggers Updated:", updated);
+                      setTriggers(updated);
+                    }}
                   />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-500">
-                    <div className="text-center">
-                      <GitBranch className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                      <p>No workflow definition found for this service.</p>
-                      <p className="text-sm mt-2">Workflow will be created when you save.</p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* TRIGGERS TAB */}
-          <TabsContent value="triggers" className="h-[calc(100vh-300px)]">
-            <Card className="h-full">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-amber-500" />
-                  Service Triggers
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-[calc(100%-60px)]">
-                {id && (
-                  <div className="h-full">
-                   
-                    <VisualTriggerBuilder
-                      serviceId={parseInt(id)}
-                      triggers={triggers}
-                      onChange={(updated) => {
-                        console.log("🔄 Triggers Updated:", updated);
-                        setTriggers(updated);
-                      }}
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </AppLayout>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 

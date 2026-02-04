@@ -5,7 +5,7 @@ const {
 } = require("../../../../config/db");
 const { generateTokenHT, hashPasswordHT, createTokenHT, verifyTokenHT } = require("../../../../config/encrypts");
 const { hotsForgotPasswordMailer, hotsVerifyEmailMailer, hotsMailer, hotsSubmitMailer } = require('../../../../service/mailer/hots/hots_mailer');
-const ticketController = require('../../ticketing/controllers/ticketController');
+const ticketController = require('../../../engine/engineTicket'); // Using Engine Controller
 // const cookieParser = require('cookie-parser');
 const { compare } = require('bcrypt');
 const bcrypt = require('bcrypt'); // For password comparison
@@ -25,7 +25,10 @@ module.exports = {
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let { uid, asin } = req.body
-        console.log("req.body", req.body)
+        console.log("------- DEBUG LOGIN -------")
+        console.log("Payload Received:", req.body)
+        console.log("UID:", uid, "ASIN (Password):", asin)
+        console.log("---------------------------")
 
 
 
@@ -116,7 +119,7 @@ module.exports = {
                                             from
                                                 user u
                                             left join 
-                                                                                                m_role r on
+                                                                                                user_role r on
                                                 u.role_id = r.role_id
                                             left join 
                                                                                                 m_department d on
@@ -310,7 +313,7 @@ module.exports = {
                     ) AS team_id_linked
     
                 FROM user u
-                LEFT JOIN m_role r ON u.role_id = r.role_id
+                LEFT JOIN user_role r ON u.role_id = r.role_id
                 LEFT JOIN m_department d ON u.department_id = d.department_id
     
                 WHERE user_id = ?
@@ -691,7 +694,7 @@ module.exports = {
                 WHERE tm.user_id = u.user_id 
             ) as teams
         FROM user u
-        LEFT JOIN m_role ur ON ur.role_id = u.role_id
+        LEFT JOIN user_role ur ON ur.role_id = u.role_id
         LEFT JOIN m_department d ON d.department_id = u.department_id
         LEFT JOIN user sup ON sup.user_id = u.superior_id
         WHERE u.user_id = ?
@@ -1182,7 +1185,7 @@ module.exports = {
                                                 from
                                                     user u
                                                 left join 
-                                                    m_role r on
+                                                    user_role r on
                                                     u.role_id = r.role_id
                                                 left join 
                                                     m_department d on
@@ -1298,7 +1301,7 @@ module.exports = {
             const [users] = await dbHots.promise().query(`
             SELECT u.*, r.role_name, d.department_name, jt.job_title as title_name
             FROM m_users u
-            LEFT JOIN m_role r ON u.role_id = r.role_id
+            LEFT JOIN user_role r ON u.role_id = r.role_id
             LEFT JOIN m_department d ON u.department_id = d.department_id
             LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
             WHERE u.user_id = ? AND u.active = 1
@@ -1374,7 +1377,7 @@ module.exports = {
             const [result] = await dbPM.promise().query(`
                 SELECT u.*, r.role_name, d.department_name, t.team_name, j.job_title
                 FROM pm_users u
-                LEFT JOIN pm_role r ON u.role_id = r.role_id
+                LEFT JOIN puser_role r ON u.role_id = r.role_id
                 LEFT JOIN pm_department d ON u.department_id = d.department_id
                 LEFT JOIN pm_team t ON u.team_id = t.team_id
                 LEFT JOIN pm_job_title j ON u.jobtitle_id = j.jobtitle_id

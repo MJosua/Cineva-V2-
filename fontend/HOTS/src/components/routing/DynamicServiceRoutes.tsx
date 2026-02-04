@@ -21,7 +21,7 @@ export const useDynamicServiceRoutes = (onSubmit: (data: any) => void) => {
     if (serviceCatalog.length === 0) {
       // // console.log('Service catalog is empty, initializing with fallback data');
       dispatch(useFallbackData());
-      
+
       // Still try to fetch real data in the background
       if (!isLoading) {
         // // console.log('Attempting to fetch real catalog data in background');
@@ -66,12 +66,10 @@ export const useDynamicServiceRoutes = (onSubmit: (data: any) => void) => {
           path={`/service-catalog/${service.nav_link}`}
           element={
             <ProtectedRoute>
-              <AppLayout>
-                <CatalogFormLoader
-                  servicePath={service.nav_link}
-                  onSubmit={onSubmit}
-                />
-              </AppLayout>
+              <CatalogFormLoader
+                servicePath={service.nav_link}
+                onSubmit={onSubmit}
+              />
             </ProtectedRoute>
           }
         />

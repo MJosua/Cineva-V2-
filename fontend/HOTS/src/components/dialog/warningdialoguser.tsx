@@ -20,6 +20,8 @@ export interface WarningDialogProps {
   isLoading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  children?: React.ReactNode;
+  confirmButtonColor?: string;
 }
 
 export const WarningDialog: React.FC<WarningDialogProps> = ({
@@ -31,11 +33,13 @@ export const WarningDialog: React.FC<WarningDialogProps> = ({
   isLoading = false,
   onConfirm,
   onCancel,
+  children,
+  confirmButtonColor = "bg-yellow-600 hover:bg-yellow-700",
 }) => {
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
       <AlertDialogContent
-        className="bg-white border border-gray-200 shadow-lg z-50"
+        className="bg-white border border-gray-200 shadow-lg z-50 max-h-[80vh] overflow-y-auto"
       >
         <AlertDialogHeader>
           <AlertDialogTitle className="text-yellow-600">{title}</AlertDialogTitle>
@@ -44,7 +48,13 @@ export const WarningDialog: React.FC<WarningDialogProps> = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <AlertDialogFooter className="bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
+        {children && (
+          <div className="py-2">
+            {children}
+          </div>
+        )}
+
+        <AlertDialogFooter className="bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg mt-4">
           <AlertDialogCancel
             onClick={onCancel}
             disabled={isLoading}
@@ -55,7 +65,7 @@ export const WarningDialog: React.FC<WarningDialogProps> = ({
           <AlertDialogAction
             onClick={onConfirm}
             disabled={isLoading}
-            className="bg-yellow-600 hover:bg-yellow-700 text-white"
+            className={`text-white ${confirmButtonColor}`}
           >
             {isLoading ? "Processing..." : confirmLabel}
           </AlertDialogAction>

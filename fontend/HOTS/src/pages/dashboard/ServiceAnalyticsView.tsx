@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { AppLayout } from "@/components/layout/AppLayout";
+// import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -189,324 +189,320 @@ const ServiceAnalyticsView: React.FC = () => {
 
     if (loading) {
         return (
-            <AppLayout>
-                <div className="space-y-4">
-                    <Skeleton className="h-12 w-1/3" />
-                    <div className="grid grid-cols-4 gap-4">
-                        {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32" />)}
-                    </div>
-                    <Skeleton className="h-80" />
+            <div className="space-y-4">
+                <Skeleton className="h-12 w-1/3" />
+                <div className="grid grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32" />)}
                 </div>
-            </AppLayout>
+                <Skeleton className="h-80" />
+            </div>
         );
     }
 
     return (
-        <AppLayout>
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate('/dashboard')}
-                            className="gap-2"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            Back
-                        </Button>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">
-                                {serviceName}
-                            </h1>
-                            <p className="text-sm text-gray-500 flex items-center gap-2">
-                                Service ID: {serviceId}
-                                {useDemo && (
-                                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                                        Demo Mode
-                                    </span>
-                                )}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        {/* Date Range Selector */}
-                        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                            {['7d', '30d', '90d', 'YTD'].map((range) => (
-                                <button
-                                    key={range}
-                                    onClick={() => setDateRange(range)}
-                                    className={cn(
-                                        "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
-                                        dateRange === range
-                                            ? "bg-white shadow text-gray-900"
-                                            : "text-gray-600 hover:text-gray-900"
-                                    )}
-                                >
-                                    {range}
-                                </button>
-                            ))}
-                        </div>
-
-                        <Button variant="outline" size="sm" onClick={() => { fetchSummary(); fetchTickets(); }}>
-                            <RefreshCw className="w-4 h-4" />
-                        </Button>
-
-                        <Button
-                            variant={useDemo ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setUseDemo(!useDemo)}
-                        >
-                            {useDemo ? "Using Demo" : "Use Demo"}
-                        </Button>
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate('/dashboard')}
+                        className="gap-2"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">
+                            {serviceName}
+                        </h1>
+                        <p className="text-sm text-gray-500 flex items-center gap-2">
+                            Service ID: {serviceId}
+                            {useDemo && (
+                                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                                    Demo Mode
+                                </span>
+                            )}
+                        </p>
                     </div>
                 </div>
 
-                {/* Tabs */}
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                    <TabsList className="bg-gray-100/80 p-1">
-                        <TabsTrigger value="overview" className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                            <LayoutDashboard className="w-4 h-4" />
-                            Overview
-                        </TabsTrigger>
-                        <TabsTrigger value="charts" className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                            <BarChart3 className="w-4 h-4" />
-                            Charts
-                        </TabsTrigger>
-                        <TabsTrigger value="table" className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                            <Table2 className="w-4 h-4" />
-                            Data Table
-                        </TabsTrigger>
-                        <TabsTrigger value="custom" className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                            <Sparkles className="w-4 h-4" />
-                            Custom Views
-                        </TabsTrigger>
-                    </TabsList>
+                <div className="flex items-center gap-2">
+                    {/* Date Range Selector */}
+                    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                        {['7d', '30d', '90d', 'YTD'].map((range) => (
+                            <button
+                                key={range}
+                                onClick={() => setDateRange(range)}
+                                className={cn(
+                                    "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                                    dateRange === range
+                                        ? "bg-white shadow text-gray-900"
+                                        : "text-gray-600 hover:text-gray-900"
+                                )}
+                            >
+                                {range}
+                            </button>
+                        ))}
+                    </div>
 
-                    {/* Overview Tab */}
-                    <TabsContent value="overview" className="space-y-6">
-                        {/* KPI Cards */}
-                        <div className="grid grid-cols-4 gap-4">
-                            {kpis.map((kpi, i) => (
-                                <Card key={i} className="relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full" />
-                                    <CardContent className="pt-6">
-                                        <div className="flex items-start justify-between">
-                                            <div>
-                                                <p className="text-sm text-gray-500 mb-1">{kpi.label}</p>
-                                                <p className="text-3xl font-bold text-gray-900">
-                                                    {kpi.value.toLocaleString()}
-                                                </p>
-                                                {kpi.trend !== 0 && (
-                                                    <div className={cn(
-                                                        "flex items-center gap-1 mt-2 text-xs font-medium",
-                                                        kpi.trendUp ? "text-green-600" : "text-red-600"
-                                                    )}>
-                                                        {kpi.trendUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                                                        <span>{Math.abs(kpi.trend)}% vs last period</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="p-3 rounded-xl bg-blue-50">
-                                                <kpi.icon className="w-5 h-5 text-blue-600" />
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
+                    <Button variant="outline" size="sm" onClick={() => { fetchSummary(); fetchTickets(); }}>
+                        <RefreshCw className="w-4 h-4" />
+                    </Button>
 
-                        {/* Charts Row */}
-                        <div className="grid grid-cols-3 gap-6">
-                            {/* Trend Chart */}
-                            <Card className="col-span-2">
-                                <CardHeader>
-                                    <CardTitle className="text-base font-semibold">Request Trend</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    {trendData.length > 0 ? (
-                                        <ChartContainer config={trendChartConfig} className="h-[250px] w-full">
-                                            <AreaChart data={trendData}>
-                                                <defs>
-                                                    <linearGradient id="requestGradient" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="0%" stopColor="hsl(210, 100%, 50%)" stopOpacity={0.3} />
-                                                        <stop offset="100%" stopColor="hsl(210, 100%, 50%)" stopOpacity={0} />
-                                                    </linearGradient>
-                                                    <linearGradient id="approvedGradient" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="0%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.3} />
-                                                        <stop offset="100%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0} />
-                                                    </linearGradient>
-                                                </defs>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                                <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                                                <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                                                <ChartTooltip content={<ChartTooltipContent />} />
-                                                <Area
-                                                    type="monotone"
-                                                    dataKey="requests"
-                                                    stroke="hsl(210, 100%, 50%)"
-                                                    strokeWidth={2}
-                                                    fill="url(#requestGradient)"
-                                                />
-                                                <Area
-                                                    type="monotone"
-                                                    dataKey="approved"
-                                                    stroke="hsl(142, 76%, 36%)"
-                                                    strokeWidth={2}
-                                                    fill="url(#approvedGradient)"
-                                                />
-                                            </AreaChart>
-                                        </ChartContainer>
-                                    ) : (
-                                        <div className="h-[250px] flex items-center justify-center text-gray-400">
-                                            No trend data available
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
+                    <Button
+                        variant={useDemo ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setUseDemo(!useDemo)}
+                    >
+                        {useDemo ? "Using Demo" : "Use Demo"}
+                    </Button>
+                </div>
+            </div>
 
-                            {/* Status Distribution */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-base font-semibold">Status Distribution</CardTitle>
-                                </CardHeader>
-                                <CardContent className="flex flex-col items-center">
-                                    {statusDistribution.length > 0 ? (
-                                        <>
-                                            <div className="h-[180px] w-full">
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <PieChart>
-                                                        <Pie
-                                                            data={statusDistribution}
-                                                            cx="50%"
-                                                            cy="50%"
-                                                            innerRadius={50}
-                                                            outerRadius={70}
-                                                            paddingAngle={3}
-                                                            dataKey="value"
-                                                        >
-                                                            {statusDistribution.map((entry, index) => (
-                                                                <Cell key={index} fill={entry.color} />
-                                                            ))}
-                                                        </Pie>
-                                                        <Tooltip />
-                                                    </PieChart>
-                                                </ResponsiveContainer>
-                                            </div>
-                                            <div className="flex gap-4 mt-2 flex-wrap justify-center">
-                                                {statusDistribution.map((item, i) => (
-                                                    <div key={i} className="flex items-center gap-2">
-                                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                                                        <span className="text-xs text-gray-600">{item.name} ({item.value})</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="h-[180px] flex items-center justify-center text-gray-400">
-                                            No status data
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </div>
+            {/* Tabs */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                <TabsList className="bg-gray-100/80 p-1">
+                    <TabsTrigger value="overview" className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                        <LayoutDashboard className="w-4 h-4" />
+                        Overview
+                    </TabsTrigger>
+                    <TabsTrigger value="charts" className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                        <BarChart3 className="w-4 h-4" />
+                        Charts
+                    </TabsTrigger>
+                    <TabsTrigger value="table" className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                        <Table2 className="w-4 h-4" />
+                        Data Table
+                    </TabsTrigger>
+                    <TabsTrigger value="custom" className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                        <Sparkles className="w-4 h-4" />
+                        Custom Views
+                    </TabsTrigger>
+                </TabsList>
 
-                        {/* Activity Feed (Demo) */}
-                        {useDemo && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-base font-semibold">Recent Activity (Demo)</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-4">
-                                        {mockOverviewData.recentActivity.map((activity, i) => (
-                                            <div key={i} className="flex items-center gap-3">
+                {/* Overview Tab */}
+                <TabsContent value="overview" className="space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid grid-cols-4 gap-4">
+                        {kpis.map((kpi, i) => (
+                            <Card key={i} className="relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full" />
+                                <CardContent className="pt-6">
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <p className="text-sm text-gray-500 mb-1">{kpi.label}</p>
+                                            <p className="text-3xl font-bold text-gray-900">
+                                                {kpi.value.toLocaleString()}
+                                            </p>
+                                            {kpi.trend !== 0 && (
                                                 <div className={cn(
-                                                    "w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium",
-                                                    activity.action === 'approved' ? 'bg-green-500' :
-                                                        activity.action === 'rejected' ? 'bg-red-500' : 'bg-blue-500'
+                                                    "flex items-center gap-1 mt-2 text-xs font-medium",
+                                                    kpi.trendUp ? "text-green-600" : "text-red-600"
                                                 )}>
-                                                    {activity.user.split(' ').map(n => n[0]).join('')}
+                                                    {kpi.trendUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                                    <span>{Math.abs(kpi.trend)}% vs last period</span>
                                                 </div>
-                                                <div className="flex-1">
-                                                    <p className="text-sm">
-                                                        <span className="font-medium">{activity.user}</span>
-                                                        <span className="text-gray-500"> {activity.action} </span>
-                                                        <span className="font-medium text-blue-600">{activity.item}</span>
-                                                    </p>
-                                                    <p className="text-xs text-gray-400">{activity.time}</p>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            )}
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-blue-50">
+                                            <kpi.icon className="w-5 h-5 text-blue-600" />
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
-                        )}
-                    </TabsContent>
+                        ))}
+                    </div>
 
-                    {/* Charts Tab (Placeholder) */}
-                    <TabsContent value="charts">
+                    {/* Charts Row */}
+                    <div className="grid grid-cols-3 gap-6">
+                        {/* Trend Chart */}
+                        <Card className="col-span-2">
+                            <CardHeader>
+                                <CardTitle className="text-base font-semibold">Request Trend</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {trendData.length > 0 ? (
+                                    <ChartContainer config={trendChartConfig} className="h-[250px] w-full">
+                                        <AreaChart data={trendData}>
+                                            <defs>
+                                                <linearGradient id="requestGradient" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor="hsl(210, 100%, 50%)" stopOpacity={0.3} />
+                                                    <stop offset="100%" stopColor="hsl(210, 100%, 50%)" stopOpacity={0} />
+                                                </linearGradient>
+                                                <linearGradient id="approvedGradient" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.3} />
+                                                    <stop offset="100%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                            <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                                            <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                                            <ChartTooltip content={<ChartTooltipContent />} />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="requests"
+                                                stroke="hsl(210, 100%, 50%)"
+                                                strokeWidth={2}
+                                                fill="url(#requestGradient)"
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="approved"
+                                                stroke="hsl(142, 76%, 36%)"
+                                                strokeWidth={2}
+                                                fill="url(#approvedGradient)"
+                                            />
+                                        </AreaChart>
+                                    </ChartContainer>
+                                ) : (
+                                    <div className="h-[250px] flex items-center justify-center text-gray-400">
+                                        No trend data available
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Status Distribution */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-base font-semibold">Status Distribution</CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex flex-col items-center">
+                                {statusDistribution.length > 0 ? (
+                                    <>
+                                        <div className="h-[180px] w-full">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <PieChart>
+                                                    <Pie
+                                                        data={statusDistribution}
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        innerRadius={50}
+                                                        outerRadius={70}
+                                                        paddingAngle={3}
+                                                        dataKey="value"
+                                                    >
+                                                        {statusDistribution.map((entry, index) => (
+                                                            <Cell key={index} fill={entry.color} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                        <div className="flex gap-4 mt-2 flex-wrap justify-center">
+                                            {statusDistribution.map((item, i) => (
+                                                <div key={i} className="flex items-center gap-2">
+                                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                                                    <span className="text-xs text-gray-600">{item.name} ({item.value})</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="h-[180px] flex items-center justify-center text-gray-400">
+                                        No status data
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Activity Feed (Demo) */}
+                    {useDemo && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-base font-semibold">Recent Activity (Demo)</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    {mockOverviewData.recentActivity.map((activity, i) => (
+                                        <div key={i} className="flex items-center gap-3">
+                                            <div className={cn(
+                                                "w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium",
+                                                activity.action === 'approved' ? 'bg-green-500' :
+                                                    activity.action === 'rejected' ? 'bg-red-500' : 'bg-blue-500'
+                                            )}>
+                                                {activity.user.split(' ').map(n => n[0]).join('')}
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-sm">
+                                                    <span className="font-medium">{activity.user}</span>
+                                                    <span className="text-gray-500"> {activity.action} </span>
+                                                    <span className="font-medium text-blue-600">{activity.item}</span>
+                                                </p>
+                                                <p className="text-xs text-gray-400">{activity.time}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+                </TabsContent>
+
+                {/* Charts Tab (Placeholder) */}
+                <TabsContent value="charts">
+                    <Card className="py-20">
+                        <CardContent className="flex flex-col items-center justify-center text-center">
+                            <BarChart3 className="w-12 h-12 text-gray-300 mb-4" />
+                            <h3 className="text-lg font-semibold text-gray-700 mb-2">Chart Builder</h3>
+                            <p className="text-gray-500 max-w-md">
+                                Create custom visualizations by selecting dimensions, metrics, and chart types.
+                                Coming in Phase 2.
+                            </p>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Data Table Tab - Using DataTableReportPro */}
+                <TabsContent value="table">
+                    {ticketsData.length > 0 ? (
+                        <DataTableReportPro
+                            title={`${serviceName} - Tickets`}
+                            data={ticketsData}
+                            ticketKey="ticket_id"
+                            columns={[
+                                { header: "Ticket ID", accessor: "ticket_id", sortable: true },
+                                { header: "Title", accessor: "title", sortable: true },
+                                { header: "Requester", accessor: "requester_name", filterable: true },
+                                { header: "Status", accessor: "status_name", filterable: true },
+                                { header: "Created", accessor: "created_at", sortable: true },
+                                { header: "Completed", accessor: "completed_at", sortable: true }
+                            ]}
+                            searchKeys={["ticket_id", "title", "requester_name"]}
+                        />
+                    ) : (
                         <Card className="py-20">
                             <CardContent className="flex flex-col items-center justify-center text-center">
-                                <BarChart3 className="w-12 h-12 text-gray-300 mb-4" />
-                                <h3 className="text-lg font-semibold text-gray-700 mb-2">Chart Builder</h3>
+                                <Table2 className="w-12 h-12 text-gray-300 mb-4" />
+                                <h3 className="text-lg font-semibold text-gray-700 mb-2">No Data Available</h3>
                                 <p className="text-gray-500 max-w-md">
-                                    Create custom visualizations by selecting dimensions, metrics, and chart types.
-                                    Coming in Phase 2.
+                                    No tickets found for this service in the selected date range.
+                                    Try adjusting the date range or check back later.
                                 </p>
                             </CardContent>
                         </Card>
-                    </TabsContent>
+                    )}
+                </TabsContent>
 
-                    {/* Data Table Tab - Using DataTableReportPro */}
-                    <TabsContent value="table">
-                        {ticketsData.length > 0 ? (
-                            <DataTableReportPro
-                                title={`${serviceName} - Tickets`}
-                                data={ticketsData}
-                                ticketKey="ticket_id"
-                                columns={[
-                                    { header: "Ticket ID", accessor: "ticket_id", sortable: true },
-                                    { header: "Title", accessor: "title", sortable: true },
-                                    { header: "Requester", accessor: "requester_name", filterable: true },
-                                    { header: "Status", accessor: "status_name", filterable: true },
-                                    { header: "Created", accessor: "created_at", sortable: true },
-                                    { header: "Completed", accessor: "completed_at", sortable: true }
-                                ]}
-                                searchKeys={["ticket_id", "title", "requester_name"]}
-                            />
-                        ) : (
-                            <Card className="py-20">
-                                <CardContent className="flex flex-col items-center justify-center text-center">
-                                    <Table2 className="w-12 h-12 text-gray-300 mb-4" />
-                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">No Data Available</h3>
-                                    <p className="text-gray-500 max-w-md">
-                                        No tickets found for this service in the selected date range.
-                                        Try adjusting the date range or check back later.
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </TabsContent>
-
-                    {/* Custom Views Tab (Placeholder) */}
-                    <TabsContent value="custom">
-                        <Card className="py-20">
-                            <CardContent className="flex flex-col items-center justify-center text-center">
-                                <Sparkles className="w-12 h-12 text-gray-300 mb-4" />
-                                <h3 className="text-lg font-semibold text-gray-700 mb-2">Custom Dashboard Builder</h3>
-                                <p className="text-gray-500 max-w-md">
-                                    Drag and drop widgets to create your own personalized analytics dashboard.
-                                    Save and share templates with your team. Coming in Phase 4.
-                                </p>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                </Tabs>
-            </div>
-        </AppLayout>
+                {/* Custom Views Tab (Placeholder) */}
+                <TabsContent value="custom">
+                    <Card className="py-20">
+                        <CardContent className="flex flex-col items-center justify-center text-center">
+                            <Sparkles className="w-12 h-12 text-gray-300 mb-4" />
+                            <h3 className="text-lg font-semibold text-gray-700 mb-2">Custom Dashboard Builder</h3>
+                            <p className="text-gray-500 max-w-md">
+                                Drag and drop widgets to create your own personalized analytics dashboard.
+                                Save and share templates with your team. Coming in Phase 4.
+                            </p>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+        </div>
     );
 };
 

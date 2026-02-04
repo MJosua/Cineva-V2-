@@ -173,8 +173,18 @@ route.get('/custom_functions/preview', customfunctionController.previewPage)
 // Preview specific ticket (returns raw HTML)
 route.get('/custom_functions/preview_srf/:ticketId', customfunctionController.previewSRFDocument)
 
+// ============================================
+// Card Name Generator (HR Tool)
+// ============================================
+route.get('/card_generator/search_users', decodeTokenHT, customfunctionController.searchUsersForCard)
+route.get('/card_generator/user/:userId', decodeTokenHT, customfunctionController.getUserCardData)
+route.post('/card_generator/generate', decodeTokenHT, customfunctionController.generateCard)
+route.get('/card_generator/preview/:target_user_id', decodeTokenHT, customfunctionController.previewCard);
+route.post('/card_generator/delete_card', decodeTokenHT, customfunctionController.deleteUserCard);
+
+// ============================================
+// Public Card Profile (NO AUTH - accessed via QR code)
+// ============================================
+route.get('/card/profile', customfunctionController.getCardProfile);
+
 module.exports = route
-
-
-
-

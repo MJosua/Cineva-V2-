@@ -5,7 +5,7 @@ export const dataTransformers: DataTransformerRegistry = {
   // Transform meeting room booking data
   meetingRoomBookings: (rawData: any[]) => {
     if (!Array.isArray(rawData)) return [];
-    
+
     return rawData.map((item: any) => ({
       id: item.ticket_id || item.id,
       room: item.room,
@@ -15,13 +15,14 @@ export const dataTransformers: DataTransformerRegistry = {
       attendees: Number(item.attendees || 0),
       date: item.date,
       status: item.status || 'confirmed',
+      PIC: item.PIC || item.pic || '',
     }));
   },
 
   // Transform stock/inventory data
   stockData: (rawData: any[]) => {
     if (!Array.isArray(rawData)) return [];
-    
+
     return rawData.map((item: any) => ({
       id: item.item_id || item.id,
       name: item.item_name || item.name,
@@ -39,7 +40,7 @@ export const dataTransformers: DataTransformerRegistry = {
   // Transform team workload data
   teamWorkload: (rawData: any[]) => {
     if (!Array.isArray(rawData)) return [];
-    
+
     return rawData.map((member: any) => ({
       id: member.user_id || member.id,
       name: member.user_name || member.name,
@@ -55,7 +56,7 @@ export const dataTransformers: DataTransformerRegistry = {
   // Transform user/request history data
   requestHistory: (rawData: any[]) => {
     if (!Array.isArray(rawData)) return [];
-    
+
     return rawData.map((request: any) => ({
       id: request.ticket_id || request.id,
       serviceId: request.service_id,
@@ -72,7 +73,7 @@ export const dataTransformers: DataTransformerRegistry = {
   // Transform analytics/chart data
   chartData: (rawData: any) => {
     if (!rawData) return { labels: [], datasets: [] };
-    
+
     return {
       labels: rawData.labels || [],
       datasets: rawData.datasets || [],
@@ -119,12 +120,12 @@ export const dataTransformers: DataTransformerRegistry = {
   // Transform date range data
   dateRangeData: (rawData: any, context?: any) => {
     const { currentDateRange } = context || {};
-    
+
     if (!Array.isArray(rawData)) return [];
-    
+
     return rawData.filter((item: any) => {
       if (!currentDateRange || !item.date) return true;
-      
+
       const itemDate = new Date(item.date);
       return itemDate >= currentDateRange.start && itemDate <= currentDateRange.end;
     });

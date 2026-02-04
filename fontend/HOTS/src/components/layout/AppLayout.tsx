@@ -14,7 +14,7 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from "@/components/ui/sidebar";
-import { Home, FileText, CheckSquare, List, Settings, LogOut, Monitor, Users, Search, User, Code, FileCode, HelpCircle, ChevronRight, ClipboardList, Palette, Database } from 'lucide-react';
+import { Home, FileText, CheckSquare, List, Settings, LogOut, Monitor, Users, Search, User, Code, FileCode, HelpCircle, ChevronRight, ClipboardList, Palette, Database, Briefcase, Building } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -30,6 +30,10 @@ import { API_URL } from '@/config/sourceConfig';
 import { fetchTaskCount } from '@/store/slices/ticketsSlice';
 import { fetchAssignmentCount } from '@/store/slices/assignmentSlice';
 import { TutorialManager } from '@/components/tutorial/TutorialManager';
+import { useHeader } from '@/contexts/HeaderContext';
+import { Outlet } from 'react-router-dom';
+import NotificationBell from './NotificationBell';
+import { fetchDashboardFunctions } from '@/store/slices/dashboardSlice';
 
 interface UserProfile {
   user_id: number;
@@ -40,15 +44,10 @@ interface UserProfile {
   superior_name?: string;
   role_name: string;
   department_name: string;
+  department_id?: number;
 }
 
 const adminItems = [
-  {
-    title: "Visual Studio",
-    url: "/admin/studio",
-    icon: Palette,
-    description: "Form & Workflow Builder",
-  },
   {
     title: "API Builder",
     url: "/admin/api-builder",
@@ -66,11 +65,6 @@ const adminItems = [
     icon: Users,
   },
   {
-    title: "Division Management",
-    url: "/admin/divisions",
-    icon: Monitor,
-  },
-  {
     title: "Function Logs",
     url: "/admin/function-logs",
     icon: FileCode,
@@ -79,6 +73,30 @@ const adminItems = [
     title: "System Settings",
     url: "/admin/settings",
     icon: Settings,
+  },
+];
+
+// HR Management menu items (visible to HR dept, IT dept, or Admin role)
+const hrItems = [
+  {
+    title: "Employees",
+    url: "/admin/users",
+    icon: Users,
+  },
+  {
+    title: "Teams",
+    url: "/admin/teams",
+    icon: Users,
+  },
+  {
+    title: "Departments",
+    url: "/admin/departments",
+    icon: Building,
+  },
+  {
+    title: "Job Titles",
+    url: "/admin/job-titles",
+    icon: Briefcase,
   },
 ];
 
@@ -96,18 +114,22 @@ const helpItems = [
 ];
 
 interface AppLayoutProps {
-  children: React.ReactNode;
-  searchValue?: string;
-  onSearchChange?: (value: string) => void;
-  searchPlaceholder?: string;
+  children?: React.ReactNode;
 }
-
 
 export function AppSidebar() {
   const { taskCount } = useAppSelector(state => state.tickets);
   const { assignmentCount } = useAppSelector(state => state.assignment);
   const { user } = useAppSelector(state => state.auth);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const { data: dashboardFunctions, loading: dashboardLoading } = useAppSelector(state => state.dashboard);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
+    try {
+      const cached = localStorage.getItem('user_profile_cache');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
 
@@ -118,6 +140,7 @@ export function AppSidebar() {
       title: "Dashboard",
       url: "/dashboard",
       icon: Home,
+      hidden: dashboardFunctions.length === 0
     },
     {
       title: "Service Catalog",
@@ -141,7 +164,7 @@ export function AppSidebar() {
       icon: ClipboardList,
       badge: assignmentCount
     },
-  ];
+  ].filter(item => !item.hidden);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -158,6 +181,7 @@ export function AppSidebar() {
 
       if (response.data.success) {
         setUserProfile(response.data.data);
+        localStorage.setItem('user_profile_cache', JSON.stringify(response.data.data));
       }
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
@@ -169,6 +193,7 @@ export function AppSidebar() {
       fetchUserProfile();
       dispatch(fetchTaskCount());
       dispatch(fetchAssignmentCount());
+      dispatch(fetchDashboardFunctions());
     }
   }, [user, dispatch]);
 
@@ -184,6 +209,10 @@ export function AppSidebar() {
 
   // Check if user has admin role (role === 4)
   const isAdmin = user?.role_id?.toString() === '4';
+
+  // Check if user has HR access (department 1=HR, 10=IT, or role 4=Admin)
+  const departmentId = userProfile?.department_id || user?.department_id;
+  const isHR = isAdmin || departmentId === 1 || departmentId === 10;
 
 
   useEffect(() => {
@@ -214,7 +243,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="p-0">
+      <SidebarContent className="p-0 shadow-sm">
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider px-3 py-2">
             Main Menu
@@ -277,6 +306,34 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* HR Management Section - visible to HR (dept 1), IT (dept 10), or Admin (role 4) */}
+        {isHR && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider px-3 py-2">
+              HR Management
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {hrItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild tooltip={item.title}>
+                      <Link
+                        to={item.url}
+                        className={cn(
+                          "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                          location.pathname === item.url && "bg-sidebar-accent text-sidebar-accent-foreground"
+                        )}
+                      >
+                        <item.icon className="w-5 h-5 flex-shrink-0" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
 
         {/* Only show Administration menu for users with role === 4 */}
@@ -362,16 +419,19 @@ export function AppSidebar() {
           </Button>
           <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
             <p className="text-sm font-medium text-sidebar-foreground truncate">
-              {userProfile ? `${userProfile.firstname} ${userProfile.lastname}` : 'Loading...'}
+              {userProfile
+                ? `${userProfile.firstname} ${userProfile.lastname}`
+                : (user ? `${user.firstname} ${user.lastname}` : 'User')}
             </p>
             <p className="text-xs text-sidebar-foreground/70 truncate">
-              {userProfile?.department_name || 'No Department'}
+              {userProfile?.department_name || (user?.department_id ? `Dept ${user.department_id}` : '')}
             </p>
             {userProfile?.superior_name && (
               <p className="text-xs text-sidebar-foreground/60 truncate">
                 Reports to: {userProfile.superior_name}
               </p>
             )}
+
           </div>
         </div>
         <Button
@@ -393,50 +453,66 @@ export function AppSidebar() {
   );
 }
 
-export function AppLayout({ children, searchValue, onSearchChange, searchPlaceholder = "Search..." }: AppLayoutProps) {
+export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
+  const { searchValue, setSearchValue, searchPlaceholder, isSearchVisible } = useHeader();
   const hiddenSearchRoutes = ['/', '/login', '/admin/settings', '/admin/service-catalog', '/admin/service-catalog/create', '/admin/custom-functions', '/admin/function-logs'];
-  const shouldHideSearch = hiddenSearchRoutes.includes(location.pathname);
+  const shouldHideSearch = hiddenSearchRoutes.includes(location.pathname) || !isSearchVisible;
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-screen bg-background">
+      <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
-        <SidebarInset>
+
+        <SidebarInset className="flex-1 min-w-0 w-full overflow-x-hidden">
           <header className="sticky backdrop-blur-md top-0 z-50 bg-muted/30 border-b border-border px-6 py-4 w-full" >
             <div className="flex items-center justify-between">
 
               <div className="flex items-center space-x-4">
                 <SidebarTrigger className="bg-secondary hover:bg-secondary/50" />
                 <div className="flex items-center space-x-3">
-                  <div>
-                    <h1 className="text-lg font-semibold text-primary  ">PT INDOFOOD CBP SUKSES MAKMUR</h1>
+                  {/* Web/Desktop: Show full organization name */}
+                  <div className="hidden sm:block">
+                    <h1 className="text-lg font-semibold text-primary">PT INDOFOOD CBP SUKSES MAKMUR</h1>
                     <p className="text-sm text-primary">International Operations Division</p>
+                  </div>
+
+                  {/* Mobile: Show HOTS Icon/Logo */}
+                  <div className="flex sm:hidden items-center space-x-3">
+                    <div className="w-8 h-8 bg-primary rounded flex items-center justify-center flex-shrink-0">
+                      <span className="text-primary-foreground font-bold text-[10px]">HOTS</span>
+                    </div>
+                    <div>
+                      <h1 className="text-sm font-bold text-primary leading-tight">HOTS</h1>
+                      <p className="text-[10px] text-primary/80 leading-tight">Helpdesk System</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {!shouldHideSearch && (
-                <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-4 pr-5">
+                {!shouldHideSearch && (
                   <div className="relative">
                     <Input
                       type="text"
                       placeholder={searchPlaceholder}
-                      value={searchValue || ''}
-                      onChange={(e) => onSearchChange?.(e.target.value)}
+                      value={searchValue}
+                      onChange={(e) => setSearchValue(e.target.value)}
                       className="w-64 pl-4 pr-10 py-2 bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-foreground focus-visible:ring-2 focus-visible:border-foreground"
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                       <Search className="w-5 h-5 text-muted-foreground" />
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+
+                <NotificationBell />
+              </div>
             </div>
           </header>
-          <div className="flex-1 p-6">
+          <div className="px-4 sm:px-6 lg:px-16 py-6">
             <TutorialManager />
-            {children}
+            {children || <Outlet />}
           </div>
         </SidebarInset>
       </div>

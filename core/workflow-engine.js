@@ -290,7 +290,7 @@ class WorkflowEngine {
               ids = rows.map(r => String(r.user_id));
             } else {
               const rows = await this.dbQuery(
-                'SELECT user_id FROM m_role WHERE role = ?',
+                'SELECT user_id FROM user_role WHERE role = ?',
                 [String(val).split(':').pop()]
               );
               ids = rows.map(r => String(r.user_id));
@@ -299,7 +299,7 @@ class WorkflowEngine {
             const roleName = approver.split(':')[1];
             if (roleName) {
               const rows = await this.dbQuery(
-                'SELECT user_id FROM m_role WHERE role = ?',
+                'SELECT user_id FROM user_role WHERE role = ?',
                 [roleName]
               );
               ids = rows.map(r => String(r.user_id));

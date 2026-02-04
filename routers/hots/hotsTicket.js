@@ -2,7 +2,9 @@ const express = require('express')
 const route = express.Router();
 const { decodeTokenHT } = require('../../config/encrypts')
 
+
 const { hotsTicket } = require('../../controller');
+const engineTicket = require('../../controller/engine/engineTicket'); // Import Engine Ticket
 const { hotsPS, hotsITSupport, hotsITComment } = require('../../config/uploader');
 
 const uploadFileITSupport = hotsITSupport('it_support', 'it_support').array('file', 10);
@@ -31,27 +33,54 @@ const dynamicUploadMiddleware = (req, res, next) => {
 
 
 
-// File uploads
+// File uploads (Keep legacy for now until file handling is fully migrated)
 route.post('/upload/files/', decodeTokenHT, dynamicUploadMiddleware, hotsTicket.uploadFiles)
 route.post('/download/zip/', decodeTokenHT, hotsTicket.downloadzip)
 
-// Ticket creation
-route.post('/create/ticket/:service_id', decodeTokenHT, dynamicUploadMiddleware, hotsTicket.createTicket)
+// Ticket creation (Start using Engine)
+// route.post('/create/ticket/:service_id', decodeTokenHT, dynamicUploadMiddleware, hotsTicket.createTicket)
+route.post('/create/ticket/:service_id', decodeTokenHT, dynamicUploadMiddleware, async (req, res) => {
+    // Adapter for engine create
+    req.body.service_id = req.params.service_id;
+    req.body.creator_id = req.dataToken.user_id;
+    req.body.creator_email = req.dataToken.email;
+    // Engine expects 'form_data'. Legacy might send fields directly? 
+    // Assuming new frontend sends 'form_data' or we wrap body? 
+    // Legacy frontend often sent individual fields. If new frontend is used, it sends structured data.
+    // User said "Ticket Creatiion use the engine ticket", assuming frontend is updated or compatible.
+    return engineTicket.create(req, res);
+});
 
-// Ticket lists (GET methods with query parameter handling)
-route.get('/my_ticket', decodeTokenHT, hotsTicket.getMyTickets)
-route.get('/all_ticket', decodeTokenHT, hotsTicket.getAllTickets)
-route.get('/task_list', decodeTokenHT, hotsTicket.getTaskList)
-route.get('/task_count', decodeTokenHT, hotsTicket.getTaskCount)
+// Ticket lists (Mapped to Engine)
+route.get('/my_ticket', decodeTokenHT, (req, res) => {
+    req.query.mine = 'true';
+    return engineTicket.list(req, res);
+});
+route.get('/all_ticket', decodeTokenHT, engineTicket.list);
+route.get('/task_list', decodeTokenHT, engineTicket.myApprovals);
+route.get('/task_list_involved', decodeTokenHT, engineTicket.involvedApprovals);
+route.get('/task_count', decodeTokenHT, engineTicket.dashboard); // Dashboard returns summary including my_approvals
 
-// Ticket details
-route.get('/detail/:ticket_id', decodeTokenHT, hotsTicket.getTicketDetail)
-route.put('/detail/:ticket_id', decodeTokenHT, hotsTicket.putTicketDetail)
+// Ticket details (Mapped to Engine)
+route.get('/detail/:ticket_id', decodeTokenHT, engineTicket.detail);
+route.put('/detail/:ticket_id', decodeTokenHT, engineTicket.updateDetail);
 
-// Ticket actions (should be POST, not PUT for these operations)
-route.post('/approve/:ticket_id', decodeTokenHT, hotsTicket.approveTicket)
-route.post('/reject/:ticket_id', decodeTokenHT, hotsTicket.rejectTicket)
-route.put('/close/:ticket_id', decodeTokenHT, hotsTicket.closeTicket)
+// Ticket actions (Mapped to Engine with Adapters)
+route.post('/approve/:ticket_id', decodeTokenHT, (req, res) => {
+    req.body.ticket_id = req.params.ticket_id;
+    req.body.approver_id = req.dataToken.user_id; // Infer approver from token
+    req.body.note = req.body.comment; // Map comment to note
+    return engineTicket.approve(req, res);
+});
+
+route.post('/reject/:ticket_id', decodeTokenHT, (req, res) => {
+    req.body.ticket_id = req.params.ticket_id;
+    req.body.approver_id = req.dataToken.user_id;
+    req.body.note = req.body.rejection_remark; // Map rejection_remark to note
+    return engineTicket.reject(req, res);
+});
+
+route.put('/close/:ticket_id', decodeTokenHT, hotsTicket.closeTicket) // Keep legacy for close if engine doesn't support generic close yet
 route.put('/closeservice/:ticket_id', decodeTokenHT, hotsTicket.closeTicketservice)
 
 // Attachments
@@ -77,7 +106,8 @@ route.get('/all_tiket', decodeTokenHT, hotsTicket.getAllTiket)
 route.get('/task_list_old', decodeTokenHT, hotsTicket.getTaskList_old)
 
 route.get('/comment/:ticket_id', decodeTokenHT, hotsTicket.getTicketComment)
-route.post('/comment/:ticket_id', decodeTokenHT, uploadFileITComment, hotsTicket.setTicketComment)
+route.get('/comment/:ticket_id', decodeTokenHT, hotsTicket.getTicketComment)
+route.post('/comment/:ticket_id', decodeTokenHT, uploadFileITComment, engineTicket.addComment)
 
 
 route.get('/fullfilled_tiket_count', decodeTokenHT, hotsTicket.getFullFilledTiketCount)

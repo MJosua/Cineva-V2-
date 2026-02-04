@@ -44,7 +44,7 @@ module.exports = {
                 u.superior_id 
             FROM
                 user u
-            LEFT JOIN m_role r ON
+            LEFT JOIN user_role r ON
                 u.role_id = r.role_id 
             LEFT JOIN m_department d ON 
                 u.department_id = d.department_id
@@ -318,7 +318,7 @@ module.exports = {
         let timestamp = redColor + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         if (req.dataToken.role_id = 4) {
-            let queryGetAdmin = 'SELECT * FROM `m_role`'
+            let queryGetAdmin = 'SELECT * FROM `user_role`'
 
             dbHots.query(queryGetAdmin, (err, results) => {
                 if (err) {
@@ -587,7 +587,7 @@ module.exports = {
     
             FROM t_ticket t
             LEFT JOIN m_service s        ON s.service_id = t.service_id
-            LEFT JOIN m_ticket_status ts ON ts.status_id = t.status_id
+            LEFT JOIN m_service_status ts ON ts.status_id = t.status_id
             LEFT JOIN user u             ON u.user_id = t.created_by
     
             ORDER BY t.created_at DESC
@@ -782,7 +782,7 @@ module.exports = {
                 u.superior_id 
             FROM
                 user u
-            LEFT JOIN m_role r ON
+            LEFT JOIN user_role r ON
                 u.role_id = r.role_id 
             LEFT JOIN m_department d ON 
                 u.department_id = d.department_id

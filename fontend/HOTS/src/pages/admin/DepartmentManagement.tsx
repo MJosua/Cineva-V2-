@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { FormConfig, FormField, FormSection, RowGroup, FormItem, FormStructureItem } from '@/types/formTypes';
 import DepartmentModal from "@/components/modals/DepartmentModal";
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppSelector';
 import { fetchDepartments, fetchUsers, Department } from '@/store/slices/userManagementSlice';
@@ -145,104 +145,100 @@ const DepartmentManagement = () => {
   const avgDepartmentSize = departments.length > 0 ? Math.round(totalEmployees / departments.length) : 0;
 
   return (
-    <AppLayout
-      searchValue={searchValue}
-      onSearchChange={setSearchValue}
-      searchPlaceholder="Search departments..."
-    >
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Department Management</h1>
-            <p className="text-gray-600">Manage organizational departments</p>
-          </div>
-          <Button onClick={handleAddDepartment} className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Department
-          </Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Department Management</h1>
+          <p className="text-gray-600">Manage organizational departments</p>
         </div>
+        <Button onClick={handleAddDepartment} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="w-4 h-4 mr-2" />
+          Add Department
+        </Button>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Monitor className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Total Departments</p>
-                  <p className="text-2xl font-bold text-gray-900">{departments.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Users className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Active Departments</p>
-                  <p className="text-2xl font-bold text-gray-900">{activeDepartments}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Users className="w-5 h-5 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Total Employees</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalEmployees}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Monitor className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Avg. Department Size</p>
-                  <p className="text-2xl font-bold text-gray-900">{avgDepartmentSize}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Departments Table */}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Departments ({filteredDepartments.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center p-8">
-                <div className="text-lg">Loading departments...</div>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Monitor className="w-5 h-5 text-blue-600" />
               </div>
-            ) : (
-              <Table>
+              <div>
+                <p className="text-sm text-gray-600">Total Departments</p>
+                <p className="text-2xl font-bold text-gray-900">{departments.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Users className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Active Departments</p>
+                <p className="text-2xl font-bold text-gray-900">{activeDepartments}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Users className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Total Employees</p>
+                <p className="text-2xl font-bold text-gray-900">{totalEmployees}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Monitor className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Avg. Department Size</p>
+                <p className="text-2xl font-bold text-gray-900">{avgDepartmentSize}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Departments Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Departments ({filteredDepartments.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-lg">Loading departments...</div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table className="min-w-[800px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Department Code</TableHead>
-                    <TableHead>Department Name</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Head</TableHead>
-                    <TableHead>Employees</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="whitespace-nowrap">Department Code</TableHead>
+                    <TableHead className="whitespace-nowrap">Department Name</TableHead>
+                    <TableHead className="whitespace-nowrap">Description</TableHead>
+                    <TableHead className="whitespace-nowrap">Head</TableHead>
+                    <TableHead className="whitespace-nowrap">Employees</TableHead>
+                    <TableHead className="whitespace-nowrap">Status</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -257,7 +253,7 @@ const DepartmentManagement = () => {
                       <TableCell className="max-w-xs truncate">
                         {highlightText(department.description || '', searchValue)}
                       </TableCell>
-                      <TableCell>{highlightText(department.head_name || 'Unassigned', searchValue)}</TableCell>
+                      <TableCell>{highlightText(department.head_fullname || 'Unassigned', searchValue)}</TableCell>
                       <TableCell>{getDepartmentEmployeeCount(department.department_id)}</TableCell>
                       <TableCell>{getStatusBadge(department)}</TableCell>
                       <TableCell className="text-right">
@@ -283,47 +279,48 @@ const DepartmentManagement = () => {
                   ))}
                 </TableBody>
               </Table>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        {/* Modals */}
-        <DepartmentModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          department={selectedDepartment}
-          mode={modalMode}
-          onSave={handleSaveDepartment}
-        />
+      {/* Modals */}
+      <DepartmentModal
+        key={selectedDepartment?.department_id || 'new-dept'}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        department={selectedDepartment}
+        mode={modalMode}
+        onSave={handleSaveDepartment}
+      />
 
-        <AlertDialog open={isDeleteModalOpen} onOpenChange={handleDeleteCancel}>
-          <AlertDialogContent
+      <AlertDialog open={isDeleteModalOpen} onOpenChange={handleDeleteCancel}>
+        <AlertDialogContent
 
-            onOverlayClick={handleDeleteCancel} // custom prop passed to AlertDialogOverlay inside your AlertDialogContent
-            className="bg-white border border-gray-200 shadow-lg z-50"
-          >
-            <AlertDialogHeader>
-              <AlertDialogTitle
-                className="text-red-600"
-              >Delete Department</AlertDialogTitle>
-              <AlertDialogDescription
-                className="text-gray-600"
-              >
-                Are you sure you want to delete "{selectedDepartment?.department_name}"? This action cannot be undone and will affect all employees in this department.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter
-              className="bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg"
+          onOverlayClick={handleDeleteCancel} // custom prop passed to AlertDialogOverlay inside your AlertDialogContent
+          className="bg-white border border-gray-200 shadow-lg z-50"
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle
+              className="text-red-600"
+            >Delete Department</AlertDialogTitle>
+            <AlertDialogDescription
+              className="text-gray-600"
             >
-              <AlertDialogCancel onClick={handleDeleteCancel}>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </AppLayout>
+              Are you sure you want to delete "{selectedDepartment?.department_name}"? This action cannot be undone and will affect all employees in this department.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter
+            className="bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg"
+          >
+            <AlertDialogCancel onClick={handleDeleteCancel}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 };
 

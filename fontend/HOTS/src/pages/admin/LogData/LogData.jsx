@@ -32,22 +32,32 @@ import ReadCatalogue from "../components/ReadCatalogue";
 import { useLocation } from "react-router-dom"
 import { seasonOut, loginAction, logoutAction } from "../action/userAction";
 
-import { io } from "socket.io-client";
+// import { io } from "socket.io-client"; // Removed
 
 const ProductCatalogPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const socket = io("http://172.16.32.30:8888");
+  // const socket = io("http://172.16.32.30:8888"); // Removed hardcoded socket
   const [logs, setLogs] = useState([]);
 
   useEffect(() => {
-    socket.on("logs", (logs) => setLogs(logs)); // Load old logs
-    socket.on("new_log", (log) => setLogs((prevLogs) => [...prevLogs, log]));
+    const token = localStorage.getItem('tokek');
+    if (!token) return;
+
+    const eventSource = new EventSource(`${API_URL}/sse/logs?token=${token}`);
+
+    eventSource.addEventListener('new_log', (e) => {
+      try {
+        const parsed = JSON.parse(e.data);
+        setLogs((prevLogs) => [...prevLogs, parsed.data]);
+      } catch (err) {
+        console.error(err);
+      }
+    });
 
     return () => {
-      socket.off("logs");
-      socket.off("new_log");
+      eventSource.close();
     };
   }, []);
 
@@ -72,7 +82,7 @@ const ProductCatalogPage = () => {
       }
     }
   };
- 
+
 
   useEffect(() => {
     sessionStorage.removeItem('truckOrders');

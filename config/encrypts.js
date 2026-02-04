@@ -133,4 +133,53 @@ module.exports = {
             throw new Error("Invalid or expired HOTS token");
         }
     },
+
+    // ======================================================
+    // 🔹 Card Generator - Employee ID Encryption (AES-256-CBC)
+    // ======================================================
+    /**
+     * Encrypt employee/user ID for public profile URLs
+     * @param {number|string} userId - The user ID to encrypt
+     * @returns {string} Hex-encoded encrypted string
+     */
+    encryptEmployeeId: (userId) => {
+        const algorithm = 'aes-256-cbc';
+        // Use existing CG keys or fallback to HT keys
+        const key = Crypto.scryptSync(
+            process.env.SECURITY_HASH_KEY_CG || process.env.SECURITY_HASH_KEY_HT || 'default-key-32chars-here!!!!!',
+            'salt',
+            32
+        );
+        const iv = Crypto.randomBytes(16);
+        const cipher = Crypto.createCipheriv(algorithm, key, iv);
+        let encrypted = cipher.update(String(userId), 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        // Prepend IV to encrypted data (IV is needed for decryption)
+        return iv.toString('hex') + ':' + encrypted;
+    },
+
+    /**
+     * Decrypt employee/user ID from public profile URLs
+     * @param {string} encryptedId - The hex-encoded encrypted string
+     * @returns {string} The original user ID
+     */
+    decryptEmployeeId: (encryptedId) => {
+        try {
+            const algorithm = 'aes-256-cbc';
+            const key = Crypto.scryptSync(
+                process.env.SECURITY_HASH_KEY_CG || process.env.SECURITY_HASH_KEY_HT || 'default-key-32chars-here!!!!!',
+                'salt',
+                32
+            );
+            const parts = encryptedId.split(':');
+            const iv = Buffer.from(parts[0], 'hex');
+            const encryptedText = parts[1];
+            const decipher = Crypto.createDecipheriv(algorithm, key, iv);
+            let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+            decrypted += decipher.final('utf8');
+            return decrypted;
+        } catch (error) {
+            throw new Error("Invalid encrypted employee ID");
+        }
+    },
 };

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -10,35 +9,55 @@ import ProgressionBar from "@/components/ui/ProgressionBar";
 import TaskApprovalActions from "@/components/ui/TaskApprovalActions";
 import { highlightSearchTerm, searchInObject } from "@/utils/searchUtils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Grid, List, RefreshCw, Clock } from 'lucide-react';
+import { Grid, List, RefreshCw, Clock, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppSelector';
-import { fetchTaskList, fetchTaskCount } from '@/store/slices/ticketsSlice';
+import { fetchTaskList, fetchInvolvedTaskList, fetchTaskCount } from '@/store/slices/ticketsSlice';
 import { convertTicketToDisplayFormat, getStatusColor, getPriorityColor } from '@/utils/ticketUtils';
 import { TicketPagination } from '@/components/ui/TicketPagination';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useTheme } from '@/components/theme-provider';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import { useHeader } from '@/contexts/HeaderContext';
 
 const TaskList = () => {
-  const [searchValue, setSearchValue] = useState('');
+  const { searchValue, setSearchPlaceholder } = useHeader();
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const { user } = useAppSelector(state => state.auth);
 
   const dispatch = useAppDispatch();
-  const { taskList, taskCount } = useAppSelector((state) => state.tickets);
+  const { taskList, involvedList, taskCount } = useAppSelector((state) => state.tickets);
   const navigate = useNavigate();
 
   const { viewMode, setViewMode } = useTheme();
 
+  function formatDate(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
 
   useEffect(() => {
     dispatch(fetchTaskList(1));
+    dispatch(fetchInvolvedTaskList(1));
     dispatch(fetchTaskCount());
-  }, [dispatch]);
+    setSearchPlaceholder("Search tasks...");
+  }, [dispatch, setSearchPlaceholder]);
 
 
   const tasks = taskList?.data[0]?.service_id
-    ? taskList.data.map(convertTicketToDisplayFormat)
+    ? taskList.data.map(t => {
+      const converted = convertTicketToDisplayFormat(t);
+      return {
+        ...converted,
+        formattedDate: formatDate(converted.created) // Add for search
+      }
+    })
     : [];
 
 
@@ -97,35 +116,109 @@ const TaskList = () => {
     );
   };
 
-  // Sort: yang bisa approve muncul dulu
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
 
+
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+  const handleSort = (key: string) => {
+    setSortConfig((current) => {
+      if (current?.key === key) {
+        return current.direction === 'asc'
+          ? { key, direction: 'desc' }
+          : { key, direction: 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  // Sort logic
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    // 1. Header Sort (if active)
+    if (sortConfig) {
+      const { key, direction } = sortConfig;
+      let valA = a[key] ?? "";
+      let valB = b[key] ?? "";
+
+      if (key === 'created') {
+        valA = new Date(a.created).getTime();
+        valB = new Date(b.created).getTime();
+      }
+
+      if (valA < valB) return direction === 'asc' ? -1 : 1;
+      if (valA > valB) return direction === 'asc' ? 1 : -1;
+      return 0;
+    }
+
+    // 2. Default Business Logic Sort (if no header sort)
     if (a.status_id !== b.status_id) {
-      return a.status_id - b.status_id; // lower number first
+      return a.status_id - b.status_id;
     }
 
     const aCan = canUserApprove(a);
     const bCan = canUserApprove(b);
     return (aCan === bCan) ? 0 : aCan ? -1 : 1;
   });
-  const TableView = () => (
+
+
+
+  const SortIcon = ({ columnKey }: { columnKey: string }) => {
+    if (sortConfig?.key === columnKey) {
+      return sortConfig.direction === 'asc'
+        ? <ArrowUp className="w-4 h-4 ml-1 text-primary inline" />
+        : <ArrowDown className="w-4 h-4 ml-1 text-primary inline" />;
+    }
+    return <ArrowUpDown className="w-4 h-4 ml-1 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity inline" />;
+  };
+
+  const TableView = ({ tasks }: { tasks: any[] }) => (
     <Card className="border-border shadow-sm">
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50 border-b border-border">
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase">Ticket ID</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase">Type</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase">Requester</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase">Department</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase">Priority</TableHead>
+                <TableHead
+                  className="text-xs font-medium text-muted-foreground uppercase cursor-pointer hover:text-foreground group select-none"
+                  onClick={() => handleSort('id')}
+                >
+                  Ticket ID <SortIcon columnKey="id" />
+                </TableHead>
+                <TableHead
+                  className="text-xs font-medium text-muted-foreground uppercase cursor-pointer hover:text-foreground group select-none"
+                  onClick={() => handleSort('created')}
+                >
+                  Date <SortIcon columnKey="created" />
+                </TableHead>
+                <TableHead
+                  className="text-xs font-medium text-muted-foreground uppercase cursor-pointer hover:text-foreground group select-none"
+                  onClick={() => handleSort('type')}
+                >
+                  Type <SortIcon columnKey="type" />
+                </TableHead>
+                <TableHead
+                  className="text-xs font-medium text-muted-foreground uppercase cursor-pointer hover:text-foreground group select-none"
+                  onClick={() => handleSort('requester')}
+                >
+                  Requester <SortIcon columnKey="requester" />
+                </TableHead>
+                <TableHead
+                  className="text-xs font-medium text-muted-foreground uppercase cursor-pointer hover:text-foreground group select-none"
+                  onClick={() => handleSort('priority')}
+                >
+                  Priority <SortIcon columnKey="priority" />
+                </TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground uppercase">Progress</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase">Status</TableHead>
+                <TableHead
+                  className="text-xs font-medium text-muted-foreground uppercase cursor-pointer hover:text-foreground group select-none"
+                  onClick={() => handleSort('status')}
+                >
+                  Status <SortIcon columnKey="status" />
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedTasks.map((task, index) => {
+              {tasks.map((task, index) => {
                 const canApprove = canUserApprove(task);
 
                 return (
@@ -138,14 +231,14 @@ const TaskList = () => {
                     <TableCell className="font-medium text-primary">
                       {renderHighlightedText(task.id)}
                     </TableCell>
+                    <TableCell className="font-medium text-primary">
+                      {renderHighlightedText(formatDate(task.created))}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {renderHighlightedText(task.type)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {renderHighlightedText(task.requester)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {renderHighlightedText(task.department)}
                     </TableCell>
                     <TableCell>
                       <Badge className={`${getPriorityColor(task.priority)} border`}>
@@ -170,9 +263,9 @@ const TaskList = () => {
     </Card >
   );
 
-  const CardView = () => (
+  const CardView = ({ tasks }: { tasks: any[] }) => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {sortedTasks.map((task, index) => {
+      {tasks.map((task, index) => {
         const originalTicket = taskList.data.find(
           t => t.ticket_id.toString() === task.id
         );
@@ -250,135 +343,162 @@ const TaskList = () => {
     </div>
   );
 
+  // Process Involved Tasks
+  const involvedTasks = involvedList?.data[0]?.service_id
+    ? involvedList.data.map(t => {
+      const converted = convertTicketToDisplayFormat(t);
+      return {
+        ...converted,
+        formattedDate: formatDate(converted.created)
+      }
+    })
+    : [];
+
+  const filteredInvolvedTasks = involvedTasks.filter(task => {
+    const statusFilter = filterStatus === 'all' || task.status === filterStatus;
+    const priorityFilter = filterPriority === 'all' || task.priority === filterPriority;
+    const searchFilter = searchInObject(task, searchValue);
+
+    return statusFilter && priorityFilter && searchFilter;
+  });
+
+  const sortedInvolvedTasks = [...filteredInvolvedTasks].sort((a, b) => {
+    if (sortConfig) {
+      const { key, direction } = sortConfig;
+      let valA = a[key] ?? "";
+      let valB = b[key] ?? "";
+
+      if (key === 'created') {
+        valA = new Date(a.created).getTime();
+        valB = new Date(b.created).getTime();
+      }
+
+      if (valA < valB) return direction === 'asc' ? -1 : 1;
+      if (valA > valB) return direction === 'asc' ? 1 : -1;
+      return 0;
+    }
+    return Number(b.id) - Number(a.id);
+  });
+
+
   if (taskList.isLoading && taskList.data.length === 0) {
     return (
-      <AppLayout searchValue={searchValue} onSearchChange={setSearchValue} searchPlaceholder="Search tasks...">
-        <div className="flex items-center justify-center h-64">
-          <LoadingSpinner />
-        </div>
-      </AppLayout>
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner />
+      </div>
     );
   }
 
   return (
-    <AppLayout searchValue={searchValue} onSearchChange={setSearchValue} searchPlaceholder="Search tasks...">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-foreground">Task List</h1>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={taskList.isLoading}
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${taskList.isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <Badge variant="secondary" className="px-3 py-1 bg-primary/10 text-primary border-primary/20">
-              {taskList.totalData} Tasks
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-foreground">My Approvals</h1>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={taskList.isLoading}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${taskList.isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Badge variant="secondary" className="px-3 py-1 bg-primary/10 text-primary border-primary/20">
+            {taskList.totalData} Tasks
+          </Badge>
+          {taskCount > 0 && (
+            <Badge variant="destructive" className="px-3 py-1">
+              {taskCount} Pending Actions
             </Badge>
-            {taskCount > 0 && (
-              <Badge variant="destructive" className="px-3 py-1">
-                {taskCount} Pending Actions
-              </Badge>
-            )}
-          </div>
+          )}
         </div>
+      </div>
 
-        {/* Error display */}
-        {taskList.error && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="p-4">
-              <p className="text-red-600">{taskList.error}</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Filters and View Toggle */}
-        <Card className="border-border shadow-sm">
+      {/* Error display */}
+      {taskList.error && (
+        <Card className="border-red-200 bg-red-50">
           <CardContent className="p-4">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center space-x-2">
-                  <Label htmlFor="status-filter" className="text-muted-foreground">Status:</Label>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-40 border-input">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="Submitted">Submitted</SelectItem>
-                      <SelectItem value="Waiting Approval">In Progress</SelectItem>
-                      <SelectItem value="Approved">Approved</SelectItem>
-                      <SelectItem value="Rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <p className="text-red-600">{taskList.error}</p>
+          </CardContent>
+        </Card>
+      )}
 
-                <div className="flex items-center space-x-2">
-                  <Label htmlFor="priority-filter" className="text-muted-foreground">Priority:</Label>
-                  <Select value={filterPriority} onValueChange={setFilterPriority}>
-                    <SelectTrigger className="w-40 border-input">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Priorities</SelectItem>
-                      <SelectItem value="High">High</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="Low">Low</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+      {/* Tabs & Filters */}
+      <Tabs defaultValue="todo" className="w-full">
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-center justify-between">
+            <TabsList>
+              <TabsTrigger value="todo">Action Required ({filteredTasks.length})</TabsTrigger>
+              <TabsTrigger value="involved">Involved ({filteredInvolvedTasks.length})</TabsTrigger>
+            </TabsList>
 
-              <div className="flex items-center space-x-2">
+            {/* Filter & View Controls */}
+            <div className="flex items-center space-x-2">
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  {[...new Set([...tasks, ...involvedTasks].map(t => t.status))].filter(Boolean).map(status => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className="flex items-center border rounded-md overflow-hidden">
                 <Button
-                  variant={viewMode === 'table' ? 'default' : 'outline'}
+                  variant={viewMode === 'table' ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('table')}
-                  className="px-3"
+                  className="rounded-none h-9 px-3"
                 >
-                  <List className="w-4 h-4 mr-1" />
-                  Table
+                  <List className="w-4 h-4" />
                 </Button>
                 <Button
-                  variant={viewMode === 'card' ? 'default' : 'outline'}
+                  variant={viewMode === 'card' ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('card')}
-                  className="px-3"
+                  className="rounded-none h-9 px-3"
                 >
-                  <Grid className="w-4 h-4 mr-1" />
-                  Cards {viewMode}
+                  <Grid className="w-4 h-4" />
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Content */}
-        {viewMode === 'table' ? <TableView /> : <CardView />}
+          <TabsContent value="todo" className="mt-0">
+            {/* Content */}
+            {viewMode === 'table' ? <TableView tasks={sortedTasks} /> : <CardView tasks={sortedTasks} />}
 
-        {/* Pagination */}
-        {taskList.totalPage > 1 && (
-          <TicketPagination
-            currentPage={taskList.currentPage}
-            totalPages={taskList.totalPage}
-            totalItems={taskList.totalData}
-            onPageChange={handlePageChange}
-          />
-        )}
+            {taskList.totalPage > 1 && (
+              <TicketPagination
+                currentPage={taskList.currentPage}
+                totalPages={taskList.totalPage}
+                totalItems={taskList.totalData}
+                onPageChange={handlePageChange}
+              />
+            )}
+            {filteredTasks.length === 0 && !taskList.isLoading && (
+              <div className="p-8 text-center text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                No pending actions found.
+              </div>
+            )}
+          </TabsContent>
 
-        {filteredTasks.length === 0 && !taskList.isLoading && (
-          <Card className="border-border">
-            <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground">No tasks found matching your search criteria.</p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </AppLayout>
+          <TabsContent value="involved" className="mt-0">
+            {viewMode === 'table' ? <TableView tasks={sortedInvolvedTasks} /> : <CardView tasks={sortedInvolvedTasks} />}
+
+            {filteredInvolvedTasks.length === 0 && !involvedList.isLoading && (
+              <div className="p-8 text-center text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                No involved tickets found.
+              </div>
+            )}
+          </TabsContent>
+        </div>
+      </Tabs>
+    </div>
   );
 };
 

@@ -4,13 +4,13 @@ import { Monitor, Lightbulb, Wrench, Database, Plane, FileText, Users, CreditCar
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AppLayout } from '@/components/layout/AppLayout';
 import { searchInObject } from '@/utils/searchUtils';
 import { renderHighlightedText } from '@/utils/renderhighlight';
 import { useCatalogData } from '@/hooks/useCatalogData';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppSelector';
 import { fetchTaskCount } from '@/store/slices/ticketsSlice';
+import { useHeader } from '@/contexts/HeaderContext';
 
 
 // Icon mapping for categories
@@ -59,14 +59,14 @@ const serviceIcons: Record<string, any> = {
 };
 
 const ServiceCatalog = () => {
-  const [searchValue, setSearchValue] = useState('');
-  const navigate = useNavigate(); // Move this to the top, before any conditional returns
-
+  const { searchValue, setSearchPlaceholder } = useHeader();
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
   useEffect(() => {
     dispatch(fetchTaskCount())
-  }, [dispatch]);
+    setSearchPlaceholder("Search services...");
+  }, [dispatch, setSearchPlaceholder]);
 
   const {
     serviceCatalog,
@@ -127,50 +127,6 @@ const ServiceCatalog = () => {
 
   if (isLoading) {
     return (
-      <AppLayout searchValue={searchValue} onSearchChange={setSearchValue} searchPlaceholder="Search services...">
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Service Catalog</h1>
-              <p className="text-gray-600">Browse and request services available in HOTS</p>
-            </div>
-          </div>
-
-          <div className="space-y-8">
-            {/* Create skeleton categories */}
-            {[1, 2, 3].map((categoryIndex) => (
-              <div key={categoryIndex}>
-                <div className="flex items-center space-x-3 mb-4">
-                  <Skeleton className="w-10 h-10 rounded-lg" />
-                  <Skeleton className="h-6 w-32" />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {[1, 2, 3, 4].map((serviceIndex) => (
-                    <SkeletonCard key={serviceIndex} />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg text-red-600">Error loading catalog: {error}</div>
-        </div>
-      </AppLayout>
-    );
-  }
-
-
-  return (
-    <AppLayout searchValue={searchValue} onSearchChange={setSearchValue} searchPlaceholder="Search services...">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -180,70 +136,108 @@ const ServiceCatalog = () => {
         </div>
 
         <div className="space-y-8">
-          {serviceCategories.map((category) => (
-            <div key={category.title}>
-
-
-
+          {/* Create skeleton categories */}
+          {[1, 2, 3].map((categoryIndex) => (
+            <div key={categoryIndex}>
               <div className="flex items-center space-x-3 mb-4">
-                <div className={`p-2 rounded-lg text-white ${category.gradientcolor}`}>
-                  <category.icon className="w-6 h-6" />
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">{category.title}</h2>
+                <Skeleton className="w-10 h-10 rounded-lg" />
+                <Skeleton className="h-6 w-32" />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {category.services.map((service) => (
-
-
-
-
-                  <Card key={service.title} className="hover:shadow-md transition-shadow cursor-pointer">
-
-
-                    <CardHeader className="pb-2 relative">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className={` flex items-center justify-center w-10 h-10 rounded-xl ${service.gradientcolor} shadow-md `}>
-                            <service.icon className="w-5 h-5 text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <CardTitle className="text-sm font-semibold text-gray-900 line-clamp-1 leading-snug">
-                              {renderHighlightedText(service.title, searchValue)}
-                            </CardTitle>
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-
-
-
-                    <CardContent className="pt-2 pb-4 relative">
-
-                      <div className="py-4 text-center">
-                        <p className="text-sm text-gray-500 mb-2">
-                          {service.description || 'Click to open this dashboard'}
-                        </p>
-                      </div>
-
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => navigate(`/service-catalog${service.url}`)}
-                      >
-                        Request Service
-                      </Button>
-                    </CardContent>
-                  </Card>
+                {[1, 2, 3, 4].map((serviceIndex) => (
+                  <SkeletonCard key={serviceIndex} />
                 ))}
               </div>
             </div>
           ))}
         </div>
       </div>
-    </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-red-600">Error loading catalog: {error}</div>
+      </div>
+    );
+  }
+
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Service Catalog</h1>
+          <p className="text-gray-600">Browse and request services available in HOTS</p>
+        </div>
+      </div>
+
+      <div className="space-y-8">
+        {serviceCategories.map((category) => (
+          <div key={category.title}>
+
+
+
+            <div className="flex items-center space-x-3 mb-4">
+              <div className={`p-2 rounded-lg text-white ${category.gradientcolor}`}>
+                <category.icon className="w-6 h-6" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900">{category.title}</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {category.services.map((service) => (
+
+
+
+
+                <Card key={service.title} className="hover:shadow-md transition-shadow cursor-pointer">
+
+
+                  <CardHeader className="pb-2 relative">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={` flex items-center justify-center w-10 h-10 rounded-xl ${service.gradientcolor} shadow-md `}>
+                          <service.icon className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-sm font-semibold text-gray-900 line-clamp-1 leading-snug">
+                            {renderHighlightedText(service.title, searchValue)}
+                          </CardTitle>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+
+
+                  <CardContent className="pt-2 pb-4 relative">
+
+                    <div className="py-4 text-center">
+                      <p className="text-sm text-gray-500 mb-2">
+                        {service.description || 'Click to open this dashboard'}
+                      </p>
+                    </div>
+
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => navigate(`/service-catalog${service.url}`)}
+                    >
+                      Request Service
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
 

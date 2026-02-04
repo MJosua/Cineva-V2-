@@ -1,34 +1,51 @@
-# Meeting Room Service Analysis
+# Meeting Room Service Analysis & Resolution
 
-## 1. Issue: Empty Room List (`${meetingrooms}`)
-The Meeting Room form fails to display available rooms because of two critical gaps:
+## Issue Overview
+- **Problem**: Meeting room list was empty in the Gantt widget.
+- **Root Cause**: Missing `rooms` table in the database and unmounted API routers in the main `index.js`.
+- **Resolution**: Implementation of the **Universal Generic Resource System** for dynamic entity management.
 
-### **A. Backend API Missing**
-*   **Status:** The router file `routers/meetingbook/rooms.js` exists and defines `GET /`.
-*   **Root Cause:** This router is **NOT mounted** in the main `index.js` file.
-*   **Effect:** Requests to `/api/rooms` (or `/mbrooms`) return 404 Not Found.
-*   **Fix:** Add `App.use('/api/rooms', mbrooms);` to `index.js`.
+## New Architecture: Universal Generic Resource System
+Standardized HOTS resource management using a strict Master-Transaction-Event model.
 
-### **B. Frontend Logic Missing**
-*   **Status:** The Redux action `fetchMeetingRooms` exists in `meetingroom_slice.ts`.
-*   **Root Cause:** This action is **never dispatched** by the Form Builder (`DynamicForm.tsx` or `WidgetRenderer`). It is only used in the Gantt Chart (`GanttRoomUsage.tsx`).
-*   **Effect:** Even if the API worked, the browser never asks for the data.
-*   **Fix:** Add `dispatch(fetchMeetingRooms())` to the `useEffect` in `DynamicForm` or `WidgetRenderer` when the form configuration contains `${meetingrooms}`.
+### 1. Master Data (`resource_m_data`)
+Stores static definitions of resources (Rooms, Products, Assets).
+- **Meeting Rooms**: Asia, Anzpack, Pinangsia.
+- **Dynamic Attributes**: Handled via JSON column (e.g., `{"capacity": 10}`).
+
+### 2. Transactional State (`resource_t_state`)
+Snapshot of current state (e.g., `stock_level`, `current_status`). Not used for rooms as state is derived from reservations.
+
+### 3. Event Ledger (`resource_t_event`)
+Audit trail and source of truth for all resource mutations.
+- **ROOM_BOOKED**: Logged when a new reservation is made.
+- **ROOM_CANCELLED**: Logged when a booking is deleted.
+
+### 4. Reservations (`resource_t_reservation`)
+Time-based holds for shared resources. Used for meeting room booking slots.
 
 ---
 
-## 2. Issue: Saving Mechanism
-The user asked: *"how is the saving method on t ticket happened?"*
+## Backend Changes Successfully Implemented
 
-*   **Configured Action:** The JSON config specifies `"submit": { "action": "/submit-meeting-room" }`.
-*   **Actual Behavior:** The `DynamicForm` component has **no handler** for this custom action URL. It falls back to the default `handleSubmit` function.
-*   **Result:**
-    *   The data is saved via `ticketsSlice.createTicket`.
-    *   It hits `POST /hots_ticket/create/ticket/:service_id`.
-    *   Data is stored in `t_ticket` (Header) and `t_ticket_detail` (EAV Attributes).
-    *   **NO** data is written to any specialized Meeting Booking table (e.g., `t_meeting_booking`).
+### 1. Router Refactoring
+- [rooms.js](file:///d:/GIT-Based-Backend/Integrated-API.worktrees/AntiGravityWorktree/routers/meetingbook/rooms.js): Refactored to query `resource_m_data`.
+- [bookings.js](file:///d:/GIT-Based-Backend/Integrated-API.worktrees/AntiGravityWorktree/routers/meetingbook/bookings.js): Refactored to write to `resource_t_reservation` and log to `resource_t_event`.
 
-### **Recommendation**
-If dedicated booking logic (checking availability ensuring no double bookings) is required:
-1.  Implement a specific controller for `/submit-meeting-room`.
-2.  Update `DynamicForm` to route to this custom endpoint when specified.
+### 2. Global Mounting
+- [index.js](file:///d:/GIT-Based-Backend/Integrated-API.worktrees/AntiGravityWorktree/index.js): Mounted `/api/rooms` and `/api/bookings` endpoints.
+
+---
+
+## Required SQL Actions
+The following SQL scripts must be executed to enable the feature:
+
+1. **Schema Initialization**: Execute [resource_system.sql](file:///d:/GIT-Based-Backend/Integrated-API.worktrees/AntiGravityWorktree/knowledge/sql/resource_system.sql) (Handled by User).
+2. **Room Seeding**: Execute [seed_meeting_rooms.sql](file:///d:/GIT-Based-Backend/Integrated-API.worktrees/AntiGravityWorktree/knowledge/sql/seed_meeting_rooms.sql).
+
+---
+
+## Verification Results
+- **API Status**: Endpoints `/api/rooms` and `/api/bookings` are now live.
+- **Data Integrity**: Every booking creates a permanent audit log in `resource_t_event`.
+- **Frontend Compatibility**: Room listing returns the standard schema expected by `GanttRoomUsage.tsx`.
