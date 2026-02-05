@@ -9,7 +9,7 @@ import {
 } from "@chakra-ui/react"
 import { CiLocationOn } from 'react-icons/ci'
 
-import DeliverToComponent from "../../../components/order/DeliverToComponent.jsx";
+import DeliverToComponent from "../../orders/components/DeliverToComponent.jsx";
 
 import {
     useSelector, useDispatch

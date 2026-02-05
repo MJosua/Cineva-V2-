@@ -1,8 +1,8 @@
 ﻿import React, { useState, useEffect } from 'react';
 
-import AddMoreTruckHeader from '../../../../components/order/AddMoreTruck/AddMoreTruckHeader';
-import AddMoreTruckBody from '../../../../components/order/AddMoreTruck/AddMoreTruckBody';
-import AddmoreTruckFooter from '../../../../components/order/AddMoreTruck/AddMoreTruckFooter';
+import AddMoreTruckHeader from '../../components/AddMoreTruck/AddMoreTruckHeader';
+import AddMoreTruckBody from '../../components/AddMoreTruck/AddMoreTruckBody';
+import AddmoreTruckFooter from '../../components/AddMoreTruck/AddMoreTruckFooter';
 
 import { useNavigate } from 'react-router-dom';
 import { Tooltip, Spinner, useToast } from '@chakra-ui/react';
@@ -12,7 +12,7 @@ import Axios from 'axios';
 import { API_URL } from '../../../../config';
 import { seasonOut, loginAction, logoutAction } from "../../../../action/userAction";
 import { useDispatch, useSelector } from 'react-redux';
-import { useData } from '../../../../components/auth/CheckToken/FetchData/DataContext';
+import { useData } from '../../../auth/components/CheckToken/FetchData/DataContext';
 
 
 function AddMoreTruck({ mode }) {
@@ -48,9 +48,9 @@ function AddMoreTruck({ mode }) {
         notify_to_1: "",
         notify_to_2: "",
         bill_to: company_id,
+        cont_qty: "1",
         detail_id: "1",
         shipToParty: shipToParties[0]?.keyy ? shipToParties[0]?.keyy : "",
-        po_url: '',
         flavors: [{
             sku: '',
             qty: 0
@@ -60,7 +60,7 @@ function AddMoreTruck({ mode }) {
 
     const [truckOrders, setTruckOrders] = useState(() => {
         const storedOrders = sessionStorage.getItem('truckOrders');
-        return storedOrders || storedOrders === ([]) ? JSON.parse(storedOrders) : initialOrders;
+        return storedOrders && storedOrders !== "[]" ? JSON.parse(storedOrders) : initialOrders;
     });
 
     useEffect(() => {

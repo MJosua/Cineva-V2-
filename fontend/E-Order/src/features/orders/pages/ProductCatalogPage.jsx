@@ -22,7 +22,7 @@ import ControlBar from "../../../components/layout/ControlBar.jsx";
 import { clearSeasonStorage } from "../../../action/cartAction";
 
 import { seasonOut, logoutAction, loginAction } from "../../../action/userAction";
-import { useData } from "../../../components/auth/CheckToken/FetchData/DataContext";
+import { useData } from "../../auth/components/CheckToken/FetchData/DataContext";
 
 const ProductCatalogPage = () => {
   const { flavours, ports, shipToParties, container } = useData();
@@ -362,7 +362,7 @@ const ProductCatalogPage = () => {
                                               {
                                                 val.cont40hc && val.qty_per_pallet
                                                   ?
-                                                  (val.qty_per_pallet * 20 ).toLocaleString() + " cartons"
+                                                  (val.qty_per_pallet * 20).toLocaleString() + " cartons"
                                                   :
                                                   ""
                                               }

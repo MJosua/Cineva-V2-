@@ -420,7 +420,7 @@ SELECT DISTINCT
 
                     const getWeekLimit = (await dbQuery(`
                     SELECT value
-                    FROM m_config_new
+                    FROM special_t_condition
                     WHERE conditions = 9
                       AND company_id = ${company_id}
                       AND active = 1
@@ -428,7 +428,7 @@ SELECT DISTINCT
 
                     const getWeekBlock = await dbQuery(`
                     SELECT value
-                    FROM m_config_new
+                    FROM special_t_condition
                     WHERE conditions = 21
                       AND (company_id = ${company_id} OR company_id = 100)
                       AND active = 1

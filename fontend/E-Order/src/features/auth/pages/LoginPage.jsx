@@ -5,7 +5,7 @@ import Header from "../../../components/layout/header.jsx";
 import {
     // loginAction,
     loginMiddleware
-} from "../../../action/userAction"
+} from "../state/userAction"
 import {
     useDispatch
     //, useSelector 
@@ -413,7 +413,7 @@ const LoginPage = () => {
                             <div className="card border_radius_10px h-50 bg-white pb-5 ">
                                 <div className="px-5 py-5 fs-1 fw-bold " >
                                     <div className="col-12">
-                                        The server is currently under update 
+                                        The server is currently under update
                                         <br></br>
                                         <span className="fs-3 ">the progress is nearly finish, please wait</span>
                                     </div>
@@ -533,7 +533,7 @@ const LoginPage = () => {
     )
 }
 
-export default LoginPage; 
+export default LoginPage;
 
 
 

@@ -21,7 +21,7 @@ import {
     Image
 
 } from '@chakra-ui/react';
-import { useData } from "../auth/CheckToken/FetchData/DataContext";
+import { useData } from "../../features/auth/components/CheckToken/FetchData/DataContext";
 
 const BannerComponentGlobal = () => {
     //require props. turn it on when ready

@@ -417,8 +417,8 @@ WHERE
         mc.condition_name,
         mc.description	
       FROM
-        m_config_new mconf
-      LEFT JOIN mst_condition mc ON
+        special_t_condition mconf
+      LEFT JOIN special_m_condition mc ON
         mconf.conditions = mc.id
       LEFT JOIN mst_company mc2 ON 
         mconf.company_id = mc2.company_id  
@@ -465,7 +465,7 @@ WHERE
 
       let { company_id, user_id, conditions, value } = req.body
 
-      let query = `INSERT INTO m_config_new
+      let query = `INSERT INTO special_t_condition
       (company_id, user_id, conditions, value, active)
       VALUES
       (${company_id},${user_id}, ${conditions}, '${value}', 1)`;
@@ -517,7 +517,7 @@ WHERE
 
       let query = `
       UPDATE 
-        m_config_new 
+        special_t_condition 
       SET 
         conditions = ${conditions},
         value = '${value}',
@@ -567,7 +567,7 @@ WHERE
 
     if (req.dataToken.type_id = 9) {
 
-      let query = ` DELETE FROM m_config_new WHERE id = ${config_id} `
+      let query = ` DELETE FROM special_t_condition WHERE id = ${config_id} `
 
       dbConf.query(query, (err, results) => {
 
@@ -600,108 +600,7 @@ WHERE
       console.log(timestamp + "!!!_Unauthorized_!!! Admin Get Config by : " + req.dataToken.uid + 'success')
     }
   }
-  , editConfigUser_id: async (req, res) => {
 
-    let date = new Date();
-    let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-
-    let {
-      max_sku,
-      pallet,
-      user_id,
-    } = req.body
-
-    if (req.dataToken.type_id = 9) {
-
-      let query = `UPDATE m_config 
-      SET 
-      max_sku = ${max_sku},
-      pallet = ${pallet}
-      WHERE user_id = ${user_id} ; `
-
-      dbConf.query(query, (err, results) => {
-
-        if (err) {
-          res.status(500).send({
-            message: 'Terjadi kesalahan, tapi bukan salah kamu :(',
-            success: false,
-            results
-          });
-          console.log(timestamp + " XXXX FAILURE edit Get Config by : " + req.dataToken.uid + 'fail:' + err)
-
-        } else {
-          //success
-          res.status(200).send({
-            message: 'berhasil get data status',
-            success: true,
-            results
-          });
-
-          console.log(timestamp + "Admin edit Config by : " + req.dataToken.uid + 'success')
-        }
-      }
-      )
-    } else {
-
-      res.status(401).send({
-        message: 'Unauthorized',
-        success: false,
-        results
-      });
-      console.log(timestamp + "!!!_Unauthorized_!!! Admin Get Config by : " + req.dataToken.uid + 'success')
-    }
-  }
-  , editConfigCompany_id: async (req, res) => {
-
-    let date = new Date();
-    let timestamp = blue + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-
-    let {
-      max_sku,
-      pallet,
-      company_id,
-    } = req.body
-
-    if (req.dataToken.type_id = 9) {
-
-      let query = `UPDATE m_config 
-      SET 
-      max_sku = ${max_sku},
-      pallet = ${pallet}
-      WHERE company_id = ${company_id} ; `
-
-      dbConf.query(query, (err, results) => {
-
-        if (err) {
-          res.status(500).send({
-            message: 'Terjadi kesalahan, tapi bukan salah kamu :(',
-            success: false,
-            results
-          });
-          console.log(timestamp + " XXXX FAILURE edit Get Config by : " + req.dataToken.uid + 'fail:' + err)
-
-        } else {
-          //success
-          res.status(200).send({
-            message: 'berhasil get data status',
-            success: true,
-            results
-          });
-
-          console.log(timestamp + "Admin edit Config by : " + req.dataToken.uid + 'success')
-        }
-      }
-      )
-    } else {
-
-      res.status(401).send({
-        message: 'Unauthorized',
-        success: false,
-        results
-      });
-      console.log(timestamp + "!!!_Unauthorized_!!! Admin Get Config by : " + req.dataToken.uid + 'success')
-    }
-  }
   , addBanner: async (req, res) => {
 
     let date = new Date();
@@ -1067,7 +966,7 @@ WHERE
 
       dbConf.query(
         `
-        SELECT * FROM mst_condition mc2 ; 
+        SELECT * FROM special_m_condition mc2 ; 
         `
         , (err, results) => {
 
@@ -1292,7 +1191,7 @@ WHERE
 
 
     UPDATE 
-        m_config_new 
+        special_t_condition 
     SET 
         conditions = 11,
         value = ${value},

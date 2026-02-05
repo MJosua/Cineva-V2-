@@ -1,2 +1,2 @@
-﻿export * from '../state/actions/userAction';
+﻿export * from '../features/auth/state/userAction';
 

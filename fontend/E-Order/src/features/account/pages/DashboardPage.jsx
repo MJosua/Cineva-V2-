@@ -17,10 +17,10 @@ import { API_URL } from "../../../config";
 import { useSelector, useDispatch } from "react-redux";
 
 import BannerComponentGlobal from "../../../components/landing/BannerComponentGlobal.jsx";
-import LastTransactionComponent from "../../../components/order/LastTransactionComponent.jsx";
-import OngoingTransactionComponent from "../../../components/order/OngoingTransactionComponent.jsx";
+import LastTransactionComponent from '../../orders/components/LastTransactionComponent.jsx';
+import OngoingTransactionComponent from "../../orders/components/OngoingTransactionComponent.jsx";
 import ControlBar from "../../../components/layout/ControlBar.jsx";
-import DeliverToComponent from "../../../components/order/DeliverToComponent.jsx";
+import DeliverToComponent from "../../orders/components/DeliverToComponent.jsx";
 
 import Sidebar from "../../../components/layout/Sidebar.jsx";
 
@@ -56,7 +56,7 @@ const ProductCatalogPage = () => {
       }
     }
   };
-  
+
 
   useEffect(() => {
     sessionStorage.removeItem('truckOrders');

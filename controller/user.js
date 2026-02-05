@@ -129,8 +129,8 @@ module.exports = {
                 let checkCondition = (await dbQuery(`
                     SELECT
 						COALESCE(mconf.conditions , 0 ) cond
-					FROM
-						m_config_new mconf
+						FROM
+							special_t_condition mconf
 					WHERE
 						mconf.company_id = ${company_id}
 					AND active = 1;`))
@@ -310,7 +310,7 @@ module.exports = {
 
 
                 let checkbtpspecialconditionhidebtp = `
-                SELECT active FROM m_config_new mspc 
+                SELECT active FROM special_t_condition mspc 
                 WHERE company_id = ${company_id}
                 and
                 conditions = 14
@@ -319,7 +319,7 @@ module.exports = {
             `;
 
                 let checkbtpspecialconditionhidentp = `
-                SELECT value FROM m_config_new mspc 
+                SELECT value FROM special_t_condition mspc 
                 WHERE company_id = ${company_id}
                 and
                 conditions = 18
@@ -519,11 +519,11 @@ module.exports = {
                 LEFT JOIN mst_employee me ON
                     mc.company_id = me.company_id
                     AND me.company_id = 100
-                LEFT JOIN m_config_new conf_top_desc ON
+                LEFT JOIN special_t_condition conf_top_desc ON
                     su.company_id = conf_top_desc.company_id
                     AND conf_top_desc.conditions = 3
                     AND conf_top_desc.active = 1
-                LEFT JOIN m_config_new conf_due_days ON
+                LEFT JOIN special_t_condition conf_due_days ON
                     su.company_id = conf_due_days.company_id
                     AND conf_due_days.conditions = 5
                     AND conf_due_days.active = 1

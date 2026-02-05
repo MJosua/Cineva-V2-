@@ -22,8 +22,8 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "../../../../components/layout/Sidebar.jsx";
 import { seasonOut, loginAction, logoutAction } from "../../../../action/userAction";
-import AddMoreTruckSummary from "../../../../components/order/AddMoreTruck/AddMoreTruckSummary";
-import { useData } from "../../../../components/auth/CheckToken/FetchData/DataContext";
+import AddMoreTruckSummary from "../../components/AddMoreTruck/AddMoreTruckSummary";
+import { useData } from "../../../auth/components/CheckToken/FetchData/DataContext";
 
 function CartTruckOrderConfirmation() {
 

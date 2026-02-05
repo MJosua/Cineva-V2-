@@ -1236,7 +1236,7 @@ module.exports = {
 
         let order_id = req.params.order_id
         //untuk menghilangkan week tertentu.
-        let getBlockingCompany = (await dbQuery(`select company_id from m_config_new mcn where conditions = 12;`));
+        let getBlockingCompany = (await dbQuery(`select company_id from special_t_condition mcn where conditions = 12;`));
         // Error prevention: Check if getBlockingCompany is not empty and has the value you expect
         let blockingSoIdCompany = getBlockingCompany.length
             ? getBlockingCompany.map(row => row.company_id).join(', ')
@@ -1374,7 +1374,7 @@ WHERE
 
         let order_id = req.params.order_id
         //untuk menghilangkan week tertentu.
-        let getBlockingCompany = (await dbQuery(`select company_id from m_config_new mcn where conditions = 12;`));
+        let getBlockingCompany = (await dbQuery(`select company_id from special_t_condition mcn where conditions = 12;`));
         // Error prevention: Check if getBlockingCompany is not empty and has the value you expect
         let blockingSoIdCompany = getBlockingCompany.length
             ? getBlockingCompany.map(row => row.company_id).join(', ')
@@ -1461,7 +1461,7 @@ WHERE
 
         console.log("order_id", order_id)
         //untuk menghilangkan week tertentu.
-        let getBlockingCompany = (await dbQuery(`select company_id from m_config_new mcn where conditions = 12;`))[0];
+        let getBlockingCompany = (await dbQuery(`select company_id from special_t_condition mcn where conditions = 12;`))[0];
 
         // Error prevention: Check if getBlockingCompany is not empty and has the value you expect
         let blockingSoIdCompany = getBlockingCompany && getBlockingCompany.company_id ? getBlockingCompany.company_id : 0;
@@ -1658,7 +1658,7 @@ WHERE
                         mo.order_id = so.e_order
                         and 
                         so.cancel = 0
-                    left join m_config_new msc on
+                    left join special_t_condition msc on
                         msc.company_id = det.company_id
                     WHERE
                         det.order_id = ?`
@@ -1719,7 +1719,7 @@ WHERE
 
             // untuk PO Buyer KHUSUS PCL
             let number = await dbQuery(`SELECT company_number  FROM mst_company mc WHERE company_id = ${company_id}`)
-            let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) container FROM m_config_new mcn WHERE mcn.conditions = 8 AND mcn.company_id = ${company_id}`)
+            let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) container FROM special_t_condition mcn WHERE mcn.conditions = 8 AND mcn.company_id = ${company_id}`)
             let checkNumber = number[0] ? number[0].company_number : ''
             let checkCondition = specialCondition[0] ? specialCondition[0].container : ''
             let po_buyer_pcl = checkCondition == 8 && checkNumber ? 'ND/' + checkNumber + '/' + po_buyer : ''
@@ -1942,7 +1942,7 @@ WHERE
             // ===============================
             const getWeekLimit = (await dbQuery(`
             SELECT value 
-            FROM m_config_new 
+            FROM special_t_condition 
             WHERE conditions = 9
               AND company_id = ${company_id}
               AND active = 1
@@ -1951,7 +1951,7 @@ WHERE
 
             const getWeekBlock = await dbQuery(`
             SELECT value 
-            FROM m_config_new
+            FROM special_t_condition
             WHERE conditions = 21
               AND (company_id = ${company_id} OR company_id = 100)
               AND active = 1
@@ -2233,7 +2233,7 @@ WHERE
                     let notify_to_2 = order_data.notify_to_2 ? order_data.notify_to_2 : null;
                     let bill_to = order_data.bill_to ? order_data.bill_to : null;
 
-                    let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) container FROM m_config_new mcn WHERE mcn.conditions = 8 AND mcn.company_id = ${company_id}`);
+                    let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) container FROM special_t_condition mcn WHERE mcn.conditions = 8 AND mcn.company_id = ${company_id}`);
                     let number = await dbQuery(`SELECT company_number  FROM mst_company mc WHERE company_id = ${company_id}`);
                     // let selectWeek = order_data.stuffing_date ? await (dbQuery(`CALL day2week(${order_data.stuffing_date}, @wikwik);`)) : delv_week;
 
@@ -2521,7 +2521,7 @@ WHERE
 
 
         let order_id = req.params.order_id
-        let getBlockingCompany = (await dbQuery(`select company_id from m_config_new mcn where conditions = 12;`))[0];
+        let getBlockingCompany = (await dbQuery(`select company_id from special_t_condition mcn where conditions = 12;`))[0];
 
         let blockingSoIdCompany = getBlockingCompany && getBlockingCompany.company_id ? getBlockingCompany.company_id : 0;
 

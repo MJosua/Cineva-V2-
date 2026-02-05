@@ -34,7 +34,7 @@ import Information from "./confirmation/Information";
 import Header from "./confirmation/Header";
 import Detail from "./confirmation/Detail";
 import Remarks from "./confirmation/Remarks";
-import { useData } from "../../../../components/auth/CheckToken/FetchData/DataContext";
+import { useData } from "../../../auth/components/CheckToken/FetchData/DataContext";
 
 const ContainerOrderConfirmationPage = ({ edit = false }) => {
 

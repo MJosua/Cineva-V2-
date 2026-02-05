@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Axios from "axios";
 
- 
+
 
 import { clearSeasonStorage } from "../../../action/cartAction";
 import { seasonOut, logoutAction, loginAction } from "../../../action/userAction";
@@ -33,7 +33,7 @@ const FAQPage = () => {
     const dispatch = useDispatch();
     let userToken = localStorage.getItem("tokek");
     const location = useLocation();
-    
+
 
     const navigate = useNavigate();
 
@@ -78,12 +78,12 @@ const FAQPage = () => {
         description: `Page of ${location.pathname} from Indofood`,
         canonical: `https://www.indofoodinternational.com/e-order${location.pathname}`,
         meta: {
-          charset: 'utf-8',
-          name: {
-            keywords: 'react,meta,document,html,tags'
-          }
+            charset: 'utf-8',
+            name: {
+                keywords: 'react,meta,document,html,tags'
+            }
         }
-      };
+    };
     return (
         <div>
             {/* navbar */}
@@ -93,7 +93,7 @@ const FAQPage = () => {
                     <div className="row">
                         <div className="col-6 col-sm-12"></div>
                         <div className="col-6 col-sm-12">
-                              <Sidebar />
+                            <Sidebar />
                         </div>
                     </div>
                 </div>
@@ -398,7 +398,7 @@ const FAQPage = () => {
                                                 <AccordionPanel pb={4} className="text-start">
                                                     If your order has not arrived within the estimated delivery time, there are a few things you can do:
                                                     <br></br>
-                                                    1.	Check the tracking information for your order on the Transaction <b> List menu </b> > <b>Transaction Detail</b>. This will show you the current status of your order and where it is located.
+                                                    1.	Check the tracking information for your order on the Transaction <b> List menu </b> &gt; <b>Transaction Detail</b>. This will show you the current status of your order and where it is located.
                                                     <br></br>
                                                     2.	Contact our sales team at your region, they will provide you with more information about the status of your order or help you to resolve the issue.
 
@@ -485,7 +485,7 @@ const FAQPage = () => {
                                                     </AccordionButton>
                                                 </h2>
                                                 <AccordionPanel pb={4} className="text-start">
-                                                    You can reach our customer support team through the <b>Help menu</b> > <b>Contact Us</b>. You can fill out the form if you have any questions or concerns.
+                                                    You can reach our customer support team through the <b>Help menu</b> &gt; <b>Contact Us</b>. You can fill out the form if you have any questions or concerns.
                                                 </AccordionPanel>
                                             </AccordionItem>
 

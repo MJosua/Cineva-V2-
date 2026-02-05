@@ -900,7 +900,7 @@ WHERE
 
             // untuk PO Buyer KHUSUS PCL
             let number = await dbQuery(`SELECT company_number  FROM mst_company mc WHERE company_id = ${company_id}`)
-            let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) container FROM m_config_new mcn WHERE mcn.conditions = 8 AND mcn.company_id = ${company_id}`)
+            let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) container FROM special_t_condition mcn WHERE mcn.conditions = 8 AND mcn.company_id = ${company_id}`)
             let checkNumber = number[0] ? number[0].company_number : ''
             let checkCondition = specialCondition[0] ? specialCondition[0].container : ''
             let po_buyer_pcl = checkCondition == 8 && checkNumber ? 'ND/' + checkNumber + '/' + po_buyer : ''
@@ -1097,7 +1097,7 @@ WHERE
 
         if (req.dataToken.company_id) {
 
-            let getWeekLimit = (await dbQuery(`SELECT mcn.value FROM m_config_new mcn WHERE mcn.conditions = 9 AND mcn.company_id = ${req.dataToken.company_id}  AND mcn.active = 1;`))[0]
+            let getWeekLimit = (await dbQuery(`SELECT mcn.value FROM special_t_condition mcn WHERE mcn.conditions = 9 AND mcn.company_id = ${req.dataToken.company_id}  AND mcn.active = 1;`))[0]
 
             //cuma 13 data week yang ditampilin untuk default.
             let weekLimit = getWeekLimit ? getWeekLimit.value : 13
@@ -3759,7 +3759,7 @@ WHERE
 
                     let stuffing_date_rev = order_data.stuffing_date ? order_data.stuffing_date : formattedDate;
                     let final_dest_check = order_data.final_dest ? order_data.final_dest : '-';
-                    let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) container FROM m_config_new mcn WHERE mcn.conditions = 8 AND mcn.company_id = ${company_id}`);
+                    let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) container FROM special_t_condition mcn WHERE mcn.conditions = 8 AND mcn.company_id = ${company_id}`);
                     let number = await dbQuery(`SELECT company_number  FROM mst_company mc WHERE company_id = ${company_id}`);
                     // let selectWeek = order_data.stuffing_date ? await (dbQuery(`CALL day2week(${order_data.stuffing_date}, @wikwik);`)) : delv_week;
 

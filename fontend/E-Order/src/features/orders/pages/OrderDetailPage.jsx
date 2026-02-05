@@ -55,15 +55,11 @@ import { useSelector } from 'react-redux';
 
 import { seasonOut } from '../../../action/userAction'
 
-import ContainerTracking from '../../admin/pages/tracking/ContainerTracking';
-import { FaFile } from 'react-icons/fa6';
-import PdfViewer from '../../../components/media/PDFViewer/PdfViewer';
-import ExcelPreview from '../../../components/media/ExcelViewer/ExcelViewer';
-import IndofoodPO from './IndofoodPO/IndofoodPO';
-import { useData } from '../../../components/auth/CheckToken/FetchData/DataContext';
-
-
-
+import PdfViewer from "../../../components/media/PDFViewer/PdfViewer.jsx";
+import ExcelViewer from "../../../components/media/ExcelViewer/ExcelViewer.jsx";
+import IndofoodPO from "./IndofoodPO/IndofoodPO.jsx";
+import { FaFile } from "react-icons/fa";
+import { useData } from "../../auth/components/CheckToken/FetchData/DataContext";
 
 const OrderDetailPage = () => {
     const location = useLocation();
@@ -112,6 +108,25 @@ const OrderDetailPage = () => {
     let userToken = (localStorage.getItem('tokek'));
 
     // get order header
+    const [poFile, setPoFile] = useState('');
+    const [fileUrl, setFileUrl] = useState('');
+    const [isPdf, setIsPdf] = useState(false);
+    const [isImage, setIsImage] = useState(false);
+    const [isExcel, setIsExcel] = useState(false);
+    const [orderHeader, setOrderHeader] = useState([])
+
+    useEffect(() => {
+        if (orderHeader.length > 0) {
+            const url = orderHeader[0].po_url || "";
+            setPoFile(url);
+            setFileUrl(API_URL + url);
+
+            const lowerUrl = url.toLowerCase();
+            setIsPdf(lowerUrl.endsWith('.pdf'));
+            setIsImage(/\.(png|jpe?g|gif)$/.test(lowerUrl));
+            setIsExcel(lowerUrl.endsWith('.xlsx') || lowerUrl.endsWith('.xls'));
+        }
+    }, [orderHeader]);
     const [deliveryOrderDetail, setDeliveryOrderDetail] = useState([])
     const getDeliveryOrderDetail = () => {
         Axios.get(API_URL + `/order/get_order_real/${order_id_by_params}`, {
@@ -140,7 +155,7 @@ const OrderDetailPage = () => {
     });
 
 
-    const [orderHeader, setOrderHeader] = useState([])
+
 
     const getOrderHeader = () => {
         Axios.get(API_URL + `/order/get_header_special/${order_id_by_params}`, {
@@ -636,7 +651,7 @@ const OrderDetailPage = () => {
                                                     </>
                                                 )}
                                                 {isExcel && (
-                                                    <ExcelPreview fileUrl={fileUrl} />
+                                                    <ExcelViewer url={poFile} />
                                                 )}
                                                 {!isPdf && !isImage && !isExcel && (
                                                     <p>Unsupported file format, only image (.jpg), pdf, or excel (.xlsx)</p>

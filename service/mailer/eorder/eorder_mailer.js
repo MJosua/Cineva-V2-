@@ -176,7 +176,7 @@ module.exports = {
 
 
 
-        let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) trucking FROM m_config_new mcn WHERE mcn.conditions = 7 AND mcn.company_id = ${company_id}`)
+        let specialCondition = await dbQuery(`SELECT COALESCE(mcn.conditions, 0) trucking FROM special_t_condition mcn WHERE mcn.conditions = 7 AND mcn.company_id = ${company_id}`)
         let truckingChecker = specialCondition[0] ? specialCondition[0].trucking : 0;
 
 

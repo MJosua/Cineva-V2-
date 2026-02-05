@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Axios from "axios";
 import { API_URL } from "../../../config";
 import { useDispatch } from "react-redux";
-import { loginAction } from "../../../action/userAction";
+import { loginUser } from "../../../action/userAction";
 
 const NotFoundPage = (props) => {
   const navigate = useNavigate();
@@ -38,7 +38,7 @@ const NotFoundPage = (props) => {
               localStorage.setItem("tokek", newToken);
             }
 
-            dispatch(loginAction(userData));
+            dispatch(loginUser(userData));
             // Optionally, redirect to a valid page after successful refresh
             // navigate("/e-order/dashboard");
           } else {

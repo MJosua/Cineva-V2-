@@ -1,2 +1,2 @@
-﻿export * from '../state/reducers/userReducer';
+﻿export * from '../features/auth/state/userReducer';
 

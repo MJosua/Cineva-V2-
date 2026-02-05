@@ -11721,5 +11721,61 @@
     "primary_key": [],
     "foreign_keys": [],
     "raw": "id bigint"
+  },
+  "special_m_condition": {
+    "file": "dump-hots-20260205.sql",
+    "columns": [
+      {
+        "name": "id",
+        "definition": "int NOT NULL auto_increment"
+      },
+      {
+        "name": "condition_name",
+        "definition": "varchar(55)"
+      },
+      {
+        "name": "description",
+        "definition": "varchar(255)"
+      }
+    ],
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "raw": "CREATE TABLE `special_m_condition` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `condition_name` varchar(55) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+  },
+  "special_t_condition": {
+    "file": "dump-hots-20260205.sql",
+    "columns": [
+      {
+        "name": "id",
+        "definition": "bigint NOT NULL auto_increment"
+      },
+      {
+        "name": "company_id",
+        "definition": "int"
+      },
+      {
+        "name": "user_id",
+        "definition": "int"
+      },
+      {
+        "name": "conditions",
+        "definition": "int"
+      },
+      {
+        "name": "value",
+        "definition": "varchar(100)"
+      },
+      {
+        "name": "active",
+        "definition": "tinyint"
+      }
+    ],
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "raw": "CREATE TABLE `special_t_condition` (\n  `id` bigint NOT NULL AUTO_INCREMENT,\n  `company_id` int DEFAULT NULL,\n  `user_id` int DEFAULT NULL,\n  `conditions` int DEFAULT NULL,\n  `value` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `active` tinyint DEFAULT NULL,\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB AUTO_INCREMENT=245 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
   }
 }

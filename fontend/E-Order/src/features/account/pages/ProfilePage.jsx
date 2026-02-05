@@ -37,6 +37,7 @@ import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 
 import Axios from "axios";
 import { API_URL } from "../../../config";
+import userProfilePic from "../../../assets/images/userProfilePic.png";
 
 import { FiSettings } from "react-icons/fi";
 
@@ -44,7 +45,7 @@ import { seasonOut, logoutAction, loginAction } from "../../../action/userAction
 import { clearSeasonStorage } from "../../../action/cartAction";
 
 import { useDispatch, useSelector } from "react-redux";
-import { useData } from "../../../components/auth/CheckToken/FetchData/DataContext";
+import { useData } from "../../auth/components/CheckToken/FetchData/DataContext";
 
 const ProfileAdmin = ({ }) => {
   const dispatch = useDispatch();
@@ -1107,7 +1108,7 @@ const ProfileAdmin = ({ }) => {
 
               <Image
                 className="user_profile_pic position-relative"
-                src={require("../../../assets/images/userProfilePic.png")}
+                src={userProfilePic}
               />
 
               <div className="d-flex justify-content-center ">

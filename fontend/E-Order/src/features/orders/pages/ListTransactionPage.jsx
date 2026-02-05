@@ -20,7 +20,7 @@ import { RxTriangleUp, RxTriangleDown } from "react-icons/rx";
 
 import SearchFilterComponent from "../../../components/inputs/SearchFilterComponent.jsx";
 
-import LimiterComponent from "../../../components/order/LimiterComponent.jsx";
+import LimiterComponent from "../components/LimiterComponent.jsx";
 
 import {
   Select,
@@ -44,7 +44,7 @@ import { ImSortAmountAsc, ImSortAmountDesc } from "react-icons/im";
 import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
 import { FaFilterCircleXmark } from "react-icons/fa6";
 import Sidebar from "../../../components/layout/Sidebar.jsx";
-import { useData } from "../../../components/auth/CheckToken/FetchData/DataContext";
+import { useData } from "../../auth/components/CheckToken/FetchData/DataContext";
 
 const ListTransactionPage = () => {
   const { flavours, ports, shipToParties } = useData();
@@ -294,7 +294,7 @@ const ListTransactionPage = () => {
         setPage(res.data.page);
         setTotalPage(res.data.totalPage);
 
-        console.log("orderHeader on listtransactionpage",res.data)
+        console.log("orderHeader on listtransactionpage", res.data)
         const headers = res.data.packet;
 
         if (headers.length > 0) {
@@ -1993,7 +1993,7 @@ const ListTransactionPage = () => {
                                   // Only render page numbers within the range
                                   if (index + 1 >= start && index + 1 <= end) {
                                     return (
-                                      <li key={indexkey} className="page-item d-flex align-items-center fs-6" key={index}>
+                                      <li key={indexkey} className="page-item d-flex align-items-center fs-6">
                                         <a className={("page-link ") + (page === index + 1 ? "fw-bold text-danger" : "text-muted")}
                                           style={{ height: "37px" }}
                                           onClick={() => handlePageChange(index + 1)}
@@ -2114,7 +2114,7 @@ const ListTransactionPage = () => {
                                   // Only render page numbers within the range
                                   if (index + 1 >= start && index + 1 <= end) {
                                     return (
-                                      <li key={indexkey} className="page-item d-flex align-items-center fs-6" key={index}>
+                                      <li key={indexkey} className="page-item d-flex align-items-center fs-6">
                                         <a className={("page-link ") + (page === index + 1 ? "fw-bold text-danger" : "text-muted")}
                                           style={{ height: "37px" }}
                                           onClick={() => handlePageChange(index + 1)}

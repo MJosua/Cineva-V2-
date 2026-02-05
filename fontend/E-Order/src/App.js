@@ -92,7 +92,7 @@ import { useToast } from "@chakra-ui/react";
 import IndofoodPO from "./pages/orders/IndofoodPO/IndofoodPO";
 import TncLogin from "./pages/legal/Tnc/TncLogin";
 import TncInside from "./pages/legal/Tnc/TncInside";
-import CheckToken from "./components/auth/CheckToken/CheckToken";
+import CheckToken from "./features/auth/components/CheckToken/CheckToken";
 import PageContainerTracking from "./pages/admin/tracking/ContainerTracking/PageContainerTracking";
 
 // Event Maldives

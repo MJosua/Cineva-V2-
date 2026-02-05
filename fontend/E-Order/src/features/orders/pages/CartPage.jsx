@@ -51,10 +51,10 @@ import {
   getCreationDetails,
 } from "../../../action/reqAction";
 
-import AddMoreContainerBody from "../../../components/order/AddMoreContainer/AddMoreContainerBody";
-import AddMoreContainerHeader from "../../../components/order/AddMoreContainer/AddMoreContainerHeader";
-import AddMoreContainerInformation from "../../../components/order/AddMoreContainer/AddMoreContainerInformation";
-import CartMoreContainerFooter from "../../../components/order/AddMoreContainer/CartMoreContainerFooter";
+import AddMoreContainerBody from "../components/AddMoreContainer/AddMoreContainerBody";
+import AddMoreContainerHeader from "../components/AddMoreContainer/AddMoreContainerHeader";
+import AddMoreContainerInformation from "../components/AddMoreContainer/AddMoreContainerInformation";
+import CartMoreContainerFooter from "../components/AddMoreContainer/CartMoreContainerFooter";
 
 import {
   AiFillFile
@@ -66,10 +66,10 @@ import {
   // , BsFillCheckCircleFill
 } from "react-icons/bs";
 
-import AddMoreTruckBody from "../../../components/order/AddMoreTruck/AddMoreTruckBody";
-import AddMoreTruckHeader from "../../../components/order/AddMoreTruck/AddMoreTruckHeader";
-import CartMoreTruckFooter from "../../../components/order/AddMoreTruck/CartMoreTruckFooter";
-import { useData } from "../../../components/auth/CheckToken/FetchData/DataContext";
+import AddMoreTruckBody from "../components/AddMoreTruck/AddMoreTruckBody";
+import AddMoreTruckHeader from "../components/AddMoreTruck/AddMoreTruckHeader";
+import CartMoreTruckFooter from "../components/AddMoreTruck/CartMoreTruckFooter";
+import { useData } from "../../auth/components/CheckToken/FetchData/DataContext";
 
 const TestCart = () => {
 
@@ -954,407 +954,333 @@ const TestCart = () => {
                         moq: selectedFlavor3 && cartDetailSelect[0].cont_size.toString() !== "1" ? selectedFlavor3.moq : selectedFlavor3 && cartDetailSelect[0].cont_size.toString() === "1" ? selectedFlavor3.moq20 : 0,
                         qty_perpallet: selectedFlavor3 ? selectedFlavor3.qty_per_pallet : 0,
                         palete_qty: selectedFlavor3 ? qty2 / selectedFlavor3.qty_per_pallet : 0,
-                      }] : [{
                       }] : [])
                     ]
-        };
-      }) :
-    [
-      {
-        detail_id: "1",
-        Flavour: [
-          {
-            sku: "-1",
-            qty: "0",
-            Flavour_tollingID: "0",
-            qty_max: "",
-            moq: "",
-            palete_qty: "0"
-          },
-          {
-            sku: "-1",
-            qty: "0",
-            Flavour_tollingID: "0",
-            qty_max: "",
-            moq: "",
-            palete_qty: "0"
-          }
-        ]
-      }
-    ],
-      bulkList: {
-      detail_id: "1",
-        Flavour: (cartDetailSelect[0].bulk === true || cartDetailSelect[0].bulk === 1) ?
-          cartDetailSelect.flatMap((container) => {
-            const sku1 = container.sku1.toString();
-            const qty1 = (container.qty1 / cont_qty).toString();
-            const sku2 = container.sku2.toString();
-            const qty2 = (container.qty2 / cont_qty).toString();
-            const sku3 = container.sku3.toString();
-            const qty3 = (container.qty3 / cont_qty).toString();
+                  };
+                }) :
+                  [
+                    {
+                      detail_id: "1",
+                      Flavour: [
+                        {
+                          sku: "-1",
+                          qty: "0",
+                          Flavour_tollingID: "0",
+                          qty_max: "",
+                          moq: "",
+                          palete_qty: "0"
+                        },
+                        {
+                          sku: "-1",
+                          qty: "0",
+                          Flavour_tollingID: "0",
+                          qty_max: "",
+                          moq: "",
+                          palete_qty: "0"
+                        }
+                      ]
+                    }
+                  ],
+                bulkList: {
+                  detail_id: "1",
+                  Flavour: (cartDetailSelect[0].bulk === true || cartDetailSelect[0].bulk === 1) ?
+                    cartDetailSelect.flatMap((container) => {
+                      const sku1 = container.sku1.toString();
+                      const qty1 = (container.qty1 / cont_qty).toString();
+                      const sku2 = container.sku2.toString();
+                      const qty2 = (container.qty2 / cont_qty).toString();
+                      const sku3 = container.sku3.toString();
+                      const qty3 = (container.qty3 / cont_qty).toString();
 
-            return [
-              {
+                      return [
+                        {
+                          sku: sku1,
+                          qty: container.qty1.toString(),
+                          Flavour_tollingID: selectedFlavor1 ? selectedFlavor1.tolling_id : 0,
+                          qty_max: selectedFlavor1 ? selectedFlavor1.cont40hc : 0,
+                          moq: selectedFlavor1 ? selectedFlavor1.moq : 0,
+                          qty_perpallet: selectedFlavor1 ? selectedFlavor1.qty_per_pallet : 0,
+                          palete_qty: selectedFlavor1 ? qty1 / selectedFlavor1.qty_per_pallet : 0,
+                          qty_real: qty1
+                        },
+                        ...(sku2 !== "0" ? [{
+                          sku: sku2,
+                          qty: container.qty2.toString(),
+                          Flavour_tollingID: selectedFlavor2 ? selectedFlavor2.tolling_id : 0,
+                          qty_max: selectedFlavor2 ? selectedFlavor2.cont40hc : 0,
+                          moq: selectedFlavor2 ? selectedFlavor2.moq : 0,
+                          qty_perpallet: selectedFlavor2 ? selectedFlavor2.qty_per_pallet : 0,
+                          palete_qty: selectedFlavor2 ? qty2 / selectedFlavor2.qty_per_pallet : 0,
+                          qty_real: qty2
+                        }] : [{
+                          sku: "-1",
+                          qty: "0",
+                          Flavour_tollingID: "0",
+                          qty_max: "",
+                          moq: "",
+                          palete_qty: "0",
+                          qty_real: "0"
+                        }]),
+                        ...(sku3 !== "0" ? [{
+                          sku: sku3,
+                          qty: container.qty3.toString(),
+                          Flavour_tollingID: selectedFlavor3 ? selectedFlavor3.tolling_id : 0,
+                          qty_max: selectedFlavor3 ? selectedFlavor3.cont40hc : 0,
+                          moq: selectedFlavor3 ? selectedFlavor3.moq : 0,
+                          qty_perpallet: selectedFlavor3 ? selectedFlavor3.qty_per_pallet : 0,
+                          palete_qty: selectedFlavor3 ? qty3 / selectedFlavor3.qty_per_pallet : 0,
+                          qty_real: qty3
+                        }] : [])
+                      ];
+                    }) :
+                    [
+                      {
+                        sku: "-1",
+                        qty: 0,
+                        Flavour_tollingID: 0,
+                        qty_max: "",
+                        moq: "",
+                        palete_qty: 0,
+                        qty_real: ""
+                      },
+                      {
+                        sku: "-1",
+                        qty: 0,
+                        Flavour_tollingID: 0,
+                        qty_max: "",
+                        moq: "",
+                        palete_qty: 0,
+                        qty_real: ""
+                      }
+                    ]
+                }
+
+              },
+              summary: {
+                detail_id: "1",
+                Flavour: []
+              }
+            }
+          }];
+
+          const initialTruckOrders = [{
+            cart_id: cart_id || "",
+            po_buyer: cartHeaderSelect.po_buyer || "",
+            delv_date: formatted || "",
+            shipToParty: cartHeaderSelect.ship_to ? cartHeaderSelect.ship_to.toString() : "",
+            shipToPartyIndex: '',
+            portIndex: '',
+            created_date: created_date || "Kosong",
+            company_id: cartHeaderSelect.company_id || "Kosong",
+            portName: '',
+            notify_to_1: cartHeaderSelect.notify1 ? cartHeaderSelect.notify1.toString() : "",
+            notify_to_2: cartHeaderSelect.notify2 ? cartHeaderSelect.notify2.toString() : "",
+            port: cartHeaderSelect.port_shipment ? cartHeaderSelect.port_shipment.toString() : ports.md_id,
+            final_dest: cartHeaderSelect.final_dest || "",
+            detail_id: "1",
+            po_url: cartHeaderSelect.po_url,
+            flavors: cartDetailSelect.map((container, containerIndex) => {
+              const sku1 = container.sku1.toString();
+              const qty1 = container.qty1.toString();
+
+              return {
                 sku: sku1,
-                qty: container.qty1.toString(),
+                qty: qty1,
                 Flavour_tollingID: selectedFlavor1 ? selectedFlavor1.tolling_id : 0,
                 qty_max: selectedFlavor1 ? selectedFlavor1.cont40hc : 0,
                 moq: selectedFlavor1 ? selectedFlavor1.moq : 0,
                 qty_perpallet: selectedFlavor1 ? selectedFlavor1.qty_per_pallet : 0,
-                palete_qty: selectedFlavor1 ? qty1 / selectedFlavor1.qty_per_pallet : 0,
-                qty_real: qty1
-              },
-              ...(sku2 !== "0" ? [{
-                sku: sku2,
-                qty: container.qty2.toString(),
-                Flavour_tollingID: selectedFlavor2 ? selectedFlavor2.tolling_id : 0,
-                qty_max: selectedFlavor2 ? selectedFlavor2.cont40hc : 0,
-                moq: selectedFlavor2 ? selectedFlavor2.moq : 0,
-                qty_perpallet: selectedFlavor2 ? selectedFlavor2.qty_per_pallet : 0,
-                palete_qty: selectedFlavor2 ? qty2 / selectedFlavor2.qty_per_pallet : 0,
-                qty_real: qty2
-              }] : [{
-                sku: "-1",
-                qty: "0",
-                Flavour_tollingID: "0",
-                qty_max: "",
-                moq: "",
-                palete_qty: "0",
-                qty_real: "0"
-              }]),
-              ...(sku3 !== "0" ? [{
-                sku: sku3,
-                qty: container.qty3.toString(),
-                Flavour_tollingID: selectedFlavor3 ? selectedFlavor3.tolling_id : 0,
-                qty_max: selectedFlavor3 ? selectedFlavor3.cont40hc : 0,
-                moq: selectedFlavor3 ? selectedFlavor3.moq : 0,
-                qty_perpallet: selectedFlavor3 ? selectedFlavor3.qty_per_pallet : 0,
-                palete_qty: selectedFlavor3 ? qty3 / selectedFlavor3.qty_per_pallet : 0,
-                qty_real: qty3
-              }] : [])
-            ];
-          }) :
-          [
-            {
-              sku: "-1",
-              qty: 0,
-              Flavour_tollingID: 0,
-              qty_max: "",
-              moq: "",
-              palete_qty: 0,
-              qty_real: ""
-            },
-            {
-              sku: "-1",
-              qty: 0,
-              Flavour_tollingID: 0,
-              qty_max: "",
-              moq: "",
-              palete_qty: 0,
-              qty_real: ""
-            }
-          ]
-    }
-
-  },
-  summary: {
-    detail_id: "1",
-      Flavour: []
-  }
-}
+                palete_qty: selectedFlavor1 ? qty1 / selectedFlavor1.qty_per_pallet : 0
+              };
+            }),
+            remark: cartDetailSelect[0].remarks || ""
           }];
 
-const initialTruckOrders = [{
-  cart_id: cart_id || "",
-  po_buyer: cartHeaderSelect.po_buyer || "",
-  delv_date: formatted || "",
-  shipToParty: cartHeaderSelect.ship_to ? cartHeaderSelect.ship_to.toString() : "",
-  shipToPartyIndex: '',
-  portIndex: '',
-  created_date: created_date || "Kosong",
-  company_id: cartHeaderSelect.company_id || "Kosong",
-  portName: '',
-  notify_to_1: cartHeaderSelect.notify1 ? cartHeaderSelect.notify1.toString() : "",
-  notify_to_2: cartHeaderSelect.notify2 ? cartHeaderSelect.notify2.toString() : "",
-  port: cartHeaderSelect.port_shipment ? cartHeaderSelect.port_shipment.toString() : ports.md_id,
-  final_dest: cartHeaderSelect.final_dest || "",
-  detail_id: "1",
-  po_url: cartHeaderSelect.po_url,
-  flavors: cartDetailSelect.map((container, containerIndex) => {
-    const sku1 = container.sku1.toString();
-    const qty1 = container.qty1.toString();
 
-    return {
-      sku: sku1,
-      qty: qty1,
-      Flavour_tollingID: selectedFlavor1 ? selectedFlavor1.tolling_id : 0,
-      qty_max: selectedFlavor1 ? selectedFlavor1.cont40hc : 0,
-      moq: selectedFlavor1 ? selectedFlavor1.moq : 0,
-      qty_perpallet: selectedFlavor1 ? selectedFlavor1.qty_per_pallet : 0,
-      palete_qty: selectedFlavor1 ? qty1 / selectedFlavor1.qty_per_pallet : 0
-    };
-  }),
-  remark: cartDetailSelect[0].remarks || ""
-}];
-
-
-// console.log("initialOrders", initialOrders)
-// sessionStorage.setItem("orderDetails", JSON.stringify(initialOrders));
-// setOrderDetails(initialOrders);
-// sessionStorage.setItem("orderDetailsInformation", JSON.stringify(initialOrderInformation));
-// setOrderDetailsInformation(initialOrderInformation)
+          // console.log("initialOrders", initialOrders)
+          // sessionStorage.setItem("orderDetails", JSON.stringify(initialOrders));
+          // setOrderDetails(initialOrders);
+          // sessionStorage.setItem("orderDetailsInformation", JSON.stringify(initialOrderInformation));
+          // setOrderDetailsInformation(initialOrderInformation)
 
 
 
-if (container_name === "Truck") {
+          if (container_name === "Truck") {
 
-  let existingTruckOrders = JSON.parse(sessionStorage.getItem("truckOrders")) || [];
-  let updatedTruckOrders = [...existingTruckOrders, ...initialTruckOrders];
+            let existingTruckOrders = JSON.parse(sessionStorage.getItem("truckOrders")) || [];
+            let updatedTruckOrders = [...existingTruckOrders, ...initialTruckOrders];
 
-  sessionStorage.setItem("truckOrders", JSON.stringify(updatedTruckOrders));
-  setTruckOrders(updatedTruckOrders);
-}
-else {
-  let existingOrderDetails = JSON.parse(sessionStorage.getItem("containerOrders")) || [];
-  let updatedOrderDetails = [...existingOrderDetails, ...initialOrders];
+            sessionStorage.setItem("truckOrders", JSON.stringify(updatedTruckOrders));
+            setTruckOrders(updatedTruckOrders);
+          }
+          else {
+            let existingOrderDetails = JSON.parse(sessionStorage.getItem("containerOrders")) || [];
+            let updatedOrderDetails = [...existingOrderDetails, ...initialOrders];
 
-  sessionStorage.setItem("containerOrders", JSON.stringify(updatedOrderDetails));
-  setOrderDetails(updatedOrderDetails);
+            sessionStorage.setItem("containerOrders", JSON.stringify(updatedOrderDetails));
+            setOrderDetails(updatedOrderDetails);
 
-}
-setMode(container_name);
+          }
+          setMode(container_name);
         }
 
       } else {
-  console.log(`No matching entry found for cart_id ${cart_id}.`);
-}
+        console.log(`No matching entry found for cart_id ${cart_id}.`);
+      }
 
     });
 
-// const cartHeaderSelect = cartHeader.find(item => item.created_date === selectedCreationTime);
+    // const cartHeaderSelect = cartHeader.find(item => item.created_date === selectedCreationTime);
 
-// if (cartHeaderSelect) {
-//   const cart_id = cartHeaderSelect.cart_id;
-//   console.log("cartHeaderSelect", cartHeaderSelect)
-//   const cartDetailSelect = cartDetails.filter(item => item.cart_id === cart_id);
-//   // console.log("cartDetails filtered", cartDetailSelect)
-//   //Belum dipake Header
+    // if (cartHeaderSelect) {
+    //   const cart_id = cartHeaderSelect.cart_id;
+    //   console.log("cartHeaderSelect", cartHeaderSelect)
+    //   const cartDetailSelect = cartDetails.filter(item => item.cart_id === cart_id);
+    //   // console.log("cartDetails filtered", cartDetailSelect)
+    //   //Belum dipake Header
 
-// } else {
-//   console.log("No matching entry found.");
-// }
+    // } else {
+    //   console.log("No matching entry found.");
+    // }
 
-setEditDraft(false);
+    setEditDraft(false);
   }
-const [sessionStorageTrigger, setSessionStorageTrigger] = useState(false)
+  const [sessionStorageTrigger, setSessionStorageTrigger] = useState(false)
 
-// ================================================================================================================
+  // ================================================================================================================
 
 
 
-if (checkout) {
-  let hasError = false;
-  let editStatus = true;
+  if (checkout) {
+    let hasError = false;
+    let editStatus = true;
 
-  let created_date = selectedCreationTime;
-  let editDetails = { editStatus, cart_id, created_date };
+    let created_date = selectedCreationTime;
+    let editDetails = { editStatus, cart_id, created_date };
 
-  let container_name = "";
+    let container_name = "";
 
-  sessionStorage.setItem("editDraft", JSON.stringify(editDetails));
+    sessionStorage.setItem("editDraft", JSON.stringify(editDetails));
 
-  // Initialize quantities object to store aggregated quantities
-  const quantities = {};
+    // Initialize quantities object to store aggregated quantities
+    const quantities = {};
 
-  const aggregateQuantities = (cartDetails) => {
-    cartDetails.forEach(detail => {
-      const updateQuantity = (sku, qty) => {
-        if (sku) {
-          if (!quantities[sku]) {
-            quantities[sku] = 0;
+    const aggregateQuantities = (cartDetails) => {
+      cartDetails.forEach(detail => {
+        const updateQuantity = (sku, qty) => {
+          if (sku) {
+            if (!quantities[sku]) {
+              quantities[sku] = 0;
+            }
+            quantities[sku] += qty;
           }
-          quantities[sku] += qty;
-        }
-      };
+        };
 
-      // Adjust these according to your actual SKU and quantity properties
-      updateQuantity(detail.sku1, detail.qty1);
-      updateQuantity(detail.sku2, detail.qty2);
-      updateQuantity(detail.sku3, detail.qty3);
-    });
-  };
+        // Adjust these according to your actual SKU and quantity properties
+        updateQuantity(detail.sku1, detail.qty1);
+        updateQuantity(detail.sku2, detail.qty2);
+        updateQuantity(detail.sku3, detail.qty3);
+      });
+    };
 
 
 
-  cart_id.forEach((cart_id) => {
-    const cartHeaderSelect = cartHeader.find(item => item.cart_id === cart_id);
-    console.log("cartHeaderSelect", cartHeaderSelect)
-    if (cartHeaderSelect) {
-      const cart_id = cartHeaderSelect.cart_id;
-      const cartDetailSelect = cartDetails.filter(item => item.cart_id === cart_id);
+    cart_id.forEach((cart_id) => {
+      const cartHeaderSelect = cartHeader.find(item => item.cart_id === cart_id);
+      console.log("cartHeaderSelect", cartHeaderSelect)
+      if (cartHeaderSelect) {
+        const cart_id = cartHeaderSelect.cart_id;
+        const cartDetailSelect = cartDetails.filter(item => item.cart_id === cart_id);
 
-      // Ensure this function correctly aggregates quantities
-      const aggregatedQuantities = aggregateQuantities(cartDetailSelect);
+        // Ensure this function correctly aggregates quantities
+        const aggregatedQuantities = aggregateQuantities(cartDetailSelect);
 
-      const created_date = cartHeaderSelect.created_date;
-      const delv_week = cartHeaderSelect.delv_week;
-      const delv_week_desc = cartHeaderSelect.delv_week_desc;
-      const delv_year = cartHeaderSelect.delv_year;
-      const po_url = cartHeaderSelect.po_url;
-      const bill_to = cartHeaderSelect.bill_to;
-      const delivery_date = cartHeaderSelect.stuffing_date;
-      const formatted = delivery_date.split('T')[0];
+        const created_date = cartHeaderSelect.created_date;
+        const delv_week = cartHeaderSelect.delv_week;
+        const delv_week_desc = cartHeaderSelect.delv_week_desc;
+        const delv_year = cartHeaderSelect.delv_year;
+        const po_url = cartHeaderSelect.po_url;
+        const bill_to = cartHeaderSelect.bill_to;
+        const delivery_date = cartHeaderSelect.stuffing_date;
+        const formatted = delivery_date.split('T')[0];
 
-      const initialOrderInformation = {
-        delv_week,
-        delv_week_desc,
-        delv_year,
-        po_url,
-        delv_week_id: parseInt(`${delv_year}${delv_week}`, 10)
-      };
-      if (cartDetailSelect.length > 0) {
-        const selectedFlavor1 = flavorLookup[cartDetailSelect[0].sku1];
-        const selectedFlavor2 = flavorLookup[cartDetailSelect[0].sku2];
-        const selectedFlavor3 = flavorLookup[cartDetailSelect[0].sku3];
-        console.log("selectedFlavor1", selectedFlavor1)
+        const initialOrderInformation = {
+          delv_week,
+          delv_week_desc,
+          delv_year,
+          po_url,
+          delv_week_id: parseInt(`${delv_year}${delv_week}`, 10)
+        };
+        if (cartDetailSelect.length > 0) {
+          const selectedFlavor1 = flavorLookup[cartDetailSelect[0].sku1];
+          const selectedFlavor2 = flavorLookup[cartDetailSelect[0].sku2];
+          const selectedFlavor3 = flavorLookup[cartDetailSelect[0].sku3];
+          console.log("selectedFlavor1", selectedFlavor1)
 
-        const prod_sku1 = cartDetailSelect[0].prod_sku1;
-        const po_buyer = cartHeaderSelect.po_buyer;
-        const port_shipment = cartHeaderSelect.port_shipment;
-        const final_dest = cartHeaderSelect.final_dest;
-        const ship_to = cartHeaderSelect.ship_to;
-        const remarks = cartDetailSelect[0].remarks;
-        const custom = cartDetailSelect[0].custom;
-        console.log("cartDetailSelect", cartDetailSelect)
-        container_name = cartDetailSelect[0].container_name;
-        const company_id = cartDetailSelect[0].company_id;
-        // Set state
-        setSelectedCreation_date(created_date);
-        setSelectedCompanyId(company_id);
-        console.log("custom", custom)
+          const prod_sku1 = cartDetailSelect[0].prod_sku1;
+          const po_buyer = cartHeaderSelect.po_buyer;
+          const port_shipment = cartHeaderSelect.port_shipment;
+          const final_dest = cartHeaderSelect.final_dest;
+          const ship_to = cartHeaderSelect.ship_to;
+          const remarks = cartDetailSelect[0].remarks;
+          const custom = cartDetailSelect[0].custom;
+          console.log("cartDetailSelect", cartDetailSelect)
+          container_name = cartDetailSelect[0].container_name;
+          const company_id = cartDetailSelect[0].company_id;
+          // Set state
+          setSelectedCreation_date(created_date);
+          setSelectedCompanyId(company_id);
+          console.log("custom", custom)
 
-        const initialOrders = [{
-          order: {
-            header: {
-              cart_id: cart_id || "",
-              po_buyer: po_buyer || "",
-              port_shipment: port_shipment ? port_shipment.toString() : "",
-              ship_to: ship_to ? ship_to.toString() : "",
-              final_dest: final_dest || "",
-              po_url: po_url,
-              bill_to: bill_to,
+          const initialOrders = [{
+            order: {
+              header: {
+                cart_id: cart_id || "",
+                po_buyer: po_buyer || "",
+                port_shipment: port_shipment ? port_shipment.toString() : "",
+                ship_to: ship_to ? ship_to.toString() : "",
+                final_dest: final_dest || "",
+                po_url: po_url,
+                bill_to: bill_to,
 
-              created_date,
-              // tolling_id: cartHeaderSelect.tolling_id,
-              company_id: cartHeaderSelect.company_id
-            },
-            detail: {
-              cont_size: cartDetailSelect[0].cont_size ? cartDetailSelect[0].cont_size.toString() : "",
-              cont_qty: cartDetailSelect[0].cont_qty ? cartDetailSelect[0].cont_qty.toString() : "",
-              bulk: cartDetailSelect[0].bulk === "1",
-              remarks: remarks || "",
-              containerList: (cartDetailSelect[0].bulk === false || cartDetailSelect[0].bulk === 0) ? cartDetailSelect.map((container, containerIndex) => {
-                const sku1 = container.sku1.toString();
-                const qty1 = container.qty1.toString();
-                const sku2 = container.sku2.toString();
-                const qty2 = container.qty2.toString();
-                const sku3 = container.sku3.toString();
-                const qty3 = container.qty3.toString();
+                created_date,
+                // tolling_id: cartHeaderSelect.tolling_id,
+                company_id: cartHeaderSelect.company_id
+              },
+              detail: {
+                cont_size: cartDetailSelect[0].cont_size ? cartDetailSelect[0].cont_size.toString() : "",
+                cont_qty: cartDetailSelect[0].cont_qty ? cartDetailSelect[0].cont_qty.toString() : "",
+                bulk: cartDetailSelect[0].bulk === "1",
+                remarks: remarks || "",
+                containerList: (cartDetailSelect[0].bulk === false || cartDetailSelect[0].bulk === 0) ? cartDetailSelect.map((container, containerIndex) => {
+                  const sku1 = container.sku1.toString();
+                  const qty1 = container.qty1.toString();
+                  const sku2 = container.sku2.toString();
+                  const qty2 = container.qty2.toString();
+                  const sku3 = container.sku3.toString();
+                  const qty3 = container.qty3.toString();
 
-                return {
-                  custom: custom === false || custom.toLocaleString() === "0" || custom === null ? 0 : 1,
-                  detail_id: (containerIndex + 1).toString(),
-                  Flavour: [
-                    {
-                      sku: sku1,
-                      qty: qty1,
-                      Flavour_tollingID: selectedFlavor1 ? selectedFlavor1.tolling_id : 0,
-                      qty_max: selectedFlavor1 ? selectedFlavor1.cont40hc : 0,
-                      moq: selectedFlavor1 ? selectedFlavor1.moq : 0,
-                      qty_perpallet: selectedFlavor1 ? selectedFlavor1.qty_per_pallet : 0,
-                      palete_qty: selectedFlavor1 ? qty1 / selectedFlavor1.qty_per_pallet : 0
-                    },
-                    ...(sku2 !== "0" ? [{
-                      sku: sku2,
-                      qty: qty2,
-                      Flavour_tollingID: selectedFlavor2 ? selectedFlavor2.tolling_id : 0,
-                      qty_max: selectedFlavor2 ? selectedFlavor2.cont40hc : 0,
-                      moq: selectedFlavor2 ? selectedFlavor2.moq : 0,
-                      qty_perpallet: selectedFlavor2 ? selectedFlavor2.qty_per_pallet : 0,
-                      palete_qty: selectedFlavor2 ? qty2 / selectedFlavor2.qty_per_pallet : 0
-                    }] : [{
-                      sku: "-1",
-                      qty: "0",
-                      Flavour_tollingID: "0",
-                      qty_max: "",
-                      moq: "",
-                      palete_qty: "0",
-                      qty_real: "0",
-                    }]),
-                    ...(sku3 !== "0" ? [{
-                      sku: sku3,
-                      qty: qty3,
-                      Flavour_tollingID: selectedFlavor3 ? selectedFlavor3.tolling_id : 0,
-                      qty_max: selectedFlavor3 ? selectedFlavor3.cont40hc : 0,
-                      moq: selectedFlavor3 ? selectedFlavor3.moq : 0,
-                      qty_perpallet: selectedFlavor3 ? selectedFlavor3.qty_per_pallet : 0,
-                      palete_qty: selectedFlavor3 ? qty3 / selectedFlavor3.qty_per_pallet : 0
-                    }] : [])
-                  ]
-                };
-              }) :
-                [{
-                  detail_id: "1",
-                  Flavour: [
-                    {
-                      sku: "-1",
-                      qty: "0",
-                      Flavour_tollingID: "0",
-                      qty_max: "",
-                      moq: "",
-                      palete_qty: "0"
-                    },
-                    {
-                      sku: "-1",
-                      qty: "0",
-                      Flavour_tollingID: "0",
-                      qty_max: "",
-                      moq: "",
-                      palete_qty: "0"
-                    }
-                  ]
-                }],
-              bulkList: {
-                detail_id: "1",
-                Flavour: (cartDetailSelect[0].bulk === true || cartDetailSelect[0].bulk === 1) ?
-                  cartDetailSelect.flatMap((container) => {
-                    const sku1 = container.sku1.toString();
-                    const qty1 = (container.qty1 / cartDetailSelect[0].cont_qty).toString();
-                    const sku2 = container.sku2.toString();
-                    const qty2 = (container.qty2 / cartDetailSelect[0].cont_qty).toString();
-                    const sku3 = container.sku3.toString();
-                    const qty3 = (container.qty3 / cartDetailSelect[0].cont_qty).toString();
-
-                    return [
+                  return {
+                    custom: custom === false || custom.toLocaleString() === "0" || custom === null ? 0 : 1,
+                    detail_id: (containerIndex + 1).toString(),
+                    Flavour: [
                       {
                         sku: sku1,
-                        qty: container.qty1.toString(),
+                        qty: qty1,
                         Flavour_tollingID: selectedFlavor1 ? selectedFlavor1.tolling_id : 0,
                         qty_max: selectedFlavor1 ? selectedFlavor1.cont40hc : 0,
                         moq: selectedFlavor1 ? selectedFlavor1.moq : 0,
                         qty_perpallet: selectedFlavor1 ? selectedFlavor1.qty_per_pallet : 0,
-                        palete_qty: selectedFlavor1 ? qty1 / selectedFlavor1.qty_per_pallet : 0,
-                        qty_real: qty1
+                        palete_qty: selectedFlavor1 ? qty1 / selectedFlavor1.qty_per_pallet : 0
                       },
                       ...(sku2 !== "0" ? [{
                         sku: sku2,
-                        qty: container.qty2.toString(),
+                        qty: qty2,
                         Flavour_tollingID: selectedFlavor2 ? selectedFlavor2.tolling_id : 0,
                         qty_max: selectedFlavor2 ? selectedFlavor2.cont40hc : 0,
                         moq: selectedFlavor2 ? selectedFlavor2.moq : 0,
                         qty_perpallet: selectedFlavor2 ? selectedFlavor2.qty_per_pallet : 0,
-                        palete_qty: selectedFlavor2 ? qty2 / selectedFlavor2.qty_per_pallet : 0,
-                        qty_real: qty2
+                        palete_qty: selectedFlavor2 ? qty2 / selectedFlavor2.qty_per_pallet : 0
                       }] : [{
                         sku: "-1",
                         qty: "0",
@@ -1362,632 +1288,746 @@ if (checkout) {
                         qty_max: "",
                         moq: "",
                         palete_qty: "0",
-                        qty_real: "0"
+                        qty_real: "0",
                       }]),
                       ...(sku3 !== "0" ? [{
                         sku: sku3,
-                        qty: container.qty3.toString(),
+                        qty: qty3,
                         Flavour_tollingID: selectedFlavor3 ? selectedFlavor3.tolling_id : 0,
                         qty_max: selectedFlavor3 ? selectedFlavor3.cont40hc : 0,
                         moq: selectedFlavor3 ? selectedFlavor3.moq : 0,
                         qty_perpallet: selectedFlavor3 ? selectedFlavor3.qty_per_pallet : 0,
-                        palete_qty: selectedFlavor3 ? qty3 / selectedFlavor3.qty_per_pallet : 0,
-                        qty_real: qty3
+                        palete_qty: selectedFlavor3 ? qty3 / selectedFlavor3.qty_per_pallet : 0
                       }] : [])
-                    ];
-                  }) :
+                    ]
+                  };
+                }) :
                   [{
-                    sku: "-1",
-                    qty: 0,
-                    Flavour_tollingID: 0,
-                    qty_max: "",
-                    moq: "",
-                    palete_qty: 0,
-                    qty_real: ""
-                  },
-                  {
-                    sku: "-1",
-                    qty: 0,
-                    Flavour_tollingID: 0,
-                    qty_max: "",
-                    moq: "",
-                    palete_qty: 0,
-                    qty_real: ""
-                  }]
+                    detail_id: "1",
+                    Flavour: [
+                      {
+                        sku: "-1",
+                        qty: "0",
+                        Flavour_tollingID: "0",
+                        qty_max: "",
+                        moq: "",
+                        palete_qty: "0"
+                      },
+                      {
+                        sku: "-1",
+                        qty: "0",
+                        Flavour_tollingID: "0",
+                        qty_max: "",
+                        moq: "",
+                        palete_qty: "0"
+                      }
+                    ]
+                  }],
+                bulkList: {
+                  detail_id: "1",
+                  Flavour: (cartDetailSelect[0].bulk === true || cartDetailSelect[0].bulk === 1) ?
+                    cartDetailSelect.flatMap((container) => {
+                      const sku1 = container.sku1.toString();
+                      const qty1 = (container.qty1 / cartDetailSelect[0].cont_qty).toString();
+                      const sku2 = container.sku2.toString();
+                      const qty2 = (container.qty2 / cartDetailSelect[0].cont_qty).toString();
+                      const sku3 = container.sku3.toString();
+                      const qty3 = (container.qty3 / cartDetailSelect[0].cont_qty).toString();
+
+                      return [
+                        {
+                          sku: sku1,
+                          qty: container.qty1.toString(),
+                          Flavour_tollingID: selectedFlavor1 ? selectedFlavor1.tolling_id : 0,
+                          qty_max: selectedFlavor1 ? selectedFlavor1.cont40hc : 0,
+                          moq: selectedFlavor1 ? selectedFlavor1.moq : 0,
+                          qty_perpallet: selectedFlavor1 ? selectedFlavor1.qty_per_pallet : 0,
+                          palete_qty: selectedFlavor1 ? qty1 / selectedFlavor1.qty_per_pallet : 0,
+                          qty_real: qty1
+                        },
+                        ...(sku2 !== "0" ? [{
+                          sku: sku2,
+                          qty: container.qty2.toString(),
+                          Flavour_tollingID: selectedFlavor2 ? selectedFlavor2.tolling_id : 0,
+                          qty_max: selectedFlavor2 ? selectedFlavor2.cont40hc : 0,
+                          moq: selectedFlavor2 ? selectedFlavor2.moq : 0,
+                          qty_perpallet: selectedFlavor2 ? selectedFlavor2.qty_per_pallet : 0,
+                          palete_qty: selectedFlavor2 ? qty2 / selectedFlavor2.qty_per_pallet : 0,
+                          qty_real: qty2
+                        }] : [{
+                          sku: "-1",
+                          qty: "0",
+                          Flavour_tollingID: "0",
+                          qty_max: "",
+                          moq: "",
+                          palete_qty: "0",
+                          qty_real: "0"
+                        }]),
+                        ...(sku3 !== "0" ? [{
+                          sku: sku3,
+                          qty: container.qty3.toString(),
+                          Flavour_tollingID: selectedFlavor3 ? selectedFlavor3.tolling_id : 0,
+                          qty_max: selectedFlavor3 ? selectedFlavor3.cont40hc : 0,
+                          moq: selectedFlavor3 ? selectedFlavor3.moq : 0,
+                          qty_perpallet: selectedFlavor3 ? selectedFlavor3.qty_per_pallet : 0,
+                          palete_qty: selectedFlavor3 ? qty3 / selectedFlavor3.qty_per_pallet : 0,
+                          qty_real: qty3
+                        }] : [])
+                      ];
+                    }) :
+                    [{
+                      sku: "-1",
+                      qty: 0,
+                      Flavour_tollingID: 0,
+                      qty_max: "",
+                      moq: "",
+                      palete_qty: 0,
+                      qty_real: ""
+                    },
+                    {
+                      sku: "-1",
+                      qty: 0,
+                      Flavour_tollingID: 0,
+                      qty_max: "",
+                      moq: "",
+                      palete_qty: 0,
+                      qty_real: ""
+                    }]
+                }
+              },
+              summary: {
+                detail_id: "1",
+                Flavour: []
               }
-            },
-            summary: {
-              detail_id: "1",
-              Flavour: []
             }
+          }];
+
+          const initialTruckOrders = [{
+            cart_id: cart_id || "",
+            po_buyer: po_buyer || "",
+            delv_date: formatted || "",
+            shipToParty: ship_to ? ship_to.toString() : "",
+            shipToPartyIndex: '',
+            portIndex: '',
+            created_date: created_date || "Kosong",
+            company_id: company_id || "Kosong",
+            portName: '',
+            port: cartHeaderSelect.port_shipment ? cartHeaderSelect.port_shipment.toString() : ports.md_id,
+            final_dest: final_dest || "",
+            detail_id: "1",
+            po_url: po_url,
+            flavors: cartDetailSelect.map((container, containerIndex) => {
+              const sku1 = container.sku1.toString();
+              const qty1 = container.qty1.toString();
+
+              if (!selectedFlavor1) {
+                toast({
+                  title: "Error!",
+                  description: `Flavour 1 not found in lookup.`,
+                  status: "error",
+                  duration: 6000,
+                  isClosable: true
+                });
+                hasError = true;
+              }
+
+              return {
+                sku: sku1,
+                qty: qty1,
+                Flavour_tollingID: selectedFlavor1 ? selectedFlavor1.tolling_id : 0,
+                qty_max: selectedFlavor1 ? selectedFlavor1.cont40hc : 0,
+                moq: selectedFlavor1 ? selectedFlavor1.moq : 0,
+                qty_perpallet: selectedFlavor1 ? selectedFlavor1.qty_per_pallet : 0,
+                palete_qty: selectedFlavor1 ? qty1 / selectedFlavor1.qty_per_pallet : 0
+              };
+            }),
+            remark: remarks
+          }];
+
+          // Error checking
+          if (!po_buyer || po_buyer === "") {
+            toast({
+              title: "Error!",
+              description: `Order has an empty po_buyer.`,
+              status: "error",
+              duration: 6000,
+              isClosable: true
+            });
+            hasError = true;
           }
-        }];
 
-        const initialTruckOrders = [{
-          cart_id: cart_id || "",
-          po_buyer: po_buyer || "",
-          delv_date: formatted || "",
-          shipToParty: ship_to ? ship_to.toString() : "",
-          shipToPartyIndex: '',
-          portIndex: '',
-          created_date: created_date || "Kosong",
-          company_id: company_id || "Kosong",
-          portName: '',
-          port: cartHeaderSelect.port_shipment ? cartHeaderSelect.port_shipment.toString() : ports.md_id,
-          final_dest: final_dest || "",
-          detail_id: "1",
-          po_url: po_url,
-          flavors: cartDetailSelect.map((container, containerIndex) => {
-            const sku1 = container.sku1.toString();
-            const qty1 = container.qty1.toString();
+          if (existingPo.some(existing => existing.po_buyer === po_buyer)) {
+            toast({
+              title: "Error!",
+              description: `Po_buyer already exists.`,
+              status: "error",
+              duration: 6000,
+              isClosable: true
+            });
+            hasError = true;
+          }
 
-            if (!selectedFlavor1) {
-              toast({
-                title: "Error!",
-                description: `Flavour 1 not found in lookup.`,
-                status: "error",
-                duration: 6000,
-                isClosable: true
-              });
-              hasError = true;
+          if (!delivery_date || delivery_date === "") {
+            toast({
+              title: "Error!",
+              description: `Order has an empty delv_date.`,
+              status: "error",
+              duration: 6000,
+              isClosable: true
+            });
+            hasError = true;
+          }
+
+
+
+          if (!prod_sku1) {
+            toast({
+              title: "Error!",
+              description: `Order ${prod_sku1} flavor can't be empty or zero.`,
+              status: "error",
+              duration: 6000,
+              isClosable: true
+            });
+            hasError = true;
+          }
+
+          if (!hasError) {
+            if (container_name === "Truck") {
+              let existingTruckOrders = JSON.parse(sessionStorage.getItem("truckOrders")) || [];
+              let updatedTruckOrders = [...existingTruckOrders, ...initialTruckOrders];
+
+              sessionStorage.setItem("truckOrders", JSON.stringify(updatedTruckOrders));
+              setTruckOrders(updatedTruckOrders);
+            } else {
+              let existingOrderDetails = JSON.parse(sessionStorage.getItem("containerOrders")) || [];
+              let updatedOrderDetails = [...existingOrderDetails, ...initialOrders];
+
+              sessionStorage.setItem("containerOrders", JSON.stringify(updatedOrderDetails));
+              setOrderDetails(updatedOrderDetails);
+              sessionStorage.setItem("containerOrdersInformation", JSON.stringify(initialOrderInformation));
             }
-
-            return {
-              sku: sku1,
-              qty: qty1,
-              Flavour_tollingID: selectedFlavor1 ? selectedFlavor1.tolling_id : 0,
-              qty_max: selectedFlavor1 ? selectedFlavor1.cont40hc : 0,
-              moq: selectedFlavor1 ? selectedFlavor1.moq : 0,
-              qty_perpallet: selectedFlavor1 ? selectedFlavor1.qty_per_pallet : 0,
-              palete_qty: selectedFlavor1 ? qty1 / selectedFlavor1.qty_per_pallet : 0
-            };
-          }),
-          remark: remarks
-        }];
-
-        // Error checking
-        if (!po_buyer || po_buyer === "") {
-          toast({
-            title: "Error!",
-            description: `Order has an empty po_buyer.`,
-            status: "error",
-            duration: 6000,
-            isClosable: true
-          });
-          hasError = true;
-        }
-
-        if (existingPo.some(existing => existing.po_buyer === po_buyer)) {
-          toast({
-            title: "Error!",
-            description: `Po_buyer already exists.`,
-            status: "error",
-            duration: 6000,
-            isClosable: true
-          });
-          hasError = true;
-        }
-
-        if (!delivery_date || delivery_date === "") {
-          toast({
-            title: "Error!",
-            description: `Order has an empty delv_date.`,
-            status: "error",
-            duration: 6000,
-            isClosable: true
-          });
-          hasError = true;
-        }
-
-
-
-        if (!prod_sku1) {
-          toast({
-            title: "Error!",
-            description: `Order ${prod_sku1} flavor can't be empty or zero.`,
-            status: "error",
-            duration: 6000,
-            isClosable: true
-          });
-          hasError = true;
-        }
-
-        if (!hasError) {
-          if (container_name === "Truck") {
-            let existingTruckOrders = JSON.parse(sessionStorage.getItem("truckOrders")) || [];
-            let updatedTruckOrders = [...existingTruckOrders, ...initialTruckOrders];
-
-            sessionStorage.setItem("truckOrders", JSON.stringify(updatedTruckOrders));
-            setTruckOrders(updatedTruckOrders);
           } else {
-            let existingOrderDetails = JSON.parse(sessionStorage.getItem("containerOrders")) || [];
-            let updatedOrderDetails = [...existingOrderDetails, ...initialOrders];
-
-            sessionStorage.setItem("containerOrders", JSON.stringify(updatedOrderDetails));
-            setOrderDetails(updatedOrderDetails);
-            sessionStorage.setItem("containerOrdersInformation", JSON.stringify(initialOrderInformation));
+            setCheckout(false);
+            setTimeout(function () {
+              setLoading(false);
+              setButtonLoading(false);
+            }, 500);
           }
-        } else {
-          setCheckout(false);
-          setTimeout(function () {
-            setLoading(false);
-            setButtonLoading(false);
-          }, 500);
         }
+      } else {
+        console.log("No matching entry found.");
       }
-    } else {
-      console.log("No matching entry found.");
-    }
-  });
-
-  Object.keys(quantities).forEach(sku => {
-    const qty = quantities[sku];
-    const existingFlavor = flavorLookup[sku];
-
-    if (existingFlavor && qty < existingFlavor.moq) {
-      toast({
-        title: "Error!",
-        description: `Flavor ${existingFlavor.product_name} has a quantity less than the minimum order quantity (MOQ) of ${existingFlavor.moq}.`,
-        status: "error",
-        duration: 6000,
-        isClosable: true
-      });
-      hasError = true;
-    }
-  });
-
-  if (!hasError) {
-
-    // Validate aggregated quantities
-
-
-    setMode(container_name);
-    console.log("container_name", container_name)
-    console.log("mode", mode)
-    setTimeout(() => {
-      container_name === "Truck" ?
-        navigate("/e-order/cart/truckorder/confirmation")
-        :
-        navigate("/e-order/cart/confirmation");
-    }, 1500);
-  } else {
-    setCheckout(false);
-    setTimeout(function () {
-      setLoading(false);
-      setButtonLoading(false);
-    }, 500);
-  }
-
-  setCheckout(false);
-}
-
-
-// ================================================ PRINT DRAFTS ==================================================
-
-function formatNumberWithDots(number) {
-  // Check if the input is undefined, null, or not a number
-  if (number === undefined || number === null || isNaN(number)) {
-    return "Invalid input. Please provide a valid number.";
-  }
-
-  // If it's a valid number, proceed with formatting
-  return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-const [customable, setCustombale] = useState(false)
-
-
-const separateByCreationDetails = () => {
-  // Group cart IDs by created_date
-  const validCartIds = new Set(cartHeader.map(item => item.cart_id));
-
-  // Filter out creationDetails that are not in `data`
-  const filteredCreationDetails = creationDetails.filter(item => validCartIds.has(item.cart_id));
-
-  // Group cart IDs by created_date
-  const groupedCartHeaders = filteredCreationDetails.reduce((acc, item) => {
-    const dateKey = item.created_date.trim();
-    if (!acc[dateKey]) {
-      acc[dateKey] = [];
-    }
-    if (!acc[dateKey].includes(item.cart_id)) {
-      acc[dateKey].push(item.cart_id);
-    }
-    return acc;
-  }, {});
-  return Object.entries(groupedCartHeaders).map(([createdDate, cartIds], groupIdx) => (
-    <div key={groupIdx}>
-      <div className="form-check PC-ver">
-        <div className="card-body border border_radius_10px shadow shadow-sm my-2">
-
-
-
-
-          {cartIds.map((cartId, idx) => {
-            // Find the cart details based on the cart_id
-            const details = creationDetails.find(item => item.cart_id === cartId);
-            if (!details) return null;
-            // console.log("details ISI", details)
-            return (
-              <div key={details.cart_id}>
-                {idx === 0 &&
-                  <>
-                    <div className="d-flex justify-content-between">
-
-                      <div className="ms-4">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          name="flexRadioDefault"
-                          readOnly
-                          onClick={() => setSelectedCreationTime(details.created_date)}
-                          value={details.cart_id}
-                          checked={(selectedCartId || []).includes(details.cart_id)}
-                        />
-                      </div>
-
-                      <div className="me-4">
-                        <span className="grey_text_bold fs-6">Stuffing Week:&nbsp;</span>
-                        <span className="grey_text fs-6 ps-2">{details.delv_week_desc}</span>
-                      </div>
-
-                      <div>
-                        <Menu>
-                          <MenuButton
-                            as={IconButton}
-                            size="sm"
-                            icon={<BsThreeDotsVertical size={20} />}
-                            onClick={async () => {
-                              await clearSeasonStorage(order);
-                              setSelectedCreationTime(details.created_date);
-                            }}
-                          />
-                          <MenuList>
-                            <MenuItem onClick={() => setEditDraft(true)}>Edit</MenuItem>
-                            <MenuItem onClick={onOpenModalConfirm}>Delete</MenuItem>
-                          </MenuList>
-                        </Menu>
-                      </div>
-                    </div>
-                    <div className="row my-2">
-                      <div className="border-bottom border-secondary"></div>
-                    </div>
-                  </>
-                }
-
-
-                <div >
-                  {printCartHeader(details.cart_id)}
-                </div>
-              </div>
-            );
-          })}
-
-        </div>
-      </div>
-
-
-
-    </div >
-  ));
-};
-
-
-
-const printCartHeader = (cart_id) => {
-  return cartHeader.map((header, idx) => {
-    const port = portLookup[header.port_shipment];
-
-    return header.cart_id === cart_id ?
-      (
-        <div key={header.cart_id} className="d-flex position-relative">
-          <div className="card-body shadow border border_radius_10px shadow shadow-sm mt-3">
-            <div className="row">
-              <div className="col-12 col-md-10">
-                <div className="row">
-                  <div className="col-5 col-md-3 col-xxl-2  d-flex grey_text_bold fs-6">
-                    PO Buyer
-                  </div>
-
-                  <div className="col-7 col-md-9 col-xxl-10  d-flex grey_text fs-6 px-2">
-                    : {header.po_buyer}
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-5 col-md-3 col-xxl-2  d-flex grey_text_bold fs-6">
-                    {header.container_name === "Truck" ?
-                      `Destination`
-                      :
-                      `Port`}
-                  </div>
-                  <div className="col-7 col-md-9 col-xxl-10 d-flex grey_text fs-6 px-2">
-                    : {
-                      header?.container_name === "Truck"
-                        ? (header?.final_dest ?? "No destination provided")
-                        : (port?.harbour_name ?? "No port name available")
-                    }
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="ratakiri col-5 col-md-3 col-xxl-2 d-flex grey_text_bold fs-6">
-                    Ship to Party
-                  </div>
-
-                  <div className="col-7 col-md-9 col-xxl-10 d-flex grey_text fs-6 px-2">
-                    :  {header.harbour_id ? header.company_name : header.ship_to_name}
-                  </div>
-                </div>
-              </div>
-              <div className="col-12 col-md-2">
-                <div className="border border_radius_10px py-1 px-2 white_text_bold fs-6 bg-grey ">
-                  {header.container_name === "Truck" ?
-                    `${header.container_name}`
-                    :
-                    `${header.cont_qty} x ${header.container_name}`}
-
-
-                </div>
-
-                {header.po_url ?
-                  <div className="d-none btn d-md-block">
-                    <Tooltip
-                      label="Click file icon to preview"
-                      hasArrow
-                      arrowSize={15}
-                    >
-                      <div onClick={() => window.open(API_URL + header.po_url)} className="row">
-                        <div className="col-8 d-flex justify-content-end">
-                          Po.File
-                        </div>
-                        <div className="col-2 pt-1 justify-content-start">
-                          <AiFillFile />
-                        </div>
-                      </div>
-                    </Tooltip>
-                  </div>
-                  :
-                  null
-                }
-              </div>
-            </div>
-
-            {printCartDetails(header.cart_id)}
-          </div>
-        </div>
-      ) :
-      null
-      ;
-  });
-};
-
-const printCartDetails = (headerCartId) => {
-  return cartDetails
-    .filter(container => container.sku1 !== 0 || container.sku2 !== 0)
-    .map((details, idx) => {
-      return details.cart_id === headerCartId ? (
-        <div
-          className="card-body border border_radius_10px shadow shadow-sm my-2 shadow"
-          key={details.detail_id}
-        >
-          <div className="row">
-            <div className="col-12 d-flex">
-              {details.bulk === 0 ? (
-                <div className="fw-bold fs-5 grey_text_bold ">
-                  {details.container_name === "Truck" ?
-                    `Flavour `
-                    :
-                    `Container `}
-
-                  {details.detail_id}
-                </div>
-              ) : (
-                <div className="fw-bold fs-5  grey_text_bold  ">
-                  Container Details
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="row my-1">
-            <div className="col-9 d-flex">
-              <div className="grey_text_bold fs-6">
-                Product Description
-              </div>
-            </div>
-
-            <div className="col-3 d-flex justify-content-center pe-1">
-              <div className="grey_text_bold fs-6 ratakanan">Total Cartons</div>
-            </div>
-          </div>
-
-          <div className="row pb-3 mt-4">
-            <div className="col-4 px-0 col-sm-3 d-flex justify-content-center">
-              <Image
-                className="d-flex  gambarproduk justify-content-center p-3  ms-lg-4 ms-md-0"
-                src={details.url_1 || undefined}
-                fallback={
-                  <img
-                    src="https://www.indofoodinternational.com/e-order/static/media/emptyplate.abe823f0ddff30c4a1fa.PNG"
-                    alt="Fallback"
-                    width="130"
-                    height="131"
-                  />
-                }
-                boxSize=""
-                width="100%"
-                maxWidth="130"
-                maxHeight="131"
-              />
-            </div>
-
-            <div className="col-6 ratakiri d-flex pt-lg-3 mt-lg-3 pt-sm-4  col-md-7 d-flex red_text_bold pt-3">
-              <div>
-                <div className=" d-flex">
-                  {details.product_name_1}
-                </div>
-                <div className="d-flex text-muted">
-                  {details.prod_sku1}
-                </div>
-              </div>
-            </div>
-
-            <div className="col-2 col-md-2 col-lg-2 d-flex ps-1 justify-content-center grey_text_bold my-4 fs-6">
-              {formatNumberWithDots(details.qty1)}
-            </div>
-          </div>
-
-
-          {details.qty2 > 0 && (
-            <div className="row pb-3">
-              <div className="col-4 px-0 col-sm-3 d-flex justify-content-center">
-                <Image
-                  className="d-flex  gambarproduk justify-content-center p-3 ms-lg-4 ms-md-0"
-                  src={details.url_2}
-                  boxSize=""
-                  width="100%"
-                  maxWidth="130"
-                  maxHeight="131"
-                  fallbacksrc="https://www.indofoodinternational.com/e-order/static/media/emptyplate.abe823f0ddff30c4a1fa.PNG"
-                />
-              </div>
-
-              <div className="col-6 ratakiri d-flex pt-lg-3 mt-lg-3 pt-sm-4  col-md-7 d-flex red_text_bold pt-3">
-                <div>
-                  <div className=" d-flex">
-                    {details.product_name_2}
-                  </div>
-                  <div className="d-flex text-muted">
-                    {details.prod_sku2}
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-2 col-md-2 col-lg-2 d-flex ps-1 justify-content-center grey_text_bold my-4 fs-6">
-                {formatNumberWithDots(details.qty2)}
-              </div>
-            </div>
-          )}
-
-          {details.qty3 > 0 && (
-            <div className="row pb-3">
-              <div className="col-4 px-0 col-sm-3 d-flex justify-content-center">
-                <Image
-                  className="d-flex  gambarproduk justify-content-center p-3 ms-lg-4 ms-md-0"
-                  src={details.url_3}
-                  boxSize=""
-                  width="100%"
-                  maxWidth="130"
-                  maxHeight="131"
-                  fallbacksrc="https://www.indofoodinternational.com/e-order/static/media/emptyplate.abe823f0ddff30c4a1fa.PNG"
-                />
-              </div>
-
-              <div className="col-6 ratakiri d-flex pt-lg-3 mt-lg-3 pt-sm-4  col-md-7 d-flex red_text_bold pt-3">
-                <div>
-                  <div className=" d-flex">
-                    {details.product_name_3}
-                  </div>
-                  <div className="d-flex text-muted">
-                    {formatNumberWithDots(details.prod_sku3)}
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-2 col-md-2 col-lg-2 d-flex ps-1 justify-content-center grey_text_bold my-4 fs-6">
-                {details.qty3}
-              </div>
-            </div>
-          )}
-
-          <div className="row">
-            <div className="col-12 d-flex">
-              <span className="grey_text_bold fs-6">Remarks:&nbsp;</span>
-
-              <span className="grey_text fs-6">{!details.remarks ? "-" : details.remarks}</span>
-            </div>
-          </div>
-        </div>
-      ) : null;
     });
-};
+
+    Object.keys(quantities).forEach(sku => {
+      const qty = quantities[sku];
+      const existingFlavor = flavorLookup[sku];
+
+      if (existingFlavor && qty < existingFlavor.moq) {
+        toast({
+          title: "Error!",
+          description: `Flavor ${existingFlavor.product_name} has a quantity less than the minimum order quantity (MOQ) of ${existingFlavor.moq}.`,
+          status: "error",
+          duration: 6000,
+          isClosable: true
+        });
+        hasError = true;
+      }
+    });
+
+    if (!hasError) {
+
+      // Validate aggregated quantities
 
 
-return (
-  <div>
-    {/* navbar */}
+      setMode(container_name);
+      console.log("container_name", container_name)
+      console.log("mode", mode)
+      setTimeout(() => {
+        container_name === "Truck" ?
+          navigate("/e-order/cart/truckorder/confirmation")
+          :
+          navigate("/e-order/cart/confirmation");
+      }, 1500);
+    } else {
+      setCheckout(false);
+      setTimeout(function () {
+        setLoading(false);
+        setButtonLoading(false);
+      }, 500);
+    }
 
-    <div>
-      <div className="py-5 mt-2 stick-left">
-        <div className="row">
-          <div className="col-6 col-sm-12"></div>
-          <div className="col-6 col-sm-12">
-            <Sidebar />
+    setCheckout(false);
+  }
+
+
+  // ================================================ PRINT DRAFTS ==================================================
+
+  function formatNumberWithDots(number) {
+    // Check if the input is undefined, null, or not a number
+    if (number === undefined || number === null || isNaN(number)) {
+      return "Invalid input. Please provide a valid number.";
+    }
+
+    // If it's a valid number, proceed with formatting
+    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+
+  const [customable, setCustombale] = useState(false)
+
+
+  const separateByCreationDetails = () => {
+    // Group cart IDs by created_date
+    const validCartIds = new Set(cartHeader.map(item => item.cart_id));
+
+    // Filter out creationDetails that are not in `data`
+    const filteredCreationDetails = creationDetails.filter(item => validCartIds.has(item.cart_id));
+
+    // Group cart IDs by created_date
+    const groupedCartHeaders = filteredCreationDetails.reduce((acc, item) => {
+      const dateKey = item.created_date.trim();
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
+      }
+      if (!acc[dateKey].includes(item.cart_id)) {
+        acc[dateKey].push(item.cart_id);
+      }
+      return acc;
+    }, {});
+    return Object.entries(groupedCartHeaders).map(([createdDate, cartIds], groupIdx) => (
+      <div key={groupIdx}>
+        <div className="form-check PC-ver">
+          <div className="card-body border border_radius_10px shadow shadow-sm my-2">
+
+
+
+
+            {cartIds.map((cartId, idx) => {
+              // Find the cart details based on the cart_id
+              const details = creationDetails.find(item => item.cart_id === cartId);
+              if (!details) return null;
+              // console.log("details ISI", details)
+              return (
+                <div key={details.cart_id}>
+                  {idx === 0 &&
+                    <>
+                      <div className="d-flex justify-content-between">
+
+                        <div className="ms-4">
+                          <input
+                            className="form-check-input"
+                            type="radio"
+                            name="flexRadioDefault"
+                            readOnly
+                            onClick={() => setSelectedCreationTime(details.created_date)}
+                            value={details.cart_id}
+                            checked={(selectedCartId || []).includes(details.cart_id)}
+                          />
+                        </div>
+
+                        <div className="me-4">
+                          <span className="grey_text_bold fs-6">Stuffing Week:&nbsp;</span>
+                          <span className="grey_text fs-6 ps-2">{details.delv_week_desc}</span>
+                        </div>
+
+                        <div>
+                          <Menu>
+                            <MenuButton
+                              as={IconButton}
+                              size="sm"
+                              icon={<BsThreeDotsVertical size={20} />}
+                              onClick={async () => {
+                                await clearSeasonStorage(order);
+                                setSelectedCreationTime(details.created_date);
+                              }}
+                            />
+                            <MenuList>
+                              <MenuItem onClick={() => setEditDraft(true)}>Edit</MenuItem>
+                              <MenuItem onClick={onOpenModalConfirm}>Delete</MenuItem>
+                            </MenuList>
+                          </Menu>
+                        </div>
+                      </div>
+                      <div className="row my-2">
+                        <div className="border-bottom border-secondary"></div>
+                      </div>
+                    </>
+                  }
+
+
+                  <div >
+                    {printCartHeader(details.cart_id)}
+                  </div>
+                </div>
+              );
+            })}
+
           </div>
         </div>
-      </div>
 
-      <div className="py-5 w-100">
 
-        <div className=" col-md-11 col-12 mt-3 padding_start_custom ">
-          <div className="pb-5 pt-4 ">
-            <div>
-              <div className="row user-select-none">
 
-                <div className="col-12 text-secondary d-flex  pt-1 ps-4 ps-md-0">
-                  <span
-                    onClick={() => navigate("/e-order/dashboard")}
-                    className="pointer  grey_text_normal_20px">
-                    e-order
-                  </span>
-                  <span className="grey_text_20px">
-                    &nbsp;/ Draft
-                  </span>
+      </div >
+    ));
+  };
+
+
+
+  const printCartHeader = (cart_id) => {
+    return cartHeader.map((header, idx) => {
+      const port = portLookup[header.port_shipment];
+
+      return header.cart_id === cart_id ?
+        (
+          <div key={header.cart_id} className="d-flex position-relative">
+            <div className="card-body shadow border border_radius_10px shadow shadow-sm mt-3">
+              <div className="row">
+                <div className="col-12 col-md-10">
+                  <div className="row">
+                    <div className="col-5 col-md-3 col-xxl-2  d-flex grey_text_bold fs-6">
+                      PO Buyer
+                    </div>
+
+                    <div className="col-7 col-md-9 col-xxl-10  d-flex grey_text fs-6 px-2">
+                      : {header.po_buyer}
+                    </div>
+                  </div>
+                  <div className="row">
+                    <div className="col-5 col-md-3 col-xxl-2  d-flex grey_text_bold fs-6">
+                      {header.container_name === "Truck" ?
+                        `Destination`
+                        :
+                        `Port`}
+                    </div>
+                    <div className="col-7 col-md-9 col-xxl-10 d-flex grey_text fs-6 px-2">
+                      : {
+                        header?.container_name === "Truck"
+                          ? (header?.final_dest ?? "No destination provided")
+                          : (port?.harbour_name ?? "No port name available")
+                      }
+                    </div>
+                  </div>
+                  <div className="row">
+                    <div className="ratakiri col-5 col-md-3 col-xxl-2 d-flex grey_text_bold fs-6">
+                      Ship to Party
+                    </div>
+
+                    <div className="col-7 col-md-9 col-xxl-10 d-flex grey_text fs-6 px-2">
+                      :  {header.harbour_id ? header.company_name : header.ship_to_name}
+                    </div>
+                  </div>
+                </div>
+                <div className="col-12 col-md-2">
+                  <div className="border border_radius_10px py-1 px-2 white_text_bold fs-6 bg-grey ">
+                    {header.container_name === "Truck" ?
+                      `${header.container_name}`
+                      :
+                      `${header.cont_qty} x ${header.container_name}`}
+
+
+                  </div>
+
+                  {header.po_url ?
+                    <div className="d-none btn d-md-block">
+                      <Tooltip
+                        label="Click file icon to preview"
+                        hasArrow
+                        arrowSize={15}
+                      >
+                        <div onClick={() => window.open(API_URL + header.po_url)} className="row">
+                          <div className="col-8 d-flex justify-content-end">
+                            Po.File
+                          </div>
+                          <div className="col-2 pt-1 justify-content-start">
+                            <AiFillFile />
+                          </div>
+                        </div>
+                      </Tooltip>
+                    </div>
+                    :
+                    null
+                  }
                 </div>
               </div>
 
-              <div className="container">
-                <div className="row px-1 px-md-2 px-lg-3 d-flex justify-content-start mt-2">
+              {printCartDetails(header.cart_id)}
+            </div>
+          </div>
+        ) :
+        null
+        ;
+    });
+  };
 
-                  {separateByCreationDetails()}
+  const printCartDetails = (headerCartId) => {
+    return cartDetails
+      .filter(container => container.sku1 !== 0 || container.sku2 !== 0)
+      .map((details, idx) => {
+        return details.cart_id === headerCartId ? (
+          <div
+            className="card-body border border_radius_10px shadow shadow-sm my-2 shadow"
+            key={details.detail_id}
+          >
+            <div className="row">
+              <div className="col-12 d-flex">
+                {details.bulk === 0 ? (
+                  <div className="fw-bold fs-5 grey_text_bold ">
+                    {details.container_name === "Truck" ?
+                      `Flavour `
+                      :
+                      `Container `}
 
+                    {details.detail_id}
+                  </div>
+                ) : (
+                  <div className="fw-bold fs-5  grey_text_bold  ">
+                    Container Details
+                  </div>
+                )}
+              </div>
+            </div>
 
-                  {loading ? (
-                    <div className=" pt-5 pb-5 m-5 p-5 d-flex justify-content-center align-items-center row pt-5">
-                      <Spinner
-                        className="d-flex justify-content-center "
-                        thickness="10px"
-                        speed="0.65s"
-                        emptyColor="gray.200"
-                        color="blue.500"
-                        size="xl"
-                        spacing={4}
-                      />
-
-                    </div>
-                  ) : (
-                    <div
-                      className={cartHeader > [] ? "d-none" : "d-block pt-5 mt-5"}
-                    >
-                      <h1 className="text-muted fw-bold pb-3 fs-1">
-                        There are no drafts yet.
-                      </h1>
-
-                      <h5 className="text-muted">
-                        Click "Save Draft" on "Place Order" menu, it will appear
-                        here!
-                      </h5>
-                    </div>
-                  )}
+            <div className="row my-1">
+              <div className="col-9 d-flex">
+                <div className="grey_text_bold fs-6">
+                  Product Description
                 </div>
+              </div>
+
+              <div className="col-3 d-flex justify-content-center pe-1">
+                <div className="grey_text_bold fs-6 ratakanan">Total Cartons</div>
+              </div>
+            </div>
+
+            <div className="row pb-3 mt-4">
+              <div className="col-4 px-0 col-sm-3 d-flex justify-content-center">
+                <Image
+                  className="d-flex  gambarproduk justify-content-center p-3  ms-lg-4 ms-md-0"
+                  src={details.url_1 || undefined}
+                  fallback={
+                    <img
+                      src="https://www.indofoodinternational.com/e-order/static/media/emptyplate.abe823f0ddff30c4a1fa.PNG"
+                      alt="Fallback"
+                      width="130"
+                      height="131"
+                    />
+                  }
+                  boxSize=""
+                  width="100%"
+                  maxWidth="130"
+                  maxHeight="131"
+                />
+              </div>
+
+              <div className="col-6 ratakiri d-flex pt-lg-3 mt-lg-3 pt-sm-4  col-md-7 d-flex red_text_bold pt-3">
+                <div>
+                  <div className=" d-flex">
+                    {details.product_name_1}
+                  </div>
+                  <div className="d-flex text-muted">
+                    {details.prod_sku1}
+                  </div>
+                </div>
+              </div>
+
+              <div className="col-2 col-md-2 col-lg-2 d-flex ps-1 justify-content-center grey_text_bold my-4 fs-6">
+                {formatNumberWithDots(details.qty1)}
               </div>
             </div>
 
 
+            {details.qty2 > 0 && (
+              <div className="row pb-3">
+                <div className="col-4 px-0 col-sm-3 d-flex justify-content-center">
+                  <Image
+                    className="d-flex  gambarproduk justify-content-center p-3 ms-lg-4 ms-md-0"
+                    src={details.url_2}
+                    boxSize=""
+                    width="100%"
+                    maxWidth="130"
+                    maxHeight="131"
+                    fallbacksrc="https://www.indofoodinternational.com/e-order/static/media/emptyplate.abe823f0ddff30c4a1fa.PNG"
+                  />
+                </div>
 
-            <div className=" shadow-none fixed-bottom button_bottom_sticky d-none d-sm-none d-md-block d-lg-block d-xl-block d-xxl-block ">
-              <div className="row shadow-lg d-flex justify-content-evenly bg-white py-2 px-0 border-top">
-                <div className="col-md-9"></div>
+                <div className="col-6 ratakiri d-flex pt-lg-3 mt-lg-3 pt-sm-4  col-md-7 d-flex red_text_bold pt-3">
+                  <div>
+                    <div className=" d-flex">
+                      {details.product_name_2}
+                    </div>
+                    <div className="d-flex text-muted">
+                      {details.prod_sku2}
+                    </div>
+                  </div>
+                </div>
 
+                <div className="col-2 col-md-2 col-lg-2 d-flex ps-1 justify-content-center grey_text_bold my-4 fs-6">
+                  {formatNumberWithDots(details.qty2)}
+                </div>
+              </div>
+            )}
+
+            {details.qty3 > 0 && (
+              <div className="row pb-3">
+                <div className="col-4 px-0 col-sm-3 d-flex justify-content-center">
+                  <Image
+                    className="d-flex  gambarproduk justify-content-center p-3 ms-lg-4 ms-md-0"
+                    src={details.url_3}
+                    boxSize=""
+                    width="100%"
+                    maxWidth="130"
+                    maxHeight="131"
+                    fallbacksrc="https://www.indofoodinternational.com/e-order/static/media/emptyplate.abe823f0ddff30c4a1fa.PNG"
+                  />
+                </div>
+
+                <div className="col-6 ratakiri d-flex pt-lg-3 mt-lg-3 pt-sm-4  col-md-7 d-flex red_text_bold pt-3">
+                  <div>
+                    <div className=" d-flex">
+                      {details.product_name_3}
+                    </div>
+                    <div className="d-flex text-muted">
+                      {formatNumberWithDots(details.prod_sku3)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-2 col-md-2 col-lg-2 d-flex ps-1 justify-content-center grey_text_bold my-4 fs-6">
+                  {details.qty3}
+                </div>
+              </div>
+            )}
+
+            <div className="row">
+              <div className="col-12 d-flex">
+                <span className="grey_text_bold fs-6">Remarks:&nbsp;</span>
+
+                <span className="grey_text fs-6">{!details.remarks ? "-" : details.remarks}</span>
+              </div>
+            </div>
+          </div>
+        ) : null;
+      });
+  };
+
+
+  return (
+    <div>
+      {/* navbar */}
+
+      <div>
+        <div className="py-5 mt-2 stick-left">
+          <div className="row">
+            <div className="col-6 col-sm-12"></div>
+            <div className="col-6 col-sm-12">
+              <Sidebar />
+            </div>
+          </div>
+        </div>
+
+        <div className="py-5 w-100">
+
+          <div className=" col-md-11 col-12 mt-3 padding_start_custom ">
+            <div className="pb-5 pt-4 ">
+              <div>
+                <div className="row user-select-none">
+
+                  <div className="col-12 text-secondary d-flex  pt-1 ps-4 ps-md-0">
+                    <span
+                      onClick={() => navigate("/e-order/dashboard")}
+                      className="pointer  grey_text_normal_20px">
+                      e-order
+                    </span>
+                    <span className="grey_text_20px">
+                      &nbsp;/ Draft
+                    </span>
+                  </div>
+                </div>
+
+                <div className="container">
+                  <div className="row px-1 px-md-2 px-lg-3 d-flex justify-content-start mt-2">
+
+                    {separateByCreationDetails()}
+
+
+                    {loading ? (
+                      <div className=" pt-5 pb-5 m-5 p-5 d-flex justify-content-center align-items-center row pt-5">
+                        <Spinner
+                          className="d-flex justify-content-center "
+                          thickness="10px"
+                          speed="0.65s"
+                          emptyColor="gray.200"
+                          color="blue.500"
+                          size="xl"
+                          spacing={4}
+                        />
+
+                      </div>
+                    ) : (
+                      <div
+                        className={cartHeader > [] ? "d-none" : "d-block pt-5 mt-5"}
+                      >
+                        <h1 className="text-muted fw-bold pb-3 fs-1">
+                          There are no drafts yet.
+                        </h1>
+
+                        <h5 className="text-muted">
+                          Click "Save Draft" on "Place Order" menu, it will appear
+                          here!
+                        </h5>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+
+
+              <div className=" shadow-none fixed-bottom button_bottom_sticky d-none d-sm-none d-md-block d-lg-block d-xl-block d-xxl-block ">
+                <div className="row shadow-lg d-flex justify-content-evenly bg-white py-2 px-0 border-top">
+                  <div className="col-md-9"></div>
+
+                  <div className="col-md-3">
+                    {buttonLoading === false && (
+                      <button
+                        className="btn btn-danger shadow w-75 mt-1 p-2 fw-bold"
+                        onClick={() => {
+                          if (active === 1) {
+                            setButtonLoading(true);
+                            setCheckout(true);
+
+
+                          } else {
+                            if (!toast.isActive(id)) {
+                              toast({
+                                id,
+                                title: "Oopsie!",
+                                description: `Your Account is not allowed to proceed order (Inactive). Please contact your admin.`,
+                                status: "error",
+                                duration: 6000,
+                                isClosable: true,
+                              });
+                            }
+                          }
+                        }}
+                        disabled={selectedCartId === 0 || !selectedCartId || selectedCartId === "0" || selectedCartId.length === 0}
+                      >
+                        Checkout
+                      </button>
+                    )}
+                    {buttonLoading === true && (
+                      <Button
+                        colorscheme="red"
+                        variant="background"
+                        className="btn btn-danger shadow w-75 mt-1 p-2 fw-bold"
+                        isLoading
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="shadow-none d-md-none d-block fixed-bottom mb-5 ">
                 <div className="col-md-3">
                   {buttonLoading === false && (
                     <button
@@ -1996,7 +2036,6 @@ return (
                         if (active === 1) {
                           setButtonLoading(true);
                           setCheckout(true);
-
 
                         } else {
                           if (!toast.isActive(id)) {
@@ -2026,315 +2065,275 @@ return (
                   )}
                 </div>
               </div>
+
             </div>
-
-            <div className="shadow-none d-md-none d-block fixed-bottom mb-5 ">
-              <div className="col-md-3">
-                {buttonLoading === false && (
-                  <button
-                    className="btn btn-danger shadow w-75 mt-1 p-2 fw-bold"
-                    onClick={() => {
-                      if (active === 1) {
-                        setButtonLoading(true);
-                        setCheckout(true);
-
-                      } else {
-                        if (!toast.isActive(id)) {
-                          toast({
-                            id,
-                            title: "Oopsie!",
-                            description: `Your Account is not allowed to proceed order (Inactive). Please contact your admin.`,
-                            status: "error",
-                            duration: 6000,
-                            isClosable: true,
-                          });
-                        }
-                      }
-                    }}
-                    disabled={selectedCartId === 0 || !selectedCartId || selectedCartId === "0" || selectedCartId.length === 0}
-                  >
-                    Checkout
-                  </button>
-                )}
-                {buttonLoading === true && (
-                  <Button
-                    colorscheme="red"
-                    variant="background"
-                    className="btn btn-danger shadow w-75 mt-1 p-2 fw-bold"
-                    isLoading
-                  />
-                )}
-              </div>
-            </div>
-
           </div>
         </div>
       </div>
-    </div>
-    <ControlBar />
+      <ControlBar />
 
-    <Modal
-      // initialFocusRef={initialRefConfirm}
-      isOpen={isOpenModalConfirm}
-      onClose={onCloseModalConfirm}
-      motionPreset="slideInBottom"
-      size="xl"
-    >
-      <ModalOverlay>
-        <ModalContent>
-          <ModalHeader>Confirmation</ModalHeader>
-          <ModalCloseButton onClick={onCloseModalConfirm} />
-          <ModalBody>
-            <span className="fw-bold py-2">
-              Are you sure want to delete this item?
-            </span>
-          </ModalBody>
-          <ModalFooter className="px-3">
-            <button
-              className="btn btn-outline-danger px-2 mx-1"
-              onClick={onCloseModalConfirm}
-            >
-              Cancel
-            </button>
-            <button
-              className="btn btn-danger px-2 mx-1"
-              onClick={onConfirm}
-            >
-              Delete
-            </button>
-          </ModalFooter>
-        </ModalContent>
-      </ModalOverlay>
-    </Modal>
-
-
-    <Modal
-      // initialFocusRef={initialRefConfirm}
-      isOpen={isOpenModalEdit}
-      onClose={() => { handleConfirmClose() }}
-      motionPreset="slideInBottom"
-
-    >
-      <ModalOverlay>
-        <ModalContent maxW="900px">
-          <ModalHeader>Edit</ModalHeader>
-          <ModalCloseButton onClick={handleConfirmClose} />
-          <ModalBody>
-            <div className="container-fluid ">
-
-              {mode === "Truck" ?
-                <>
-                  <div>
-                    {/* Navbar */}
-                    {loading === "True" ? (
-                      <div className=" pt-5 pb-5 m-4 px-4 d-flex justify-content-center align-items-center row ">
-                        <Spinner
-                          className="d-flex justify-content-center "
-                          thickness="10px"
-                          speed="0.65s"
-                          emptyColor="gray.200"
-                          color="blue.500"
-                          size="xl"
-                          spacing={4}
-                        />
-
-                      </div>
-                    ) :
-                      (
-
-                        <div className='card border_radius_10px shadow-sm mb-4 py-3'>
-
-                          {truckOrderDetails.map((order, orderIndex) => (
-                            <div key={orderIndex} >
-                              <AddMoreTruckHeader
-                                orderIndex={orderIndex}
-                                truckOrders={truckOrderDetails}
-                                shipToParties={shipToParties}
-                                shipToParty={order.shipToPartyIndex}
-                                ports={ports}
-                                order={order}
-                                stuffingDate={stuffingWeeks}
-                                userToken={userToken}
-                                billtoparties={billtoparties}
-                                setbilltoparties={setbilltoparties}
-                                setLoading={setLoading}
-                                setTruckOrders={setTruckOrders}
-                                seasonOut={seasonOut}
-                                setStuffingDate={setStuffingWeeks}
-
-                              />
-                              <AddMoreTruckBody
-                                order={order}
-                                truckOrders={truckOrderDetails}
-                                orderIndex={orderIndex}
-                                flavours={flavoursTrucking}
-                                userToken={userToken}
-                                seasonOut={seasonOut}
-                                setTruckOrders={setTruckOrders}
-
-                              />
-                            </div >
-                          ))}
+      <Modal
+        // initialFocusRef={initialRefConfirm}
+        isOpen={isOpenModalConfirm}
+        onClose={onCloseModalConfirm}
+        motionPreset="slideInBottom"
+        size="xl"
+      >
+        <ModalOverlay>
+          <ModalContent>
+            <ModalHeader>Confirmation</ModalHeader>
+            <ModalCloseButton onClick={onCloseModalConfirm} />
+            <ModalBody>
+              <span className="fw-bold py-2">
+                Are you sure want to delete this item?
+              </span>
+            </ModalBody>
+            <ModalFooter className="px-3">
+              <button
+                className="btn btn-outline-danger px-2 mx-1"
+                onClick={onCloseModalConfirm}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger px-2 mx-1"
+                onClick={onConfirm}
+              >
+                Delete
+              </button>
+            </ModalFooter>
+          </ModalContent>
+        </ModalOverlay>
+      </Modal>
 
 
+      <Modal
+        // initialFocusRef={initialRefConfirm}
+        isOpen={isOpenModalEdit}
+        onClose={() => { handleConfirmClose() }}
+        motionPreset="slideInBottom"
+
+      >
+        <ModalOverlay>
+          <ModalContent maxW="900px">
+            <ModalHeader>Edit</ModalHeader>
+            <ModalCloseButton onClick={handleConfirmClose} />
+            <ModalBody>
+              <div className="container-fluid ">
+
+                {mode === "Truck" ?
+                  <>
+                    <div>
+                      {/* Navbar */}
+                      {loading === "True" ? (
+                        <div className=" pt-5 pb-5 m-4 px-4 d-flex justify-content-center align-items-center row ">
+                          <Spinner
+                            className="d-flex justify-content-center "
+                            thickness="10px"
+                            speed="0.65s"
+                            emptyColor="gray.200"
+                            color="blue.500"
+                            size="xl"
+                            spacing={4}
+                          />
 
                         </div>
-                      )
-                    }
-                  </div>
-                </>
-                :
-                <div className="container ">
-                  <div className="row px-3 ">
-                    <div className="col-12 mb-2">
-                      <AddMoreContainerInformation
-                        stuffingWeeks={stuffingWeeks}
-                        setStuffingWeeks={setStuffingWeeks}
-                        userToken={userToken}
-                        containerOrdersInformation={orderDetailsInformation}
-                        setContainerOrdersInformation={setOrderDetailsInformation}
-                      />
-                      <div className="col-12 grey_text_bold fs-6 pt-4 ">
-                        Order Details
+                      ) :
+                        (
+
+                          <div className='card border_radius_10px shadow-sm mb-4 py-3'>
+
+                            {truckOrderDetails.map((order, orderIndex) => (
+                              <div key={orderIndex} >
+                                <AddMoreTruckHeader
+                                  orderIndex={orderIndex}
+                                  truckOrders={truckOrderDetails}
+                                  shipToParties={shipToParties}
+                                  shipToParty={order.shipToPartyIndex}
+                                  ports={ports}
+                                  order={order}
+                                  stuffingDate={stuffingWeeks}
+                                  userToken={userToken}
+                                  billtoparties={billtoparties}
+                                  setbilltoparties={setbilltoparties}
+                                  setLoading={setLoading}
+                                  setTruckOrders={setTruckOrders}
+                                  seasonOut={seasonOut}
+                                  setStuffingDate={setStuffingWeeks}
+
+                                />
+                                <AddMoreTruckBody
+                                  order={order}
+                                  truckOrders={truckOrderDetails}
+                                  orderIndex={orderIndex}
+                                  flavours={flavoursTrucking}
+                                  userToken={userToken}
+                                  seasonOut={seasonOut}
+                                  setTruckOrders={setTruckOrders}
+
+                                />
+                              </div >
+                            ))}
+
+
+
+                          </div>
+                        )
+                      }
+                    </div>
+                  </>
+                  :
+                  <div className="container ">
+                    <div className="row px-3 ">
+                      <div className="col-12 mb-2">
+                        <AddMoreContainerInformation
+                          stuffingWeeks={stuffingWeeks}
+                          setStuffingWeeks={setStuffingWeeks}
+                          userToken={userToken}
+                          containerOrdersInformation={orderDetailsInformation}
+                          setContainerOrdersInformation={setOrderDetailsInformation}
+                        />
+                        <div className="col-12 grey_text_bold fs-6 pt-4 ">
+                          Order Details
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              }
+                }
 
 
-              {mode !== "Truck" ?
-                <div className="container  ">
-                  <div className="row px-3 pb-3 ">
-                    {orderDetails.map((order, orderIndex) => {
-                      const hasPoBuyerError = errors.some(error => error.orderIndex === orderIndex && error.errorType === 'po_buyer');
+                {mode !== "Truck" ?
+                  <div className="container  ">
+                    <div className="row px-3 pb-3 ">
+                      {orderDetails.map((order, orderIndex) => {
+                        const hasPoBuyerError = errors.some(error => error.orderIndex === orderIndex && error.errorType === 'po_buyer');
 
-                      return (
+                        return (
 
-                        <div key={orderIndex} className='col-12 position-relative mb-3 card-body border shadow shadow-sm top_card_order_page '>
-
-
-
-
-
-                          <>
-                            <AddMoreContainerHeader
-                              order={order}
-                              orderIndex={orderIndex}
-                              setContainerOrders={setOrderDetails}
-                              containerOrders={orderDetails}
-                              userToken={userToken}
-                              ports={ports}
-                              shipToParties={shipToParties}
-                              billtoparties={billtoparties}
-                              setbilltoparties={setbilltoparties}
-                              hasPoBuyerError={hasPoBuyerError}
-                              errors={errors}
-                              setCustombale={setCustombale}
-                              customable={customable}
-                              company_id={company_id}
-                              setSessionStorageTrigger={setSessionStorageTrigger}
-                            />
-
-
-
-                            <AddMoreContainerBody
-                              order={order}
-                              orderIndex={orderIndex}
-                              containerOrders={orderDetails}
-                              setContainerOrders={setOrderDetails}
-                              userToken={userToken}
-                              flavours={flavours}
-                              errors={errors}
-                              setSessionStorageTrigger={setSessionStorageTrigger}
-                              sessionStorageTrigger={sessionStorageTrigger}
-                              customable={customable}
-
-
-                            />
-                          </>
+                          <div key={orderIndex} className='col-12 position-relative mb-3 card-body border shadow shadow-sm top_card_order_page '>
 
 
 
 
 
+                            <>
+                              <AddMoreContainerHeader
+                                order={order}
+                                orderIndex={orderIndex}
+                                setContainerOrders={setOrderDetails}
+                                containerOrders={orderDetails}
+                                userToken={userToken}
+                                ports={ports}
+                                shipToParties={shipToParties}
+                                billtoparties={billtoparties}
+                                setbilltoparties={setbilltoparties}
+                                hasPoBuyerError={hasPoBuyerError}
+                                errors={errors}
+                                setCustombale={setCustombale}
+                                customable={customable}
+                                company_id={company_id}
+                                setSessionStorageTrigger={setSessionStorageTrigger}
+                              />
 
 
-                        </div>
 
+                              <AddMoreContainerBody
+                                order={order}
+                                orderIndex={orderIndex}
+                                containerOrders={orderDetails}
+                                setContainerOrders={setOrderDetails}
+                                userToken={userToken}
+                                flavours={flavours}
+                                errors={errors}
+                                setSessionStorageTrigger={setSessionStorageTrigger}
+                                sessionStorageTrigger={sessionStorageTrigger}
+                                customable={customable}
+
+
+                              />
+                            </>
+
+
+
+
+
+
+
+                          </div>
+
+                        )
+                      }
                       )
-                    }
-                    )
-                    }
+                      }
+                    </div>
                   </div>
-                </div>
-                :
-                <>
-                </>
-              }
+                  :
+                  <>
+                  </>
+                }
 
 
-              {mode !== "Truck" ?
-                <CartMoreContainerFooter
-                  TruckOrderDetail={truckOrderDetails}
-                  containerOrders={orderDetails}
-                  setContainerOrders={setOrderDetails}
-                  containerOrdersInformation={orderDetailsInformation}
-                  mode={mode}
-                  userToken={userToken}
-                  initialOrders={initialOrders}
-                  setContainerOrdersInformation={setOrderDetailsInformation}
-                  initialOrderInformation={initialOrderInformation}
-                  onCloseModalEdit={onCloseModalEdit}
-                  handleToggle={handleToggle}
-                  selectedCreation_date={selectedCreation_date}
-                  selectedCompanyId={selectedCompanyId}
-                  buttonLoading={buttonLoading}
-                  active={active}
-                  setButtonLoading={setButtonLoading}
-                  setCheckout={setCheckout}
-                  handleCheckoutTruck={handleCheckoutTruck}
-                  handleCheckoutContainer={handleCheckoutContainer}
-                  selectedCartId={selectedCartId}
-                />
-                :
-                <CartMoreTruckFooter
-                  TruckOrderDetail={truckOrderDetails}
-                  containerOrders={orderDetails}
-                  setContainerOrders={setOrderDetails}
-                  containerOrdersInformation={orderDetailsInformation}
-                  mode={mode}
-                  userToken={userToken}
-                  initialOrders={initialOrders}
-                  setContainerOrdersInformation={setOrderDetailsInformation}
-                  initialOrderInformation={initialOrderInformation}
-                  onCloseModalEdit={onCloseModalEdit}
-                  handleToggle={handleToggle}
-                  selectedCreation_date={selectedCreation_date}
-                  selectedCompanyId={selectedCompanyId}
-                  buttonLoading={buttonLoading}
-                  active={active}
-                  setButtonLoading={setButtonLoading}
-                  setCheckout={setCheckout}
-                  handleCheckoutTruck={handleCheckoutTruck}
-                  handleCheckoutContainer={handleCheckoutContainer}
-                  selectedCartId={selectedCartId}
-                />
-              }
+                {mode !== "Truck" ?
+                  <CartMoreContainerFooter
+                    TruckOrderDetail={truckOrderDetails}
+                    containerOrders={orderDetails}
+                    setContainerOrders={setOrderDetails}
+                    containerOrdersInformation={orderDetailsInformation}
+                    mode={mode}
+                    userToken={userToken}
+                    initialOrders={initialOrders}
+                    setContainerOrdersInformation={setOrderDetailsInformation}
+                    initialOrderInformation={initialOrderInformation}
+                    onCloseModalEdit={onCloseModalEdit}
+                    handleToggle={handleToggle}
+                    selectedCreation_date={selectedCreation_date}
+                    selectedCompanyId={selectedCompanyId}
+                    buttonLoading={buttonLoading}
+                    active={active}
+                    setButtonLoading={setButtonLoading}
+                    setCheckout={setCheckout}
+                    handleCheckoutTruck={handleCheckoutTruck}
+                    handleCheckoutContainer={handleCheckoutContainer}
+                    selectedCartId={selectedCartId}
+                  />
+                  :
+                  <CartMoreTruckFooter
+                    TruckOrderDetail={truckOrderDetails}
+                    containerOrders={orderDetails}
+                    setContainerOrders={setOrderDetails}
+                    containerOrdersInformation={orderDetailsInformation}
+                    mode={mode}
+                    userToken={userToken}
+                    initialOrders={initialOrders}
+                    setContainerOrdersInformation={setOrderDetailsInformation}
+                    initialOrderInformation={initialOrderInformation}
+                    onCloseModalEdit={onCloseModalEdit}
+                    handleToggle={handleToggle}
+                    selectedCreation_date={selectedCreation_date}
+                    selectedCompanyId={selectedCompanyId}
+                    buttonLoading={buttonLoading}
+                    active={active}
+                    setButtonLoading={setButtonLoading}
+                    setCheckout={setCheckout}
+                    handleCheckoutTruck={handleCheckoutTruck}
+                    handleCheckoutContainer={handleCheckoutContainer}
+                    selectedCartId={selectedCartId}
+                  />
+                }
 
 
 
-            </div>
-          </ModalBody>
-          <ModalFooter className="px-3">
+              </div>
+            </ModalBody>
+            <ModalFooter className="px-3">
 
-          </ModalFooter>
-        </ModalContent>
-      </ModalOverlay>
-    </Modal>
+            </ModalFooter>
+          </ModalContent>
+        </ModalOverlay>
+      </Modal>
 
-  </div >
-);
+    </div >
+  );
 };
 
 export default TestCart

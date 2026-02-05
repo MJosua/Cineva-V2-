@@ -24,8 +24,8 @@ import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "../../../../components/layout/Sidebar.jsx";
 
 import { seasonOut, loginAction, logoutAction } from "../../../../action/userAction";
-import AddMoreTruckSummary from "../../../../components/order/AddMoreTruck/AddMoreTruckSummary";
-import { useData } from "../../../../components/auth/CheckToken/FetchData/DataContext";
+import AddMoreTruckSummary from "../../components/AddMoreTruck/AddMoreTruckSummary";
+import { useData } from "../../../auth/components/CheckToken/FetchData/DataContext";
 import { AiFillFile } from "react-icons/ai";
 import PdfViewer from "../../../../components/media/PDFViewer/PdfViewer";
 
@@ -111,10 +111,9 @@ function TruckOrderConfirmation() {
           "stuffing_date": order.delv_date,
           "port_shipment": order.port,
           "ship_to": order.shipToParty,
-          "bill_to": order.bill_to,
+          "bill_to": order.bill_to ? order.bill_to : user.company_id,
           "notify_to_1": order.notify_to_1,
           "notify_to_2": order.notify_to_2,
-          "po_url": order.po_url,
           "tolling_id": 1,
           "final_dest": order.final_dest,
           "remarks": order.remark || "-",

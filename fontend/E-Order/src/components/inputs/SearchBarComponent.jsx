@@ -60,6 +60,9 @@ import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import Axios from "axios";
 import { API_URL } from "../../config";
 
+import logoIndofood from '../../assets/ui/logo_indofoodCBP_white.png';
+import emptyPlate from "../../assets/images/emptyplate.PNG";
+
 import { seasonOut, logoutAction, loginAction } from "../../action/userAction";
 // import {
 //     FaPowerOff
@@ -412,12 +415,12 @@ const SearchBarComponent = ({
 
                                 <Image
                                     className="d-flex  d-flex posisilogo pt-2 "
-                                    src={require('../../assets/ui/logo_indofoodCBP_white.png')}
+                                    src={logoIndofood}
                                     boxSize=''
                                     width='180px'
 
                                     minHeight='5px'
-                                    fallbacksrc={require("../../assets/images/emptyplate.PNG")}>
+                                    fallbacksrc={emptyPlate}>
                                 </Image>
 
                             </div>
