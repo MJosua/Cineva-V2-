@@ -475,151 +475,162 @@ export const DynamicForm: React.FC<{
 
 
       {
-
         !normalizedSchema
-          ?
-          <div className="text-center text-gray-500">Loading form schema...</div>
-          :
+          ? <div className="text-center text-gray-500">Loading form schema...</div>
+          : (() => {
+            // 🧩 LAYOUT CONTROLS
+            const layout = config.layout || {};
+            const hideCard = layout.hide_field_card;
+            const hideFields = layout.hide_fields;
+            const hideSubmit = layout.hide_submit;
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{config.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
+            const content = (
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handlecheckvalue)} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {itemsWithRules
-                      .sort((a, b) => a.order - b.order)
-                      .map((item) => {
-                        if (item.type === "field") {
-                          const field = item.data as FormField;
-                          const key = field.name || field.label.toLowerCase().replace(/[^a-z0-9]/g, "_");
-                          if (!shouldShowField(field, globalValues)) return null;
+                  {!hideFields && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {itemsWithRules
+                        .sort((a, b) => a.order - b.order)
+                        .map((item) => {
+                          if (item.type === "field") {
+                            const field = item.data as FormField;
+                            const key = field.name || field.label.toLowerCase().replace(/[^a-z0-9]/g, "_");
+                            if (!shouldShowField(field, globalValues)) return null;
 
-                          const currentValue = globalValues?.[field.name] ?? field.value ?? "";
+                            const currentValue = globalValues?.[field.name] ?? field.value ?? "";
 
-                          return (
-                            <div key={item.id} className="contents">
-                              <DynamicField
-                                field={field}
-                                setConfig={setConfig}
-                                value={currentValue}
-                                onChange={(val, fullOption) => {
-                                  form.setValue(key, val);
-                                  setGlobalValues((p) => ({ ...p, [key]: val }));
-                                  setSelectedObjects((p) => ({ ...p, [key]: fullOption }));
-                                }}
-                                onBlur={() => {
-                                  setSelectedObjects((prev) => ({
-                                    ...prev,
-                                    __lastBlurField: field.name,
-                                  }));
-                                  const val = globalValues?.[field.name];
-                                  if (typeof val === "string") {
-                                    const trimmed = val.trim();
-                                    if (trimmed !== val) {
-                                      setGlobalValues((p) => ({ ...p, [field.name]: trimmed }));
+                            return (
+                              <div key={item.id} className="contents">
+                                <DynamicField
+                                  field={field}
+                                  setConfig={setConfig}
+                                  value={currentValue}
+                                  onChange={(val, fullOption) => {
+                                    form.setValue(key, val);
+                                    setGlobalValues((p) => ({ ...p, [key]: val }));
+                                    setSelectedObjects((p) => ({ ...p, [key]: fullOption }));
+                                  }}
+                                  onBlur={() => {
+                                    setSelectedObjects((prev) => ({
+                                      ...prev,
+                                      __lastBlurField: field.name,
+                                    }));
+                                    const val = globalValues?.[field.name];
+                                    if (typeof val === "string") {
+                                      const trimmed = val.trim();
+                                      if (trimmed !== val) {
+                                        setGlobalValues((p) => ({ ...p, [field.name]: trimmed }));
+                                      }
                                     }
-                                  }
-                                }}
-                                globalValues={globalValues}
-                                setGlobalValues={setGlobalValues}
-                                watchedValues={memoizedWatchedValues}
-                                currentValue={currentValue}
-                                isSubmitting={isSubmitting}
-                                setIsSubmitting={setIsSubmitting}
-                              />
-                            </div>
-                          );
-                        }
+                                  }}
+                                  globalValues={globalValues}
+                                  setGlobalValues={setGlobalValues}
+                                  watchedValues={memoizedWatchedValues}
+                                  currentValue={currentValue}
+                                  isSubmitting={isSubmitting}
+                                  setIsSubmitting={setIsSubmitting}
+                                />
+                              </div>
+                            );
+                          }
 
-                        if (item.type === "rowgroup") {
-                          const rg = item.data as RowGroup;
-                          return (
-                            <div key={item.id} className="col-span-3">
-                              <StructuredRowGroup
-                                rowGroup={rg}
-                                rowGroupId={item.id}
-                                form={form}
-                                watchedValues={memoizedWatchedValues}
-                                selectedObjects={selectedObjects}
-                                currentFieldCount={0}
-                                maxTotalFields={50}
-                                globalValues={globalValues}
-                                setGlobalValues={setGlobalValues}
-                                onUpdateRowGroup={handleUpdateRowGroup}
-                                schema={normalizedSchema}
-                              />
-                            </div>
-                          );
-                        }
+                          if (item.type === "rowgroup") {
+                            const rg = item.data as RowGroup;
+                            return (
+                              <div key={item.id} className="col-span-3">
+                                <StructuredRowGroup
+                                  rowGroup={rg}
+                                  rowGroupId={item.id}
+                                  form={form}
+                                  watchedValues={memoizedWatchedValues}
+                                  selectedObjects={selectedObjects}
+                                  currentFieldCount={0}
+                                  maxTotalFields={50}
+                                  globalValues={globalValues}
+                                  setGlobalValues={setGlobalValues}
+                                  onUpdateRowGroup={handleUpdateRowGroup}
+                                  schema={normalizedSchema}
+                                />
+                              </div>
+                            );
+                          }
 
-                        if (item.type === "specialfunc") {
-                          return (
-                            <div key={item.id} className="col-span-3">
-                              <SpecialFuncFactory
-                                data={item.data as any}
-                                globalValues={globalValues}
-                                setGlobalValues={setGlobalValues}
-                                id={item.id}
-                              />
-                            </div>
-                          );
-                        }
+                          if (item.type === "specialfunc") {
+                            return (
+                              <div key={item.id} className="col-span-3">
+                                <SpecialFuncFactory
+                                  data={item.data as any}
+                                  globalValues={globalValues}
+                                  setGlobalValues={setGlobalValues}
+                                  id={item.id}
+                                />
+                              </div>
+                            );
+                          }
 
-                        if (item.type === "section") {
-                          const section = item.data;
-                          const parentVal = globalValues?.[section.dependsOn];
+                          if (item.type === "section") {
+                            const section = item.data;
+                            const parentVal = globalValues?.[section.dependsOn];
+                            const shouldShow =
+                              !section.dependsOn ||
+                              (section.dependsOnValue === "__not_empty__"
+                                ? !!parentVal && parentVal.trim() !== ""
+                                : parentVal === section.dependsOnValue);
 
-                          // old behavior — remove
-                          // if (section.dependsOn && parentVal !== section.dependsOnValue) return null;
+                            if (!shouldShow) return null;
 
-                          // ✅ new, smarter behavior
-                          const shouldShow =
-                            !section.dependsOn ||
-                            (section.dependsOnValue === "__not_empty__"
-                              ? !!parentVal && parentVal.trim() !== ""
-                              : parentVal === section.dependsOnValue);
+                            return (
+                              <div key={item.id} className="col-span-3">
+                                <DynamicSection
+                                  section={section}
+                                  form={form}
+                                  watchedValues={memoizedWatchedValues}
+                                  selectedObjects={selectedObjects}
+                                  setConfig={setConfig}
+                                  globalValues={globalValues}
+                                  setGlobalValues={setGlobalValues}
+                                  setSelectedObjects={setSelectedObjects}
+                                  isSubmitting={isSubmitting}
+                                  setIsSubmitting={setIsSubmitting}
+                                  handleUpdateRowGroup={handleUpdateRowGroup}
+                                  schema={normalizedSchema}
+                                  onFieldOptionsUpdate={handleFieldOptionsUpdate}
+                                />
+                              </div>
+                            );
+                          }
 
-                          if (!shouldShow) return null;
+                          return null;
+                        })}
+                    </div>
+                  )}
 
-                          return (
-                            <div key={item.id} className="col-span-3">
-                              <DynamicSection
-                                section={section}
-                                form={form}
-                                watchedValues={memoizedWatchedValues}
-                                selectedObjects={selectedObjects}
-                                setConfig={setConfig}
-                                globalValues={globalValues}
-                                setGlobalValues={setGlobalValues}
-                                setSelectedObjects={setSelectedObjects}
-                                isSubmitting={isSubmitting}
-                                setIsSubmitting={setIsSubmitting}
-                                handleUpdateRowGroup={handleUpdateRowGroup}
-                                schema={normalizedSchema}
-                                onFieldOptionsUpdate={handleFieldOptionsUpdate}
-                              />
-                            </div>
-                          );
-                        }
-
-                        return null;
-                      })}
-                  </div>
-
-
-                  <div className="flex justify-end pt-6">
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? "Submitting..." : "Submit"}
-                    </Button>
-                  </div>
-
+                  {!hideSubmit && (
+                    <div className="flex justify-end pt-6">
+                      <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? "Submitting..." : "Submit"}
+                      </Button>
+                    </div>
+                  )}
                 </form>
               </Form>
-            </CardContent>
-          </Card>
+            );
+
+            if (hideCard) {
+              return <div className="p-1">{content}</div>;
+            }
+
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{config.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {content}
+                </CardContent>
+              </Card>
+            );
+          })()
       }
 
 

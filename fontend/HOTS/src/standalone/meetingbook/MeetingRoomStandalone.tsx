@@ -220,7 +220,7 @@ const MeetingRoomStandalone: React.FC = () => {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <GanttRoomUsage setGlobalValues={setGlobalValues} formData={globalValues} />
+                            <GanttRoomUsage setGlobalValues={setGlobalValues} formData={globalValues} enableBooking={false} />
                         </CardContent>
                     </Card>
 

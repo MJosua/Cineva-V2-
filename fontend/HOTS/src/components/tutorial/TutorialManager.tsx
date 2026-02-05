@@ -4,22 +4,42 @@ import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
 import usePreferences from '@/hooks/usePreferences';
 import { getDashboardSteps } from './tutorialSteps';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 export const TutorialManager: React.FC = () => {
-    const { getPreference, setPreference, loading } = usePreferences();
+    const { getPreference, setPreference, loading, fetchPreferences, invalidateCache, preferences } = usePreferences();
     const driverRef = useRef<any>(null);
+    const { token, isAuthenticated } = useAppSelector((state) => state.auth);
+    const lastToken = useRef<string | null>(token);
+
+    // Effect to handle token changes (re-login or initial load)
+    useEffect(() => {
+        if (token && token !== lastToken.current) {
+            console.log("🔄 [TutorialManager] Token changed/restored. Refreshing preferences...");
+            invalidateCache();
+            fetchPreferences(true);
+            lastToken.current = token;
+        }
+    }, [token, invalidateCache, fetchPreferences]);
 
     useEffect(() => {
-        // Wait for preferences to load
+        // Guard 1: Must be authenticated with a token
+        if (!isAuthenticated || !token) return;
+
+        // Guard 2: Preferences must be finished loading
         if (loading) return;
 
-        // ✅ Guard: Only run tutorial if user is authenticated
-        const token = localStorage.getItem('tokek');
-        if (!token) return; // User is not logged in, skip tutorial
+        // Guard 3: Preferences must be populated (prevent race condition with empty default state)
+        if (!preferences || Object.keys(preferences).length === 0) {
+            console.log("⏳ [TutorialManager] Waiting for preferences to sync...");
+            return;
+        }
 
         // Check if tutorial is already completed
         const isTutorialCompleted = getPreference('tutorial', 'dashboard_onboarding', false);
         if (isTutorialCompleted) return;
+
+        console.log("🚀 [TutorialManager] Starting dashboard tutorial...");
 
         // Initialize driver
         const driverObj = driver({
@@ -30,6 +50,7 @@ export const TutorialManager: React.FC = () => {
                     driverObj.destroy();
                     // Tutorial is finished, save preference
                     setPreference('tutorial', 'dashboard_onboarding', true);
+                    console.log("✅ [TutorialManager] Tutorial completed and saved.");
                 }
             },
             onPopoverRender: (popover, { config, state }) => {
@@ -87,12 +108,7 @@ export const TutorialManager: React.FC = () => {
             }
         };
 
-    }, [loading, getPreference]); // removed setPreference from dependencies to avoid loop, though it's stable
-
-    // We need to listen to the "Finish" event to save preference
-    // Since driver.js doesn't have a simple "onFinish" in current types sometimes, 
-    // we can use the onDestroy logic or wrap the steps.
-    // Actually, checking `driverObj.hasNextStep()` in `onDestroyStarted` is a good way.
+    }, [loading, getPreference, isAuthenticated, token, preferences, setPreference]);
 
     return null; // This component handles side-effects only
 };

@@ -1211,9 +1211,15 @@ const TicketDetail = () => {
                   )}
                   <div className="flex justify-between text-sm">
                     <span>Progress</span>
-                    <span>{filteredSteps.filter(s => s.status === 'approved').length}/{filteredSteps.length} approved</span>
+                    {filteredSteps.length === 0 ? (
+                      <Badge className="bg-green-100 text-green-800 border-green-200">
+                        Automatic / No Approval Needed
+                      </Badge>
+                    ) : (
+                      <span>{filteredSteps.filter(s => s.status === 'approved').length}/{filteredSteps.length} approved</span>
+                    )}
                   </div>
-                  <Progress value={progressPercentage} className="h-2" />
+                  <Progress value={filteredSteps.length === 0 ? 100 : progressPercentage} className="h-2" />
                 </div>
 
                 <div className="space-y-3">

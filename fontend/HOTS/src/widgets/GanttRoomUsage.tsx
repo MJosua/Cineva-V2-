@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useAppSelector } from "@/hooks/useAppSelector";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
@@ -16,6 +17,12 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { WidgetProps } from "@/types/widgetTypes";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { API_URL } from "@/config/sourceConfig";
+import axios from "axios";
+import { Loader2 } from "lucide-react";
 
 // Generate 30-minute slots (08:00–17:30)
 const timeSlots = Array.from({ length: 18 }, (_, i) => {
@@ -24,21 +31,24 @@ const timeSlots = Array.from({ length: 18 }, (_, i) => {
   return `${hour.toString().padStart(2, "0")}:${minutes}`;
 });
 
-function getNextFiveWeekdays(startDate = new Date()) {
+const getNextSevenDays = (startDate = new Date()) => {
   const days: string[] = [];
   const date = new Date(startDate);
-  // We want to show 5 week days starting from the date
-  while (days.length < 5) {
-    if (date.getDay() !== 0 && date.getDay() !== 6) {
-      days.push(date.toISOString().split("T")[0]);
-    }
+  // Return 7 consecutive days including weekends
+  for (let i = 0; i < 7; i++) {
+    days.push(date.toISOString().split("T")[0]);
     date.setDate(date.getDate() + 1);
   }
   return days;
 }
 
-const GanttRoomUsage: React.FC<WidgetProps> = ({ formData = {}, setGlobalValues }) => {
+interface GanttRoomUsageProps extends WidgetProps {
+  enableBooking?: boolean;
+}
+
+const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGlobalValues, enableBooking = true }) => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { bookings, rooms, loading } = useAppSelector((state) => state.meetingroom);
 
   // 🔍 Debug: Inspect incoming data
@@ -76,28 +86,16 @@ const GanttRoomUsage: React.FC<WidgetProps> = ({ formData = {}, setGlobalValues 
   const [baseDate, setBaseDate] = useState(getStartOfCurrentWeek());
   const [direction, setDirection] = useState(0); // -1 for left, 1 for right (animation)
 
-  const visibleDates = useMemo(() => getNextFiveWeekdays(baseDate), [baseDate]);
+  const visibleDates = useMemo(() => getNextSevenDays(baseDate), [baseDate]);
 
   const handlePrevDay = () => {
     setDirection(-1);
-    setBaseDate(prev => {
-      let d = subDays(prev, 1);
-      // Skip weekends when navigating back
-      if (d.getDay() === 0) d = subDays(d, 2); // Sun -> Fri
-      if (d.getDay() === 6) d = subDays(d, 1); // Sat -> Fri
-      return d;
-    });
+    setBaseDate(prev => subDays(prev, 1));
   };
 
   const handleNextDay = () => {
     setDirection(1);
-    setBaseDate(prev => {
-      let d = addDays(prev, 1);
-      // Skip weekends when navigating forward
-      if (d.getDay() === 0) d = addDays(d, 1); // Sun -> Mon
-      if (d.getDay() === 6) d = addDays(d, 2); // Sat -> Mon
-      return d;
-    });
+    setBaseDate(prev => addDays(prev, 1));
   };
 
   const handleToday = () => {
@@ -160,6 +158,14 @@ const GanttRoomUsage: React.FC<WidgetProps> = ({ formData = {}, setGlobalValues 
     }
   }, [formData["date"], formData["start_time"], formData["end_time"]]);
 
+  // --- Internal Booking State ---
+  const { toast } = useToast();
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [purpose, setPurpose] = useState("");
+  const [PIC, setPIC] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { user } = useAppSelector((state) => state.auth); // Get current user
+
   const roomList = useMemo(() => rooms.map((r) => r.room_name), [rooms]);
 
   const timeToIndex = (time?: string) => {
@@ -185,7 +191,9 @@ const GanttRoomUsage: React.FC<WidgetProps> = ({ formData = {}, setGlobalValues 
 
     setGlobalValues?.((prev) => ({
       ...prev,
-      room: roomId, // Send Canonical ID to Form Engine
+      room: selectedRoom, // Display Name
+      room_name: selectedRoom, // Display Name
+      room_id: roomId, // Canonical ID
       date: dateStr,
       start_time: start,
       end_time: end,
@@ -194,6 +202,13 @@ const GanttRoomUsage: React.FC<WidgetProps> = ({ formData = {}, setGlobalValues 
     setDragState(null);
     setClickPending(null);
     setModalOpen(false);
+
+    // If internal booking is enabled, open the booking modal
+    if (enableBooking) {
+      setPurpose("");
+      setPIC("");
+      setShowBookingModal(true);
+    }
   };
 
   const handleMouseDown = (dateStr: string, idx: number) => {
@@ -351,15 +366,22 @@ const GanttRoomUsage: React.FC<WidgetProps> = ({ formData = {}, setGlobalValues 
           {visibleDates.map((dStr) => {
             const d = new Date(dStr);
             const isToday = dStr === format(new Date(), 'yyyy-MM-dd');
+            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+            let headerBg = "";
+            if (isToday) headerBg = "bg-blue-100/80 border-b-2 border-blue-500";
+            else if (isWeekend) headerBg = "bg-slate-200/50";
+
             return (
               <div
                 key={dStr}
-                className={`h-10 flex flex-col items-center justify-center border-r last:border-r-0 ${isToday ? "bg-blue-50/50" : ""}`}
+                className={`h-10 flex flex-col items-center justify-center border-r last:border-r-0 ${headerBg}`}
               >
-                <span className={`text-[10px] uppercase font-bold ${isToday ? "text-blue-600" : "text-muted-foreground"}`}>
+                {isWeekend && <span className="text-[9px] text-gray-500 font-bold tracking-tighter leading-none mb-0.5">WEEKEND</span>}
+                <span className={`text-[10px] uppercase font-bold ${isToday ? "text-blue-700" : "text-muted-foreground"}`}>
                   {format(d, 'eee')}
                 </span>
-                <span className={`text-xs font-black ${isToday ? "text-blue-700" : "text-foreground"}`}>
+                <span className={`text-xs font-black ${isToday ? "text-blue-800" : "text-foreground"}`}>
                   {format(d, 'MMM d')}
                 </span>
               </div>
@@ -405,88 +427,98 @@ const GanttRoomUsage: React.FC<WidgetProps> = ({ formData = {}, setGlobalValues 
                 className="absolute inset-0 grid"
                 style={{ gridTemplateColumns: `repeat(${visibleDates.length}, 1fr)` }}
               >
-                {visibleDates.map((dateStr) => (
-                  <div key={dateStr} className="relative border-r last:border-r-0">
-                    {timeSlots.map((_, idx) => {
-                      const slotStart = timeSlots[idx];
-                      const slotEnd = timeSlots[idx + 1] || "17:30";
+                {visibleDates.map((dateStr) => {
+                  const d = new Date(dateStr);
+                  const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                  const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
 
-                      const isOccupied = bookings.some(
-                        (b) => b.room === selectedRoom && b.date === dateStr && slotStart >= b.start_time && slotStart < b.end_time
-                      );
+                  let colBg = "";
+                  if (isToday) colBg = "bg-blue-50/70";
+                  else if (isWeekend) colBg = "bg-slate-100/60";
 
-                      const isSelectedFinal =
-                        userSelection.date === dateStr &&
-                        slotStart >= (userSelection.start || "") &&
-                        slotStart < (userSelection.end || "");
+                  return (
+                    <div key={dateStr} className={`relative border-r last:border-r-0 ${colBg}`}>
+                      {timeSlots.map((_, idx) => {
+                        const slotStart = timeSlots[idx];
+                        const slotEnd = timeSlots[idx + 1] || "17:30";
 
-                      const inDrag =
-                        dragState?.date === dateStr &&
-                        idx >= Math.min(dragState.startIdx ?? 0, dragState.endIdx ?? 0) &&
-                        idx <= Math.max(dragState.startIdx ?? 0, dragState.endIdx ?? 0);
+                        const isOccupied = bookings.some(
+                          (b) => b.room === selectedRoom && b.date === dateStr && slotStart >= b.start_time && slotStart < b.end_time
+                        );
 
-                      const isClickPending =
-                        clickPending?.date === dateStr && clickPending.idx === idx;
+                        const isSelectedFinal =
+                          userSelection.date === dateStr &&
+                          slotStart >= (userSelection.start || "") &&
+                          slotStart < (userSelection.end || "");
 
-                      const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
+                        const inDrag =
+                          dragState?.date === dateStr &&
+                          idx >= Math.min(dragState.startIdx ?? 0, dragState.endIdx ?? 0) &&
+                          idx <= Math.max(dragState.startIdx ?? 0, dragState.endIdx ?? 0);
 
-                      return (
-                        <div
-                          key={idx}
-                          onMouseDown={() => handleMouseDown(dateStr, idx)}
-                          onMouseEnter={() => handleMouseEnter(dateStr, idx)}
-                          onMouseUp={() => handleMouseUp(dateStr)}
-                          onClick={() => {
-                            if (mode === "click-range") handleSlotClick(dateStr, idx);
-                            if (mode === "modal") openModalFor(dateStr, idx);
-                          }}
-                          className={`h-8 border-b border-dashed cursor-pointer transition-colors
+                        const isClickPending =
+                          clickPending?.date === dateStr && clickPending.idx === idx;
+
+                        const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
+
+                        return (
+                          <div
+                            key={idx}
+                            onMouseDown={() => handleMouseDown(dateStr, idx)}
+                            onMouseEnter={() => handleMouseEnter(dateStr, idx)}
+                            onMouseUp={() => handleMouseUp(dateStr)}
+                            onClick={() => {
+                              if (mode === "click-range") handleSlotClick(dateStr, idx);
+                              if (mode === "modal") openModalFor(dateStr, idx);
+                            }}
+                            className={`h-8 border-b border-dashed cursor-pointer transition-colors
                             ${isOccupied ? "bg-blue-200/40 cursor-not-allowed opacity-50" : ""}
                             ${inDrag ? "bg-green-300/50" : ""}
                             ${isClickPending ? "bg-yellow-200/50" : ""}
                             ${isSelectedFinal ? "bg-green-400/50 border-x-2 border-green-500/30" : ""}
                             ${!isOccupied && !inDrag && !isClickPending && !isSelectedFinal
-                              ? isToday ? "bg-blue-50/20 hover:bg-blue-100/50" : "hover:bg-blue-50/50"
-                              : ""
-                            }`}
-                          title={isOccupied ? "Already booked" : `Book ${slotStart}–${slotEnd}`}
-                        />
-                      );
-                    })}
-
-                    {/* Booking blocks rendered strictly inside the day column */}
-                    {bookings
-                      .filter((b) => b.room === selectedRoom && b.date === dateStr)
-                      .map((b) => {
-                        const start = timeToIndex(b.start_time);
-                        const end = timeToIndex(b.end_time);
-                        const span = Math.max(1, end - start);
-                        return (
-                          <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            key={b.id}
-                            className="absolute left-[3px] right-[3px] rounded-md px-2 py-1 text-[10px] text-white shadow-sm overflow-hidden z-[5] hover:z-10 hover:shadow-md transition-all group"
-                            style={{
-                              top: `${start * 32 + 2}px`,
-                              height: `${span * 32 - 4}px`,
-                              backgroundColor: "#3B82F6",
-                            }}
-                            title={`Purpose: ${b.purpose || 'Meeting'}\nPIC: ${b.PIC || 'Unknown'}\nDept: ${b.booked_by || 'Unknown'}\nTime: ${b.start_time} - ${b.end_time}`}
-                          >
-                            <div className="font-bold truncate">{b.purpose || b.PIC || b.booked_by}</div>
-                            <div className="opacity-90">{b.start_time}–{b.end_time}</div>
-                            {/* Hover Details (Mini Tooltip within card if space allows, or use standard browser title) */}
-                            <div className="hidden group-hover:block absolute top-0 left-0 right-0 bottom-0 bg-blue-600 p-1">
-                              <div className="font-bold truncate text-xs">{b.purpose || "Meeting"}</div>
-                              <div className="truncate text-[9px] opacity-90">👤 {b.PIC}</div>
-                              <div className="truncate text-[9px] opacity-75">🏢 {b.booked_by}</div>
-                            </div>
-                          </motion.div>
+                                ? isToday ? "bg-blue-50/20 hover:bg-blue-100/50" : "hover:bg-blue-50/50"
+                                : ""
+                              }`}
+                            title={isOccupied ? "Already booked" : `Book ${slotStart}–${slotEnd}`}
+                          />
                         );
                       })}
-                  </div>
-                ))}
+
+                      {/* Booking blocks rendered strictly inside the day column */}
+                      {bookings
+                        .filter((b) => (b.room || "").toLowerCase() === (selectedRoom || "").toLowerCase() && b.date === dateStr)
+                        .map((b) => {
+                          const start = timeToIndex(b.start_time);
+                          const end = timeToIndex(b.end_time);
+                          const span = Math.max(1, end - start);
+                          return (
+                            <motion.div
+                              initial={{ scale: 0.95, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              key={b.id}
+                              className="absolute left-[3px] right-[3px] rounded-md px-2 py-1 text-[10px] text-white shadow-sm overflow-hidden z-[5] hover:z-10 hover:shadow-md transition-all group"
+                              style={{
+                                top: `${start * 32 + 2}px`,
+                                height: `${span * 32 - 4}px`,
+                                backgroundColor: "#3B82F6",
+                              }}
+                              title={`Purpose: ${b.purpose || 'Meeting'}\nPIC: ${b.PIC || 'Unknown'}\nDept: ${b.booked_by || 'Unknown'}\nTime: ${b.start_time} - ${b.end_time}`}
+                            >
+                              <div className="font-bold truncate">{b.purpose || b.PIC || b.booked_by}</div>
+                              <div className="opacity-90">{b.start_time}–{b.end_time}</div>
+                              {/* Hover Details (Mini Tooltip within card if space allows, or use standard browser title) */}
+                              <div className="hidden group-hover:block absolute top-0 left-0 right-0 bottom-0 bg-blue-600 p-1">
+                                <div className="font-bold truncate text-xs">{b.purpose || "Meeting"}</div>
+                                <div className="truncate text-[9px] opacity-90">👤 {b.PIC}</div>
+                                <div className="truncate text-[9px] opacity-75">🏢 {b.booked_by}</div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                    </div>
+                  );
+                })}
               </motion.div>
             </AnimatePresence>
           </div>
@@ -507,62 +539,169 @@ const GanttRoomUsage: React.FC<WidgetProps> = ({ formData = {}, setGlobalValues 
         )}
       </CardContent>
 
-      {/* --- Modal Picker --- */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="relative bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-sm z-[110] border"
-          >
-            <h3 className="font-bold mb-4 text-center text-gray-800 text-lg">Set Meeting Duration</h3>
-            <p className="text-xs text-center text-muted-foreground mb-6">You selected {timeSlots[modalStartIdx]} as start time.</p>
 
-            <div className="grid grid-cols-2 gap-4 items-center mb-8">
-              <div>
-                <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Start</label>
-                <div className="w-full border rounded-lg p-3 bg-gray-50 text-gray-700 font-bold text-center">
-                  {timeSlots[modalStartIdx]}
+
+      {/* --- Internal Booking Modal --- */}
+      {
+        showBookingModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6"
+            >
+              <h3 className="text-lg font-semibold mb-4 text-center text-gray-800">
+                Confirm Meeting Booking
+              </h3>
+
+              <div className="space-y-2 text-sm text-gray-700 mb-4 bg-gray-50 p-3 rounded-md border">
+                <p><b className="text-gray-500 w-16 inline-block">Room:</b> {selectedRoom}</p>
+                <p><b className="text-gray-500 w-16 inline-block">Date:</b> {userSelection.date ? format(new Date(userSelection.date), 'iiii, MMM d, yyyy') : ''}</p>
+                <p><b className="text-gray-500 w-16 inline-block">Time:</b> <span className="text-blue-600 font-bold">{userSelection.start} – {userSelection.end}</span></p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">PIC / Organizer</label>
+                  <Input
+                    type="text"
+                    placeholder="Enter person in charge"
+                    value={PIC}
+                    onChange={(e) => setPIC(e.target.value)}
+                    className="bg-gray-50/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Purpose</label>
+                  <Textarea
+                    value={purpose}
+                    onChange={(e) => setPurpose(e.target.value)}
+                    placeholder="Enter meeting purpose or agenda"
+                    className="bg-gray-50/50 min-h-[80px]"
+                  />
                 </div>
               </div>
-              <div>
-                <label className="text-[10px] uppercase font-bold text-blue-600 block mb-1">End Time</label>
-                <select
-                  className="w-full border-2 border-blue-500 rounded-lg p-3 bg-white font-bold text-center focus:ring-2 focus:ring-blue-200 outline-none"
-                  value={modalEndIdx}
-                  onChange={(e) => setModalEndIdx(Number(e.target.value))}
-                >
-                  {timeSlots.map((t, i) =>
-                    i > modalStartIdx ? (
-                      <option key={t} value={i}>
-                        {t}
-                      </option>
-                    ) : null
-                  )}
-                </select>
-              </div>
-            </div>
 
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setModalOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-                onClick={confirmModal}
-              >
-                Confirm
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </Card>
+              <div className="mt-6 flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowBookingModal(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  disabled={submitting || !PIC || !purpose}
+                  onClick={async () => {
+                    setSubmitting(true);
+                    try {
+                      const roomObj = rooms.find(r => r.room_name === selectedRoom);
+                      const roomId = roomObj?.resource_key || roomObj?.id;
+
+                      // Construct standard HOTS payload
+                      const payload = {
+                        form_data: {
+                          room: { type: "field", label: "Room Name", value: selectedRoom, field_id: "room_field" },
+                          room_id: { type: "field", label: "Room ID", value: String(roomId || ""), field_id: "room_id_field" },
+                          date: { type: "field", label: "Date", value: userSelection.date, field_id: "date_field" },
+                          start_time: { type: "field", label: "Start Time", value: userSelection.start, field_id: "start_time_field" },
+                          end_time: { type: "field", label: "End Time", value: userSelection.end, field_id: "end_time_field" },
+                          purpose: { type: "field", label: "Purpose of Meeting", value: purpose, field_id: "purpose_field" },
+                          PIC: { type: "field", label: "PIC", value: PIC, field_id: "PIC_field" },
+                          requested_by: { type: "field", label: "Requested By", value: user?.firstname || "User", field_id: "requested_by_field" }
+                        }
+                      };
+
+                      await axios.post(`${API_URL}/hots_ticket/create/ticket/13`, payload, {
+                        headers: { Authorization: `Bearer ${localStorage.getItem("tokek")}` },
+                      });
+
+                      dispatch(fetchMeetingBookings());
+
+                      toast({
+                        title: "Success",
+                        description: "Meeting room booked successfully!",
+                      });
+
+                      setShowBookingModal(false);
+                      // Redirect to My Tickets
+                      navigate("/my-tickets");
+                    } catch (err) {
+                      console.error(err);
+                      toast({
+                        title: "Booking Failed",
+                        description: "Could not create booking. Please try again.",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setSubmitting(false);
+                    }
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 min-w-[100px]"
+                >
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Booking"}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )
+      }
+
+      {/* --- Modal Picker --- */}
+      {
+        modalOpen && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="relative bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-sm z-[110] border"
+            >
+              <h3 className="font-bold mb-4 text-center text-gray-800 text-lg">Set Meeting Duration</h3>
+              <p className="text-xs text-center text-muted-foreground mb-6">You selected {timeSlots[modalStartIdx]} as start time.</p>
+
+              <div className="grid grid-cols-2 gap-4 items-center mb-8">
+                <div>
+                  <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Start</label>
+                  <div className="w-full border rounded-lg p-3 bg-gray-50 text-gray-700 font-bold text-center">
+                    {timeSlots[modalStartIdx]}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase font-bold text-blue-600 block mb-1">End Time</label>
+                  <select
+                    className="w-full border-2 border-blue-500 rounded-lg p-3 bg-white font-bold text-center focus:ring-2 focus:ring-blue-200 outline-none"
+                    value={modalEndIdx}
+                    onChange={(e) => setModalEndIdx(Number(e.target.value))}
+                  >
+                    {timeSlots.map((t, i) =>
+                      i > modalStartIdx ? (
+                        <option key={t} value={i}>
+                          {t}
+                        </option>
+                      ) : null
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  onClick={confirmModal}
+                >
+                  Confirm
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )
+      }
+    </Card >
   );
 };
 

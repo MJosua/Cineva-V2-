@@ -11,6 +11,7 @@ import { useAppSelector } from "@/hooks/useAppSelector";
 import { loginUser, getPersistentUserData, loadPersistentUser } from "@/store/slices/authSlice";
 import { fetchCatalogData } from "@/store/slices/catalogSlice";
 import { fetchMyTickets, fetchAllTickets, fetchTaskList } from "@/store/slices/ticketsSlice";
+import usePreferences from "@/hooks/usePreferences";
 
 interface TokenExpiredModalProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ const TokenExpiredModal: React.FC<TokenExpiredModalProps> = ({
   const dispatch = useAppDispatch();
   const { toast } = useToast();
   const { isLoading, user } = useAppSelector((state) => state.auth);
+  const { invalidateCache, fetchPreferences } = usePreferences();
 
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -50,7 +52,7 @@ const TokenExpiredModal: React.FC<TokenExpiredModalProps> = ({
     setPassword('');
     setValidationError('');
     setShowPassword(false);
-    
+
     // Call the logout navigation handler
     onNavigateToLogin();
   };
@@ -65,7 +67,7 @@ const TokenExpiredModal: React.FC<TokenExpiredModalProps> = ({
     const updated = trialCount - 1;
     setTrialCount(updated);
     localStorage.setItem('trialCount', updated.toString());
-    
+
     if (!password.trim()) {
       setValidationError('Password is required');
       return;
@@ -75,7 +77,7 @@ const TokenExpiredModal: React.FC<TokenExpiredModalProps> = ({
 
     // Use multiple fallbacks for username
     const loginUsername = user?.uid || user?.username || effectiveUsername || username;
-    
+
     if (!loginUsername) {
       setValidationError('Unable to retrieve username for re-authentication');
       return;
@@ -86,12 +88,17 @@ const TokenExpiredModal: React.FC<TokenExpiredModalProps> = ({
         username: loginUsername,
         password: password,
       })).unwrap();
-      
+
       // Re-fetch all data after successful authentication
       dispatch(fetchCatalogData());
       dispatch(fetchMyTickets(1));
       dispatch(fetchAllTickets(1));
       dispatch(fetchTaskList(1));
+
+      // 🔄 Force refresh preferences so logic (like tutorials) can re-eval correctly
+      console.log("🔄 [TokenExpiredModal] Re-login success. Refreshing preferences...");
+      invalidateCache();
+      await fetchPreferences(true);
 
       toast({
         title: "Authentication Successful",

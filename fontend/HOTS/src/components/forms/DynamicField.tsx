@@ -274,15 +274,37 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
         );
 
       case "time":
+        // Generate time slots from 08:00 to 18:00 in 30-minute intervals
+        const timeOptions = [];
+        for (let hour = 8; hour <= 18; hour++) {
+          const h = hour.toString().padStart(2, '0');
+          timeOptions.push(`${h}:00`);
+          if (hour < 18) { // Don't add 18:30 if 18:00 is the limit (or do, if needed. User asked 08:00-18:00)
+            timeOptions.push(`${h}:30`);
+          }
+        }
+
         return (
-          <Input
-            type={field.type}
+          <Select
             value={globalValues[field.name] ?? value ?? ""}
-            onChange={(e) => handleChange(e.target.value)}
             required={field.required}
-            readOnly={field.readonly}
-            className={error ? "border-red-500" : ""}
-          />
+            onValueChange={(newVal) => {
+              handleChange(newVal);
+              handleBlur();
+            }}
+            disabled={field.readonly}
+          >
+            <SelectTrigger className={error ? "border-red-500" : ""}>
+              <SelectValue placeholder={field.placeholder || "Select time"} />
+            </SelectTrigger>
+            <SelectContent className="bg-white border shadow-lg z-50 h-56">
+              {timeOptions.map((time) => (
+                <SelectItem key={time} value={time}>
+                  {time}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         );
 
       case "file":

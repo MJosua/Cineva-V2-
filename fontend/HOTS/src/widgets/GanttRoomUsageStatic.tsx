@@ -26,13 +26,11 @@ const timeSlots = Array.from({ length: 18 }, (_, i) => {
   return `${hour.toString().padStart(2, "0")}:${minutes}`;
 });
 
-function getNextFiveWeekdays(startDate = new Date()) {
+const getNextSevenDays = (startDate = new Date()) => {
   const days: string[] = [];
   const date = new Date(startDate);
-  while (days.length < 5) {
-    if (date.getDay() !== 0 && date.getDay() !== 6) {
-      days.push(date.toISOString().split("T")[0]);
-    }
+  for (let i = 0; i < 7; i++) {
+    days.push(date.toISOString().split("T")[0]);
     date.setDate(date.getDate() + 1);
   }
   return days;
@@ -45,49 +43,7 @@ const GanttRoomUsageStatic: React.FC<WidgetProps> = ({
 }) => {
   const { ticketDetail } = useAppSelector((state) => state.tickets);
 
-  // 🕒 Date Navigation State
-  // 🕒 Date Navigation State: Start from the beginning of the current week (Monday)
-  const getStartOfCurrentWeek = () => {
-    const today = new Date();
-    const day = today.getDay(); // 0 is Sunday
-    const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Adjust when Sunday
-    return startOfDay(new Date(today.setDate(diff)));
-  };
-
-  const [baseDate, setBaseDate] = useState(getStartOfCurrentWeek());
-  const [direction, setDirection] = useState(0);
-
-  const visibleDates = useMemo(() => getNextFiveWeekdays(baseDate), [baseDate]);
-
-  const handlePrevDay = () => {
-    setDirection(-1);
-    setBaseDate(prev => {
-      let d = subDays(prev, 1);
-      if (d.getDay() === 0) d = subDays(d, 2);
-      if (d.getDay() === 6) d = subDays(d, 1);
-      return d;
-    });
-  };
-
-  const handleNextDay = () => {
-    setDirection(1);
-    setBaseDate(prev => {
-      let d = addDays(prev, 1);
-      if (d.getDay() === 0) d = addDays(d, 1);
-      if (d.getDay() === 6) d = addDays(d, 2);
-      return d;
-    });
-  };
-
-  const handleToday = () => {
-    setDirection(baseDate > new Date() ? -1 : 1);
-    setBaseDate(getStartOfCurrentWeek());
-  };
-
-  // 🔹 Room data from widgetData (for other bookings)
-  const roomData: Booking[] = widgetData?.meetingRoomBookings || [];
-
-  // 🔹 Extract current ticket's info (Robust Search)
+  // 🔹 Extract current ticket's info FIRST to set initial date
   const findValue = (keys: string[], labelMatch?: string) => {
     return ticketDetail?.detail_rows?.find((r) => {
       const k = r.key?.toLowerCase();
@@ -98,12 +54,48 @@ const GanttRoomUsageStatic: React.FC<WidgetProps> = ({
     })?.cstm_col || "";
   };
 
+  const selectedDate = findValue(["date", "booking_date", "start_date"], "Date");
+
+  // 🕒 Date Navigation State
+  const getStartOfWeek = (base = new Date()) => {
+    const d = new Date(base);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when Sunday
+    return startOfDay(new Date(d.setDate(diff)));
+  };
+
+  const [baseDate, setBaseDate] = useState(() => {
+    // If ticket has a date, use that week. Otherwise use current week.
+    return getStartOfWeek(selectedDate ? new Date(selectedDate) : new Date());
+  });
+
+  const [direction, setDirection] = useState(0);
+
+  const visibleDates = useMemo(() => getNextSevenDays(baseDate), [baseDate]);
+
+  const handlePrevDay = () => {
+    setDirection(-1);
+    setBaseDate(prev => subDays(prev, 1));
+  };
+
+  const handleNextDay = () => {
+    setDirection(1);
+    setBaseDate(prev => addDays(prev, 1));
+  };
+
+  const handleToday = () => {
+    setDirection(baseDate > new Date() ? -1 : 1);
+    setBaseDate(getStartOfWeek());
+  };
+
+  // 🔹 Room data from widgetData (for other bookings)
+  const roomData: Booking[] = widgetData?.meetingRoomBookings || [];
+
   const { rooms } = useAppSelector((state) => state.meetingroom);
   const rawRoom = findValue(["room", "room_name", "room_id"], "Room Name");
   // Resolve ID to Name for visual display
   const selectedRoom = rooms.find(r => r.resource_key === rawRoom || String(r.id) === String(rawRoom))?.room_name || rawRoom;
 
-  const selectedDate = findValue(["date", "booking_date", "start_date"], "Date");
   const startTime = findValue(["start_time", "time_start", "start"], "Start Time");
   const endTime = findValue(["end_time", "time_end", "end"], "End Time");
 
@@ -184,15 +176,23 @@ const GanttRoomUsageStatic: React.FC<WidgetProps> = ({
             const d = new Date(dStr);
             const isToday = dStr === format(new Date(), 'yyyy-MM-dd');
             const isTarget = dStr === selectedDate;
+            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+            let headerBg = "";
+            if (isTarget) headerBg = "bg-green-100/80 border-b-2 border-green-500";
+            else if (isToday) headerBg = "bg-blue-100/80 border-b-2 border-blue-500";
+            else if (isWeekend) headerBg = "bg-slate-200/50";
+
             return (
               <div
                 key={dStr}
-                className={`h-10 flex flex-col items-center justify-center border-r last:border-r-0 ${isTarget ? "bg-green-50/50" : isToday ? "bg-blue-50/30" : ""}`}
+                className={`h-10 flex flex-col items-center justify-center border-r last:border-r-0 ${headerBg}`}
               >
-                <span className={`text-[10px] uppercase font-bold ${isTarget ? "text-green-600" : isToday ? "text-blue-600" : "text-muted-foreground"}`}>
+                {isWeekend && <span className="text-[8px] font-black text-slate-400 leading-none">WEEKEND</span>}
+                <span className={`text-[10px] uppercase font-bold ${isTarget ? "text-green-700" : isToday ? "text-blue-700" : "text-muted-foreground"}`}>
                   {format(d, 'eee')}
                 </span>
-                <span className={`text-xs font-black ${isTarget ? "text-green-700" : "text-foreground"}`}>
+                <span className={`text-xs font-black ${isTarget ? "text-green-800" : isToday ? "text-blue-800" : "text-foreground"}`}>
                   {format(d, 'MMM d')}
                 </span>
               </div>
@@ -230,12 +230,23 @@ const GanttRoomUsageStatic: React.FC<WidgetProps> = ({
                 {visibleDates.map((dateStr) => (
                   <div key={dateStr} className="relative border-r last:border-r-0">
                     {/* Background grid */}
-                    {timeSlots.map((_, idx) => (
-                      <div
-                        key={idx}
-                        className={`h-8 border-b border-dashed ${Math.floor(idx / 2) % 2 === 0 ? "bg-muted/10" : "bg-white"}`}
-                      ></div>
-                    ))}
+                    {timeSlots.map((_, idx) => {
+                      const d = new Date(dateStr);
+                      const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
+                      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+                      let bgClass = "bg-white";
+                      if (isToday) bgClass = "bg-blue-50/70";
+                      else if (isWeekend) bgClass = "bg-slate-100/60";
+                      else if (Math.floor(idx / 2) % 2 === 0) bgClass = "bg-muted/10";
+
+                      return (
+                        <div
+                          key={idx}
+                          className={`h-8 border-b border-dashed ${bgClass}`}
+                        ></div>
+                      );
+                    })}
 
                     {/* Booking blocks */}
                     {roomData

@@ -117,6 +117,7 @@ const AppContentInner = () => {
           <Route path="/verify" element={<VerifyPage />} />
           <Route path="/forgot-password/:token" element={<ResetPasswordPage />} />
           <Route path="/card/card" element={<CardProfilePage />} />
+          <Route path="/meetingbook" element={<MeetingRoomStandalone />} />
 
 
           {/* Protected Routes */}

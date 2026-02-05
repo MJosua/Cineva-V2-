@@ -47,6 +47,20 @@ const ProgressionBar = ({ steps, className, showDetails = false }: ProgressionBa
       .sort((a, b) => (a.approval_order ?? 0) - (b.approval_order ?? 0));
 
 
+    // 🧩 AUTO-STATUS / NO APPROVAL CASE
+    if (totalSteps === 0) {
+      return (
+        <div className={cn("flex items-center space-x-2", className)}>
+          <div className="flex items-center px-2 py-0.5 rounded-full bg-green-100 border border-green-200">
+            <Check className="w-3 h-3 text-green-600 mr-1.5" />
+            <span className="text-[10px] uppercase font-bold text-green-700 tracking-tight">
+              Automatic
+            </span>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className={cn("flex items-center space-x-1", className)}>
         <span className="text-sm font-medium text-muted-foreground mr-2">
