@@ -209,7 +209,8 @@ export const fetchTaskCount = createAsyncThunk(
         return rejectWithValue(response.data.message || 'Failed to fetch task count');
       }
 
-      return response.data.count || 0;
+      // Backend returns summary.my_approvals
+      return response.data.summary?.my_approvals || 0;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message);
     }
@@ -343,6 +344,10 @@ const ticketsSlice = createSlice({
     setDocumentProcessing: (state, action: PayloadAction<string | null>) => {
       if (!state.sseSignals) state.sseSignals = { assignment: 0, comment: 0, document: 0, ticket: 0 };
       state.sseSignals.processingTicketId = action.payload;
+    },
+    // 🆕 Update sidebar counts (Approvals only for this slice)
+    setSidebarCounts: (state, action: PayloadAction<{ approvals?: number }>) => {
+      if (action.payload.approvals !== undefined) state.taskCount = action.payload.approvals;
     }
   },
 
@@ -477,5 +482,5 @@ const ticketsSlice = createSlice({
   },
 });
 
-export const { clearErrors, setCurrentPage, clearTicketDetail, triggerSSERefresh, setDocumentProcessing } = ticketsSlice.actions;
+export const { clearErrors, setCurrentPage, clearTicketDetail, triggerSSERefresh, setDocumentProcessing, setSidebarCounts } = ticketsSlice.actions;
 export default ticketsSlice.reducer;

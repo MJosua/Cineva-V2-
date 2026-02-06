@@ -511,7 +511,14 @@ const TicketDetail = () => {
 
 
   const handleGeneratedDocumentDownload = (documentPath: string, fileName: string) => {
-    const downloadUrl = `${API_URL}/${documentPath}`;
+    let downloadUrl = `${API_URL}/${documentPath}`;
+
+    // For virtual documents (HTML), request PDF format for download
+    if (fileName.toLowerCase().endsWith('.html')) {
+      downloadUrl += '?format=pdf';
+      fileName = fileName.replace(/\.html$/i, '.pdf');
+    }
+
     console.log("downloadUrl", downloadUrl)
     const link = document.createElement('a');
     link.href = downloadUrl;
@@ -864,16 +871,16 @@ const TicketDetail = () => {
   return (
     <>
       <div className="space-y-6 relative z-0">
-        <div className="sticky top-[80px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 pb-4">
+        <div className="sticky top-[120px] sm:top-[72px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-40 pb-4 pt-2 -mx-4 px-4 sm:mx-0 sm:px-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+              <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="px-3">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">#{ticketDetail?.ticket_id}</h1>
-                <p className="text-muted-foreground">{ticketDetail?.service_name}</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground leading-none">#{ticketDetail?.ticket_id}</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">{ticketDetail?.service_name}</p>
               </div>
             </div>
           </div>
@@ -1117,8 +1124,9 @@ const TicketDetail = () => {
                           key={document.id}
                           fileName={document.file_name}
                           filePath={document.file_path}
+                          fileUrl={document.view_url}
                           uploadDate={document.generated_date}
-                          onDownload={() => handleGeneratedDocumentDownload(document.file_path, document.file_name)}
+                          onDownload={() => handleGeneratedDocumentDownload(document.download_url || document.file_path, document.file_name)}
                         />
                       ))}
                     </div>

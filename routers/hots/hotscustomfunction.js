@@ -27,6 +27,7 @@ route.get('/excel_data/:ticketId', decodeTokenHT, hotscustomfunctionController.g
 route.get('/logs/:ticketId', decodeTokenHT, hotscustomfunctionController.getFunctionLogs);
 route.get('/documents/:ticketId', decodeTokenHT, hotscustomfunctionController.getGeneratedDocuments);
 route.get('/download/:documentId', decodeTokenHT, hotscustomfunctionController.downloadDocument);
+route.get('/render/:documentId', decodeTokenHT, hotscustomfunctionController.renderVirtualDocument);
 route.post('/execute-doc-gen/:ticketId', decodeTokenHT, hotscustomfunctionController.manualGenerateDocument);
 
 // SRF Number Generation

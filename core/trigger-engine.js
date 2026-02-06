@@ -102,31 +102,41 @@ class TriggerEngine {
 
     console.log(`📧 [TRIGGER][EMAIL] Sending email with template: ${template}, ticketId: ${ticketId}`);
 
+    // 🔥 Fire-and-Forget Pattern: Don't await email calls to prevent blocking
+    // Email errors are logged but don't block the main request flow
     try {
       if (template === 'submit') {
         // Use hotsSubmitMailer for submission confirmation
         const userName = context.userName || context.actor?.name || 'User';
         const serviceName = context.serviceName || context.moduleKey || 'Service';
         const mailAddress = to || context.requesterEmail;
-        await hotsSubmitMailer(false, ticketId, userName, serviceName, mailAddress);
+        // Fire-and-forget: no await, log errors but don't block
+        hotsSubmitMailer(false, ticketId, userName, serviceName, mailAddress)
+          .catch(err => console.error(`❌ [TRIGGER][EMAIL] Submit email failed (async):`, err.message));
       } else if (template === 'approve') {
         // Use hotsApproveRequest for approval notifications
-        await hotsApproveRequest(false, ticketId);
+        // Fire-and-forget: no await, log errors but don't block
+        hotsApproveRequest(false, ticketId)
+          .catch(err => console.error(`❌ [TRIGGER][EMAIL] Approve email failed (async):`, err.message));
       } else if (template === 'assignment_complete') {
         // Use hotsAssignmentCompleteMailer for assignment completion
         const { hotsAssignmentCompleteMailer } = require('../service/mailer/hots/hots_mailer');
-        await hotsAssignmentCompleteMailer(false, ticketId);
+        // Fire-and-forget: no await, log errors but don't block
+        hotsAssignmentCompleteMailer(false, ticketId)
+          .catch(err => console.error(`❌ [TRIGGER][EMAIL] Assignment complete email failed (async):`, err.message));
       } else {
         // Generic fallback using hotsMailer
         const subject = params.subject || `[HOTS] Notification - Ticket ${ticketId}`;
         const body = params.body || `Ticket ${ticketId} has been updated.`;
-        await hotsMailer(to, subject, body);
+        // Fire-and-forget: no await, log errors but don't block
+        hotsMailer(to, subject, body)
+          .catch(err => console.error(`❌ [TRIGGER][EMAIL] Generic email failed (async):`, err.message));
       }
 
-      console.log(`✅ [TRIGGER][EMAIL] Email sent successfully`);
-      return { ok: true };
+      console.log(`✅ [TRIGGER][EMAIL] Email queued (fire-and-forget)`);
+      return { ok: true, async: true };
     } catch (e) {
-      console.error(`❌ [TRIGGER][EMAIL] Error sending email:`, e);
+      console.error(`❌ [TRIGGER][EMAIL] Error setting up email:`, e);
       return { ok: false, error: e.message };
     }
   }

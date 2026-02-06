@@ -20,6 +20,15 @@ const FormLoader = require('../../core/form-loader');
 const workflowEngineCore = require('../../core/workflow-engine');
 const triggerEngineCore = require('../../core/trigger-engine');
 const documentEngineCore = require('../../core/document-engine');
+const sseHelper = require('../../core/sse-helper');
+
+const {
+  STATUS_IDS,
+  SERVICE_IDS,
+  EVENT_TYPES,
+  APPROVAL_STATUS,
+  ASSIGNMENT_TYPES
+} = require('../../script/Utility/hotsConstants');
 
 async function generateCustomTicketID(db, service_id, user_id) {
   const year = new Date().getFullYear().toString().slice(-2);
@@ -323,16 +332,27 @@ const EngineController = {
           try {
             await p.beginTransaction();
 
+            // build workflow from DB (using module.workflow_id)
+            const workflow = await workflowEngine.loadWorkflow(module);
+            // console.log('🔍 Workflow loaded:', workflow);
+
+            const approvers = await workflowEngine.resolveApprovers(workflow, { actor: { user_id: creator_id }, ticket: { ticket_id }, formData: form_data });
+            // console.log('🔍 Approvers resolved:', approvers);
+
             // ensure service_id value for header
             const sid = module.service_id || service_id || null;
 
             // insert header into t_ticket
+            // 🧩 AUTO-STATUS: If no approvers resolved, set status to 1 (Fulfilled/Active) instead of 2 (Waiting)
+            // Status 1 = Fulfilled (Green), Status 3 = In Progress (Orange)
+            const initialStatus = (approvers && approvers.length > 0) ? 2 : 1;
+
             await p.query(
               `INSERT INTO t_ticket
                (ticket_id, parent_ticket_id, company_id, service_id, service_name,
                 created_by, creator_email, status_id, workflow_step, creation_date, submitted_at,
                 last_update, engine_version, json_snapshot, title)
-               VALUES (?, NULL, ?, ?, ?, ?, ?, 2, 0, NOW(), NOW(), NOW(), ?, ?, ?)`,
+               VALUES (?, NULL, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW(), NOW(), ?, ?, ?)`,
               [
                 ticket_id,
                 company_id || null,
@@ -340,6 +360,7 @@ const EngineController = {
                 module.module_name || module.module_key,
                 creator_id || null,
                 creator_email || null,
+                initialStatus,
                 module.engine_version || 4,
                 JSON.stringify(form_data || {}),
                 title || module.module_name
@@ -348,13 +369,6 @@ const EngineController = {
 
             // insert details (EAV) — pass serviceItems for data separation
             await saveEav(p, ticket_id, form_data, null, module.items, sid);
-
-            // build workflow from DB (using module.workflow_id)
-            const workflow = await workflowEngine.loadWorkflow(module);
-            // console.log('🔍 Workflow loaded:', workflow);
-
-            const approvers = await workflowEngine.resolveApprovers(workflow, { actor: { user_id: creator_id }, ticket: { ticket_id }, formData: form_data });
-            // console.log('🔍 Approvers resolved:', approvers);
 
             let firstPending = null;
             for (const step of approvers) {
@@ -386,7 +400,8 @@ const EngineController = {
             // Let's skip inserting 'submit' event into t_ticket_event to avoid pollution.
 
             // update workflow level in header
-            await p.query('UPDATE t_ticket SET workflow_step = ?, last_update = NOW() WHERE ticket_id = ?', [approvers.length ? approvers[0].level : 0, ticket_id]);
+            const workflow_step = approvers.length ? approvers[0].level : 0;
+            await p.query('UPDATE t_ticket SET workflow_step = ?, last_update = NOW() WHERE ticket_id = ?', [workflow_step, ticket_id]);
 
             await p.commit();
             conn.release();
@@ -395,7 +410,12 @@ const EngineController = {
             await triggerEngine.runTriggersForEvent(module.module_key, 'on_create', { ticketId: ticket_id, actor: { user_id: creator_id }, formData: form_data, moduleKey: module.module_key });
             await triggerEngine.runTriggersForEvent(module.module_key, 'on_submit', { ticketId: ticket_id, actor: { user_id: creator_id }, formData: form_data, moduleKey: module.module_key });
 
-            resolve({ ok: true, ticket_id, next_approver: firstPending, workflow_steps: approvers.length });
+            // 🧩 Extra: if auto-fulfill, run workflow_complete trigger
+            if (approvers.length === 0) {
+              await triggerEngine.runTriggersForEvent(module.module_key, 'workflow_complete', { ticketId: ticket_id, actor: { user_id: creator_id }, moduleKey: module.module_key, status: 1 });
+            }
+
+            resolve({ ok: true, ticket_id, next_approver: firstPending, workflow_steps: approvers.length, auto_fulfilled: approvers.length === 0 });
           } catch (e) {
             try { await conn.promise().rollback(); } catch (_) { }
             conn.release();
@@ -417,6 +437,12 @@ const EngineController = {
           title: 'Approval Required',
           message: `Ticket #${result.ticket_id} (${module.module_name}) requires your approval`
         });
+
+        // 🆕 PUSH COUNTER for next approver
+        try {
+          const { pushCountersToUser } = require('../../core/sse-helper');
+          pushCountersToUser(result.next_approver);
+        } catch (e) { console.error('SSE Push Error:', e.message); }
       } else {
         console.warn(`⚠️ [SSE_DEBUG] Skipping emit. conditions not met.`);
       }
@@ -440,6 +466,50 @@ const EngineController = {
     } catch (e) {
       log('status error', e);
       return res.status(500).json({ ok: false, error: e.message });
+    }
+  },
+
+  async dashboard(req, res) {
+    const userId = req.dataToken.user_id;
+    try {
+      // 1. My Approvals (Pending) - ONLY event_type = 'approve'
+      const [approvalRows] = await dbHots.promise().query(
+        `SELECT COUNT(*) as count 
+         FROM t_ticket_event 
+         WHERE approver_id = ? 
+         AND approval_status = ?
+         AND event_type = ?`,
+        [userId, APPROVAL_STATUS.PENDING, EVENT_TYPES.APPROVAL]
+      );
+
+      // 2. My Assignments (Tasks) - event_type = 'assignment' OR 'task'
+      const [assignmentRows] = await dbHots.promise().query(
+        `SELECT COUNT(*) as count 
+         FROM t_ticket_assignment 
+         WHERE assigned_to = ? 
+         AND status = 'pending'`,
+        [userId]
+      );
+
+      // Also check t_ticket_event for task/assignment event types
+      const [eventAssignmentRows] = await dbHots.promise().query(
+        `SELECT COUNT(*) as count 
+         FROM t_ticket_event 
+         WHERE approver_id = ? 
+         AND approval_status = ?
+         AND event_type IN (?, 'task')`,
+        [userId, APPROVAL_STATUS.PENDING, EVENT_TYPES.ASSIGNMENT]
+      );
+
+      res.json({
+        ok: true,
+        myApprovals: approvalRows[0].count,
+        myAssignments: assignmentRows[0].count + eventAssignmentRows[0].count,
+        // legacy compat
+        count: approvalRows[0].count + assignmentRows[0].count + eventAssignmentRows[0].count
+      });
+    } catch (err) {
+      res.status(500).json({ ok: false, error: err.message });
     }
   },
 
@@ -500,11 +570,37 @@ const EngineController = {
 
       console.log(`🔍 [APPROVE] Workflow result:`, result);
 
+      // 🔥 Silent Refresh / Real-time Updates
+      if (result.ok) {
+        // 1. Notify current approver to refresh their sidebar/count
+        sseHelper.pushCountersToUser(approver_id);
+
+        if (result.final) {
+          // 2. Notify requester that ticket is fully approved
+          if (header.created_by) {
+            sseHelper.pushCountersToUser(header.created_by);
+            global.sseManager?.emitToUser(header.created_by, 'ticket_approved', {
+              ticket_id,
+              message: `Ticket ${ticket_id} has been fully approved.`
+            });
+          }
+        } else if (result.next_approver_ids) {
+          // 3. Notify next approvers
+          for (const nextId of result.next_approver_ids) {
+            sseHelper.pushCountersToUser(nextId);
+            global.sseManager?.emitToUser(nextId, 'approval_needed', {
+              ticket_id,
+              service_id: header.service_id,
+              message: `New approval request for ticket ${ticket_id}`
+            });
+          }
+        }
+      }
+
       // 🔥 additional trigger for fully approved
       if (result.final === true) {
-        // Determine status based on workflow result
-        // If tasks were created, status is 5 (In Fulfillment), otherwise 3 (Completed)
-        const newStatus = (result.tasksCreated && result.tasksCreated > 0) ? 5 : 3;
+        // If tasks were created, status is PENDING (5), otherwise FULFILLED (1)
+        const newStatus = (result.tasksCreated && result.tasksCreated > 0) ? STATUS_IDS.PENDING : STATUS_IDS.FULFILLED;
         console.log(`🔍 [APPROVE] Final approval! tasksCreated=${result.tasksCreated}, newStatus=${newStatus}`);
 
         await triggerEngine.runTriggersForEvent(
@@ -514,17 +610,15 @@ const EngineController = {
             ticketId: ticket_id,
             actor: { user_id: approver_id },
             moduleKey: module.module_key,
-            status: newStatus // Pass status explicitly for condition checks
+            status: newStatus
           }
         );
       }
 
       // Determine currentStatus to pass to on_approve trigger
-      // Priority: If final, use the determined status, otherwise query DB or pass null
       let currentStatus = null;
       if (result.final) {
-        currentStatus = (result.tasksCreated && result.tasksCreated > 0) ? 5 : 3;
-        console.log(`🔍 [APPROVE] Calculated currentStatus for on_approve: ${currentStatus} (tasksCreated: ${result.tasksCreated})`);
+        currentStatus = (result.tasksCreated && result.tasksCreated > 0) ? STATUS_IDS.PENDING : STATUS_IDS.FULFILLED;
       }
 
       await triggerEngine.runTriggersForEvent(
@@ -534,9 +628,9 @@ const EngineController = {
           ticketId: ticket_id,
           actor: { user_id: approver_id },
           moduleKey: module.module_key,
-          status: currentStatus, // Might be null if not final
+          status: currentStatus,
           isFinal: result.final,
-          workflow_step: header.workflow_step, // 🔥 Add step for step-based triggers
+          workflow_step: header.workflow_step,
           note: approvalNote // 🔥 Add note for has_notes condition
         }
       );
@@ -568,6 +662,18 @@ const EngineController = {
             message: `Ticket #${ticket_id} follows up for your approval`
           });
         }
+
+        // 🆕 PUSH COUNTERS
+        try {
+          const { pushCountersToUser } = require('../../core/sse-helper');
+          // 1. Update THIS approver (count - 1)
+          pushCountersToUser(approver_id);
+
+          // 2. Update NEXT approver (count + 1), if any
+          if (result.next_approver) {
+            pushCountersToUser(result.next_approver);
+          }
+        } catch (e) { console.error('SSE Push Error:', e.message); }
       }
 
       return res.json(result);
@@ -648,6 +754,12 @@ const EngineController = {
           title: 'Ticket Rejected',
           message: `Your ticket #${ticket_id} was rejected. Note: ${note || 'No remark'}`
         });
+
+        // 🆕 PUSH COUNTERS (Update THIS approver, count - 1)
+        try {
+          const { pushCountersToUser } = require('../../core/sse-helper');
+          pushCountersToUser(approver_id);
+        } catch (e) { console.error('SSE Push Error:', e.message); }
       }
 
       return res.json(result);
@@ -923,9 +1035,20 @@ const EngineController = {
       `);
       const summary = {}; statusRows.forEach(r => summary[r.status] = r.total);
 
-      // Fix: use approver_id and approval_status
-      const [approvals] = await dbHots.promise().query('SELECT COUNT(*) AS total FROM t_ticket_event e WHERE e.approver_id = ? AND e.approval_status = 0', [user_id]);
+      // Fix: use approver_id and approval_status AND workflow_step
+      // Fixed Query to match sse-helper.js Logic
+      const approvalSql = `
+        SELECT COUNT(*) AS total 
+        FROM t_ticket_event e 
+        INNER JOIN t_ticket t ON t.ticket_id = e.ticket_id
+        WHERE e.approver_id = ? 
+          AND e.approval_status = 0
+          AND e.approval_order = t.workflow_step
+      `;
+      const [approvals] = await dbHots.promise().query(approvalSql, [user_id]);
       summary.my_approvals = approvals[0].total;
+
+      console.log(timestamp, `🔍 [ENGINE][DASHBOARD] Count Approvals for ${user_id}: ${summary.my_approvals}`);
 
       const [reqs] = await dbHots.promise().query('SELECT COUNT(*) AS total FROM t_ticket WHERE created_by = ?', [user_id]);
       summary.my_requests = reqs[0].total;

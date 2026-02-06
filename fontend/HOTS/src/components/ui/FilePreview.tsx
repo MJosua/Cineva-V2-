@@ -47,6 +47,8 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
       case 'xlsx':
       case 'xls':
         return <FileText className="w-4 h-4 text-green-500" />;
+      case 'html': // New
+        return <FileText className="w-4 h-4 text-orange-500" />;
       default:
         return <FileText className="w-4 h-4 text-gray-500" />;
     }
@@ -65,6 +67,8 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
       case 'xlsx':
       case 'xls':
         return 'bg-green-100 text-green-800';
+      case 'html': // New
+        return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -72,22 +76,58 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
   const canPreview = (filename: string) => {
     const ext = getFileExtension(filename);
-    return ['pdf', 'jpg', 'jpeg', 'png', 'gif'].includes(ext);
+    return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'html'].includes(ext);
   };
+
+  /* New State for Blob URL */
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  // Clean URL construction
+  const getFullUrl = () => {
+    let previewUrl = fileUrl || filePath;
+    if (!previewUrl) return '';
+
+    // Remove leading slash if strictly relative (not http)
+    const normalizedPath = previewUrl.replace(/\\/g, '/');
+    if (normalizedPath.startsWith('http')) return normalizedPath;
+
+    // Handle double slash prevention
+    const cleanPath = normalizedPath.startsWith('/') ? normalizedPath.substring(1) : normalizedPath;
+    return `${API_URL}/${cleanPath}`;
+  };
+
+  const fullUrl = getFullUrl();
+
+  // Fetch HTML as Blob when preview opens
+  React.useEffect(() => {
+    if (isPreviewOpen && getFileExtension(fileName) === 'html' && fullUrl) {
+      setLoadingPreview(true);
+      fetch(fullUrl, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('tokek')}`
+        }
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to load document');
+          return res.blob();
+        })
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          setBlobUrl(url);
+        })
+        .catch(err => {
+          console.error("Preview fetch error:", err);
+        })
+        .finally(() => setLoadingPreview(false));
+    }
+  }, [isPreviewOpen, fullUrl, fileName]);
+
 
   const renderPreview = () => {
     const ext = getFileExtension(fileName);
 
-    // Always construct full URL using API_URL for file paths
-    let previewUrl = fileUrl || filePath;
-    if (!previewUrl) return <p>Preview not available</p>;
-
-    // If path starts with 'public' or contains backslashes, it's a relative backend path
-    const normalizedPath = previewUrl.replace(/\\/g, '/');
-    const fullUrl = normalizedPath.startsWith('http')
-      ? normalizedPath
-      : `${API_URL}/${normalizedPath}`;
-
+    if (!fullUrl) return <p>Preview not available</p>;
 
     if (ext === 'pdf') {
       // Always use react-pdf-viewer for PDFs (iframe gets blocked by browser security for cross-origin)
@@ -97,6 +137,18 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
             <Viewer fileUrl={fullUrl} />
           </div>
         </Worker>
+      );
+    }
+
+    if (ext === 'html') {
+      if (loadingPreview) return <div className="p-4 text-center">Loading preview...</div>;
+
+      return (
+        <iframe
+          src={blobUrl || fullUrl}
+          className="w-full h-[700px] border rounded bg-white"
+          title={fileName}
+        />
       );
     }
 

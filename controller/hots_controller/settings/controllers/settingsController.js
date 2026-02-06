@@ -3,6 +3,8 @@ const {
     dbQueryHots,
     dbQuery,
 } = require("../../../../config/db");
+const resourceEngine = require('../../../../core/resource-engine');
+const { RESOURCE_CATEGORIES } = require('../../../../script/Utility/hotsConstants');
 // const cookieParser = require('cookie-parser');
 
 let yellowTerminal = "\x1b[33m";
@@ -674,42 +676,40 @@ module.exports = {
         }
     },
 
-    getSRFSampleCategory: (req, res) => {
+    getSRFSampleCategory: async (req, res) => {
+        const date = new Date();
+        const timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
-        let date = new Date();
-        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+        try {
+            // Use ResourceEngine to fetch SAMPLE_CATEGORY
+            const resources = await resourceEngine.getResourcesByCategory(RESOURCE_CATEGORIES.SAMPLE_CATEGORY);
 
-        let user_id = req.dataToken.user_id
+            // Map to legacy m_sample_category structure for backward compatibility
+            // Legacy expected fields: samplecat_id, samplecat_name, samplecat_shortname, samplecat_parent_id, samplecat_group, active
+            const results = resources
+                .filter(r => r.attributes?.samplecat_group === 'NOODLE' || !r.attributes?.samplecat_group) // Keep original filter logic
+                .map(r => ({
+                    samplecat_id: r.value,
+                    samplecat_name: r.label,
+                    samplecat_shortname: r.attributes?.samplecat_shortname || r.resource_key,
+                    samplecat_parent_id: r.attributes?.samplecat_parent_id || null,
+                    samplecat_group: r.attributes?.samplecat_group || 'NOODLE',
+                    active: r.is_active ? 1 : 0
+                }));
 
-        // cari username dulu
-        const queryGetData = `
-        SELECT 
-            *
-        FROM 
-            m_sample_category
-        where
-	    samplecat_group = 'NOODLE'
-
-        `;
-
-        dbHots.execute(queryGetData, (err1, results1) => {
-            if (err1) {
-                res.status(500).send({
-                    success: false,
-                    message: err1
-                });
-                console.log(timestamp, "HOTS Get getSRFSampleCategory Error: ", err1);
-                return;
-            } else {
-                res.status(200).send({
-                    success: true,
-                    message: "GET getSRFSampleCategory  SUCCESS",
-                    data: results1 // include menu data in the response
-                });
-                console.log(timestamp, "GET getSRFSampleCategory  SUCCESS");
-            }
-        });
-
+            res.status(200).send({
+                success: true,
+                message: "GET getSRFSampleCategory SUCCESS",
+                data: results
+            });
+            console.log(timestamp, "GET getSRFSampleCategory SUCCESS (ResourceEngine)");
+        } catch (err) {
+            console.error(timestamp, "HOTS Get getSRFSampleCategory Error: ", err);
+            res.status(500).send({
+                success: false,
+                message: err.message || err
+            });
+        }
     },
 
     getSRFDeliverTo: (req, res) => {

@@ -9,6 +9,7 @@
  */
 
 const assert = require('assert');
+const { STATUS_IDS } = require('../script/Utility/hotsConstants');
 
 class WorkflowEngine {
   constructor() {
@@ -568,12 +569,12 @@ class WorkflowEngine {
           console.log(`  ✅ [TASK] Task ${taskOrder} created successfully`);
         }
 
-        // Set status to "In Fulfillment" (5) with workflow_step reset to 0
-        console.log(`🟢 [WF][STATUS] Setting ticket status to 5 (In Fulfillment) and workflow_step to 0`);
+        // Set status to PENDING (5) with workflow_step reset to 0
+        console.log(`🟢 [WF][STATUS] Setting ticket status to 5 (PENDING) and workflow_step to 0`);
         await p.query(
-          `UPDATE t_ticket SET status_id = 5, workflow_step = 0
+          `UPDATE t_ticket SET status_id = ?, workflow_step = 0
            WHERE ticket_id = ?`,
-          [ticket_id]
+          [STATUS_IDS.PENDING, ticket_id]
         );
 
         return {
@@ -584,9 +585,9 @@ class WorkflowEngine {
         };
       }
 
-      // No tasks, mark as completed
-      console.log(`🟡 [WF][NO_TASKS] No tasks defined, marking ticket as completed (status 3)`);
-      await p.query(`UPDATE t_ticket SET status_id = 3, workflow_step = ? WHERE ticket_id = ?`, [currentLevel, ticket_id]);
+      // No tasks, mark as FULFILLED (1)
+      console.log(`🟡 [WF][NO_TASKS] No tasks defined, marking ticket as FULFILLED (${STATUS_IDS.FULFILLED})`);
+      await p.query(`UPDATE t_ticket SET status_id = ?, workflow_step = ? WHERE ticket_id = ?`, [STATUS_IDS.FULFILLED, currentLevel, ticket_id]);
       return { ok: true, final: true, message: 'Ticket fully approved' };
     }
 
@@ -598,10 +599,12 @@ class WorkflowEngine {
       return { ok: false, error: `Workflow missing level ${nextLevel}` };
     }
 
+    const next_approver_ids = nextStep.approver_ids || [];
+
     // ℹ️ No need to insert approval events here - they're already created at ticket creation time
     // Just update the workflow step
     await p.query(`UPDATE t_ticket SET workflow_step = ? WHERE ticket_id = ?`, [nextLevel, ticket_id]);
-    return { ok: true, next_level: nextLevel };
+    return { ok: true, next_level: nextLevel, next_approver_ids };
   }
 
   async reject({ ticket_id, approver_id, note, module, dbHots }) {
@@ -645,7 +648,7 @@ class WorkflowEngine {
     AND approval_status = 0
 `, [ticket_id, currentLevel, approver_id]);
 
-    await p.query(`UPDATE t_ticket SET status_id = 4 WHERE ticket_id = ?`, [ticket_id]);
+    await p.query(`UPDATE t_ticket SET status_id = ? WHERE ticket_id = ?`, [STATUS_IDS.REJECTED, ticket_id]);
     return { ok: true, message: 'Ticket rejected' };
   }
 
@@ -676,10 +679,10 @@ class WorkflowEngine {
     const allTasksComplete = (remainingTasks[0].remaining === 0);
 
     if (allTasksComplete) {
-      // All tasks done, mark ticket as completed
+      // All tasks done, mark ticket as FULFILLED (1)
       await p.query(
-        `UPDATE t_ticket SET status_id = 6 WHERE ticket_id = ?`,
-        [ticket_id]
+        `UPDATE t_ticket SET status_id = ? WHERE ticket_id = ?`,
+        [STATUS_IDS.FULFILLED, ticket_id]
       );
 
       // Log completion event

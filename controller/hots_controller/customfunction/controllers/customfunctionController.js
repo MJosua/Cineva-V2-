@@ -4,6 +4,8 @@ const {
     dbQuery,
     dbConf,
 } = require("../../../../config/db"); // Adjust path as needed
+const resourceEngine = require('../../../../core/resource-engine');
+const { RESOURCE_CATEGORIES } = require('../../../../script/Utility/hotsConstants');
 const XLSX = require('xlsx');
 const fs = require('fs');
 const path = require('path');
@@ -12,6 +14,8 @@ const yellowTerminal = '\x1b[33m';
 
 
 const puppeteer = require('puppeteer');
+const documentEngine = require('../../../../core/document-engine');
+const renderSRFHtml = require('../../../../core/renderers/srf-renderer');
 const Mustache = require('mustache');
 const QRCode = require('qrcode');
 // const { PORT, API_URL } = require("../../index");
@@ -34,14 +38,21 @@ const API_URL = process.env.BE_URL_HOTS || process.env.BE_URL || 'https://backen
 // Helper: Convert local image file to Base64 Data URL
 const imageToDataURL = (filePath) => {
     try {
+        if (!filePath) return null;
         // Remove leading slash if present
         const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
         // Resolve absolute path (assuming running from root)
-        const absolutePath = path.resolve(cleanPath);
+        let absolutePath = path.resolve(cleanPath);
 
         if (!fs.existsSync(absolutePath)) {
-            console.warn(`[imageToDataURL] File not found: ${absolutePath}`);
-            return null;
+            // Fallback: check if it's inside 'public' folder
+            const publicPath = path.resolve('public', cleanPath);
+            if (fs.existsSync(publicPath)) {
+                absolutePath = publicPath;
+            } else {
+                console.warn(`[imageToDataURL] File not found: ${absolutePath} or ${publicPath}`);
+                return null;
+            }
         }
         const fileBuffer = fs.readFileSync(absolutePath);
         const ext = path.extname(absolutePath).toLowerCase().replace('.', '');
@@ -493,18 +504,48 @@ module.exports = {
         const { ticketId } = req.params;
 
         try {
-            const [result] = await dbHots.promise().query(`
+            // Fetch physical files from t_file_upload
+            const [physicalDocs] = await dbHots.promise().query(`
                 SELECT 
                     upload_id as id,
                     entity_id as ticket_id,
                     filename as file_name,
                     file_path,
                     created_at as generated_date,
-                    'srf_document' as template_used
+                    'srf_document' as template_used,
+                    'physical' as document_type,
+                    NULL as view_url,
+                    NULL as download_url
                 FROM hots.t_file_upload 
                 WHERE entity_id = ? AND entity_type = 'generated_document'
-                ORDER BY created_at DESC
             `, [ticketId]);
+
+            // Fetch virtual documents from t_document
+            let virtualDocs = [];
+            try {
+                const [vDocs] = await dbHots.promise().query(`
+                    SELECT 
+                        id,
+                        entity_id as ticket_id,
+                        file_name,
+                        NULL as file_path,
+                        generated_at as generated_date,
+                        template_name as template_used,
+                        'virtual' as document_type,
+                        CONCAT('hots_customfunction/render/', id) as view_url,
+                        CONCAT('hots_customfunction/render/', id) as download_url
+                    FROM hots.t_document
+                    WHERE entity_id = ? AND entity_type = 'ticket'
+                `, [ticketId]);
+                virtualDocs = vDocs || [];
+            } catch (vErr) {
+                console.warn(`⚠️ [getGeneratedDocuments] Virtual docs query failed:`, vErr.message);
+            }
+
+            // Combine and sort by date descending
+            const result = [...physicalDocs, ...virtualDocs].sort((a, b) =>
+                new Date(b.generated_date) - new Date(a.generated_date)
+            );
 
             console.log(`${timestamp}Trying to get generated documents success from ${user_id}`);
 
@@ -514,6 +555,7 @@ module.exports = {
                 message: "Get generated documents success"
             });
         } catch (err) {
+            console.error(`❌ [getGeneratedDocuments] Error:`, err.message);
             res.status(500).json({
                 success: false,
                 message: err.message
@@ -606,8 +648,8 @@ module.exports = {
 
     /**
      * GET /hots_customfunction/srf/auto_category/:ticketId
-     * Auto-lookup category (RM/FG/GEN) from t_ticket_work_data + m_sample_category
-     * Uses samplecategory_field_id to lookup samplecat_shortname
+     * Auto-lookup category (RM/FG/GEN) from t_ticket_work_data + resource_m_data
+     * Uses samplecategory_field_id to lookup category from unified resource system
      */
     getAutoCategory: async (req, res) => {
         try {
@@ -617,26 +659,34 @@ module.exports = {
                 return res.status(400).json({ success: false, message: 'ticketId is required' });
             }
 
-            // Lookup samplecat_shortname by joining t_ticket_work_data with m_sample_category
-            const [rows] = await dbHots.promise().query(`
-                SELECT sc.samplecat_shortname, sc.samplecat_name, sc.samplecat_group
-                FROM hots.t_ticket_work_data wd
-                JOIN hots.m_sample_category sc 
-                  ON sc.samplecat_id = CAST(wd.field_value AS UNSIGNED)
-                WHERE wd.ticket_id = ?
-                  AND wd.field_name = 'samplecategory_field_id'
+            // Step 1: Get the samplecategory_field_id from t_ticket_work_data
+            const [workDataRows] = await dbHots.promise().query(`
+                SELECT field_value
+                FROM hots.t_ticket_work_data
+                WHERE ticket_id = ?
+                  AND field_name = 'samplecategory_field_id'
                 LIMIT 1
             `, [ticketId]);
 
-            if (rows.length > 0) {
-                const shortname = rows[0].samplecat_shortname || rows[0].samplecat_group || 'GEN';
-                console.log(`🔍 [AutoCategory] ticket=${ticketId}, category=${shortname}`);
-                return res.json({
-                    success: true,
-                    category: shortname,
-                    category_name: rows[0].samplecat_name,
-                    auto_detected: true
-                });
+            if (workDataRows.length > 0 && workDataRows[0].field_value) {
+                const categoryId = workDataRows[0].field_value;
+
+                // Step 2: Lookup from ResourceEngine (unified resource system)
+                const resource = await resourceEngine.getResource(
+                    RESOURCE_CATEGORIES.SAMPLE_CATEGORY,
+                    categoryId
+                );
+
+                if (resource) {
+                    const shortname = resource.attributes?.samplecat_shortname || resource.resource_key || 'GEN';
+                    console.log(`🔍 [AutoCategory] ticket=${ticketId}, category=${shortname} (from ResourceEngine)`);
+                    return res.json({
+                        success: true,
+                        category: shortname,
+                        category_name: resource.label,
+                        auto_detected: true
+                    });
+                }
             }
 
             // Fallback: no auto-detected category
@@ -1132,6 +1182,13 @@ module.exports = {
                 `, [documentId]);
 
             if (documents.length === 0) {
+                // If not found in t_file_upload, check if it's a virtual document
+                const virtualDoc = await documentEngine.getDocument(documentId);
+                if (virtualDoc) {
+                    // Redirect to render endpoint with format=pdf
+                    return res.redirect(`${req.baseUrl}/render/${documentId}?format=pdf`);
+                }
+
                 return res.status(404).json({
                     success: false,
                     message: 'Document not found'
@@ -1155,6 +1212,425 @@ module.exports = {
                 success: false,
                 message: err.message
             });
+        }
+    },
+
+    /**
+     * generateSRFVirtualHtml
+     * Exact mirror of generateSRFHtml but uses frozen events from snapshot
+     * instead of live database queries for approvals.
+     */
+    generateSRFVirtualHtml: async (ticketData, snapshotData, params) => {
+        // PRIORITY: Use snapshot data for 100% stability, fallback to live for older docs
+        const snapshotDetailRows = snapshotData?.detail_rows || [];
+
+        if (Array.isArray(ticketData)) {
+            const baseInfo = {
+                ticket_id: ticketData[0]?.ticket_id,
+                service_id: ticketData[0]?.service_id,
+                status_id: ticketData[0]?.status_id,
+                created_by: ticketData[0]?.created_by,
+                assigned_team: ticketData[0]?.assigned_team,
+                assigned_to: ticketData[0]?.assigned_to,
+                creation_date: ticketData[0]?.creation_date,
+                last_update: ticketData[0]?.last_update,
+                workflow_step: ticketData[0]?.workflow_step,
+                requester_name: params?.requester_name || ticketData[0]?.fullname || ticketData[0]?.requester_name
+            };
+
+            // If we have snapshot rows, use them. Otherwise map from live ticketData
+            detailRows = snapshotDetailRows.length > 0
+                ? snapshotDetailRows
+                : ticketData.map(r => ({
+                    lbl_col: r.lbl_col,
+                    value: r.value,
+                    cstm_col: r.cstm_col,
+                    order_col: r.order_col,
+                    field_type: r.field_type,
+                }));
+            data = { ...baseInfo, ...params, detail_rows: detailRows };
+        } else if (ticketData && typeof ticketData === 'object') {
+            data = { ...ticketData, ...params };
+            detailRows = snapshotDetailRows.length > 0 ? snapshotDetailRows : (params.detail_rows || ticketData.detail_rows || []);
+        }
+
+        const cleanValue = (value) => {
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed.join(', ') : parsed;
+            } catch { return value; }
+        };
+
+        const getByLabel = (labelKeyword) => {
+            let row = detailRows.find(r => r.cstm_col?.toLowerCase().includes(labelKeyword.toLowerCase()));
+            if (row) return cleanValue(row?.value || '');
+            row = detailRows.find(r => r.lbl_col?.toLowerCase().includes(labelKeyword.toLowerCase()));
+            return cleanValue(row?.cstm_col || row?.value || '') || 'No Data Found';
+        };
+
+        const getFactoryByFactoryId = async (factoryId) => {
+            try {
+                if (!factoryId) return '';
+                const [result] = await dbHots.promise().query('SELECT factory_sname, factory_name FROM mst_factory WHERE factory_id = ?', [factoryId]);
+                return result[0]?.factory_sname || result[0]?.factory_name || '';
+            } catch { return ''; }
+        };
+
+        const getFactoryIdFromWorkData = async (ticketId) => {
+            try {
+                const [result] = await dbHots.promise().query(
+                    `SELECT field_value FROM t_ticket_work_data WHERE ticket_id = ? AND field_name = 'factory_id' ORDER BY created_at DESC LIMIT 1`,
+                    [ticketId]
+                );
+                return result[0]?.field_value || null;
+            } catch { return null; }
+        };
+
+        const getFactoryPPIC = async (factoryId) => {
+            try {
+                if (!factoryId) return [];
+                const [results] = await dbHots.promise().query('SELECT pic_name, flag FROM iod.map_factory_pic WHERE factory_id = ? AND end_date IS NULL ORDER BY flag ASC', [factoryId]);
+                return results || [];
+            } catch { return []; }
+        };
+
+        const getSRFNumber = async (ticket_id) => {
+            try {
+                const [existingSRF] = await dbHots.promise().query(
+                    `SELECT field_value AS doc_no FROM t_ticket_work_data WHERE ticket_id = ? AND field_name = 'srf_document_number' LIMIT 1`,
+                    [ticket_id]
+                );
+                return existingSRF[0]?.doc_no || 'To Be Generated';
+            } catch { return 'Error'; }
+        };
+
+        // TRANSLATION LAYER: Map Snapshot IDs to Names/Emails
+        const snapshotEvents = snapshotData.events || [];
+        const userIds = [...new Set(snapshotEvents.map(e => e.approver_id).filter(id => id))];
+        let userMap = {};
+        if (userIds.length > 0) {
+            const [users] = await dbHots.promise().query('SELECT user_id, CONCAT(firstname, " ", lastname) as fullname, email FROM user WHERE user_id IN (?)', [userIds]);
+            users.forEach(u => userMap[u.user_id] = u);
+        }
+
+        const getApproval = async () => {
+            // Use frozen workflow if available, otherwise fallback to live (for backward compatibility)
+            const workflowDef = snapshotData.workflow_definition || await (async () => {
+                const [workflow] = await dbHots.promise().query('SELECT definition FROM m_service_workflow WHERE workflow_id = ? AND is_active = 1', [data.service_id]);
+                return workflow.length ? (typeof workflow[0].definition === 'string' ? JSON.parse(workflow[0].definition) : workflow[0].definition) : null;
+            })();
+
+            if (!workflowDef) return [];
+            const steps = workflowDef.steps || [];
+
+            return steps.map((step) => {
+                const event = snapshotEvents.find(e => e.approval_order === step.level);
+                return {
+                    approval_order: step.level,
+                    step_name: step.meta?.name || step.meta?.description || `Step ${step.level}`,
+                    approve_date: event?.approve_date || null,
+                    approver_id: event?.approver_id || null,
+                    fullname: userMap[event?.approver_id]?.fullname || null,
+                    email: userMap[event?.approver_id]?.email || null,
+                    remark: event?.remark || ''
+                };
+            });
+        };
+
+        const getApprovalLeaderOnly = async () => {
+            // Use frozen workflow if available, otherwise fallback to live (for backward compatibility)
+            const workflowDef = snapshotData.workflow_definition || await (async () => {
+                const [workflow] = await dbHots.promise().query('SELECT definition FROM m_service_workflow WHERE workflow_id = ? AND is_active = 1', [data.service_id]);
+                return workflow.length ? (typeof workflow[0].definition === 'string' ? JSON.parse(workflow[0].definition) : workflow[0].definition) : null;
+            })();
+
+            if (!workflowDef) return [];
+            const steps = workflowDef.steps || [];
+
+            return steps.map((step) => {
+                const event = snapshotEvents.find(e => e.approval_order === step.level && e.approver_leader == 1);
+                return {
+                    approval_order: step.level,
+                    step_name: step.meta?.name || step.meta?.description || `Step ${step.level}`,
+                    approve_date: event?.approve_date || null,
+                    approver_id: event?.approver_id || null,
+                    fullname: userMap[event?.approver_id]?.fullname || null,
+                    email: userMap[event?.approver_id]?.email || null,
+                    remark: event?.remark || ''
+                };
+            }).filter(step => step.approver_id !== null);
+        };
+
+        const getSignatureUrl = async (userId) => {
+            if (!userId) return '';
+            try {
+                // 1. Try profile path (Profile Handsign)
+                const signPath = await profileController.getUserSignaturePath(userId);
+                if (signPath) {
+                    const url = imageToDataURL(signPath);
+                    if (url) return url;
+                }
+                // 2. Fallback to legacy path (TTD Fallback)
+                return imageToDataURL(`public/ttd/sign-${userId}.jpg`) || '';
+            } catch (err) {
+                console.warn(`[getSignatureUrl] Error for user ${userId}:`, err.message);
+                return '';
+            }
+        };
+
+        // EXACT Logic from legacy generateSRFHtml
+        let factory_id = await getFactoryIdFromWorkData(data?.ticket_id);
+        let factory = '';
+
+        if (factory_id) {
+            factory = await getFactoryByFactoryId(factory_id);
+        } else {
+            factory_id = getByLabel('factory_id');
+            factory = getByLabel('factory');
+        }
+
+        const factoryPIC = await getFactoryPPIC(factory_id);
+        const approvallistRaw = await getApproval();
+        const approvallistLeaderOnly = await getApprovalLeaderOnly();
+        const approvallist = approvallistLeaderOnly.filter(a => a.approval_order !== 2);
+        const generatesrf = await getSRFNumber(data?.ticket_id);
+
+        // Build item rows
+        let totalPcs = 0, totalCtn = 0, itemRowsHtml = '';
+        const isEngineFormat = detailRows.some(r => r.field_type === 'rowgroup_item' || r.lbl_col?.toLowerCase() === 'quantity' || r.lbl_col?.toLowerCase() === 'item name');
+
+        if (isEngineFormat) {
+            const itemRows = detailRows.filter(r => r.lbl_col?.toLowerCase() === 'item name' || (r.field_type === 'rowgroup_item' && r.lbl_col?.toLowerCase().includes('item')));
+            const quantityRows = detailRows.filter(r => r.lbl_col?.toLowerCase() === 'quantity' || (r.field_type === 'rowgroup_item' && r.lbl_col?.toLowerCase().includes('quantity')));
+            itemRows.forEach((itemRow, i) => {
+                const itemName = itemRow.value || '';
+                const itemIndex = itemRow.cstm_col?.match(/\d+/)?.[0] || i.toString();
+                const qtyRow = quantityRows.find(q => q.cstm_col?.includes(itemIndex)) || quantityRows[i];
+                const qtyValue = qtyRow?.value || '';
+                let pcs = '', ctn = '';
+                const cleanQty = qtyValue.replace(/\|/g, '').trim();
+                if (cleanQty.toLowerCase().includes('pcs')) { const val = parseInt(cleanQty); if (!isNaN(val)) { totalPcs += val; pcs = val.toLocaleString(); } }
+                if (cleanQty.toLowerCase().includes('ctn')) { const val = parseInt(cleanQty); if (!isNaN(val)) { totalCtn += val; ctn = val.toLocaleString(); } }
+                itemRowsHtml += `<tr><td>${i + 1}</td><td>${itemName}</td><td>${pcs}</td><td>${ctn}</td></tr>`;
+            });
+        } else {
+            const itemRows = detailRows.filter(r => r.lbl_col?.toLowerCase().includes('item'));
+            itemRows.forEach((row, i) => {
+                const itemName = row.value || row.cstm_col || '';
+                const qtyRow = detailRows.find(r => r.lbl_col?.toLowerCase().includes('quantity') && r.order_col === row.order_col + 1) || detailRows[i + 1];
+                const qty = qtyRow?.value || qtyRow?.cstm_col || '';
+                let pcs = '', ctn = '';
+                if (qty.toLowerCase().includes('pcs')) { const val = parseInt(qty); if (!isNaN(val)) { totalPcs += val; pcs = val.toLocaleString(); } }
+                if (qty.toLowerCase().includes('ctn')) { const val = parseInt(qty); if (!isNaN(val)) { totalCtn += val; ctn = val.toLocaleString(); } }
+                itemRowsHtml += `<tr><td>${i + 1}</td><td>${itemName}</td><td>${pcs}</td><td>${ctn}</td></tr>`;
+            });
+        }
+
+        let notesHtml = '';
+        snapshotEvents.filter(e => e.remark).forEach(e => {
+            notesHtml += `<li>${userMap[e.approver_id]?.fullname || 'Unknown'} (${e.approval_order}): ${e.remark}</li>`;
+        });
+
+        const toPICs = factoryPIC.filter(p => p.flag === 1).map(p => p.pic_name);
+        const ccPICs = factoryPIC.filter(p => p.flag === 2).map(p => p.pic_name);
+
+        const approvalColumnsHtml = (await Promise.all(approvallist.map(async (approver) => {
+            const signUrl = approver.approve_date ? await getSignatureUrl(approver.approver_id) : '';
+            return `<td style="padding:10px;vertical-align:top;text-align:center;">
+                <div style="height:100px;display:flex;align-items:center;justify-content:center;">
+                    ${signUrl ? `<img src="${signUrl}" style="width:120px;" />` : ''}
+                </div>
+                <br><strong>${approver.fullname || "—"}</strong><br><span style="font-size:11px;">${approver.step_name}</span>
+            </td>`;
+        }))).join("");
+
+        const requesterSignUrl = await getSignatureUrl(data.created_by);
+
+        return `<html>
+            <head>
+                <meta charset="utf-8" />
+                <title>SAMPLE REQUEST FORM ( SRF ) - PREVIEW</title>
+                <style>
+                    body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th, td { border: 1px solid #000; padding: 5px; text-align: left; }
+                    .no-border td { border: none; }
+                    .center { text-align: center; }
+                    .bold { font-weight: bold; }
+                    .section-title { margin-top: 20px; font-weight: bold; font-size: 16px; text-align: center; }
+                    .note { border: 1px solid #000; padding: 10px; margin-top: 10px; }
+                    .approval-table td { height: 60px; vertical-align: bottom; text-align: center; }
+                    .small { font-size: 10px; }
+                    .no-border { width: 100%; table-layout: fixed; border-collapse: collapse; }
+                    .no-border td { vertical-align: top; padding: 4px; }
+                    .label { width: 12%; font-weight: bold; }
+                    .content { width: 38%; }
+                </style>
+            </head>
+            <body>
+                <div style="display:flex;justify-content:space-between;width:100%;">
+                    <div><img src="${imageToDataURL('public/aset/image/indofood_header_logo.png')}" style="height:35px" /></div>
+                    <div style="display:flex;justify-content:flex-end;"><img src="${imageToDataURL('public/aset/image/icbp_header_logo.png')}" style="height:35px" /></div>
+                </div>
+
+                <br>
+                <table class="no-border">
+                    <tr><td><strong>PT. INDOFOOD CBP SUKSES MAKMUR</strong></td><td style="text-align:right;">To&nbsp;: <em> ${toPICs.join(', ')} </em> </td></tr>
+                    <tr><td><strong>Division</strong>&nbsp;: IOD </td><td style="text-align:right;"></td></tr>
+                    <tr><td><strong>Location</strong>&nbsp;: INDOFOOD TOWER LT.23</td><td></td></tr>
+                    <tr><td><strong>SRF NO</strong>&nbsp;: ${generatesrf}</td><td></td></tr>
+                </table>
+
+                <div class="section-title">SAMPLE REQUEST FORM ( SRF )</div>
+
+                <table class="no-border">
+                    <tr>
+                        <td class="label">To</td><td class="content">: ${toPICs.join(', ')}</td>
+                        <td class="label">Name/Title</td><td class="content">: ${getByLabel('name')}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Cc</td><td class="content">: ${ccPICs.join(', ')}</td>
+                        <td class="label">Purposes</td><td class="content">: ${getByLabel('purpose')}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Deliver to</td><td class="content">: ${getByLabel('deliver_to')}</td>
+                        <td class="label">Category</td><td class="content">: ${getByLabel('Category_field')}</td>
+                    </tr>
+                </table>
+
+                <table>
+                    <thead><tr><th>NO</th><th>DESCRIPTION</th><th>QUANTITY IN PCS</th><th>QUANTITY IN CTN</th></tr></thead>
+                    <tbody>
+                        ${itemRowsHtml}
+                        <tr><td colspan="2" class="bold" style="text-align: right;">TOTAL</td><td class="bold">${totalPcs.toLocaleString()} PCS</td><td class="bold">${totalCtn.toLocaleString()} CTN</td></tr>
+                    </tbody>
+                </table>
+
+                <div class="note">
+                    <strong>Request Detail:</strong>
+                    ${(() => {
+                const po = getByLabel("PO_Number") || "";
+                return !po.toLowerCase().includes("no data found") ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${po}</p>` : "";
+            })()}
+
+                    ${getByLabel('Week Delivery') && getByLabel('Week Delivery') !== "No Data Found" ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>` : ''}
+                    <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('field_1761105177705').toLocaleString() === `true` ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
+                </div>
+
+                <div class="note">
+                    <strong>Note:</strong><br>
+                    ${getByLabel('field_1761105303599') ? `<p>${getByLabel('field_1761105303599')}</p>` : ''}
+                    ${notesHtml}
+                    <strong>Thank you</strong>
+                </div>
+
+                <table class="approval-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
+                    <tr class="bold">
+                        <td style="text-align:center; vertical-align:middle;">Request by</td>
+                        <td style="text-align:center; vertical-align:middle;" colspan="${approvallist.length}">Approved by</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px;vertical-align:top;text-align:center;">
+                            <div style="height: 100%; max-height:130px;display:flex; align-items: center; justify-content:center;">
+                                <img alt="sign" src="${requesterSignUrl}" style="width:120px;display:block;margin:0 auto 5px auto;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%2260%22><text y=%2230%22 fill=%22red%22>Image Error</text></svg>'" />
+                            </div>
+                            <br>${data?.requester_name || ''}<br><span style="font-size:12px;color:#555;">${params.business_analyst || 'Business Analyst'}</span>
+                        </td>
+                        ${approvalColumnsHtml}
+                    </tr>
+                </table>
+            </body></html>`;
+    },
+
+    /**
+     * Render Virtual Document (HTML or PDF)
+     * GET /hots_customfunction/render/:documentId?format=pdf
+     */
+    renderVirtualDocument: async (req, res) => {
+        try {
+            const { documentId } = req.params;
+            const format = req.query.format || 'html';
+
+            // Fetch from Engine
+            const document = await documentEngine.getDocument(documentId);
+            if (!document || !document.snapshot_data) return res.status(404).send('Document not found');
+
+            // Fetch Live Ticket Context (Detail Rows)
+            const [ticketData] = await dbHots.promise().query(
+                'SELECT * FROM t_ticket t LEFT JOIN t_ticket_detail td ON t.ticket_id = td.ticket_id WHERE t.ticket_id = ?',
+                [document.entity_id]
+            );
+
+            // Get requester info
+            const [requesterData] = await dbHots.promise().query(`
+                SELECT CONCAT(u.firstname, ' ', u.lastname) as requester_name, u.email as requester_email
+                FROM t_ticket t JOIN user u ON t.created_by = u.user_id WHERE t.ticket_id = ?
+            `, [document.entity_id]);
+
+            const params = {
+                requester_name: requesterData[0]?.requester_name || 'Unknown',
+                requester_email: requesterData[0]?.requester_email || '',
+                manual_trigger: false
+            };
+
+            // Render HTML using mirror generator
+            const htmlContent = await module.exports.generateSRFVirtualHtml(ticketData, document.snapshot_data, params);
+
+            // Serve PDF if requested
+            if (format === 'pdf') {
+                let browser;
+                try {
+                    browser = await puppeteer.launch({
+                        headless: true,
+                        args: [
+                            '--no-sandbox',
+                            '--disable-setuid-sandbox',
+                            '--disable-dev-shm-usage',
+                            '--disable-gpu',
+                            '--font-render-hinting=none'
+                        ]
+                    });
+                    const page = await browser.newPage();
+
+                    // Set content and wait for basic DOM
+                    await page.setContent(htmlContent, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+                    // Wait a bit for base64 images to be ready
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    const pdfBuffer = await page.pdf({
+                        format: 'A4',
+                        printBackground: true,
+                        margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' }
+                    });
+
+                    await browser.close();
+
+                    // Clear any previous generic headers
+                    res.removeHeader('Transfer-Encoding');
+
+                    res.status(200).set({
+                        'Content-Type': 'application/pdf',
+                        'Content-Disposition': `attachment; filename="${document.file_name.replace('.html', '.pdf')}"`,
+                        'Cache-Control': 'no-cache'
+                    });
+
+                    // Send as Buffer to ensure binary integrity
+                    return res.send(Buffer.from(pdfBuffer));
+                } catch (pdfErr) {
+                    if (browser) await browser.close();
+                    console.error('❌ [PDF_GEN] Puppeteer Error:', pdfErr.message);
+                    throw pdfErr; // Re-throw to main catch
+                }
+            }
+
+            // Serve HTML (For View/Iframe)
+            res.set('Content-Type', 'text/html');
+            res.send(htmlContent);
+
+        } catch (error) {
+            console.error('Render Virtual Doc Error:', error);
+            res.status(500).send('Failed to render document: ' + error.message);
         }
     },
 
@@ -1488,7 +1964,73 @@ module.exports = {
             }
         };
 
+        const getApprovalLeaderOnly = async (ticket_id) => {
+            try {
+                // 1. Get ticket service_id
+                const [ticket] = await dbHots.promise().query(
+                    'SELECT service_id FROM t_ticket WHERE ticket_id = ?',
+                    [ticket_id]
+                );
+                if (!ticket.length) {
+                    console.warn(`Ticket ${ticket_id} not found`);
+                    return [];
+                }
 
+                // 2. Get workflow definition
+                const [workflow] = await dbHots.promise().query(
+                    'SELECT definition FROM m_service_workflow WHERE workflow_id = ? AND is_active = 1',
+                    [ticket[0].service_id]
+                );
+                if (!workflow.length) {
+                    console.warn(`No workflow found for service ${ticket[0].service_id}`);
+                    return [];
+                }
+
+                // Parse definition - might already be object if MySQL2 auto-parsed JSON
+                const defRaw = workflow[0].definition;
+                const workflowDef = typeof defRaw === 'string' ? JSON.parse(defRaw) : defRaw;
+                const steps = workflowDef.steps || [];
+
+                // 3. Get approvals from t_ticket_event (only leaders for document signatures)
+                const [events] = await dbHots.promise().query(`
+                    SELECT
+                        e.approval_order,
+                        e.approve_date,
+                        e.approver_id,
+                        e.approver_leader,
+                        e.remark,
+                        CONCAT(u.firstname, ' ', u.lastname) AS fullname,
+                        u.email
+                    FROM t_ticket_event e
+                    LEFT JOIN user u ON e.approver_id = u.user_id
+                    WHERE e.ticket_id = ?
+                        AND e.event_type = 'approve'
+                        AND e.approver_leader = 1
+                    ORDER BY e.approval_order
+                `, [ticket_id]);
+
+                // 4. Map workflow steps to actual approvals (only for steps that have a leader approver)
+                return steps
+                    .map((step) => {
+                        const event = events.find(e => e.approval_order === step.level);
+
+                        return {
+                            approval_order: step.level,
+                            step_name: step.meta?.name || step.meta?.description || `Step ${step.level}`,
+                            approve_date: event?.approve_date || null,
+                            approver_id: event?.approver_id || null,
+                            approver_leader: event?.approver_leader || null,
+                            fullname: event?.fullname || null,
+                            email: event?.email || null,
+                            remark: event?.remark || ''
+                        };
+                    })
+                    .filter(step => step.approver_id !== null); // Only include steps that have a leader assigned
+            } catch (error) {
+                console.error('Error fetching approvals:', error);
+                return [];
+            }
+        };
 
         const monthToRoman = (month) => {
             const romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
@@ -1544,7 +2086,9 @@ module.exports = {
         const factoryPIC = await getFactoryPPIC(factory_id);
         const approvallistRaw = await getApproval(data?.ticket_id);
 
-        const approvallist = approvallistRaw.filter(a => a.approval_order !== 2);
+        const approvallistLeaderOnly = await getApprovalLeaderOnly(data?.ticket_id);
+
+        const approvallist = approvallistLeaderOnly.filter(a => a.approval_order !== 2);
         const sample = getByLabel('sample');
 
         // Pass forceRegenerate=true when triggered manually (replaces old SRF)
@@ -1672,9 +2216,8 @@ module.exports = {
 
         let notesHtml = '';
 
-        console.log("approvallistRaw:");
-        if (approvallistRaw && approvallistRaw.length > 0) {
-            console.table(approvallistRaw.map(a => ({
+        if (approvallistLeaderOnly && approvallistLeaderOnly.length > 0) {
+            console.table(approvallistLeaderOnly.map(a => ({
                 order: a.approval_order,
                 step: a.step_name,
                 approver: a.fullname,
@@ -1697,18 +2240,20 @@ module.exports = {
 
         // Helper to get signature Data URL from user_profile or fallback to legacy /ttd/
         const getSignatureUrl = async (userId) => {
-            // 1. Try profile path
-            const signPath = await profileController.getUserSignaturePath(userId);
-            if (signPath) {
-                const dataUrl = imageToDataURL(signPath);
-                if (dataUrl) return dataUrl;
+            if (!userId) return '';
+            try {
+                // 1. Try profile path (Profile Handsign)
+                const signPath = await profileController.getUserSignaturePath(userId);
+                if (signPath) {
+                    const dataUrl = imageToDataURL(signPath);
+                    if (dataUrl) return dataUrl;
+                }
+                // 2. Fallback to legacy path (TTD Fallback)
+                return imageToDataURL(`public/ttd/sign-${userId}.jpg`) || '';
+            } catch (err) {
+                console.warn(`[getSignatureUrl] Error for user ${userId}:`, err.message);
+                return '';
             }
-            // 2. Fallback to legacy /ttd/ path (public/ttd/sign-{userId}.jpg)
-            const legacyPath = `public/ttd/sign-${userId}.jpg`;
-            const legacyData = imageToDataURL(legacyPath);
-            if (legacyData) return legacyData;
-
-            return ''; // Return empty string if no signature found (will result in empty image)
         };
 
         // Build approval columns with proper signature paths
@@ -2445,11 +2990,19 @@ module.exports = {
         const getFactoryPPIC = async (factoryId) => {
             try {
                 if (!factoryId) return [];
-                const [result] = await dbHots.promise().query(
-                    'SELECT pic_name, flag FROM mst_factory_pic WHERE factory_id = ?',
-                    [factoryId]
-                );
-                return result || [];
+                const factoryPICs = factoryId ? await new Promise((resolve, reject) => {
+                    dbHots.query(
+                        'SELECT pic_name, flag FROM iod.map_factory_pic WHERE factory_id = ? AND end_date IS NULL ORDER BY flag ASC',
+                        [factoryId],
+                        (err, results) => {
+                            if (err) {
+                                return reject(err);
+                            }
+                            resolve(results);
+                        }
+                    );
+                }) : [];
+                return factoryPICs || [];
             } catch (error) {
                 return [];
             }
@@ -2512,6 +3065,76 @@ module.exports = {
             }
         };
 
+
+
+        const getApprovalLeaderOnly = async (ticket_id) => {
+            try {
+                // 1. Get ticket service_id
+                const [ticket] = await dbHots.promise().query(
+                    'SELECT service_id FROM t_ticket WHERE ticket_id = ?',
+                    [ticket_id]
+                );
+                if (!ticket.length) {
+                    console.warn(`Ticket ${ticket_id} not found`);
+                    return [];
+                }
+
+                // 2. Get workflow definition
+                const [workflow] = await dbHots.promise().query(
+                    'SELECT definition FROM m_service_workflow WHERE workflow_id = ? AND is_active = 1',
+                    [ticket[0].service_id]
+                );
+                if (!workflow.length) {
+                    console.warn(`No workflow found for service ${ticket[0].service_id}`);
+                    return [];
+                }
+
+                // Parse definition - might already be object if MySQL2 auto-parsed JSON
+                const defRaw = workflow[0].definition;
+                const workflowDef = typeof defRaw === 'string' ? JSON.parse(defRaw) : defRaw;
+                const steps = workflowDef.steps || [];
+
+                // 3. Get approvals from t_ticket_event (only leaders for document signatures)
+                const [events] = await dbHots.promise().query(`
+                    SELECT
+                        e.approval_order,
+                        e.approve_date,
+                        e.approver_id,
+                        e.approver_leader,
+                        e.remark,
+                        CONCAT(u.firstname, ' ', u.lastname) AS fullname,
+                        u.email
+                    FROM t_ticket_event e
+                    LEFT JOIN user u ON e.approver_id = u.user_id
+                    WHERE e.ticket_id = ?
+                        AND e.event_type = 'approve'
+                        AND e.approver_leader = 1
+                    ORDER BY e.approval_order
+                `, [ticket_id]);
+
+                // 4. Map workflow steps to actual approvals (only for steps that have a leader approver)
+                return steps
+                    .map((step) => {
+                        const event = events.find(e => e.approval_order === step.level);
+
+                        return {
+                            approval_order: step.level,
+                            step_name: step.meta?.name || step.meta?.description || `Step ${step.level}`,
+                            approve_date: event?.approve_date || null,
+                            approver_id: event?.approver_id || null,
+                            approver_leader: event?.approver_leader || null,
+                            fullname: event?.fullname || null,
+                            email: event?.email || null,
+                            remark: event?.remark || ''
+                        };
+                    })
+                    .filter(step => step.approver_id !== null); // Only include steps that have a leader assigned
+            } catch (error) {
+                console.error('Error fetching approvals:', error);
+                return [];
+            }
+        };
+
         // Get SRF number
         const getSRFNumber = async (ticket_id) => {
             try {
@@ -2527,18 +3150,20 @@ module.exports = {
 
         // Signature helper
         const getSignatureUrl = async (userId) => {
-            // 1. Try profile path
-            const signPath = await profileController.getUserSignaturePath(userId);
-            if (signPath) {
-                const dataUrl = imageToDataURL(signPath);
-                if (dataUrl) return dataUrl;
+            if (!userId) return '';
+            try {
+                // 1. Try profile path (Profile Handsign)
+                const signPath = await profileController.getUserSignaturePath(userId);
+                if (signPath) {
+                    const dataUrl = imageToDataURL(signPath);
+                    if (dataUrl) return dataUrl;
+                }
+                // 2. Fallback to legacy path (TTD Fallback)
+                return imageToDataURL(`public/ttd/sign-${userId}.jpg`) || '';
+            } catch (err) {
+                console.warn(`[getSignatureUrl] Error for user ${userId}:`, err.message);
+                return '';
             }
-            // 2. Fallback to legacy /ttd/ path (public/ttd/sign-{userId}.jpg)
-            const legacyPath = `public/ttd/sign-${userId}.jpg`;
-            const legacyData = imageToDataURL(legacyPath);
-            if (legacyData) return legacyData;
-
-            return '';
         };
 
         // Now build the document data
@@ -2554,7 +3179,9 @@ module.exports = {
 
         const factoryPIC = await getFactoryPPIC(factory_id);
         const approvallistRaw = await getApproval(data?.ticket_id);
-        const approvallist = approvallistRaw.filter(a => a.approval_order !== 2);
+        const approvallistLeaderOnly = await getApprovalLeaderOnly(data?.ticket_id);
+
+        const approvallist = approvallistLeaderOnly.filter(a => a.approval_order !== 2);
         const generatesrf = await getSRFNumber(data?.ticket_id);
 
         // Build item rows
@@ -3628,6 +4255,8 @@ module.exports = {
             res.status(500).send('Error generating preview');
         }
     },
+
+
 
     /**
      * Search Users for Card Generator

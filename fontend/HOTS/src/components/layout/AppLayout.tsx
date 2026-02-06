@@ -464,44 +464,45 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
 
-        <SidebarInset className="flex-1 min-w-0 w-full overflow-x-hidden">
-          <header className="sticky backdrop-blur-md top-0 z-50 bg-muted/30 border-b border-border px-6 py-4 w-full" >
-            <div className="flex items-center justify-between">
-
-              <div className="flex items-center space-x-4">
+        <SidebarInset className="flex-1 min-w-0 w-full relative">
+          <header className="sticky top-0 z-50 w-full flex flex-col shadow-sm">
+            {/* Top Bar: Always visible */}
+            <div className="flex backdrop-blur-md bg-background/95 border-b border-border px-4 py-3 sm:px-6 sm:py-4 justify-between items-center w-full">
+              <div className="flex items-center space-x-3 sm:space-x-4">
                 <SidebarTrigger className="bg-secondary hover:bg-secondary/50" />
                 <div className="flex items-center space-x-3">
                   {/* Web/Desktop: Show full organization name */}
                   <div className="hidden sm:block">
-                    <h1 className="text-lg font-semibold text-primary">PT INDOFOOD CBP SUKSES MAKMUR</h1>
-                    <p className="text-sm text-primary">International Operations Division</p>
+                    <h1 className="text-lg font-bold text-primary tracking-tight">PT INDOFOOD CBP SUKSES MAKMUR</h1>
+                    <p className="text-xs font-medium text-primary/80">International Operations Division</p>
                   </div>
 
                   {/* Mobile: Show HOTS Icon/Logo */}
-                  <div className="flex sm:hidden items-center space-x-3">
-                    <div className="w-8 h-8 bg-primary rounded flex items-center justify-center flex-shrink-0">
+                  <div className="flex sm:hidden items-center space-x-2">
+                    <div className="w-8 h-8 bg-primary rounded flex items-center justify-center flex-shrink-0 shadow-sm">
                       <span className="text-primary-foreground font-bold text-[10px]">HOTS</span>
                     </div>
                     <div>
                       <h1 className="text-sm font-bold text-primary leading-tight">HOTS</h1>
-                      <p className="text-[10px] text-primary/80 leading-tight">Helpdesk System</p>
+                      <p className="text-[10px] font-medium text-primary/70 leading-tight">Helpdesk System</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-4 pr-5">
+              <div className="flex items-center space-x-4">
+                {/* Desktop Search */}
                 {!shouldHideSearch && (
-                  <div className="relative">
+                  <div className="hidden sm:block relative">
                     <Input
                       type="text"
                       placeholder={searchPlaceholder}
                       value={searchValue}
                       onChange={(e) => setSearchValue(e.target.value)}
-                      className="w-64 pl-4 pr-10 py-2 bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-foreground focus-visible:ring-2 focus-visible:border-foreground"
+                      className="w-64 lg:w-80 pl-4 pr-10 py-2 bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/20 focus-visible:ring-4 focus-visible:border-primary transition-all"
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <Search className="w-5 h-5 text-muted-foreground" />
+                      <Search className="w-4 h-4 text-muted-foreground" />
                     </div>
                   </div>
                 )}
@@ -509,6 +510,24 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <NotificationBell />
               </div>
             </div>
+
+            {/* Bottom Bar: Mobile Search (Hidden on Desktop) */}
+            {!shouldHideSearch && (
+              <div className="sm:hidden backdrop-blur-md bg-background/95 border-b border-border px-4 py-2 w-full">
+                <div className="relative w-full">
+                  <Input
+                    type="text"
+                    placeholder={searchPlaceholder}
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                    className="w-full h-10 pl-4 pr-10 py-2 bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/20 focus-visible:ring-4 focus-visible:border-primary transition-all"
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <Search className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                </div>
+              </div>
+            )}
           </header>
           <div className="px-4 sm:px-6 lg:px-16 py-6">
             <TutorialManager />

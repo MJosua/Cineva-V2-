@@ -12,6 +12,10 @@ const { uploadFile } = require("../../../OnlineOrder/order");
 const { hotsMailer } = require('../../../../service/mailer/hots/hots_mailer');
 const { ConsoleInfo } = require("../../../../script/Utility/consoleinfo");
 
+// Unified Resource System
+const resourceEngine = require("../../../../core/resource-engine");
+const { RESOURCE_CATEGORIES } = require("../../../../script/Utility/hotsConstants");
+
 
 let green = "\x1b[32m"
 
@@ -248,53 +252,45 @@ module.exports = {
     },
 
     getPurpose: async (req, res) => {
-
         let date = new Date();
         let timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        if (req.dataToken.user_id) {
 
-
-
-            let query = ` 	
-                            SELECT *
-                            FROM hots.m_srf_purpose
-                            WHERE active=1;
-                            `
-
-
-            dbConf.execute(query, (err, results) => {
-
-                if (err) {
-
-                    res.status(500).send({
-                        success: false,
-                        message: `INTERNAL SERVER ERROR`
-                    });
-                    console.log(timestamp, "Error at getSRF_Purpose, message:", err);
-
-                } else {
-                    console.log(timestamp, "successfully getSRF_Purpose!");
-                    res.status(200).send({
-                        success: true,
-                        message: "Successfully fetched getSRF_Purpose data",
-                        results,
-                    });
-                }
-
-            })
-
-
-
-
-        } else {
-            res.status(401).send({
+        if (!req.dataToken.user_id) {
+            console.log(timestamp, "getPurpose is Unauthorized");
+            return res.status(401).send({
                 success: false,
                 message: `Unauthorized`
             });
-            console.log(timestamp, "getSKU is Unauthorized");
         }
 
+        try {
+            // Fetch from Unified Resource System
+            const resources = await resourceEngine.getResourcesByCategory(RESOURCE_CATEGORIES.SRF_PURPOSE);
 
+            // Map unified resource to legacy structure for frontend compatibility
+            const results = resources.map(r => ({
+                id: r.value,        // resource_key
+                purpose: r.label,   // resource_label
+                product_category: r.attributes?.product_category || '',
+                sub_category: r.attributes?.sub_category || '',
+                remarks: r.attributes?.remarks || '',
+                active: r.is_active ? 1 : 0
+            }));
+
+            console.log(timestamp, "successfully getSRF_Purpose (via ResourceEngine)!");
+            res.status(200).send({
+                success: true,
+                message: "Successfully fetched getSRF_Purpose data",
+                results,
+            });
+        } catch (err) {
+            res.status(500).send({
+                success: false,
+                message: `INTERNAL SERVER ERROR`,
+                error: err.message
+            });
+            console.log(timestamp, "Error at getSRF_Purpose, message:", err);
+        }
     },
 
     getPONumbersrf: async (req, res) => {
@@ -347,6 +343,91 @@ module.exports = {
         }
     },
 
+    // ============================================================
+    // VIRTUAL DOCUMENT ENDPOINTS
+    // ============================================================
 
+    /**
+     * GET /srf/document/:documentId/view
+     * Render and return HTML for a virtual document
+     */
+    viewDocument: async (req, res) => {
+        const documentEngine = require("../../../../core/document-engine");
+        const { documentId } = req.params;
+        console.log(`📄 [SRF] Request to VIEW document ${documentId}`);
+
+        try {
+            const result = await documentEngine.renderHtml(parseInt(documentId));
+
+            if (!result.ok) {
+                console.error(`❌ [SRF] View document failed: ${result.error}`);
+                return res.status(404).send(result.error); // Send text error for browser to see
+            }
+
+            // Return HTML directly for iframe/embed viewing
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.send(result.html);
+        } catch (error) {
+            console.error('❌ [SRF] Error viewing document:', error);
+            res.status(500).send(error.message);
+        }
+    },
+
+    /**
+     * GET /srf/document/:documentId/download
+     * Generate and return PDF blob for download
+     */
+    downloadDocument: async (req, res) => {
+        const documentEngine = require("../../../../core/document-engine");
+        const { documentId } = req.params;
+        console.log(`📄 [SRF] Request to DOWNLOAD document ${documentId}`);
+
+        try {
+            const result = await documentEngine.generatePdfBlob(parseInt(documentId));
+
+            if (!result.ok) {
+                console.error(`❌ [SRF] Download document failed: ${result.error}`);
+                return res.status(404).json({ success: false, message: result.error });
+            }
+
+            // Send PDF as downloadable file
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${result.fileName}"`);
+            res.setHeader('Content-Length', result.buffer.length);
+            res.send(result.buffer);
+        } catch (error) {
+            console.error('❌ [SRF] Error downloading document:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
+    /**
+     * GET /srf/documents/:ticketId
+     * List all documents for a ticket
+     */
+    listDocuments: async (req, res) => {
+        const documentEngine = require("../../../../core/document-engine");
+        const { ticketId } = req.params;
+
+        try {
+            const documents = await documentEngine.listDocuments('ticket', ticketId);
+
+            res.status(200).json({
+                success: true,
+                data: documents.map(doc => ({
+                    id: doc.id,
+                    file_name: doc.file_name,
+                    template_name: doc.template_name,
+                    action_origin: doc.action_origin,
+                    generated_at: doc.generated_at,
+                    view_url: `/hots_srf/document/${doc.id}/view`,
+                    download_url: `/hots_srf/document/${doc.id}/download`
+                }))
+            });
+        } catch (error) {
+            console.error('❌ [SRF] Error listing documents:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
 
 }

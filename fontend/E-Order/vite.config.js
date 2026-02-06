@@ -15,7 +15,22 @@ export default defineConfig(() => {
         },
         build: {
             outDir: 'build',
-            loader: { '.js': 'jsx' }
+            loader: { '.js': 'jsx' },
+            rollupOptions: {
+                output: {
+                    manualChunks(id) {
+                        if (id.includes('node_modules')) {
+                            if (id.includes('react-icons')) {
+                                return 'vendor-icons';
+                            }
+                            if (id.includes('@chakra-ui') || id.includes('@emotion') || id.includes('framer-motion')) {
+                                return 'vendor-ui';
+                            }
+                            return 'vendor';
+                        }
+                    }
+                }
+            }
         },
         resolve: {
             alias: {

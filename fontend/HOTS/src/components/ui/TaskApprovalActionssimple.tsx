@@ -89,7 +89,7 @@ const TaskApprovalActionsSimple: React.FC<TaskApprovalActionsProps> = ({
         approver_id: user.user_id
       })).unwrap();
 
-      toast({ title: "Success", description: "Engine v4 approval done" });
+      toast({ title: "Success", description: " approval done" });
       dispatch(fetchTaskList(1));
       setComment('');
       setShowCommentBox(false);
@@ -99,7 +99,7 @@ const TaskApprovalActionsSimple: React.FC<TaskApprovalActionsProps> = ({
     } catch (error) {
       toast({
         title: "Error",
-        description: error as string || "Engine v4 approval failed",
+        description: error as string || " approval failed",
         variant: "destructive",
       });
     }
@@ -114,7 +114,7 @@ const TaskApprovalActionsSimple: React.FC<TaskApprovalActionsProps> = ({
         approver_id: user.user_id
       })).unwrap();
 
-      toast({ title: "Success", description: "Engine v4 rejection done" });
+      toast({ title: "Success", description: "  rejection done" });
       dispatch(fetchTicketDetail(ticketId));
       dispatch(fetchTaskList(1));
       setComment('');
@@ -122,7 +122,7 @@ const TaskApprovalActionsSimple: React.FC<TaskApprovalActionsProps> = ({
     } catch (error) {
       toast({
         title: "Error",
-        description: error as string || "Engine v4 rejection failed",
+        description: error as string || "  rejection failed",
         variant: "destructive",
       });
     }

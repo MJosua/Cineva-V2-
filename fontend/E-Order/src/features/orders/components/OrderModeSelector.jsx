@@ -34,12 +34,15 @@ const OrderModeSelector = ({
                                         />
                                     </div>
                                 </div>
-                                <div className={`col-9 d-flex align-items-center justify-content-start ${company_id === 147 || company_id === 381 ? "ps-1" : "ps-4"}`}>
-                                    {(company_id === 147 || company_id === 381) ?
-                                        <span>Container Indonesia</span>
-                                        :
-                                        <span>Container</span>
-                                    }
+                                <div className={`col-9 h-100 d-flex align-items-center justify-content-center ps-2`}>
+
+                                    {(() => {
+                                        // Dynamic Label Logic
+                                        const specialLabel = spc_condition_details?.find(c => c.id === 22)?.value;
+                                        return specialLabel ?  <span>Container Indonesia</span> : <span>Container</span>;
+                                    })()}
+
+
                                 </div>
                             </div>
                         </div>

@@ -11,7 +11,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from './useAppSelector';
-import { fetchTaskCount, fetchMyTickets, triggerSSERefresh, fetchTaskList, setDocumentProcessing } from '@/store/slices/ticketsSlice';
+import { fetchTaskCount, fetchMyTickets, triggerSSERefresh, fetchTaskList, setDocumentProcessing, setSidebarCounts } from '@/store/slices/ticketsSlice';
 import { useToast } from './use-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -194,6 +194,27 @@ export function useSSE() {
                 title: '📄 Generating Document...',
                 description: payload.message || `Document for ticket ${payload.ticket_id} is being generated`,
             });
+        });
+
+        // 🆕 Document generation complete event (from async SRF trigger)
+
+
+        // 🆕 COUNTER UPDATE EVENT (Live sidebar counts)
+        eventSource.addEventListener('counter_update', (e) => {
+            const data = JSON.parse(e.data);
+            console.log('📡 SSE: Counter update', data);
+
+            if (data.data) {
+                // Update Approvals (Task Count)
+                if (data.data.approvals !== undefined) {
+                    dispatch(setSidebarCounts({ approvals: data.data.approvals }));
+                }
+
+                // Update Assignments
+                if (data.data.assignments !== undefined) {
+                    dispatch(setSidebarCounts({ assignments: data.data.assignments }));
+                }
+            }
         });
 
         // 🆕 Document generation complete event (from async SRF trigger)

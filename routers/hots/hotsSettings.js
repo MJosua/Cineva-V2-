@@ -109,6 +109,11 @@ route.get('/get_srf_sku', decodeTokenHT, hotsSRFController.getAllSkunRM)
 route.get('/get_srf_purpose', decodeTokenHT, hotsSRFController.getPurpose)
 route.get('/get_srf_po/:company_id', decodeTokenHT, hotsSRFController.getPONumbersrf)
 
+// 🔥 Virtual Document System
+route.get('/document/:documentId/view', decodeTokenHT, hotsSRFController.viewDocument)
+route.get('/document/:documentId/download', decodeTokenHT, hotsSRFController.downloadDocument)
+route.get('/documents/:ticketId', decodeTokenHT, hotsSRFController.listDocuments)
+
 route.get('/get_srf/todaysweek', decodeTokenHT, hotsSettingsController.todaysweek)
 
 //Data Update

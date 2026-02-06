@@ -49,6 +49,16 @@ const TaskList = () => {
     setSearchPlaceholder("Search tasks...");
   }, [dispatch, setSearchPlaceholder]);
 
+  // 🆕 Silent Refresh for Live Updates
+  const { sseSignals } = useAppSelector(state => state.tickets);
+  useEffect(() => {
+    if (sseSignals?.ticket) {
+      console.log('⚡ Silent Refresh: Task List');
+      dispatch(fetchTaskList(taskList.currentPage)); // Refresh current page
+      dispatch(fetchTaskCount());
+    }
+  }, [sseSignals?.ticket, dispatch, taskList.currentPage]);
+
 
   const tasks = taskList?.data[0]?.service_id
     ? taskList.data.map(t => {

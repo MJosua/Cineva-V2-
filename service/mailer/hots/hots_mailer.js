@@ -210,7 +210,7 @@ module.exports = {
 
 
         const [dataResult] = await dbHots.promise().execute(
-            "SELECT order_col, cstm_col, lbl_col FROM t_ticket_detail WHERE ticket_id = ?",
+            "SELECT order_col, cstm_col, lbl_col, value FROM t_ticket_detail WHERE ticket_id = ?",
             [ticket_id]
         );
 
@@ -234,11 +234,11 @@ module.exports = {
 
         // Generate first table
         const requestTable = requestRows.map(row => `
-            ${row.cstm_col ?
+            ${row.value ?
                 `
             <tr>
                 <th style="text-align:left">${row.lbl_col}</th>
-                <td style="padding-left:20px;">: ${row.cstm_col || ''}</td>
+                <td style="padding-left:20px;">: ${row.value || ''}</td>
             </tr>
                 `
                 :
@@ -459,7 +459,7 @@ module.exports = {
 
 
         const [dataResult] = await dbHots.promise().execute(
-            `SELECT td.order_col, td.cstm_col, td.lbl_col,
+            `SELECT td.order_col, td.cstm_col, td.lbl_col, td.value,
             ms.service_name,
             CONCAT(u.firstname, ' ', u.lastname) as user_name,
             t.workflow_step
@@ -524,11 +524,11 @@ module.exports = {
 
         // Generate first table
         const requestTable = requestRows.map(row => `
-            ${row.cstm_col ?
+            ${row.value ?
                 `
             <tr>
                 <th style="text-align:left">${row.lbl_col}</th>
-                <td style="padding-left:20px;">: ${row.cstm_col || ''}</td>
+                <td style="padding-left:20px;">: ${row.value || ''}</td>
             </tr>
                 `
                 :

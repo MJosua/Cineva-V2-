@@ -297,6 +297,18 @@ module.exports = {
                 global.io.emit("message", "assignment_complete_" + assignmentId);
             }
 
+            // 🆕 PUSH COUNTERS (Completed assignment = count decrement)
+            try {
+                const { pushCountersToUser, pushCountersToTeam } = require('../../core/sse-helper');
+                if (assignment.assigned_type === 'user') {
+                    pushCountersToUser(assignment.assigned_id);
+                } else if (assignment.assigned_type === 'team') {
+                    pushCountersToTeam(assignment.assigned_id);
+                }
+            } catch (e) {
+                console.error('SSE Push Error (completeAssignment):', e.message);
+            }
+
         } catch (error) {
             console.error('Error completing assignment:', error);
             res.status(500).json({ ok: false, error: error.message });
@@ -526,6 +538,18 @@ module.exports = {
                     assignmentId,
                     ticketId
                 });
+            }
+
+            // 🆕 PUSH COUNTERS (New assignment = count increment)
+            try {
+                const { pushCountersToUser, pushCountersToTeam } = require('../../core/sse-helper');
+                if (assigned_type === 'user') {
+                    pushCountersToUser(assigned_id);
+                } else if (assigned_type === 'team') {
+                    pushCountersToTeam(assigned_id);
+                }
+            } catch (e) {
+                console.error('SSE Push Error (createAssignment):', e.message);
             }
 
             return res.json({

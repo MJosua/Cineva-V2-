@@ -37,16 +37,16 @@ const SERVICE_IDS = {
 // ============================================================
 const STATUS_IDS = {
     SUBMITTED: 0,               // Initial state - DarkTurquoise (#D6D6D6)
-    WAITING_APPROVAL: 1,        // Pending approval - DeepSkyBlue (#C5ECFC)
-    FULFILLED: 2,               // Work completed - ForestGreen (#C6F6D5)
+    FULFILLED: 1,               // Work completed - DeepSkyBlue (#C5ECFC)
+    WAITING_APPROVAL: 2,        // Pending approval - ForestGreen (#C6F6D5)
     IN_PROGRESS: 3,             // Being worked on - DarkOrange (#C5D1FC)
     REJECTED: 4,                // Rejected by approver - Red (#FFADAD)
     PENDING: 5,                 // Waiting for something - DarkOrange (#FFE9AD)
     CLOSED: 6,                  // Closed by admin - DarkGray (#C5D1FC)
-    CLOSED_BY_USER: 7,          // Closed by requester - DarkGray (#C5D1FC)
+    CANCELLED: 7,               // Cancelled by user - DarkGray (#C5D1FC)
 
     // Special statuses
-    CANCELLED: 99,              // Cancelled/Deleted
+    DELETED: 99,              // Internal use
 };
 
 // ============================================================
@@ -157,6 +157,41 @@ const FIELD_VISIBILITY = {
 };
 
 // ============================================================
+// 1️⃣3️⃣ RESOURCE CATEGORIES - Maps to m_resource_category
+// These are used in resource_m_data.resource_category
+// ============================================================
+const RESOURCE_CATEGORIES = {
+    UOM: 'uom',                         // Unit of Measure
+    ALLOWANCE: 'allowance',             // Allowance rules
+    BT_TYPE: 'bt_type',                 // Business Trip Type
+    BT_SUBTYPE: 'bt_subtype',           // Business Trip Sub-type
+    EXPENDITURE: 'expenditure',         // Expenditure category
+    FLIGHT_CLASS: 'flight_class',       // Airline Class
+    HOTEL_STAR: 'hotel_star',           // Hotel rating
+    LAPTOP_SPEC: 'laptop_spec',         // IT Asset specifications
+    SRF_PURPOSE: 'srf_purpose',         // Purpose of Sample Request
+    SUPPORT_TYPE: 'support_type',       // IT Support Category
+    SAMPLE_CATEGORY: 'sample_category', // SRF Sample Category
+    MEETING_ROOM: 'meeting_room',       // Admin Meeting Room
+};
+
+/**
+ * ⚠️ LEGACY MASTER TABLES (DEPRECATED)
+ * These tables are now READ-ONLY. Use resource_m_data instead.
+ * - m_allowance
+ * - m_bt_type
+ * - m_bt_subtype
+ * - m_expenditure
+ * - m_flight_class
+ * - m_hotel_star
+ * - m_laptop_spec
+ * - m_srf_purpose
+ * - m_support_type
+ * - m_sample_category
+ * - m_uom
+ */
+
+// ============================================================
 // EXPORT - All constants in one place
 // ============================================================
 module.exports = {
@@ -173,6 +208,7 @@ module.exports = {
     ENTITY_TYPES,
     DATA_TYPES,
     FIELD_VISIBILITY,
+    RESOURCE_CATEGORIES,
 
     // Workflow
     APPROVAL_LEVELS,
