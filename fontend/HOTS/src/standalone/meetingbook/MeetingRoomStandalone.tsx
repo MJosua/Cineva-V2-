@@ -27,6 +27,7 @@ const MeetingRoomStandalone: React.FC = () => {
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [isKioskMode, setIsKioskMode] = useState(localStorage.getItem("isKiosk") === "true");
     const [lastRefresh, setLastRefresh] = useState(new Date());
+    const [showInfoModal, setShowInfoModal] = useState(false);
     const { toast } = useToast();
 
     const dispatch = useAppDispatch();
@@ -44,6 +45,22 @@ const MeetingRoomStandalone: React.FC = () => {
 
         return () => clearInterval(refreshInterval);
     }, [dispatch]);
+
+    // 📢 Periodic Announcement Modal (Every 2 hours, auto-closes in 2 minutes)
+    useEffect(() => {
+        if (!isKioskMode) return;
+
+        const infoInterval = setInterval(() => {
+            // Only show if not currently booking
+            if (!showForm) {
+                setShowInfoModal(true);
+                // Auto-close after 2 minutes
+                setTimeout(() => setShowInfoModal(false), 2 * 60 * 1000);
+            }
+        }, 2 * 60 * 60 * 1000); // 2 hours
+
+        return () => clearInterval(infoInterval);
+    }, [isKioskMode, showForm]);
 
     // 🛡️ Auto-Login Kiosk Logic
     useEffect(() => {
@@ -233,7 +250,7 @@ const MeetingRoomStandalone: React.FC = () => {
     return (
         <div className={`min-h-screen w-screen bg-gray-50 flex flex-col ${isKioskMode ? "select-none overscroll-none" : ""}`}>
             {/* HEADER */}
-            <header className="flex items-center justify-between bg-white shadow px-6 py-4 sticky top-0 z-10">
+            <header className="flex items-center justify-between bg-white shadow px-6 py-4 sticky top-0 z-30">
                 <div>
                     <h1 className="text-xl md:text-2xl font-semibold text-gray-800">
                         HOTS Meeting Room Booking
@@ -328,6 +345,41 @@ const MeetingRoomStandalone: React.FC = () => {
                             <Button disabled={submitting || !PIC.trim() || !purpose.trim()} onClick={handleSubmitBooking}>
                                 {submitting ? "Booking..." : "Confirm Booking"}
                             </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* PERIODIC INFO MODAL */}
+            {showInfoModal && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] px-4 backdrop-blur-[2px]">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 animate-in fade-in zoom-in duration-300 relative overflow-hidden">
+                        {/* Decorative Background Element */}
+                        <div className="absolute top-0 right-0 -tr-1/4 w-32 h-32 bg-blue-50 rounded-full -mr-16 -mt-16 z-0" />
+
+                        <div className="relative z-10 flex flex-col items-center text-center">
+                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6 text-blue-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+                            </div>
+
+                            <h3 className="text-xl font-bold text-gray-800 mb-3">
+                                Did you know?
+                            </h3>
+
+                            <p className="text-gray-600 leading-relaxed mb-8">
+                                You can also schedule meetings via the <b>HOTS Portal</b> using your own account from your desk or anywhere.
+                            </p>
+
+                            <Button
+                                className="w-full py-6 rounded-xl text-lg font-semibold bg-blue-600 hover:bg-blue-700 transition-all shadow-md active:scale-95"
+                                onClick={() => setShowInfoModal(false)}
+                            >
+                                Got it!
+                            </Button>
+
+                            <p className="mt-4 text-[10px] text-gray-400 font-medium uppercase tracking-widest italic">
+                                Automatically closing in 2 minutes
+                            </p>
                         </div>
                     </div>
                 </div>

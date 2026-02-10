@@ -36,7 +36,7 @@ const getNextSevenDays = (startDate = new Date()) => {
   const date = new Date(startDate);
   // Return 7 consecutive days including weekends
   for (let i = 0; i < 7; i++) {
-    days.push(date.toISOString().split("T")[0]);
+    days.push(format(date, 'yyyy-MM-dd'));
     date.setDate(date.getDate() + 1);
   }
   return days;
@@ -83,7 +83,7 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
     return startOfDay(new Date(today.setDate(diff)));
   };
 
-  const [baseDate, setBaseDate] = useState(getStartOfCurrentWeek());
+  const [baseDate, setBaseDate] = useState(startOfDay(new Date()));
   const [direction, setDirection] = useState(0); // -1 for left, 1 for right (animation)
 
   const visibleDates = useMemo(() => getNextSevenDays(baseDate), [baseDate]);
@@ -99,8 +99,9 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
   };
 
   const handleToday = () => {
-    setDirection(baseDate > new Date() ? -1 : 1);
-    setBaseDate(getStartOfCurrentWeek());
+    const today = startOfDay(new Date());
+    setDirection(baseDate > today ? -1 : 1);
+    setBaseDate(today);
   };
 
   // 🔁 Auto mode (responsive interaction)
@@ -301,8 +302,8 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrevDay}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" className="px-2 h-8 text-xs font-semibold" onClick={handleToday}>
-                Today
+              <Button variant="ghost" size="sm" className="px-2 h-8 text-xs font-semibold min-w-[60px]" onClick={handleToday} title="Jump to Today">
+                {format(baseDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "Today" : format(baseDate, 'MMM d')}
               </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNextDay}>
                 <ChevronRight className="h-4 w-4" />
@@ -338,7 +339,7 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
         <div className="flex justify-between items-end mt-2">
           <div>
             <p className="text-xs text-muted-foreground font-medium">
-              Viewing: <span className="text-blue-600 font-bold">{format(new Date(visibleDates[0]), 'MMM d')} – {format(new Date(visibleDates[4]), 'MMM d, yyyy')}</span>
+              Viewing: <span className="text-blue-600 font-bold">{format(new Date(visibleDates[0]), 'MMM d')} – {format(new Date(visibleDates[6]), 'MMM d, yyyy')}</span>
             </p>
             <p className="text-[10px] text-gray-500 italic mt-0.5">
               {mode === "drag" ? "🖱️ Drag Range" : mode === "click-range" ? "📲 Click-Click" : "🕐 Modal Picker"}
@@ -403,9 +404,9 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
             {timeSlots.map((slot, i) => (
               <div
                 key={i}
-                className={`h-8 text-[11px] border-b flex items-center justify-end pr-2 ${Math.floor(i / 2) % 2 === 0 ? "bg-muted/30" : "bg-white"} text-muted-foreground font-medium`}
+                className={`h-8 text-[11px] border-b flex items-start justify-end pr-2 ${Math.floor(i / 2) % 2 === 0 ? "bg-muted/30" : "bg-white"} text-muted-foreground font-semibold`}
               >
-                {slot}
+                <span className="-mt-1.5">{slot}</span>
               </div>
             ))}
           </div>

@@ -2,13 +2,13 @@
     "name": "HOTS Meeting Room",
     "short_name": "MeetingRoom",
     "description": "Kiosk display for Meeting Room Bookings",
-    "start_url": "/hots/standalone/meeting",
+    "start_url": "/hots/meetingbook?kiosk_key=TABLET_IOD_ASIA",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#005aab",
     "icons": [
         {
-            "src": "/indofood.svg",
+            "src": "/hots/indofood.svg",
             "sizes": "any",
             "type": "image/svg+xml"
         }
