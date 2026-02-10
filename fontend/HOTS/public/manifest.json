@@ -1,0 +1,16 @@
+{
+    "name": "HOTS Meeting Room",
+    "short_name": "MeetingRoom",
+    "description": "Kiosk display for Meeting Room Bookings",
+    "start_url": "/hots/standalone/meeting",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#005aab",
+    "icons": [
+        {
+            "src": "/indofood.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}

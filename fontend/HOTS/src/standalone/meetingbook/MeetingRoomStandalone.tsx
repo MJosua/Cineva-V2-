@@ -25,15 +25,56 @@ const MeetingRoomStandalone: React.FC = () => {
     const [PIC, setPIC] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [isKioskMode, setIsKioskMode] = useState(localStorage.getItem("isKiosk") === "true");
+    const [lastRefresh, setLastRefresh] = useState(new Date());
     const { toast } = useToast();
 
     const dispatch = useAppDispatch();
 
-    // 🔁 Check token on mount + after login
+    // 🔁 Check token on mount + after login + Auto-Refresh
     useEffect(() => {
         const stored = localStorage.getItem("tokek");
         if (stored) setToken(stored);
-    }, []);
+
+        // Auto-refresh schedule every 5 minutes
+        const refreshInterval = setInterval(() => {
+            dispatch(fetchMeetingBookings());
+            setLastRefresh(new Date());
+        }, 5 * 60 * 1000);
+
+        return () => clearInterval(refreshInterval);
+    }, [dispatch]);
+
+    // 🛡️ Auto-Login Kiosk Logic
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const kioskKey = urlParams.get("kiosk_key");
+
+        if (kioskKey === "TABLET_IOD_ASIA" && !token) {
+            console.log("Kiosk key detected. Attempting auto-login...");
+            const autoLogin = async () => {
+                try {
+                    await dispatch(
+                        loginUser({
+                            username: "TABLET_IOD_ASIA",
+                            password: "TABLET_IOD_ASIA_PWD_2026",
+                        })
+                    ).unwrap();
+                    localStorage.setItem("isKiosk", "true");
+                    setIsKioskMode(true);
+                    setToken(localStorage.getItem("tokek"));
+
+                    // Cleanup URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+
+                    toast({ title: "Kiosk Mode Activated", description: "Identity: Tablet IOD ASIA" });
+                } catch (err) {
+                    console.error("Kiosk auto-login failed:", err);
+                }
+            };
+            autoLogin();
+        }
+    }, [token, dispatch, toast]);
 
     // 🧩 Fetch user profile
     const fetchUserProfile = async () => {
@@ -90,7 +131,9 @@ const MeetingRoomStandalone: React.FC = () => {
     // 🧹 Handle logout
     const handleLogout = () => {
         localStorage.removeItem("tokek");
+        localStorage.removeItem("isKiosk");
         setToken(null);
+        setIsKioskMode(false);
         setUserProfile(null);
 
         toast({
@@ -127,7 +170,8 @@ const MeetingRoomStandalone: React.FC = () => {
                 // Native form fields
                 purpose: { type: "field", label: "Purpose of Meeting", value: purpose, field_id: "purpose_field" },
                 PIC: { type: "field", label: "PIC", value: PIC, field_id: "PIC_field" },
-                requested_by: { type: "field", label: "Requested By", value: userProfile?.name || userProfile?.firstname || "Anonymous", field_id: "requested_by_field" }
+                requested_by: { type: "field", label: "Requested By", value: isKioskMode ? "Tablet IOD ASIA" : (userProfile?.name || userProfile?.firstname || "Anonymous"), field_id: "requested_by_field" },
+                requested_by_type: { type: "field", label: "Requestor Type", value: isKioskMode ? "SYSTEM" : "USER", field_id: "requested_by_type_field" }
             };
 
             const payload = {
@@ -187,7 +231,7 @@ const MeetingRoomStandalone: React.FC = () => {
 
     // 🧩 MAIN APP
     return (
-        <div className="min-h-screen w-screen bg-gray-50 flex flex-col">
+        <div className={`min-h-screen w-screen bg-gray-50 flex flex-col ${isKioskMode ? "select-none overscroll-none" : ""}`}>
             {/* HEADER */}
             <header className="flex items-center justify-between bg-white shadow px-6 py-4 sticky top-0 z-10">
                 <div>
@@ -199,14 +243,21 @@ const MeetingRoomStandalone: React.FC = () => {
                     </p>
                 </div>
                 <div className="flex items-center space-x-3">
-                    {userProfile && (
+                    {userProfile && !isKioskMode && (
                         <div className="text-sm text-gray-700">
                             👋 Hello, <b>{userProfile.firstname || "User"}</b>
                         </div>
                     )}
-                    <Button variant="outline" onClick={handleLogout}>
-                        Logout
-                    </Button>
+                    {!isKioskMode && (
+                        <Button variant="outline" onClick={handleLogout}>
+                            Logout
+                        </Button>
+                    )}
+                    {isKioskMode && (
+                        <div className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-400">
+                            KIOSK MODE
+                        </div>
+                    )}
                 </div>
             </header>
 
@@ -230,8 +281,13 @@ const MeetingRoomStandalone: React.FC = () => {
             </main>
 
             {/* FOOTER */}
-            <footer className="text-center text-xs text-gray-500 py-4 bg-gray-50">
-                © {new Date().getFullYear()} Indofood ICBP • HOTS Facilities System
+            <footer className="text-center text-xs text-gray-400 py-4 bg-gray-50">
+                <p>© {new Date().getFullYear()} Indofood ICBP • HOTS Facilities System</p>
+                {isKioskMode && (
+                    <p className="mt-1 font-mono text-[10px]">
+                        Last Sync: {lastRefresh.toLocaleTimeString()}
+                    </p>
+                )}
             </footer>
 
             {/* POPUP FORM */}
@@ -269,7 +325,7 @@ const MeetingRoomStandalone: React.FC = () => {
                             <Button variant="outline" onClick={() => setShowForm(false)}>
                                 Cancel
                             </Button>
-                            <Button disabled={submitting} onClick={handleSubmitBooking}>
+                            <Button disabled={submitting || !PIC.trim() || !purpose.trim()} onClick={handleSubmitBooking}>
                                 {submitting ? "Booking..." : "Confirm Booking"}
                             </Button>
                         </div>
