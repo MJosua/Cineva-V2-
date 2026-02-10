@@ -71,7 +71,7 @@ const CartContainerOrderConfirmationPage = () => {
   const [validator, setValidator] = useState(false);
 
   const [existingPo, setExsitingPo] = useState([]);
-  console.log("existingPo",existingPo)
+  console.log("existingPo", existingPo)
   const getExistingPo = () => {
     let userToken = localStorage.getItem("tokek");
     Axios.get(API_URL + "/order/get_po", {
@@ -233,7 +233,7 @@ const CartContainerOrderConfirmationPage = () => {
   };
 
 
-  const [backendData, setBackendData] = useState([])
+  const [backendData, setBackendData] = useState({ order: [] })
   useEffect(() => {
 
     const backendDataMaking = {
@@ -407,8 +407,8 @@ const CartContainerOrderConfirmationPage = () => {
             <ModalCloseButton onClick={onCloseModalConfirm} />
             <ModalBody>
               <span className=" py-2">
-                â€œBy confirming your order, you understand that any modifications
-                or cancellations may be subject to our terms and conditions.â€
+                By confirming your order, you understand that any modifications
+                or cancellations may be subject to our terms and conditions.
               </span>
             </ModalBody>
             <ModalFooter className="px-3">
@@ -484,7 +484,7 @@ const CartContainerOrderConfirmationPage = () => {
                 const portsDetails = portsLookup[orderItem.order.header.port_shipment];
                 const shiptoDetails = shiptoLookup[orderItem.order.header.ship_to];
                 return (
-                  <div className="card-body border border_radius_10px shadow shadow-sm mt-1 mb-3">
+                  <div key={orderIndex} className="card-body border border_radius_10px shadow shadow-sm mt-1 mb-3">
                     <div className="grey_text_bold fs-5 my-2">
                       Order {orderIndex + 1}
                     </div>
@@ -563,7 +563,7 @@ const CartContainerOrderConfirmationPage = () => {
 
                         // Call any other functions here if needed.
                       }}
-                      disabled={!timeoutDisable}
+                      disabled={!timeoutDisable || !backendData.order || backendData.order.length === 0}
                     >
                       Submit
                     </button>
@@ -622,7 +622,7 @@ const CartContainerOrderConfirmationPage = () => {
 
                         // Call any other functions here if needed.
                       }}
-                      disabled={!timeoutDisable}
+                      disabled={!timeoutDisable || !backendData.order || backendData.order.length === 0}
                     >
                       Submit
                     </button>

@@ -76,7 +76,7 @@ const Sidebar = () => {
                   <span className="py-2">
                     â€œAre you sure you want to go to the order page?
                     <br />
-                    Your unsaved draft will not be saved.â€
+                    Your unsaved draft will not be saved.
                   </span>
                 </>
               ) : <span className="py-2">

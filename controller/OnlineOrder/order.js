@@ -2094,10 +2094,13 @@ WHERE
         let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
         let { user_id, company_id, active } = req.dataToken;
-        let order = req.body.order;
+        let order = req.body.order || (Array.isArray(req.body) ? req.body : null);
 
         if (!order || order.length === 0) {
-            return res.status(400).json({ success: false, message: "Invalid request data." });
+            return res.status(400).json({
+                success: false,
+                message: !order ? "Invalid request: missing order data." : "Invalid request: order list cannot be empty."
+            });
         }
 
         console.log(timestamp, "Received Orders:", order);

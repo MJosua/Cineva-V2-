@@ -10,7 +10,7 @@
 
                 <br></br>
                 <div className="fw-normal text-start">
-                    1. I confirm that I have the authority to place this Order on behalf of my organization and I acknowledge that by placing this Order, I have understood and agreed to the Terms & Conditions set by PT Indofood CBP Sukses Makmur Tbk (â€œthe Companyâ€).
+                    1. I confirm that I have the authority to place this Order on behalf of my organization and I acknowledge that by placing this Order, I have understood and agreed to the Terms & Conditions set by PT Indofood CBP Sukses Makmur Tbk (â€œthe Company).
                 </div>
 
                 <br></br>
@@ -33,7 +33,7 @@
                     5. The use of an electronic signature for this transaction, holds the same legal validity as a handwritten signature.
                 </div>
 
-                </div>
+            </div>
         </div>
     )
 }

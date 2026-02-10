@@ -30,7 +30,7 @@ function CartTruckOrderConfirmation() {
   const { flavours, flavoursTrucking, ports, shipToParties } = useData();
 
 
-  const TruckOrderDetail = JSON.parse(sessionStorage.getItem("truckOrders"));
+  const TruckOrderDetail = React.useMemo(() => JSON.parse(sessionStorage.getItem("truckOrders")), []);
 
   const formatNumber = (value) => {
     if (value === '') return '';
@@ -77,7 +77,7 @@ function CartTruckOrderConfirmation() {
 
 
 
-  const [backendData, setBackendData] = useState([])
+  const [backendData, setBackendData] = useState({ order: [] })
 
   const [cart_id, setCart_id] = useState([]);
   const [created_date, setCreatedDate] = useState();
@@ -228,8 +228,11 @@ function CartTruckOrderConfirmation() {
       })
     };
     console.log("To be Order", backendDataMaking);
-    setBackendData(backendDataMaking);
-  }, [])
+    setBackendData(prev => {
+      if (JSON.stringify(prev) === JSON.stringify(backendDataMaking)) return prev;
+      return backendDataMaking;
+    });
+  }, [TruckOrderDetail])
   console.log("cart_id", cart_id)
 
   useEffect(() => {
@@ -356,7 +359,7 @@ function CartTruckOrderConfirmation() {
                         {order.flavors.map((orderDetails, containerIndex) => {
                           const flavourDetails = flavorLookup[orderDetails.sku];
                           return (
-                            <div>
+                            <div key={containerIndex}>
                               <div className="row pb-1">
                                 <div className="col-5 d-none d-md-block  col-md-3 d-flex justify-content-center">
                                   <Image
@@ -464,7 +467,7 @@ function CartTruckOrderConfirmation() {
 
                 }
                 isLoading={loading}
-                disabled={loading}
+                isDisabled={loading || !backendData.order || backendData.order.length === 0}
                 colorscheme="red"
               >
                 Submit
@@ -489,8 +492,8 @@ function CartTruckOrderConfirmation() {
             <ModalCloseButton onClick={onCloseModalConfirm} />
             <ModalBody>
               <span className=" py-2">
-                â€œBy confirming your order, you understand that any modifications
-                or cancellations may be subject to our terms and conditions.â€
+                By confirming your order, you understand that any modifications
+                or cancellations may be subject to our terms and conditions.
               </span>
             </ModalBody>
             <ModalFooter className="px-3">

@@ -34,7 +34,7 @@ function TruckOrderConfirmation() {
   const { flavours, flavoursTrucking, ports, shipToParties } = useData();
 
 
-  const TruckOrderDetail = JSON.parse(sessionStorage.getItem("truckOrders"));
+  const TruckOrderDetail = React.useMemo(() => JSON.parse(sessionStorage.getItem("truckOrders")), []);
 
   const formatNumber = (value) => {
     if (value === '') return '';
@@ -58,13 +58,9 @@ function TruckOrderConfirmation() {
 
   const [loading, setLoading] = useState(false)
 
-  const { user_id, company_id, user } = useSelector((state) => {
-    return {
-      user_id: state.userReducer.user_id,
-      company_id: state.userReducer.company_id,
-      user: state.userReducer.user,
-    };
-  });
+  const user_id = useSelector((state) => state.userReducer.user_id);
+  const company_id = useSelector((state) => state.userReducer.company_id);
+  const user = useSelector((state) => state.userReducer.user);
   const navigate = useNavigate();
   const toast = useToast();
   const id = "hello-toast";
@@ -96,9 +92,10 @@ function TruckOrderConfirmation() {
     getOrderCartId();
 
   }, []);
-  const [backendData, setBackendData] = useState([])
+  const [backendData, setBackendData] = useState({ order: [] })
 
   useEffect(() => {
+    if (!TruckOrderDetail) return;
     const backendDataMaking = {
       order: TruckOrderDetail.map(order => {
         const delv_year = new Date(order.delv_date).getFullYear();
@@ -111,7 +108,7 @@ function TruckOrderConfirmation() {
           "stuffing_date": order.delv_date,
           "port_shipment": order.port,
           "ship_to": order.shipToParty,
-          "bill_to": order.bill_to ? order.bill_to : user.company_id,
+          "bill_to": order.bill_to ? order.bill_to : (user?.company_id || company_id),
           "notify_to_1": order.notify_to_1,
           "notify_to_2": order.notify_to_2,
           "tolling_id": 1,
@@ -137,9 +134,12 @@ function TruckOrderConfirmation() {
         };
       })
     };
-    console.log("To be Order", backendDataMaking);
-    setBackendData(backendDataMaking);
-  }, [])
+    // Use functional update to avoid unnecessary re-renders if the data hasn't changed
+    setBackendData(prev => {
+      if (JSON.stringify(prev) === JSON.stringify(backendDataMaking)) return prev;
+      return backendDataMaking;
+    });
+  }, [user, company_id, TruckOrderDetail])
 
   const handleOrder = () => {
     setLoading(true);
@@ -402,7 +402,7 @@ function TruckOrderConfirmation() {
                         {order.flavors.map((orderDetails, containerIndex) => {
                           const flavourDetails = flavorLookup[orderDetails.sku];
                           return (
-                            <div>
+                            <div key={containerIndex}>
                               <div className="row pb-1">
                                 <div className="col-5 d-none d-md-block  col-md-3 d-flex justify-content-center">
                                   <Image
@@ -508,7 +508,7 @@ function TruckOrderConfirmation() {
 
                 }
                 isLoading={loading}
-                disabled={loading}
+                isDisabled={loading || !backendData.order || backendData.order.length === 0}
                 colorscheme="red"
               >
                 Submit
@@ -533,8 +533,8 @@ function TruckOrderConfirmation() {
             <ModalCloseButton onClick={onCloseModalConfirm} />
             <ModalBody>
               <span className=" py-2">
-                â€œBy confirming your order, you understand that any modifications
-                or cancellations may be subject to our terms and conditions.â€
+                By confirming your order, you understand that any modifications
+                or cancellations may be subject to our terms and conditions.
               </span>
             </ModalBody>
             <ModalFooter className="px-3">

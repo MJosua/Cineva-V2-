@@ -168,7 +168,7 @@ const ContainerOrderConfirmationPage = ({ edit = false }) => {
     setCart_id(prevCartIds => [...prevCartIds, newId]);
   };
 
-  const [backendData, setBackendData] = useState([])
+  const [backendData, setBackendData] = useState({ order: [] })
 
   const [triggerBackendDatamaking, setTriggerBackendDatamaking] = useState(false)
 
@@ -534,8 +534,8 @@ const ContainerOrderConfirmationPage = ({ edit = false }) => {
             <ModalCloseButton onClick={onCloseModalConfirm} />
             <ModalBody>
               <span className=" py-2">
-                â€œBy confirming your order, you understand that any modifications
-                or cancellations may be subject to our terms and conditions.â€
+                By confirming your order, you understand that any modifications
+                or cancellations may be subject to our terms and conditions.
               </span>
             </ModalBody>
             <ModalFooter className="px-3">
@@ -759,7 +759,7 @@ const ContainerOrderConfirmationPage = ({ edit = false }) => {
                         // Call any other functions here if needed.
                       }
                       }
-                      disabled={!timeoutDisable}
+                      disabled={!timeoutDisable || !backendData.order || backendData.order.length === 0}
                     >
                       Submit
                     </button>
@@ -769,7 +769,8 @@ const ContainerOrderConfirmationPage = ({ edit = false }) => {
                       colorscheme="red"
                       variant="background"
                       className="btn btn-danger shadow w-75 mt-1 p-2 fw-bold"
-                      isLoading
+                      isLoading={buttonLoading}
+                      isDisabled={buttonLoading || !backendData.order || backendData.order.length === 0}
                     />
                   )}
                 </div>
