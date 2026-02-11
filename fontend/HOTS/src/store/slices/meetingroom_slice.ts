@@ -83,6 +83,7 @@ export const fetchMeetingBookings = createAsyncThunk(
         end_time: item.end_time,
         booked_by: item.booked_by,
         PIC: item.PIC,
+        purpose: item.purpose,
       })) as MeetingBooking[];
     } catch (err: any) {
       console.error("fetchMeetingBookings Error:", err);

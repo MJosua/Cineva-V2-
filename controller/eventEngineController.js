@@ -213,7 +213,9 @@ const updateCampaign = asyncHandler(async (req, res) => {
         status,
         theme,
         blocks,
-        settings
+        blocks,
+        settings,
+        updatedBy: req.user?.id || 0
     };
 
     const updatedCampaign = await eventEngineService.updateCampaign(slug, updates);
@@ -581,8 +583,21 @@ const setPublishStatus = asyncHandler(async (req, res) => {
     const { publish } = req.body; // true = publish, false = unpublish
 
     // Verify Is SuperAdmin or Permitted
-    const campaign = await eventEngineService.publishCampaign(slug, publish);
+    const userId = req.user?.id || 0;
+    const campaign = await eventEngineService.publishCampaign(slug, publish, userId);
     res.json(createResponse(true, campaign));
+    res.json(createResponse(true, campaign));
+});
+
+const getAuditLogs = asyncHandler(async (req, res) => {
+    const { slug } = req.params;
+    const { limit, offset } = req.query;
+
+    // Verify permissions? (Assuming private router handles auth)
+
+    const logs = await eventEngineService.getAuditLogs(slug, { limit, offset });
+
+    res.json(createResponse(true, logs));
 });
 
 // ============================================================================
@@ -598,6 +613,7 @@ module.exports = {
     deleteCampaign,
     getPublicCampaign,
     setPublishStatus,
+    getAuditLogs,
 
     // Submissions
     submitEntry,

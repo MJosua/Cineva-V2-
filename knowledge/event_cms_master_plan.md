@@ -191,15 +191,15 @@ src/
     2.  Implement `WinnerGeneratorPage` (mock draw logic).
     3.  Implement `SettingsPage` (form UI).
 
-### Phase 2: Backend Integration
+### Phase 2: Backend Integration (Complete)
 *   **Goal:** Connect to real database and file storage.
 *   **Tasks:**
-    1.  Setup Node.js/Express or existing backend routes.
-    2.  Create DB Schemas (`t_events`, `t_event_submissions`).
-    3.  Implement Image Upload API (S3/Disk).
-    4.  Replace `MockService` with `ApiService`.
+    1.  [x] Setup Node.js/Express or existing backend routes.
+    2.  [x] Create DB Schemas (`t_events`, `t_event_submissions`).
+    3.  [x] Implement Image Upload API (S3/Disk).
+    4.  [x] Replace `MockService` with `ApiService`.
 
-### Phase 3: Automation & Export
+### Phase 3: Automation & Export (In Progress)
 *   **Goal:** Reduce manual admin work.
 *   **Tasks:**
     1.  Excel Export for Submissions/Winners.

@@ -1,4 +1,8 @@
-# Event Engine: Comprehensive Overview
+# Event Engine: System Guide & Architecture
+
+**Status:** Implemented / Active
+**Last Updated:** 2026-02-11
+
 ## 1. Executive Summary
 **Event Engine** adalah sistem manajemen kampanye digital yang modular, terukur, dan real-time. Dirancang untuk mempercepat peluncuran aktivitas pemasaran seperti **Lucky Draw**, **Distribusi Voucher**, **Pendaftaran Event (RSVP)**, dan **Kompetisi**.
 

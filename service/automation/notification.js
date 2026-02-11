@@ -96,7 +96,8 @@ module.exports = {
                             to,
                             cc,
                             po_buyer,
-                            company_name
+                            company_name,
+                            "DISTRIBUTOR"
                         );
 
                         // Jika fungsi notifMailDeliver() mengembalikan boolean true = sukses
@@ -114,7 +115,8 @@ module.exports = {
                                                 iod_mail,
                                                 cc,
                                                 po_buyer,
-                                                company_name
+                                                company_name,
+                                                "ANALYST"
                                             );
                                             console.log(`[INFO] Analyst email sent for order ${order_id}`);
                                         } catch (err) {
@@ -259,7 +261,8 @@ module.exports = {
                         to,
                         cc,
                         po_buyer,
-                        company_name
+                        company_name,
+                        "DISTRIBUTOR"
                     );
 
                     if (mailResult === true) {
@@ -275,7 +278,8 @@ module.exports = {
                                         iod_mail,
                                         cc,
                                         po_buyer,
-                                        company_name
+                                        company_name,
+                                        "ANALYST"
                                     );
                                     console.log(`[INFO] Analyst email sent for order ${order_id}`);
                                     console.log(`[INFO] Analyst email List : ${iod_mail}`);

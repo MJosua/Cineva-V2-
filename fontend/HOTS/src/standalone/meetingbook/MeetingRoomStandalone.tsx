@@ -10,6 +10,8 @@ import { loginUser } from "@/store/slices/authSlice";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useToast } from '@/hooks/use-toast';
 import { fetchMeetingBookings } from "@/store/slices/meetingroom_slice";
+import { Battery, BatteryLow, Zap, Loader2 } from "lucide-react";
+import { useRef } from "react";
 
 interface UserProfile {
     firstname?: string;
@@ -28,8 +30,10 @@ const MeetingRoomStandalone: React.FC = () => {
     const [isKioskMode, setIsKioskMode] = useState(localStorage.getItem("isKiosk") === "true");
     const [lastRefresh, setLastRefresh] = useState(new Date());
     const [showInfoModal, setShowInfoModal] = useState(false);
+    const [battery, setBattery] = useState<{ level: number, charging: boolean } | null>(null);
     const { toast } = useToast();
 
+    const ticketSentRef = useRef(false);
     const dispatch = useAppDispatch();
 
     // 🔁 Check token on mount + after login + Auto-Refresh
@@ -62,11 +66,33 @@ const MeetingRoomStandalone: React.FC = () => {
         return () => clearInterval(infoInterval);
     }, [isKioskMode, showForm]);
 
-    // 🛡️ Auto-Login Kiosk Logic
+    // 🛡️ Auto-Login Kiosk Logic & History Trap
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const kioskKey = urlParams.get("kiosk_key");
 
+        // 1. Massive History Buffer for Standalone Kiosk
+        const handlePopState = (e: PopStateEvent) => {
+            if (localStorage.getItem("isKiosk") === "true") {
+                // Determine if we need to refill the buffer
+                // If the user navigates back rapidly, we just push them forward again
+                window.history.pushState({ kiosk_trap: Date.now() }, "", window.location.href);
+            }
+        };
+
+        if (localStorage.getItem("isKiosk") === "true") {
+            window.addEventListener('popstate', handlePopState);
+
+            // INITIAL INJECTION: Force-push 20 history states to create a deep buffer
+            // This ensures manual back-tapping cannot exhaust the stack
+            if (window.history.length < 50) {
+                for (let i = 0; i < 20; i++) {
+                    window.history.pushState({ kiosk_trap: `buffer_${i}` }, "", window.location.href);
+                }
+            }
+        }
+
+        // 2. Handle Auto-Login
         if (kioskKey === "TABLET_IOD_ASIA" && !token) {
             console.log("Kiosk key detected. Attempting auto-login...");
             const autoLogin = async () => {
@@ -81,16 +107,23 @@ const MeetingRoomStandalone: React.FC = () => {
                     setIsKioskMode(true);
                     setToken(localStorage.getItem("tokek"));
 
-                    // Cleanup URL
-                    window.history.replaceState({}, document.title, window.location.pathname);
+                    // Cleanup URL safely
+                    const newUrl = window.location.pathname;
+                    window.history.replaceState({ kiosk_activated: true }, "", newUrl);
 
                     toast({ title: "Kiosk Mode Activated", description: "Identity: Tablet IOD ASIA" });
+
+                    // Re-assert protection after activation
+                    window.addEventListener('popstate', handlePopState);
+                    window.history.pushState({ kiosk_trap: 'active' }, "", window.location.href);
                 } catch (err) {
                     console.error("Kiosk auto-login failed:", err);
                 }
             };
             autoLogin();
         }
+
+        return () => window.removeEventListener('popstate', handlePopState);
     }, [token, dispatch, toast]);
 
     // 🧩 Fetch user profile
@@ -111,6 +144,81 @@ const MeetingRoomStandalone: React.FC = () => {
     useEffect(() => {
         if (token) fetchUserProfile();
     }, [token]);
+
+    // 🔋 Battery API Integration
+    useEffect(() => {
+        if (!('getBattery' in navigator)) return;
+
+        let batteryManager: any;
+
+        const updateBattery = () => {
+            const level = (batteryManager as any).level * 100;
+            const charging = (batteryManager as any).charging;
+            setBattery({ level, charging });
+        };
+
+        (navigator as any).getBattery().then((bm: any) => {
+            batteryManager = bm;
+            updateBattery();
+            bm.addEventListener('levelchange', updateBattery);
+            bm.addEventListener('chargingchange', updateBattery);
+        });
+
+        return () => {
+            if (batteryManager) {
+                batteryManager.removeEventListener('levelchange', updateBattery);
+                batteryManager.removeEventListener('chargingchange', updateBattery);
+            }
+        };
+    }, []);
+
+    // 🤖 Automated Maintenance Ticket (Service ID 7)
+    useEffect(() => {
+        if (!battery || !isKioskMode) return;
+
+        // Trigger at 10% when not charging
+        if (battery.level <= 10 && !battery.charging && !ticketSentRef.current) {
+            console.log("⚠️ Critical Battery Level detected. Launching auto-ticket...");
+
+            const createAutoTicket = async () => {
+                try {
+                    const payload = {
+                        form_data: {
+                            requester_name: { value: "Tablet IOD ASIA (Kiosk)", type: "text" },
+                            department: { value: "IOD", type: "text" },
+                            email: { value: "tablet_iod_asia@indofood.com", type: "text" },
+                            support_type: { value: "Hardware Issue", type: "select" },
+                            support_subtype: { value: "Power/Battery", type: "select" },
+                            urgency: { value: "High", type: "select" },
+                            issue_description: { value: `[AUTO-KIOSK] Tablet for Meeting Room Booking is at critical battery: ${Math.round(battery.level)}%. Please recharge immediately to avoid downtime.`, type: "textarea" },
+                            device_type: { value: "Other", type: "select" },
+                            device_model: { value: "Tablet", type: "select" }
+                        }
+                    };
+
+                    await axios.post(`${API_URL}/hots_ticket/create/ticket/7`, payload, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+
+                    ticketSentRef.current = true;
+                    toast({
+                        title: "Low Battery Action Taken",
+                        description: "Maintenance ticket has been automatically created.",
+                        variant: "destructive"
+                    });
+                } catch (err) {
+                    console.error("Failed to create automated ticket:", err);
+                }
+            };
+
+            createAutoTicket();
+        }
+
+        // Reset the flag if battery recovered or charging
+        if (battery.level > 15 || battery.charging) {
+            ticketSentRef.current = false;
+        }
+    }, [battery, isKioskMode, token, toast]);
 
     // 🧠 Handle login
     const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -271,8 +379,28 @@ const MeetingRoomStandalone: React.FC = () => {
                         </Button>
                     )}
                     {isKioskMode && (
-                        <div className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-400">
-                            KIOSK MODE
+                        <div className="flex items-center space-x-3 mr-2">
+                            {/* Battery Indicator (Kiosk only as requested) */}
+                            {battery && (
+                                <div className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-full border transition-all ${battery.level <= 10 ? "text-red-600 bg-red-50 border-red-200 animate-pulse" :
+                                    battery.level <= 20 ? "text-orange-600 bg-orange-50 border-orange-200" :
+                                        "text-gray-600 bg-gray-50 border-gray-200"
+                                    }`}>
+                                    {battery.charging ? (
+                                        <Zap className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                                    ) : battery.level <= 10 ? (
+                                        <BatteryLow className="w-3.5 h-3.5" />
+                                    ) : (
+                                        <Battery className="w-3.5 h-3.5" />
+                                    )}
+                                    <span className="text-xs font-bold font-mono">
+                                        {Math.round(battery.level)}%
+                                    </span>
+                                </div>
+                            )}
+                            <div className="text-[10px] font-mono bg-gray-100 px-2 py-1 rounded text-gray-400 border border-gray-200">
+                                KIOSK MODE
+                            </div>
                         </div>
                     )}
                 </div>

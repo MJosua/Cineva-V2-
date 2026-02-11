@@ -32,6 +32,23 @@ function production() {
 }
 const isProd = production();
 
+const MAIL_RECIPIENT_TYPE = {
+    DISTRIBUTOR: "DISTRIBUTOR",
+    ANALYST: "ANALYST",
+};
+
+
+function getGreetingHtml({ recipientType, company_name }) {
+    switch (recipientType) {
+        case "ANALYST":
+            return `<p>Dear Analyst of ${company_name},</p>`;
+        case "DISTRIBUTOR":
+        default:
+            return `<p>Dear ${company_name},</p>`;
+    }
+}
+
+
 const mailsmtp = isProd ? process.env.MAIL_SMTP_HOST : process.env.MAIL_SMTP_LOCAL_HOST;
 const mailPORT = parseInt(isProd ? process.env.MAIL_SMTP_PORT : process.env.MAIL_SMTP_LOCAL_PORT, 10);
 const mailUser = isProd ? process.env.MAIL_USERNAME : process.env.MAIL_LOCAL_USERNAME;
@@ -1034,8 +1051,11 @@ module.exports = {
         }, 1000);
     }
     ,
-    getNotifMailDeliverHtml: async (order_id) => {
+    getNotifMailDeliverHtml: async (order_id, recipientType) => {
         try {
+
+
+
             const trackingDetailQuery = await dbQuery(`
             SELECT
                 mc.company_name,
@@ -1073,6 +1093,8 @@ module.exports = {
                 tr.cont_id, trd.sku;
           `);
 
+
+
             const trackingDetailRows = trackingDetailQuery
                 .map(
                     (val) => `
@@ -1090,9 +1112,15 @@ module.exports = {
             const po_buyer = trackingDetailQuery[0]?.po_buyer || "N/A";
             const company_name = trackingDetailQuery[0]?.company_name || "Customer";
 
+
+            const greetingHtml = getGreetingHtml({
+                recipientType,
+                company_name,
+            });
+
             let html = `
               <div>
-                <p>Dear ${company_name},</p> 
+                 ${greetingHtml}
                 <br>
                 <p>This email is to inform you that your order <b>${po_buyer}</b> has been shipped.</p>
                 <p>Your order is being shipped via ${trackingDetailQuery[0]?.shipping_line || "our trusted shipping line"} 
@@ -1135,13 +1163,14 @@ module.exports = {
         dist_mail,
         str_carbon_copy,
         po_buyer_ignored, // We fetch it again or use passed one? 
-        company_name_ignored
+        company_name_ignored,
+        recipientType
     ) => {
         const date = new Date();
         const timestamp = date.toLocaleDateString("id") + " " + date.toLocaleTimeString("id") + " : ";
 
         try {
-            const { html, po_buyer, company_name, error } = await module.exports.getNotifMailDeliverHtml(order_id);
+            const { html, po_buyer, company_name, error } = await module.exports.getNotifMailDeliverHtml(order_id, recipientType);
 
             if (error) throw new Error(error);
 

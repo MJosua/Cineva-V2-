@@ -17,6 +17,28 @@ const RuleExecutor = require('./ruleExecutor'); // Phase 4.2
 const sseManager = require('../core/sse-manager'); // Phase 5: Live Updates
 
 /**
+ * Log administrative action to EVENT_t_log
+ * @param {Object} logData 
+ */
+async function logEventAction({ campaignId, userId, actionType, details, ipAddress }) {
+    try {
+        const sql = `
+            INSERT INTO EVENT_t_log (campaign_id, user_id, action_type, details, created_at)
+            VALUES (?, ?, ?, ?, NOW())
+        `;
+        await dbQueryHots(sql, [
+            campaignId,
+            userId || null,
+            actionType,
+            JSON.stringify(details || {})
+        ]);
+    } catch (e) {
+        console.error('[EventLog] Failed to log action:', e);
+        // Don't throw, just log error so main flow isn't interrupted
+    }
+}
+
+/**
  * Safe JSON parser
  * Handles cases where DB driver might have already parsed the JSON column
  */
@@ -208,6 +230,15 @@ async function createCampaign(campaignData) {
     ];
 
     const result = await dbQueryHots(sql, params);
+    const newCampaignId = result.insertId;
+
+    // Audit Log
+    await logEventAction({
+        campaignId: newCampaignId,
+        userId: campaignData.created_by,
+        actionType: 'CREATE_CAMPAIGN',
+        details: { slug: campaignData.slug, name: campaignData.name }
+    });
 
     // Return the created object by fetching it back or constructing it
     return getCampaignBySlug(campaignData.slug);
@@ -279,6 +310,21 @@ async function updateCampaign(slug, updates) {
     const result = await dbQueryHots(sql, params);
     console.log(`[EventEngineService] Update result:`, result);
 
+    // Audit Log
+    if (result.affectedRows > 0) {
+        // Fetch ID for logging
+        const campaignId = await getCampaignIdBySlug(slug);
+        await logEventAction({
+            campaignId,
+            userId: updates.updatedBy || 0, // Passed from controller
+            actionType: 'UPDATE_CAMPAIGN',
+            details: {
+                slug,
+                updates: Object.keys(updates).filter(k => k !== 'updatedBy') // Log which fields changed
+            }
+        });
+    }
+
     return getCampaignBySlug(slug);
 }
 
@@ -288,13 +334,23 @@ async function updateCampaign(slug, updates) {
  * @param {boolean} shouldPublish 
  * @returns {Promise<Object>} Updated campaign
  */
-async function publishCampaign(slug, shouldPublish) {
+async function publishCampaign(slug, shouldPublish, userId = 0) {
     const status = shouldPublish ? 'active' : 'draft';
     const sql = shouldPublish
         ? `UPDATE EVENT_t_campaign SET status = ?, published_at = NOW() WHERE slug = ?`
         : `UPDATE EVENT_t_campaign SET status = ?, published_at = NULL WHERE slug = ?`;
 
     await dbQueryHots(sql, [status, slug]);
+
+    // Audit Log
+    const campaignId = await getCampaignIdBySlug(slug);
+    await logEventAction({
+        campaignId,
+        userId,
+        actionType: shouldPublish ? 'PUBLISH_CAMPAIGN' : 'UNPUBLISH_CAMPAIGN',
+        details: { slug, status }
+    });
+
     return getCampaignBySlug(slug);
 }
 
@@ -1055,6 +1111,18 @@ async function updateSubmissionStatus(submissionId, status, rejectionReason = nu
         updated_by: userId
     });
 
+    // Audit Log
+    // Get campaign_id first
+    const [subRows] = await dbHots.promise().query("SELECT campaign_id FROM EVENT_t_submission WHERE submission_id = ?", [submissionId]);
+    if (subRows.length > 0) {
+        await logEventAction({
+            campaignId: subRows[0].campaign_id,
+            userId,
+            actionType: 'UPDATE_SUBMISSION_STATUS',
+            details: { submissionId, status, rejectionReason }
+        });
+    }
+
     return { submission_id: submissionId, status, updated: true };
 }
 
@@ -1147,6 +1215,19 @@ async function drawWinners(poolId, count, strategy = 'RANDOM', drawnByUserId = 0
 
         await connection.commit();
 
+        // 5. Audit Log (Async, outside transaction or after commit)
+        // We do it after commit to ensure log reflects reality
+        logEventAction({
+            campaignId,
+            userId: drawnByUserId,
+            actionType: 'DRAW_WINNERS',
+            details: {
+                poolId,
+                count: items.length,
+                strategy
+            }
+        });
+
         return {
             success: true,
             drawn_count: items.length,
@@ -1161,6 +1242,46 @@ async function drawWinners(poolId, count, strategy = 'RANDOM', drawnByUserId = 0
     } finally {
         connection.release();
     }
+}
+
+/**
+ * Get audit logs for a campaign
+ * @param {string} slug 
+ * @param {Object} filters 
+ */
+async function getAuditLogs(slug, filters = {}) {
+    const campaignId = await getCampaignIdBySlug(slug);
+    if (!campaignId) return [];
+
+    let sql = `
+        SELECT 
+            l.log_id,
+            l.action_type,
+            l.details,
+            l.created_at,
+            l.user_id,
+            u.firstname,
+            u.lastname,
+            u.email
+        FROM EVENT_t_log l
+        LEFT JOIN user u ON l.user_id = u.user_id
+        WHERE l.campaign_id = ?
+    `;
+    const params = [campaignId];
+
+    sql += ` ORDER BY l.created_at DESC`;
+
+    const limit = filters.limit || 50;
+    const offset = filters.offset || 0;
+    sql += ` LIMIT ? OFFSET ?`;
+    params.push(parseInt(limit), parseInt(offset));
+
+    const rows = await dbQueryHots(sql, params);
+
+    return rows.map(r => ({
+        ...r,
+        details: safeParse(r.details)
+    }));
 }
 
 /**
@@ -1336,5 +1457,7 @@ module.exports = {
     addTeamMember,
     removeTeamMember,
     searchUsers,
-    getSubmissionsForExport
+    searchUsers,
+    getSubmissionsForExport,
+    getAuditLogs
 };

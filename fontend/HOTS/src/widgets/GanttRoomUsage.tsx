@@ -5,7 +5,17 @@ import { useAppSelector } from "@/hooks/useAppSelector";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { fetchMeetingBookings, fetchMeetingRooms } from "@/store/slices/meetingroom_slice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Calendar,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  X,
+  Monitor,
+  User,
+  Users
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, subDays, startOfDay } from "date-fns";
 import {
@@ -22,7 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { API_URL } from "@/config/sourceConfig";
 import axios from "axios";
-import { Loader2 } from "lucide-react";
+
 
 // Generate 30-minute slots (08:00–17:30)
 const timeSlots = Array.from({ length: 18 }, (_, i) => {
@@ -165,6 +175,8 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
   const [purpose, setPurpose] = useState("");
   const [PIC, setPIC] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [viewBooking, setViewBooking] = useState<Booking | null>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
   const { user } = useAppSelector((state) => state.auth); // Get current user
 
   const roomList = useMemo(() => rooms.map((r) => r.room_name), [rooms]);
@@ -498,7 +510,12 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
                               initial={{ scale: 0.95, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
                               key={b.id}
-                              className="absolute left-[3px] right-[3px] rounded-md px-2 py-1 text-[10px] text-white shadow-sm overflow-hidden z-[5] hover:z-10 hover:shadow-md transition-all group"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent triggering slot selection
+                                setViewBooking(b);
+                                setShowViewModal(true);
+                              }}
+                              className="absolute left-[3px] right-[3px] rounded-md px-2 py-1 text-[10px] text-white shadow-sm overflow-hidden z-[5] hover:z-20 hover:shadow-md transition-all group cursor-pointer"
                               style={{
                                 top: `${start * 32 + 2}px`,
                                 height: `${span * 32 - 4}px`,
@@ -702,6 +719,109 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
           </div>
         )
       }
+      {/* --- View Booking Details Modal --- */}
+      {showViewModal && viewBooking && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-0 overflow-hidden"
+          >
+            {/* Modal Header */}
+            <div className="bg-blue-600 p-4 text-white">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-bold leading-tight">
+                    {viewBooking.purpose || "Meeting Details"}
+                  </h3>
+                  <p className="text-[10px] opacity-80 uppercase tracking-wider font-semibold mt-1">
+                    Room Schedule Information
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 h-8 w-8 -mt-2 -mr-2"
+                  onClick={() => setShowViewModal(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
+                  <Monitor className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase">Room</p>
+                  <p className="text-sm font-semibold text-gray-700">{selectedRoom}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase">Date & Time</p>
+                  <p className="text-sm font-semibold text-gray-700">
+                    {format(new Date(viewBooking.date), 'iiii, MMM d, yyyy')}
+                  </p>
+                  <p className="text-blue-600 font-bold text-sm">
+                    {viewBooking.start_time} – {viewBooking.end_time}
+                  </p>
+                </div>
+              </div>
+
+              {/* Purpose Section */}
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
+                  <AlertCircle className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase">Purpose of Meeting</p>
+                  <p className="text-sm font-semibold text-gray-800 leading-snug">
+                    {viewBooking.purpose || "No purpose specified"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
+                  <User className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase">Organizer / PIC</p>
+                  <p className="text-sm font-semibold text-gray-700">{viewBooking.PIC || "N/A"}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase">Department / Booked By</p>
+                  <p className="text-sm font-semibold text-gray-700">{viewBooking.booked_by || "Anonymous"}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-gray-50 flex justify-end">
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-lg font-bold shadow-sm active:scale-95 transition-all"
+                onClick={() => setShowViewModal(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </Card >
   );
 };

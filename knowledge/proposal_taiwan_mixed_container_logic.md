@@ -1,8 +1,9 @@
-# Proposal: Taiwan (company_id: 106) Mixed Container Control
+# Taiwan Mixed Container Control (Implemented)
 
-**Created:** 2026-01-27  
-**Status:** Proposed  
-**Reference File:** `refrences/test.js`
+**Status:** Implemented  
+**Reference File:** `fontend/E-Order/src/utils/containerRules.js`
+**Note:** Implemented using `company_id: 195` in the production code.
+
 
 ---
 

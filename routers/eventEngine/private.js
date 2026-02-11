@@ -58,6 +58,12 @@ router.delete('/campaigns/:slug', eventEngineController.deleteCampaign);
  */
 router.post('/campaigns/:slug/publish', eventEngineController.setPublishStatus);
 
+/**
+ * GET /campaigns/:slug/logs
+ * Get audit logs for a campaign
+ */
+router.get('/campaigns/:slug/logs', eventEngineController.getAuditLogs);
+
 // ============================================================================
 // SUBMISSIONS
 // ============================================================================
