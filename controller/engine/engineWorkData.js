@@ -20,7 +20,7 @@ module.exports = {
             const [assignment] = await dbHots.promise().query(
                 `SELECT ta.ticket_id, t.service_id 
                  FROM t_ticket_assignment ta
-                 JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                 LEFT JOIN t_ticket t ON t.ticket_id = ta.ticket_id
                  WHERE ta.id = ?`,
                 [assignmentId]
             );
@@ -30,6 +30,7 @@ module.exports = {
             }
 
             const { ticket_id, service_id } = assignment[0];
+            const safeServiceId = service_id || 0;
 
             // Build query
             let query = `
@@ -38,7 +39,7 @@ module.exports = {
         WHERE (ticket_id = ? OR assignment_id = ?)
           AND service_id = ?
       `;
-            const params = [ticket_id, assignmentId, service_id];
+            const params = [ticket_id, assignmentId, safeServiceId];
 
             if (data_type) {
                 query += ' AND data_type = ?';

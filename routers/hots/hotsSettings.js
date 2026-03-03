@@ -19,6 +19,7 @@ route.get('/get_data_diff', decodeTokenHT, hotsDataChangeController.getSOHeader)
 
 // User Management
 route.get('/get/user', decodeTokenHT, userController.getAllUser)
+route.get('/search/users', decodeTokenHT, userController.searchUsers)
 route.post('/post/user', decodeTokenHT, userController.createUser)
 route.put('/update/user/:id', decodeTokenHT, userController.updateUser)
 route.delete('/delete/user/:id', decodeTokenHT, userController.deleteUser)
@@ -127,6 +128,7 @@ route.delete("/delete/service/:service_id", decodeTokenHT, catalogController.del
 // meetingroom
 route.get('/get/meetingroom', decodeTokenHT, systemController.getmeetingroom)
 route.get('/get/meetingroom_static', decodeTokenHT, systemController.getmeetingroom_static)
+route.get('/get/meetingroom/boundary', decodeTokenHT, systemController.getMeetingRoomBoundary)
 
 // Factory list
 route.get('/factories', decodeTokenHT, metadataController.getFactories)
@@ -181,9 +183,9 @@ route.get('/custom_functions/preview_srf/:ticketId', customfunctionController.pr
 // ============================================
 route.get('/card_generator/search_users', decodeTokenHT, customfunctionController.searchUsersForCard)
 route.get('/card_generator/user/:userId', decodeTokenHT, customfunctionController.getUserCardData)
+route.get('/card_generator/preview/:target_user_id', decodeTokenHT, customfunctionController.previewCard)
 route.post('/card_generator/generate', decodeTokenHT, customfunctionController.generateCard)
-route.get('/card_generator/preview/:target_user_id', decodeTokenHT, customfunctionController.previewCard);
-route.post('/card_generator/delete_card', decodeTokenHT, customfunctionController.deleteUserCard);
+route.get('/custom_functions/card_pdf/:userId', customfunctionController.generateCardNamePDF);
 
 // ============================================
 // Public Card Profile (NO AUTH - accessed via QR code)

@@ -1,0 +1,217 @@
+/* DataViewWidget.css */
+
+.data-view-widget {
+    background: rgba(22, 27, 34, 0.6);
+    border: 1px solid rgba(48, 54, 61, 0.6);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Header */
+.dvw-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px;
+    border-bottom: 1px solid rgba(48, 54, 61, 0.6);
+    background: rgba(13, 17, 23, 0.4);
+}
+
+.dvw-title-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.dvw-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary, #f0f6fc);
+}
+
+.dvw-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Buttons */
+.dvw-btn {
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dvw-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.dvw-btn-primary {
+    background: var(--accent-primary, #238636);
+    color: #fff;
+}
+
+.dvw-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.dvw-btn-secondary {
+    background: rgba(110, 118, 129, 0.2);
+    color: var(--text-primary, #c9d1d9);
+    border: 1px solid rgba(110, 118, 129, 0.4);
+}
+
+.dvw-btn-secondary:hover {
+    background: rgba(110, 118, 129, 0.3);
+}
+
+/* Params Form */
+.dvw-params-form {
+    padding: 16px;
+    background: rgba(56, 139, 253, 0.05);
+    border-bottom: 1px solid rgba(48, 54, 61, 0.6);
+}
+
+.dvw-params-form h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: var(--text-primary, #f0f6fc);
+}
+
+.dvw-param-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.dvw-param-row label {
+    min-width: 120px;
+    font-size: 13px;
+    color: var(--text-secondary, #8b949e);
+}
+
+.dvw-param-row input {
+    flex: 1;
+    padding: 8px 10px;
+    background: rgba(13, 17, 23, 0.8);
+    border: 1px solid rgba(48, 54, 61, 0.6);
+    border-radius: 6px;
+    color: var(--text-primary, #c9d1d9);
+    font-size: 13px;
+}
+
+.dvw-param-row input:focus {
+    border-color: var(--accent-primary, #58a6ff);
+    outline: none;
+}
+
+/* Error */
+.dvw-error {
+    padding: 12px 16px;
+    background: rgba(248, 81, 73, 0.1);
+    border-bottom: 1px solid rgba(248, 81, 73, 0.3);
+    color: #f85149;
+    font-size: 13px;
+}
+
+/* Empty / Loading */
+.dvw-empty,
+.dvw-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    color: var(--text-muted, #6e7681);
+}
+
+.dvw-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(88, 166, 255, 0.3);
+    border-top-color: var(--accent-primary, #58a6ff);
+    border-radius: 50%;
+    animation: dvw-spin 0.8s linear infinite;
+    margin-bottom: 12px;
+}
+
+@keyframes dvw-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Table */
+.dvw-table-wrapper {
+    overflow-x: auto;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.dvw-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.dvw-table th {
+    position: sticky;
+    top: 0;
+    background: rgba(22, 27, 34, 0.95);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary, #8b949e);
+    border-bottom: 1px solid rgba(48, 54, 61, 0.6);
+    white-space: nowrap;
+}
+
+.dvw-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(48, 54, 61, 0.3);
+    color: var(--text-primary, #c9d1d9);
+}
+
+.dvw-table tr:hover td {
+    background: rgba(56, 139, 253, 0.05);
+}
+
+.dvw-cell-number {
+    text-align: right;
+    font-family: monospace;
+}
+
+.dvw-cell-date {
+    white-space: nowrap;
+}
+
+.dvw-cell code {
+    font-size: 11px;
+    max-width: 300px;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dvw-null {
+    color: var(--text-muted, #6e7681);
+    font-style: italic;
+}
+
+/* Footer */
+.dvw-footer {
+    padding: 10px 16px;
+    font-size: 12px;
+    color: var(--text-muted, #6e7681);
+    background: rgba(13, 17, 23, 0.4);
+    border-top: 1px solid rgba(48, 54, 61, 0.6);
+}

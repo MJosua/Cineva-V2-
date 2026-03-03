@@ -42,7 +42,7 @@ module.exports = {
                 .map(r => ({
                     samplecat_id: r.value,
                     samplecat_name: r.label,
-                    samplecat_shortname: r.attributes?.samplecat_shortname || r.resource_key,
+                    samplecat_shortname: r.attributes?.samplecat_shortname || r.attributes?.shortname || r.resource_key,
                     samplecat_parent_id: r.attributes?.samplecat_parent_id || null,
                     samplecat_group: r.attributes?.samplecat_group || 'NOODLE',
                     active: r.is_active ? 1 : 0

@@ -129,6 +129,27 @@ const exportSubmissions = asyncHandler(async (req, res) => {
 });
 
 /**
+ * GET /campaigns/:slug/winners/export
+ * Export winners to CSV
+ */
+const exportWinners = asyncHandler(async (req, res) => {
+    const { slug } = req.params;
+    const data = await eventEngineService.getWinnersForExport(slug);
+
+    if (data.length === 0) {
+        return res.status(404).json(createResponse(false, null, { message: "No winners to export" }));
+    }
+
+    // Convert to CSV using XLSX
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const csv = XLSX.utils.sheet_to_csv(worksheet);
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=winners_${slug}_${new Date().getTime()}.csv`);
+    res.send(csv);
+});
+
+/**
  * GET /campaigns/:slug
  * Get single campaign by slug
  */
@@ -553,12 +574,14 @@ const getWinnersByCampaign = asyncHandler(async (req, res) => {
 
 const submitEntry = asyncHandler(async (req, res) => {
     const { slug } = req.params;
-    const { participant_name, participant_contact, receipt_codes } = req.body;
+    const { participant_name, participant_contact, receipt_codes, is_encrypted, ...otherFields } = req.body;
 
     const submission = await eventEngineService.submitEntry(slug, {
         participant_name,
         participant_contact,
-        receipt_codes
+        receipt_codes,
+        extra_data: otherFields,
+        is_encrypted: is_encrypted === true
     });
 
     res.json(createResponse(true, submission));
@@ -600,11 +623,43 @@ const getAuditLogs = asyncHandler(async (req, res) => {
     res.json(createResponse(true, logs));
 });
 
+/**
+ * GET /public/campaigns/:slug/check-coupon/:code?pool=<poolId>
+ * Public endpoint to validate a coupon code.
+ * poolId is optional query param — if omitted, checks all pools of the campaign.
+ */
+const checkCoupon = asyncHandler(async (req, res) => {
+    const { slug, code } = req.params;
+    const poolId = req.query.pool ? parseInt(req.query.pool) : null;
+
+    if (!code || code.trim() === '') {
+        return res.status(400).json(createResponse(false, null, {
+            code: 'MISSING_CODE',
+            message: 'Coupon code is required.'
+        }));
+    }
+
+    const isEncrypted = req.query.encrypted === 'true';
+
+    const result = await eventEngineService.checkCoupon(slug, poolId, code.trim(), isEncrypted);
+
+    // Map status to HTTP code: 404 for INVALID, 200 for others
+    if (result.status === 'INVALID') {
+        return res.status(404).json(createResponse(false, null, {
+            code: 'INVALID',
+            message: result.message
+        }));
+    }
+
+    res.json(createResponse(true, result));
+});
+
 // ============================================================================
 // EXPORTS
 // ============================================================================
 
 module.exports = {
+
     // Campaign
     getCampaigns,
     getCampaignBySlug,
@@ -639,6 +694,7 @@ module.exports = {
     drawWinners,
     getWinnersByCampaign,
     exportSubmissions,
+    exportWinners,
 
     // Team Management
     searchUsers: asyncHandler(async (req, res) => {
@@ -667,5 +723,8 @@ module.exports = {
         const { slug, userId } = req.params;
         await eventEngineService.removeTeamMember(slug, userId);
         res.json(createResponse(true, { deleted: true }));
-    })
+    }),
+
+    // Coupon Check
+    checkCoupon,
 };

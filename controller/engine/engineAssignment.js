@@ -30,6 +30,97 @@ async function generateCustomTicketID(db, service_id, user_id) {
 }
 
 /**
+ * Helper: Notify all stakeholders of an assignment update (Creator, Assignees, Actor)
+ */
+async function notifyAssignmentStakeholders(assignmentId, userId, eventType, data, options = {}) {
+    if (!global.sseManager) return;
+
+    try {
+        const [stakeholders] = await dbHots.promise().query(`
+            SELECT DISTINCT user_id FROM (
+                -- Creator
+                SELECT t.created_by as user_id 
+                FROM t_ticket_assignment ta
+                JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                WHERE ta.id = ?
+                UNION
+                -- Current Assignee (User)
+                SELECT assigned_id as user_id FROM t_ticket_assignment WHERE id = ? AND assigned_type = 'user'
+                UNION
+                -- Team Members (if assigned to team)
+                SELECT tm.user_id 
+                FROM t_ticket_assignment tta
+                JOIN m_team_member tm ON tm.team_id = tta.assigned_id
+                WHERE tta.id = ? AND tta.assigned_type = 'team'
+                UNION
+                -- Current Actor (to sync other tabs)
+                SELECT ? as user_id
+            ) AS all_users
+            WHERE user_id IS NOT NULL
+        `, [assignmentId, assignmentId, assignmentId, userId]);
+
+        const recipientIds = stakeholders.map(s => s.user_id);
+        if (recipientIds.length > 0) {
+            // Get some context for the notification
+            const [info] = await dbHots.promise().query(
+                `SELECT s.service_name, t.ticket_id,
+                        CONCAT(u.firstname, ' ', u.lastname) as updater_name
+                 FROM t_ticket_assignment ta
+                 JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                 LEFT JOIN m_service s ON s.service_id = t.service_id
+                 LEFT JOIN user u ON u.user_id = ?
+                 WHERE ta.id = ? LIMIT 1`,
+                [userId, assignmentId]
+            );
+
+            const updaterName = info[0]?.updater_name || 'Someone';
+            const serviceName = info[0]?.service_name || 'Assignment';
+            const ticketId = info[0]?.ticket_id;
+
+            const finalData = {
+                ...data,
+                assignmentId,
+                ticketId,
+                updater_name: updaterName,
+                service_name: serviceName,
+                timestamp: new Date().toISOString()
+            };
+
+            // If title/message not provided in options, generate defaults if it's a notification-worthy event
+            const finalOptions = { ...options };
+            if (options.notify) {
+                // Determine a specific title based on action if available
+                let defaultTitle = `📌 Assignment Update - #${ticketId} ${serviceName}`;
+                if (data.action === 'task_created') defaultTitle = `📌 New Task - #${ticketId} ${serviceName}`;
+                else if (data.action === 'task_status_change' || data.action === 'task_updated') defaultTitle = `📌 Task Update - #${ticketId} ${serviceName}`;
+                else if (data.action === 'timeline_update') defaultTitle = `📋 Timeline Update - #${ticketId} ${serviceName}`;
+
+                finalOptions.title = options.title || defaultTitle;
+
+                // Construct a rich message
+                let defaultMessage = `${updaterName} updated the assignment.`;
+                if (data.action === 'task_status_change' && data.updates?.status) {
+                    defaultMessage = `Task moved to ${data.updates.status.replace('_', ' ')} by ${updaterName}`;
+                } else if (data.action === 'timeline_update') {
+                    defaultMessage = `"${data.content.substring(0, 30)}${data.content.length > 30 ? '...' : ''}" by ${updaterName}`;
+                } else if (data.action === 'task_created') {
+                    defaultMessage = `Task "${data.title}" added by ${updaterName}`;
+                }
+
+                finalOptions.message = options.message || defaultMessage;
+            }
+
+            // Provide URL for clicking
+            finalData.url = `/ticket/${ticketId}`; // Generic ticket URL
+
+            await global.sseManager.emitToUsers(recipientIds, eventType, finalData, finalOptions);
+        }
+    } catch (error) {
+        console.error('Error in notifyAssignmentStakeholders:', error);
+    }
+}
+
+/**
  * Controller for assignment management
  */
 
@@ -39,15 +130,12 @@ module.exports = {
      * Get current user's assignments
      */
     getMyAssignments: async (req, res) => {
-
-
-
         try {
             const user_id = req.dataToken.user_id;
-            console.log("🔍 [REQUEST QUERY STATUS]", req.query.status);
-
             const { status } = req.query;
 
+            // 🧠 Refined Query: Join with work_data to calculate overdue status based on tasks OR 7-day fallback
+            // And aggregate task summaries (count of todo/in_progress)
             let query = `
         SELECT 
           ta.id as assignment_id,
@@ -61,7 +149,74 @@ module.exports = {
           t.service_id,
           t.service_name,
           t.status_id as ticket_status,
-          s.service_name as service_display_name
+          s.service_name as service_display_name,
+          -- 🛠️ Refined Overdue Logic: pick latest values from duplicates
+          (
+            SELECT COUNT(*) FROM (
+                SELECT 
+                    MAX(CASE WHEN field_name = 'status' THEN field_value END) as status,
+                    MAX(CASE WHEN field_name = 'due_date' THEN field_value END) as due_date
+                FROM (
+                    SELECT entity_id, field_name, field_value
+                    FROM t_ticket_work_data twd_ov 
+                    WHERE twd_ov.assignment_id = ta.id AND twd_ov.data_type = 'task'
+                    AND twd_ov.id = (SELECT MAX(id) FROM t_ticket_work_data t_sub WHERE t_sub.entity_id = twd_ov.entity_id AND t_sub.field_name = twd_ov.field_name)
+                ) latest_fields_ov
+                GROUP BY entity_id
+            ) tasks
+            WHERE status != 'done'
+              AND due_date IS NOT NULL AND due_date != ''
+              AND (
+                (due_date LIKE '%-%-%' AND STR_TO_DATE(due_date, '%Y-%m-%d') <= CURDATE())
+                OR (due_date LIKE '%/%/%' AND STR_TO_DATE(due_date, '%m/%d/%Y') <= CURDATE())
+              )
+          ) as overdue_task_count,
+          (
+            EXISTS (
+                SELECT 1 FROM (
+                    SELECT 
+                        MAX(CASE WHEN field_name = 'status' THEN field_value END) as status,
+                        MAX(CASE WHEN field_name = 'due_date' THEN field_value END) as due_date
+                    FROM (
+                        SELECT entity_id, field_name, field_value
+                        FROM t_ticket_work_data twd_ov 
+                        WHERE twd_ov.assignment_id = ta.id AND twd_ov.data_type = 'task'
+                        AND twd_ov.id = (SELECT MAX(id) FROM t_ticket_work_data t_sub WHERE t_sub.entity_id = twd_ov.entity_id AND t_sub.field_name = twd_ov.field_name)
+                    ) latest_fields_ov2
+                    GROUP BY entity_id
+                ) tasks_ex
+                WHERE status != 'done'
+                  AND due_date IS NOT NULL AND due_date != ''
+                  AND (
+                    (due_date LIKE '%-%-%' AND STR_TO_DATE(due_date, '%Y-%m-%d') <= CURDATE())
+                    OR (due_date LIKE '%/%/%' AND STR_TO_DATE(due_date, '%m/%d/%Y') <= CURDATE())
+                  )
+            )
+          ) as is_overdue,
+          -- 📋 Task Summary (JSON) - Fixed to pick latest field versions and avoid cross-join ballooning
+          (
+            SELECT JSON_ARRAYAGG(JSON_OBJECT('title', title, 'status', status))
+            FROM (
+              SELECT 
+                entity_id,
+                MAX(CASE WHEN field_name = 'title' THEN field_value END) as title,
+                MAX(CASE WHEN field_name = 'status' THEN field_value END) as status
+              FROM (
+                  -- Inner subquery to pick the LATEST row for each field per entity
+                  SELECT twd_inner.entity_id, twd_inner.field_name, twd_inner.field_value
+                  FROM t_ticket_work_data twd_inner
+                  WHERE twd_inner.assignment_id = ta.id AND twd_inner.data_type = 'task'
+                  AND twd_inner.id = (
+                     SELECT MAX(id) 
+                     FROM t_ticket_work_data twd_max 
+                     WHERE twd_max.entity_id = twd_inner.entity_id 
+                       AND twd_max.field_name = twd_inner.field_name
+                  )
+              ) latest_fields
+              GROUP BY entity_id
+            ) latest_tasks
+            WHERE status IN ('todo', 'in_progress')
+          ) as task_preview
         FROM t_ticket_assignment ta
         LEFT JOIN t_ticket t ON ta.ticket_id = t.ticket_id
         LEFT JOIN m_service s ON t.service_id = s.service_id
@@ -83,15 +238,20 @@ module.exports = {
 
             query += ' ORDER BY ta.assigned_at DESC';
 
-
             const [assignments] = await dbHots.promise().query(query, params);
+
+            // Parse JSON fields if necessary (mysql2 sometimes returns strings)
+            const processed = assignments.map(a => ({
+                ...a,
+                is_overdue: !!a.is_overdue,
+                task_preview: typeof a.task_preview === 'string' ? JSON.parse(a.task_preview) : (a.task_preview || [])
+            }));
 
             res.json({
                 ok: true,
-                assignments,
-                count: assignments.length
+                assignments: processed,
+                count: processed.length
             });
-
         } catch (error) {
             console.error('Error fetching assignments:', error);
             res.status(500).json({ ok: false, error: error.message });
@@ -326,13 +486,19 @@ module.exports = {
 
             // Verify access to assignment
             const [assignments] = await dbHots.promise().query(
-                'SELECT * FROM t_ticket_assignment WHERE id = ?',
+                `SELECT t.root_ticket_id, t.ticket_id, t.company_id, ta.ticket_id as fallback_ticket_id 
+                 FROM t_ticket_assignment ta 
+                 LEFT JOIN t_ticket t ON t.ticket_id = ta.ticket_id 
+                 WHERE ta.id = ?`,
                 [assignmentId]
             );
 
             if (!assignments.length) {
                 return res.status(404).json({ ok: false, error: 'Assignment not found' });
             }
+
+            const { root_ticket_id, ticket_id, company_id, fallback_ticket_id } = assignments[0];
+            const masterRouteId = (root_ticket_id && root_ticket_id !== '') ? root_ticket_id : (ticket_id || fallback_ticket_id);
 
             // Get timeline updates from work_data
             const [workData] = await dbHots.promise().query(`
@@ -342,13 +508,19 @@ module.exports = {
                     twd.field_value,
                     twd.created_at,
                     twd.created_by,
+                    twd.ticket_depth,
+                    twd.entry_type,
+                    twd.revision,
+                    twd.snapshot_meta_json,
                     CONCAT(u.firstname, ' ', u.lastname) as user_name
                 FROM t_ticket_work_data twd
                 LEFT JOIN user u ON u.user_id = twd.created_by
-                WHERE twd.assignment_id = ?
+                WHERE twd.root_ticket_id = ?
                   AND twd.data_type = 'timeline_update'
+                  AND twd.is_latest = 1
+                  AND twd.is_hidden = 0
                 ORDER BY twd.created_at DESC
-            `, [assignmentId]);
+            `, [masterRouteId]);
 
             // Group by entity_id to reconstruct updates
             const updates = {};
@@ -358,7 +530,11 @@ module.exports = {
                         entity_id: row.entity_id,
                         created_at: row.created_at,
                         created_by: row.created_by,
-                        user_name: row.user_name
+                        user_name: row.user_name,
+                        ticket_depth: row.ticket_depth,
+                        entry_type: row.entry_type,
+                        revision: row.revision,
+                        snapshot_meta_json: typeof row.snapshot_meta_json === 'string' ? JSON.parse(row.snapshot_meta_json) : row.snapshot_meta_json
                     };
                 }
                 updates[row.entity_id][row.field_name] = row.field_value;
@@ -392,9 +568,9 @@ module.exports = {
 
             // Verify assignment exists and get service_id from ticket
             const [assignments] = await dbHots.promise().query(
-                `SELECT t.service_id 
+                `SELECT t.service_id, t.ticket_id, t.root_ticket_id, t.ticket_depth, t.company_id, ta.ticket_id as fallback_ticket_id 
                  FROM t_ticket_assignment ta
-                 JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                 LEFT JOIN t_ticket t ON t.ticket_id = ta.ticket_id
                  WHERE ta.id = ?`,
                 [assignmentId]
             );
@@ -403,8 +579,13 @@ module.exports = {
                 return res.status(404).json({ ok: false, error: 'Assignment not found' });
             }
 
-            const serviceId = assignments[0].service_id;
+            const { service_id, ticket_id, root_ticket_id, ticket_depth, company_id, fallback_ticket_id } = assignments[0];
+            const masterRouteId = (root_ticket_id && root_ticket_id !== '') ? root_ticket_id : (ticket_id || fallback_ticket_id);
+            const serviceId = service_id || 0;
+            const safeCompanyId = company_id || 1;
+
             const entityId = `UPDATE_${Date.now()}`;
+            const timelineGroupId = entityId; // Same ID helps sync edits
 
             // Store timeline update in work_data
             const fields = {
@@ -420,9 +601,12 @@ module.exports = {
             for (const [field_name, field_value] of Object.entries(fields)) {
                 const promise = dbHots.promise().query(
                     `INSERT INTO t_ticket_work_data 
-                     (assignment_id, service_id, data_type, entity_id, field_name, field_value, created_by)
-                     VALUES (?, ?, 'timeline_update', ?, ?, ?, ?)`,
-                    [assignmentId, serviceId, entityId, field_name, field_value, user_id]
+                     (ticket_id, assignment_id, service_id, data_type, entity_id, field_name, field_value, 
+                      created_by, root_ticket_id, ticket_depth, entry_type, timeline_group_id, revision, 
+                      is_latest, is_hidden, company_id)
+                     VALUES (?, ?, ?, 'timeline_update', ?, ?, ?, ?, ?, ?, 'manual_update', ?, 0, 1, 0, ?)`,
+                    [ticket_id || fallback_ticket_id, assignmentId, serviceId, entityId, field_name, field_value, user_id,
+                        masterRouteId, ticket_depth || 0, timelineGroupId, safeCompanyId]
                 );
                 insertPromises.push(promise);
             }
@@ -431,35 +615,16 @@ module.exports = {
 
             console.log(`✅ [TIMELINE] Update ${entityId} added to assignment ${assignmentId} by user ${user_id}`);
 
-            // 🆕 Phase 3: SSE - Notify ticket creator about timeline update
-            if (global.sseManager) {
-                dbHots.promise().query(
-                    `SELECT ta.ticket_id, t.created_by, s.service_name, 
-                            CONCAT(u.firstname, ' ', u.lastname) as updater_name
-                     FROM t_ticket_assignment ta
-                     JOIN t_ticket t ON t.ticket_id = ta.ticket_id
-                     LEFT JOIN m_service s ON s.service_id = t.service_id
-                     LEFT JOIN user u ON u.user_id = ?
-                     WHERE ta.id = ?`,
-                    [user_id, assignmentId]
-                ).then(([[info]]) => {
-                    const updater_name = info?.updater_name || 'Someone';
-                    const service_name = info?.service_name || 'Assignment';
-
-                    if (info?.created_by && info.created_by !== user_id) {
-                        global.sseManager.emitToUser(info.created_by, 'assignment_update', {
-                            assignmentId,
-                            ticketId: info.ticket_id,
-                            action: 'timeline_update',
-                            updater_name: updater_name,
-                            content_preview: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
-                            service_name: service_name,
-                            timestamp: new Date().toISOString(),
-                            message: `${updater_name} posted a timeline update`
-                        }, { persist: true, title: '📋 Timeline Update', message: `${updater_name} updated ${service_name} assignment` });
-                    }
-                }).catch(() => { });
-            }
+            // 🆕 SSE Notify
+            notifyAssignmentStakeholders(assignmentId, user_id, 'assignment_update', {
+                action: 'timeline_update',
+                entityId,
+                content: content.substring(0, 50) + (content.length > 50 ? '...' : '')
+            }, {
+                notify: true,
+                title: '📋 Timeline Update',
+                message: 'New update on your assignment'
+            }).catch(() => { });
 
             res.json({
                 ok: true,
@@ -582,7 +747,7 @@ module.exports = {
 
             // Get parent ticket and service info
             const [tickets] = await dbHots.promise().query(
-                'SELECT service_id, service_name, title FROM t_ticket WHERE ticket_id = ?',
+                'SELECT service_id, service_name, title, root_ticket_id, ticket_depth, company_id FROM t_ticket WHERE ticket_id = ?',
                 [ticketId]
             );
 
@@ -591,6 +756,10 @@ module.exports = {
             }
 
             const parentTicket = tickets[0];
+
+            if (parentTicket.ticket_depth >= 3) {
+                return res.status(400).json({ ok: false, error: 'Maximum nesting depth limit (4 levels) reached for applications' });
+            }
 
             // Get service configuration
             const [services] = await dbHots.promise().query(
@@ -671,15 +840,18 @@ module.exports = {
                 await dbHots.promise().query(
                     `INSERT INTO t_ticket 
                      (ticket_id, parent_ticket_id, service_id, service_name, created_by, status_id, 
-                      submitted_at, creation_date, last_update, title, workflow_step)
-                     VALUES (?, ?, ?, ?, ?, 1, NOW(), NOW(), NOW(), ?, 0)`,
+                      submitted_at, creation_date, last_update, title, workflow_step, root_ticket_id, ticket_depth, company_id)
+                     VALUES (?, ?, ?, ?, ?, 1, NOW(), NOW(), NOW(), ?, 0, ?, ?, ?)`,
                     [
                         applicationTicketId,
                         ticketId,  // parent_ticket_id
                         parentTicket.service_id,
                         parentTicket.service_name,
                         user_id,
-                        `Application for: ${parentTicket.title}`
+                        `Application for: ${parentTicket.title}`,
+                        parentTicket.root_ticket_id || ticketId,
+                        parentTicket.ticket_depth + 1,
+                        parentTicket.company_id
                     ]
                 );
 
@@ -812,7 +984,7 @@ module.exports = {
             const [assignment] = await dbHots.promise().query(
                 `SELECT ta.id, ta.ticket_id, t.service_id 
                  FROM t_ticket_assignment ta
-                 JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+                 LEFT JOIN t_ticket t ON t.ticket_id = ta.ticket_id
                  WHERE ta.id = ?`,
                 [assignmentId]
             );
@@ -823,20 +995,22 @@ module.exports = {
 
             const { service_id } = assignment[0];
 
-            // Fetch tasks
+            // Fetch tasks (Hybrid logic)
             const [taskRows] = await dbHots.promise().query(`
-                SELECT entity_id, field_name, field_value, created_at, created_by
-                FROM t_ticket_work_data
-                WHERE assignment_id = ? AND data_type = 'task'
-                ORDER BY entity_id, field_name
+                SELECT wd.entity_id, wd.field_name, wd.field_value, wd.created_at, wd.created_by, wd.id,
+                       e.depth, e.parent_entity_id as parent_task_id, e.sort_order as \`order\`, e.status, e.report
+                FROM t_ticket_work_data wd
+                LEFT JOIN t_ticket_work_data_env e ON wd.entity_id COLLATE utf8mb4_unicode_ci = e.entity_id COLLATE utf8mb4_unicode_ci
+                WHERE wd.assignment_id = ? AND wd.data_type = 'task'
+                ORDER BY e.sort_order ASC, wd.id ASC
             `, [assignmentId]);
 
             // Fetch task steps
             const [stepRows] = await dbHots.promise().query(`
-                SELECT entity_id, field_name, field_value, created_at
+                SELECT entity_id, field_name, field_value, created_at, id
                 FROM t_ticket_work_data
                 WHERE assignment_id = ? AND data_type = 'task_step'
-                ORDER BY entity_id, field_name
+                ORDER BY id ASC
             `, [assignmentId]);
 
             // Group tasks by entity_id
@@ -847,10 +1021,29 @@ module.exports = {
                         entity_id: row.entity_id,
                         created_at: row.created_at,
                         created_by: row.created_by,
-                        steps: []
+                        depth: row.depth || 1,
+                        parent_task_id: row.parent_task_id,
+                        order: row.order || 0,
+                        status: row.status || 'todo',
+                        report: row.report,
+                        steps: [],
+                        subtasks: []
                     };
                 }
-                tasksMap[row.entity_id][row.field_name] = row.field_value;
+
+                // Skip legacy structural EAV fields so they don't override the environment table
+                if (['parent_task_id', 'order', 'status'].includes(row.field_name)) return;
+
+                // Parse JSON array/objects
+                if ((row.field_name === 'blocked_by' || row.field_name === 'custom_fields') && row.field_value) {
+                    try {
+                        tasksMap[row.entity_id][row.field_name] = JSON.parse(row.field_value);
+                    } catch (e) {
+                        tasksMap[row.entity_id][row.field_name] = row.field_name === 'blocked_by' ? [row.field_value] : row.field_value; // Fallback
+                    }
+                } else {
+                    tasksMap[row.entity_id][row.field_name] = row.field_value;
+                }
             });
 
             // Group steps by entity_id, then attach to parent task
@@ -870,20 +1063,141 @@ module.exports = {
                 }
             });
 
-            // Sort steps by order
-            Object.values(tasksMap).forEach(task => {
-                task.steps.sort((a, b) => (parseInt(a.order) || 0) - (parseInt(b.order) || 0));
+            // Parse resource usages from reports
+            const [reportRows] = await dbHots.promise().query(`
+                SELECT entity_id as task_id, content 
+                FROM t_ticket_work_data_report 
+                WHERE assignment_id = ?
+            `, [assignmentId]);
+
+            reportRows.forEach(row => {
+                const taskId = row.task_id;
+                if (tasksMap[taskId]) {
+                    if (!tasksMap[taskId].usages) tasksMap[taskId].usages = {};
+
+                    // Method 1: Parse [USAGE:{"resource":"Wood","qty":5}] text tokens (new format)
+                    const tokenMatches = [...row.content.matchAll(/\[USAGE:({[^}]+})\]/g)];
+                    for (const match of tokenMatches) {
+                        try {
+                            const usage = JSON.parse(match[1]);
+                            if (usage.resource && usage.qty) {
+                                tasksMap[taskId].usages[usage.resource] = (tasksMap[taskId].usages[usage.resource] || 0) + Number(usage.qty);
+                            }
+                        } catch (e) { }
+                    }
+
+                    // Method 2: Parse data-usage HTML attribute (old format fallback)
+                    // Matches: data-usage='{"resource":"...","qty":N}' or data-usage="{"resource":"...","qty":N}"
+                    const attrMatches = [...row.content.matchAll(/data-usage=['"]({[^'"]+})['"]/g)];
+                    for (const match of attrMatches) {
+                        const raw = match[1];
+                        if (!raw) continue;
+                        try {
+                            const usage = JSON.parse(raw);
+                            if (usage.resource && usage.qty) {
+                                tasksMap[taskId].usages[usage.resource] = (tasksMap[taskId].usages[usage.resource] || 0) + Number(usage.qty);
+                            }
+                        } catch (e) { }
+                    }
+                }
             });
 
-            // Convert to array and sort by order
-            const tasks = Object.values(tasksMap).sort((a, b) =>
-                (parseInt(a.order) || 0) - (parseInt(b.order) || 0)
-            );
+            // Propagate resource-typed custom_fields from parent tasks → children
+            // so subtasks show the LOG USAGE dropdown in their report timeline.
+            const propagateResourceFields = (taskList, ancestorResources = {}) => {
+                for (const task of taskList) {
+                    let ownFields = task.custom_fields || {};
+                    if (typeof ownFields === 'string') { try { ownFields = JSON.parse(ownFields); } catch (e) { ownFields = {}; } }
+
+                    // Extract resource fields from this task to pass to children
+                    const ownResources = {};
+                    Object.entries(ownFields).forEach(([key, meta]) => {
+                        const m = typeof meta === 'object' && meta !== null ? meta : {};
+                        if (m.type === 'resource') ownResources[key] = m;
+                    });
+
+                    // Merge ancestor resources into this task (ancestor wins ONLY if child doesn't define it)
+                    if (Object.keys(ancestorResources).length > 0) {
+                        task.custom_fields = { ...ancestorResources, ...ownFields };
+                    }
+
+                    // Resources to pass to children = grandfather's + parent's own
+                    const forChildren = { ...ancestorResources, ...ownResources };
+                    if (task.subtasks && task.subtasks.length > 0) {
+                        propagateResourceFields(task.subtasks, forChildren);
+                    }
+                }
+            };
+
+
+            // Build recursive task tree
+            const rootTasks = [];
+            Object.values(tasksMap).forEach(task => {
+                // Sort steps of each task
+                task.steps.sort((a, b) => (parseInt(a.order) || 0) - (parseInt(b.order) || 0));
+
+                if (task.parent_task_id && tasksMap[task.parent_task_id]) {
+                    tasksMap[task.parent_task_id].subtasks.push(task);
+                } else {
+                    rootTasks.push(task);
+                }
+            });
+
+            // Recursively bubble subtask usages up into parent for resource-typed custom_fields
+            // so the badge ledger (remaining / total) reflects ALL consumption in the tree.
+            const bubbleUsages = (taskList) => {
+                for (const task of taskList) {
+                    if (task.subtasks && task.subtasks.length > 0) {
+                        bubbleUsages(task.subtasks);
+                        // For each resource key defined on the parent, sum child usages
+                        if (task.custom_fields) {
+                            let parsed = task.custom_fields;
+                            if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed); } catch (e) { parsed = {}; } }
+                            for (const [key, meta] of Object.entries(parsed)) {
+                                const m = typeof meta === 'object' && meta !== null ? meta : {};
+                                if (m.type === 'resource') {
+                                    if (!task.usages) task.usages = {};
+                                    // Accumulate usage from all direct and nested subtasks
+                                    const sumSubtask = (subs) => {
+                                        let total = 0;
+                                        for (const sub of subs) {
+                                            if (sub.usages && sub.usages[key]) total += sub.usages[key];
+                                            if (sub.subtasks && sub.subtasks.length > 0) total += sumSubtask(sub.subtasks);
+                                        }
+                                        return total;
+                                    };
+                                    const childSum = sumSubtask(task.subtasks);
+                                    if (childSum > 0) {
+                                        task.usages[key] = (task.usages[key] || 0) + childSum;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            bubbleUsages(rootTasks);
+            // Propagate parent resource custom_fields down to subtasks
+            propagateResourceFields(rootTasks);
+
+            // Recursively sort tasks using order field
+            const sortTasks = (taskList) => {
+                taskList.sort((a, b) => (parseInt(a.order) || 0) - (parseInt(b.order) || 0));
+                taskList.forEach(t => {
+                    if (t.subtasks && t.subtasks.length > 0) {
+                        sortTasks(t.subtasks);
+                    }
+                });
+            };
+
+            sortTasks(rootTasks);
+            const tasks = rootTasks;
 
             console.log(`📋 [TASKS] Found ${tasks.length} tasks for assignment ${assignmentId}`);
 
             res.json({
                 ok: true,
+                debug_version: '1.0.7', // Deep delete hierarchy fix mar 02 1545
                 assignment_id: assignmentId,
                 service_id,
                 tasks
@@ -902,7 +1216,7 @@ module.exports = {
     createTask: async (req, res) => {
         try {
             const { assignmentId } = req.params;
-            const { title, description, due_date, priority, steps } = req.body;
+            const { title, description, start_date, due_date, priority, steps, blocked_by, parent_task_id, custom_fields, estimated_hours, actual_hours, difficulty_level, primary_assignee_id } = req.body;
             const user_id = req.dataToken.user_id;
 
             if (!title) {
@@ -925,22 +1239,52 @@ module.exports = {
             const { ticket_id, service_id } = assignment[0];
             const taskEntityId = `TASK_${Date.now()}`;
 
-            // Get max order for this assignment
+            // Compute depth from t_ticket_work_data_env (fast, relational)
+            let depth = 1;
+            if (parent_task_id) {
+                const [parentEnv] = await dbHots.promise().query(
+                    'SELECT depth FROM t_ticket_work_data_env WHERE entity_id = ? LIMIT 1',
+                    [parent_task_id]
+                );
+
+                if (parentEnv.length) {
+                    depth = (parentEnv[0].depth || 1) + 1;
+                }
+
+                if (depth > 4) {
+                    return res.status(400).json({ ok: false, error: 'Maximum task nesting limit (4 levels) reached' });
+                }
+            }
+
+            // Get max order for THIS PARENT's children (from t_ticket_work_data_env)
             const [orderResult] = await dbHots.promise().query(`
-                SELECT MAX(CAST(field_value AS UNSIGNED)) as max_order 
-                FROM t_ticket_work_data 
-                WHERE assignment_id = ? AND data_type = 'task' AND field_name = 'order'
-            `, [assignmentId]);
+                SELECT MAX(sort_order) as max_order 
+                FROM t_ticket_work_data_env 
+                WHERE ticket_id = ? AND 
+                      (parent_entity_id = ? OR (parent_entity_id IS NULL AND ? IS NULL))
+            `, [ticket_id, parent_task_id || null, parent_task_id || null]);
             const nextOrder = (orderResult[0]?.max_order || 0) + 1;
+
+            // Insert into environment table
+            await dbHots.promise().query(`
+                INSERT INTO t_ticket_work_data_env 
+                (entity_id, ticket_id, root_ticket_id, parent_entity_id, depth, sort_order, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            `, [taskEntityId, ticket_id, ticket_id, parent_task_id || null, typeof depth !== 'undefined' ? depth : 1, nextOrder, 'todo']);
 
             // Insert task fields
             const taskFields = {
                 title,
                 description: description || '',
+                start_date: start_date || null,
                 due_date: due_date || null,
                 priority: priority || 'medium',
-                status: 'todo',
-                order: nextOrder.toString()
+                blocked_by: blocked_by ? JSON.stringify(blocked_by) : null,
+                custom_fields: custom_fields ? JSON.stringify(custom_fields) : null,
+                estimated_hours: estimated_hours || null,
+                actual_hours: actual_hours || null,
+                difficulty_level: difficulty_level || null,
+                primary_assignee_id: primary_assignee_id || null
             };
 
             const insertPromises = [];
@@ -985,6 +1329,13 @@ module.exports = {
 
             console.log(`✅ [TASKS] Created task ${taskEntityId} for assignment ${assignmentId}`);
 
+            // 🆕 SSE Notify
+            notifyAssignmentStakeholders(assignmentId, user_id, 'assignment_update', {
+                action: 'task_created',
+                taskId: taskEntityId,
+                title: title
+            }).catch(() => { });
+
             res.json({
                 ok: true,
                 task_id: taskEntityId,
@@ -997,79 +1348,98 @@ module.exports = {
         }
     },
 
-    /**
-     * PATCH /engine/assignment/:assignmentId/tasks/:taskId
-     * Update a task (status, title, due_date, etc.)
-     */
     updateTask: async (req, res) => {
         try {
             const { assignmentId, taskId } = req.params;
-            const updates = req.body; // { status: 'in_progress', title: 'New title', ... }
+            const updates = req.body; // { status, sort_order, title, priority, ... }
+            const user_id = req.dataToken.user_id;
 
             if (!updates || Object.keys(updates).length === 0) {
                 return res.status(400).json({ ok: false, error: 'No updates provided' });
             }
 
             // Verify task exists
-            const [taskCheck] = await dbHots.promise().query(`
-                SELECT 1 FROM t_ticket_work_data 
-                WHERE assignment_id = ? AND entity_id = ? AND data_type = 'task'
+            const [taskInfo] = await dbHots.promise().query(`
+                SELECT wd.ticket_id, wd.service_id FROM t_ticket_work_data wd
+                WHERE wd.assignment_id = ? AND wd.entity_id = ? AND wd.data_type = 'task'
                 LIMIT 1
             `, [assignmentId, taskId]);
 
-            if (!taskCheck.length) {
+            if (!taskInfo.length) {
                 return res.status(404).json({ ok: false, error: 'Task not found' });
             }
 
-            // Update each field
-            const updatePromises = [];
-            for (const [field_name, field_value] of Object.entries(updates)) {
-                // Use INSERT ... ON DUPLICATE KEY UPDATE pattern
-                updatePromises.push(
-                    dbHots.promise().query(`
-                        UPDATE t_ticket_work_data 
-                        SET field_value = ?, updated_at = NOW()
-                        WHERE assignment_id = ? AND entity_id = ? AND data_type = 'task' AND field_name = ?
-                    `, [field_value, assignmentId, taskId, field_name])
+            const { ticket_id, service_id } = taskInfo[0];
+
+            // ── Structural fields → t_ticket_work_data_env ──
+            const ENV_FIELDS = ['status', 'sort_order', 'report', 'parent_entity_id', 'depth'];
+            const envUpdates = {};
+            const eavUpdates = {};
+
+            for (const [k, v] of Object.entries(updates)) {
+                if (ENV_FIELDS.includes(k)) {
+                    envUpdates[k] = v;
+                } else {
+                    eavUpdates[k] = v;
+                }
+            }
+
+            // Update t_ticket_work_data_env
+            if (Object.keys(envUpdates).length > 0) {
+                const setClauses = Object.keys(envUpdates).map(k => `${k} = ?`).join(', ');
+                const values = [...Object.values(envUpdates), taskId];
+                await dbHots.promise().query(
+                    `UPDATE t_ticket_work_data_env SET ${setClauses}, updated_at = NOW() WHERE entity_id = ?`,
+                    values
                 );
+            }
+
+            // Update EAV content fields
+            const updatePromises = [];
+            for (const [field_name, raw_field_value] of Object.entries(eavUpdates)) {
+                if (raw_field_value !== undefined && raw_field_value !== null) {
+                    const field_value = ((field_name === 'blocked_by' || field_name === 'custom_fields') && typeof raw_field_value === 'object' && raw_field_value !== null)
+                        ? JSON.stringify(raw_field_value)
+                        : raw_field_value;
+
+                    updatePromises.push((async () => {
+                        const [existingRow] = await dbHots.promise().query(`
+                            SELECT id FROM t_ticket_work_data 
+                            WHERE assignment_id = ? AND entity_id = ? AND field_name = ? AND data_type = 'task'
+                            LIMIT 1
+                        `, [assignmentId, taskId, field_name]);
+
+                        if (existingRow.length > 0) {
+                            return dbHots.promise().query(`
+                                UPDATE t_ticket_work_data 
+                                SET field_value = ?, updated_at = NOW() 
+                                WHERE id = ?
+                            `, [field_value, existingRow[0].id]);
+                        } else {
+                            return dbHots.promise().query(`
+                                INSERT INTO t_ticket_work_data 
+                                (ticket_id, assignment_id, service_id, data_type, entity_id, field_name, field_value, created_by, updated_at)
+                                VALUES (?, ?, ?, 'task', ?, ?, ?, ?, NOW())
+                            `, [ticket_id, assignmentId, service_id, taskId, field_name, field_value, user_id]);
+                        }
+                    })());
+                }
             }
 
             await Promise.all(updatePromises);
 
             console.log(`✅ [TASKS] Updated task ${taskId} with:`, Object.keys(updates));
 
-            // 🆕 Phase 3: SSE - Notify ticket creator about task status change
-            if (global.sseManager && updates.status) {
-                const user_id = req.dataToken.user_id;
-
-                dbHots.promise().query(
-                    `SELECT ta.ticket_id, t.created_by, s.service_name,
-                            CONCAT(u.firstname, ' ', u.lastname) as updater_name
-                     FROM t_ticket_assignment ta
-                     JOIN t_ticket t ON t.ticket_id = ta.ticket_id
-                     LEFT JOIN m_service s ON s.service_id = t.service_id
-                     LEFT JOIN user u ON u.user_id = ?
-                     WHERE ta.id = ?`,
-                    [user_id, assignmentId]
-                ).then(([[info]]) => {
-                    const updater_name = info?.updater_name || 'Someone';
-                    const service_name = info?.service_name || 'Task';
-
-                    if (info?.created_by && info.created_by !== user_id) {
-                        global.sseManager.emitToUser(info.created_by, 'assignment_update', {
-                            assignmentId,
-                            ticketId: info.ticket_id,
-                            taskId,
-                            action: 'task_status_change',
-                            new_status: updates.status,
-                            updater_name: updater_name,
-                            service_name: service_name,
-                            timestamp: new Date().toISOString(),
-                            message: `${updater_name} moved task to ${updates.status}`
-                        }, { persist: true, title: '📌 Task Update', message: `Task moved to ${updates.status}` });
-                    }
-                }).catch(() => { });
-            }
+            // SSE Notify
+            notifyAssignmentStakeholders(assignmentId, user_id, 'assignment_update', {
+                action: updates.status ? 'task_status_change' : 'task_updated',
+                taskId,
+                updates
+            }, {
+                notify: !!updates.status,
+                title: updates.status ? '📌 Task Update' : undefined,
+                message: updates.status ? `Task moved to ${updates.status}` : undefined
+            }).catch(() => { });
 
             res.json({
                 ok: true,
@@ -1079,6 +1449,92 @@ module.exports = {
 
         } catch (error) {
             console.error('Error updating task:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * POST /engine/assignment/:assignmentId/tasks/reorder
+     * Bulk update sort_order after Drag-and-Drop reordering
+     * Body: { ordered_ids: ['TASK_1', 'TASK_2', ...] }
+     * All IDs must share the same parent_entity_id (or all be root)
+     */
+    reorderTasks: async (req, res) => {
+        try {
+            const { assignmentId } = req.params;
+            const { ordered_ids } = req.body;
+
+            if (!Array.isArray(ordered_ids) || ordered_ids.length === 0) {
+                return res.status(400).json({ ok: false, error: 'ordered_ids array required' });
+            }
+
+            // Bulk update sort_order in t_ticket_work_data_env using a single transaction
+            const conn = await dbHots.promise().getConnection();
+            try {
+                await conn.beginTransaction();
+
+                for (let i = 0; i < ordered_ids.length; i++) {
+                    await conn.query(
+                        'UPDATE t_ticket_work_data_env SET sort_order = ?, updated_at = NOW() WHERE entity_id = ?',
+                        [i + 1, ordered_ids[i]]
+                    );
+                }
+
+                await conn.commit();
+                console.log(`✅ [TASKS] Reordered ${ordered_ids.length} tasks for assignment ${assignmentId}`);
+                res.json({ ok: true, message: 'Tasks reordered' });
+            } catch (e) {
+                await conn.rollback();
+                throw e;
+            } finally {
+                conn.release();
+            }
+
+        } catch (error) {
+            console.error('Error reordering tasks:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * PATCH /engine/assignment/:assignmentId/tasks/:taskId/report
+     * Save or update the per-card report in t_ticket_work_data_env
+     * Body: { report: 'HTML content from WYSIWYG' }
+     */
+    updateTaskReport: async (req, res) => {
+        try {
+            const { assignmentId, taskId } = req.params;
+            const { report } = req.body;
+            const user_id = req.dataToken.user_id;
+
+            if (report === undefined || report === null) {
+                return res.status(400).json({ ok: false, error: 'report content required' });
+            }
+
+            // Enforce 1000 char limit
+            const trimmedReport = String(report).slice(0, 1000);
+
+            const [result] = await dbHots.promise().query(
+                'UPDATE t_ticket_work_data_env SET report = ?, updated_at = NOW() WHERE entity_id = ?',
+                [trimmedReport, taskId]
+            );
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ ok: false, error: 'Task environment record not found' });
+            }
+
+            console.log(`📝 [TASKS] Report saved for task ${taskId} by user ${user_id}`);
+
+            // Optional: also post a brief timeline note
+            notifyAssignmentStakeholders(assignmentId, user_id, 'assignment_update', {
+                action: 'task_report_updated',
+                taskId
+            }).catch(() => { });
+
+            res.json({ ok: true, message: 'Report saved', task_id: taskId });
+
+        } catch (error) {
+            console.error('Error saving task report:', error);
             res.status(500).json({ ok: false, error: error.message });
         }
     },
@@ -1148,6 +1604,13 @@ module.exports = {
 
             console.log(`✅ [TASKS] Created step ${stepEntityId} for task ${taskId}`);
 
+            // 🆕 SSE Notify
+            notifyAssignmentStakeholders(assignmentId, user_id, 'assignment_update', {
+                action: 'step_created',
+                taskId,
+                stepId: stepEntityId
+            }).catch(() => { });
+
             res.json({
                 ok: true,
                 step_id: stepEntityId,
@@ -1161,23 +1624,27 @@ module.exports = {
     },
 
     /**
-     * PATCH /engine/assignment/:assignmentId/tasks/:taskId/steps/:stepId
+     * PATCH /engine/assignment/:assignmentId/tasks-steps/:stepId
      * Toggle or update a task step (checked, label)
      */
     toggleTaskStep: async (req, res) => {
         try {
-            const { assignmentId, taskId, stepId } = req.params;
+            const { assignmentId, stepId } = req.params;
             const { checked, label } = req.body;
 
-            // Verify step exists and belongs to correct task
+            // Verify step exists — query by entity_id only (not gated on assignmentId)
+            // because subtask steps are created under parent assignment but share same entity_id format
             const [stepCheck] = await dbHots.promise().query(`
                 SELECT field_value FROM t_ticket_work_data 
-                WHERE assignment_id = ? AND entity_id = ? AND data_type = 'task_step' AND field_name = 'task_id'
-            `, [assignmentId, stepId]);
+                WHERE entity_id = ? AND data_type = 'task_step' AND field_name = 'task_id'
+                LIMIT 1
+            `, [stepId]);
 
-            if (!stepCheck.length || stepCheck[0].field_value !== taskId) {
-                return res.status(404).json({ ok: false, error: 'Step not found for this task' });
+            if (!stepCheck.length) {
+                return res.status(404).json({ ok: false, error: 'Step not found' });
             }
+
+            const taskId = stepCheck[0].field_value;
 
             const updatePromises = [];
 
@@ -1186,8 +1653,8 @@ module.exports = {
                     dbHots.promise().query(`
                         UPDATE t_ticket_work_data 
                         SET field_value = ?, updated_at = NOW()
-                        WHERE assignment_id = ? AND entity_id = ? AND data_type = 'task_step' AND field_name = 'checked'
-                    `, [checked ? 'true' : 'false', assignmentId, stepId])
+                        WHERE entity_id = ? AND data_type = 'task_step' AND field_name = 'checked'
+                    `, [checked ? 'true' : 'false', stepId])
                 );
             }
 
@@ -1196,19 +1663,29 @@ module.exports = {
                     dbHots.promise().query(`
                         UPDATE t_ticket_work_data 
                         SET field_value = ?, updated_at = NOW()
-                        WHERE assignment_id = ? AND entity_id = ? AND data_type = 'task_step' AND field_name = 'label'
-                    `, [label, assignmentId, stepId])
+                        WHERE entity_id = ? AND data_type = 'task_step' AND field_name = 'label'
+                    `, [label, stepId])
                 );
             }
 
             await Promise.all(updatePromises);
 
-            console.log(`✅ [TASKS] Updated step ${stepId}: checked=${checked}`);
+            console.log(`✅ [TASKS] Updated step ${stepId}: checked=${checked}, label=${label}`);
+
+            // 🆕 SSE Notify
+            const user_id = req.dataToken.user_id;
+            notifyAssignmentStakeholders(assignmentId, user_id, 'assignment_update', {
+                action: 'step_updated',
+                taskId,
+                stepId,
+                updates: { checked, label }
+            }).catch(() => { });
 
             res.json({
                 ok: true,
                 step_id: stepId,
-                checked: checked ? 'true' : 'false'
+                checked: checked ? 'true' : 'false',
+                label
             });
 
         } catch (error) {
@@ -1218,42 +1695,164 @@ module.exports = {
     },
 
     /**
+     * DELETE /engine/assignment/:assignmentId/tasks-steps/:stepId
+     * Delete an individual checklist step
+     */
+    deleteTaskStep: async (req, res) => {
+        try {
+            const { assignmentId, stepId } = req.params;
+            const user_id = req.dataToken.user_id;
+
+            // Get taskId before deleting — query by entity_id only (not gated on assignmentId)
+            const [stepCheck] = await dbHots.promise().query(`
+                SELECT field_value FROM t_ticket_work_data 
+                WHERE entity_id = ? AND data_type = 'task_step' AND field_name = 'task_id'
+                LIMIT 1
+            `, [stepId]);
+            const taskId = stepCheck.length ? stepCheck[0].field_value : null;
+
+            await dbHots.promise().query(`
+                DELETE FROM t_ticket_work_data 
+                WHERE entity_id = ? AND data_type = 'task_step'
+            `, [stepId]);
+
+            console.log(`🗑️ [STEPS] Deleted step ${stepId}`);
+
+            // 🆕 SSE Notify
+            if (taskId) {
+                notifyAssignmentStakeholders(assignmentId, user_id, 'assignment_update', {
+                    action: 'step_deleted',
+                    taskId,
+                    stepId
+                }).catch(() => { });
+            }
+
+            res.json({ ok: true });
+        } catch (error) {
+            console.error('Error deleting task step:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
      * DELETE /engine/assignment/:assignmentId/tasks/:taskId
-     * Delete a task and its steps
+     * Delete a task, all its subtasks (recursively), their steps, and associated reports.
      */
     deleteTask: async (req, res) => {
         try {
             const { assignmentId, taskId } = req.params;
+            const user_id = req.dataToken.user_id;
 
-            // Delete task steps first
+            // 1. Recursively find ALL descendant task IDs
+            // Hierarchy is stored in t_ticket_work_data_env.parent_entity_id
+            const [allTasks] = await dbHots.promise().query(`
+                SELECT entity_id, parent_entity_id 
+                FROM t_ticket_work_data_env 
+                WHERE ticket_id = (SELECT ticket_id FROM t_ticket_work_data_env WHERE entity_id = ? LIMIT 1)
+            `, [taskId]);
+
+            const childMap = {};
+            allTasks.forEach(row => {
+                const parentId = row.parent_entity_id;
+                if (parentId) {
+                    if (!childMap[parentId]) childMap[parentId] = [];
+                    childMap[parentId].push(row.entity_id);
+                }
+            });
+
+            const idsToDelete = [taskId];
+            const collectIds = (id) => {
+                if (childMap[id]) {
+                    childMap[id].forEach(childId => {
+                        idsToDelete.push(childId);
+                        collectIds(childId);
+                    });
+                }
+            };
+            collectIds(taskId);
+
+            console.log(`🧹 [TASKS] Preparing deep delete for IDs: ${idsToDelete.join(', ')}`);
+
+            // 2. Delete checklist steps for all these tasks
+            // Steps are linked via field_name='task_id' and field_value='[TASK_ID]'
             await dbHots.promise().query(`
                 DELETE FROM t_ticket_work_data 
                 WHERE assignment_id = ? AND data_type = 'task_step' 
                   AND entity_id IN (
                     SELECT entity_id FROM (
-                      SELECT DISTINCT entity_id FROM t_ticket_work_data 
-                      WHERE assignment_id = ? AND data_type = 'task_step' 
-                        AND field_name = 'task_id' AND field_value = ?
-                    ) as subquery
+                        SELECT DISTINCT entity_id FROM t_ticket_work_data 
+                        WHERE assignment_id = ? AND data_type = 'task_step' 
+                        AND field_name = 'task_id' AND field_value IN (?)
+                    ) as sub
                   )
-            `, [assignmentId, assignmentId, taskId]);
+            `, [assignmentId, assignmentId, idsToDelete]);
 
-            // Delete task
+            // 3. Delete Task Environment / Card Metadata (t_ticket_work_data_env)
+            await dbHots.promise().query(`
+                DELETE FROM t_ticket_work_data_env WHERE entity_id IN (?)
+            `, [idsToDelete]);
+
+            // 4. Delete associated Report Entries (t_ticket_work_data_report)
+            // This prevents "Untitled" ghost entries in summary reports
+            await dbHots.promise().query(`
+                DELETE FROM t_ticket_work_data_report WHERE entity_id IN (?)
+            `, [idsToDelete]);
+
+            // 5. Delete the Task definitions themselves (t_ticket_work_data)
             const [result] = await dbHots.promise().query(`
                 DELETE FROM t_ticket_work_data 
-                WHERE assignment_id = ? AND entity_id = ? AND data_type = 'task'
-            `, [assignmentId, taskId]);
+                WHERE assignment_id = ? AND entity_id IN (?) AND data_type = 'task'
+            `, [assignmentId, idsToDelete]);
 
-            console.log(`🗑️ [TASKS] Deleted task ${taskId}`);
+            console.log(`🗑️ [TASKS] Recursively deleted ${idsToDelete.length} tasks and associated data`);
+
+            // 🆕 SSE Notify
+            notifyAssignmentStakeholders(assignmentId, user_id, 'assignment_update', {
+                action: 'task_deleted',
+                taskId,
+                recursive_count: idsToDelete.length
+            }).catch(() => { });
 
             res.json({
                 ok: true,
                 deleted_task_id: taskId,
+                recursive_count: idsToDelete.length,
                 affected_rows: result.affectedRows
             });
 
         } catch (error) {
-            console.error('Error deleting task:', error);
+            console.error('Error deleting task recursively:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * GET /engine/assignment/:assignmentId/active-users
+     * Get list of actively involved users for @mentions
+     */
+    getActiveUsers: async (req, res) => {
+        try {
+            const { assignmentId } = req.params;
+
+            // Per user request: active users mean users that are assigned to the current assignment
+            const [users] = await dbHots.promise().query(`
+                SELECT DISTINCT u.user_id, u.firstname, u.lastname, u.email
+                FROM user u 
+                JOIN t_ticket_assignment ta ON ta.assigned_id = u.user_id
+                WHERE ta.id = ? AND ta.assignment_status = 'active'
+            `, [assignmentId]);
+
+            res.json({
+                ok: true,
+                users: users.map(u => ({
+                    id: String(u.user_id),
+                    display: `${u.firstname} ${u.lastname}`.trim(),
+                    email: u.email
+                }))
+            });
+
+        } catch (error) {
+            console.error('Error fetching active users:', error);
             res.status(500).json({ ok: false, error: error.message });
         }
     },
@@ -1315,6 +1914,7 @@ module.exports = {
 
             res.json({
                 ok: true,
+                debug_version: '1.0.4', // March 02, 15:15 Fix
                 rows,
                 history: Object.entries(historyGrouped).map(([id, data]) => ({
                     id,
@@ -1386,6 +1986,13 @@ module.exports = {
             );
 
             console.log(`✅ [DATA-ROW] Added row ${result.insertId} for ticket ${ticket_id}`);
+
+            // 🆕 SSE Notify
+            notifyAssignmentStakeholders(assignmentId, user_id, 'assignment_update', {
+                action: 'data_row_added',
+                label,
+                value
+            }).catch(() => { });
 
             res.json({
                 ok: true,
@@ -1485,6 +2092,14 @@ module.exports = {
 
             console.log(`✅ [DATA-ROW] Updated row ${rowId} by user ${user_id}`);
 
+            // 🆕 SSE Notify
+            notifyAssignmentStakeholders(assignmentId, user_id, 'assignment_update', {
+                action: 'data_row_updated',
+                rowId,
+                label,
+                value
+            }).catch(() => { });
+
             res.json({
                 ok: true,
                 message: 'Data row updated successfully'
@@ -1493,6 +2108,199 @@ module.exports = {
         } catch (error) {
             console.error('Error updating data row:', error);
             res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PER-CARD MULTI-ENTRY REPORT CRUD  (uses t_ticket_work_data_report)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * GET /engine/assignment/:assignmentId/tasks/:taskId/reports
+     * Return all report entries for a task card, newest first.
+     */
+    getTaskReports: async (req, res) => {
+        try {
+            const { taskId } = req.params;
+            const [rows] = await dbHots.promise().query(
+                `SELECT r.id, r.content, r.created_at, r.updated_at,
+                        CONCAT(u.firstname, ' ', u.lastname) as author_name
+                 FROM t_ticket_work_data_report r
+                 LEFT JOIN user u ON u.user_id = r.created_by
+                 WHERE r.entity_id = ? AND r.deleted_at IS NULL
+                 ORDER BY r.created_at DESC`,
+                [taskId]
+            );
+            res.json({ ok: true, reports: rows });
+        } catch (e) {
+            console.error('[TASK_REPORT][GET]', e);
+            res.status(500).json({ ok: false, error: e.message });
+        }
+    },
+
+    /**
+     * POST /engine/assignment/:assignmentId/tasks/:taskId/reports
+     * Add a new report entry for a task card.
+     * Body: { content: string }
+     */
+    addTaskReport: async (req, res) => {
+        const { assignmentId, taskId } = req.params;
+        const { content } = req.body;
+        const user_id = req.dataToken.user_id;
+
+        if (!content || !content.trim()) {
+            return res.status(400).json({ ok: false, error: 'content required' });
+        }
+
+        const conn = await dbHots.promise().getConnection();
+        try {
+            await conn.beginTransaction();
+
+            // 1. Get ticket_id from the task env record
+            const [[envRow]] = await conn.query(
+                'SELECT ticket_id, status FROM t_ticket_work_data_env WHERE entity_id = ? LIMIT 1',
+                [taskId]
+            );
+            if (!envRow) {
+                await conn.rollback();
+                return res.status(404).json({ ok: false, error: 'Task env record not found' });
+            }
+
+            // 2. Get task title from EAV
+            const [[titleRow]] = await conn.query(
+                `SELECT field_value as title FROM t_ticket_work_data
+                 WHERE entity_id = ? AND field_name = 'title' AND data_type = 'task' LIMIT 1`,
+                [taskId]
+            );
+            const taskTitle = titleRow?.title || 'Untitled';
+
+            // 3. Insert report entry
+            const [insert] = await conn.query(
+                `INSERT INTO t_ticket_work_data_report (entity_id, ticket_id, assignment_id, content, created_by)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [taskId, envRow.ticket_id, assignmentId, content.trim(), user_id]
+            );
+
+            await conn.commit();
+
+            console.log(`📝 [TASK_REPORT] Entry added for task ${taskId} (${taskTitle}) by user ${user_id}`);
+
+            // SSE: notify all clients to refresh timeline
+            if (global.sseManager) {
+                global.sseManager.broadcast('assignment_update', {
+                    assignment_id: assignmentId,
+                    action: 'report_added',
+                    task_id: taskId
+                });
+            }
+
+            res.json({
+                ok: true,
+                report: {
+                    id: insert.insertId,
+                    entity_id: taskId,
+                    task_title: taskTitle,
+                    status: envRow.status,
+                    content: content.trim(),
+                    created_at: new Date().toISOString()
+                }
+            });
+        } catch (e) {
+            await conn.rollback();
+            console.error('[TASK_REPORT][ADD]', e);
+            res.status(500).json({ ok: false, error: e.message });
+        } finally {
+            conn.release();
+        }
+    },
+
+    /**
+     * PATCH /engine/assignment/:assignmentId/tasks/:taskId/reports/:reportId
+     * Edit an existing report entry.
+     * Body: { content: string }
+     */
+    editTaskReport: async (req, res) => {
+        const { taskId, reportId } = req.params;
+        const { content } = req.body;
+        const user_id = req.dataToken.user_id;
+
+        if (!content || !content.trim()) {
+            return res.status(400).json({ ok: false, error: 'content required' });
+        }
+
+        const conn = await dbHots.promise().getConnection();
+        try {
+            await conn.beginTransaction();
+            const [result] = await conn.query(
+                `UPDATE t_ticket_work_data_report SET content = ?, updated_at = NOW()
+                 WHERE id = ? AND entity_id = ? AND deleted_at IS NULL`,
+                [content.trim(), reportId, taskId]
+            );
+            if (result.affectedRows === 0) {
+                await conn.rollback();
+                return res.status(404).json({ ok: false, error: 'Report entry not found' });
+            }
+            await conn.commit();
+            console.log(`✏️ [TASK_REPORT] Entry ${reportId} edited by user ${user_id}`);
+
+            // SSE: notify all clients to refresh timeline
+            if (global.sseManager) {
+                global.sseManager.broadcast('assignment_update', {
+                    assignment_id: req.params.assignmentId,
+                    action: 'report_edited',
+                    report_id: reportId
+                });
+            }
+
+            res.json({ ok: true, message: 'Report entry updated' });
+        } catch (e) {
+            await conn.rollback();
+            console.error('[TASK_REPORT][EDIT]', e);
+            res.status(500).json({ ok: false, error: e.message });
+        } finally {
+            conn.release();
+        }
+    },
+
+    /**
+     * DELETE /engine/assignment/:assignmentId/tasks/:taskId/reports/:reportId
+     * Soft-delete a report entry.
+     */
+    deleteTaskReport: async (req, res) => {
+        const { taskId, reportId } = req.params;
+        const user_id = req.dataToken.user_id;
+
+        const conn = await dbHots.promise().getConnection();
+        try {
+            await conn.beginTransaction();
+            const [result] = await conn.query(
+                `UPDATE t_ticket_work_data_report SET deleted_at = NOW()
+                 WHERE id = ? AND entity_id = ? AND deleted_at IS NULL`,
+                [reportId, taskId]
+            );
+            if (result.affectedRows === 0) {
+                await conn.rollback();
+                return res.status(404).json({ ok: false, error: 'Report entry not found' });
+            }
+            await conn.commit();
+            console.log(`🗑️ [TASK_REPORT] Entry ${reportId} deleted by user ${user_id}`);
+
+            // SSE: notify all clients to refresh timeline
+            if (global.sseManager) {
+                global.sseManager.broadcast('assignment_update', {
+                    assignment_id: req.params.assignmentId,
+                    action: 'report_deleted',
+                    report_id: reportId
+                });
+            }
+
+            res.json({ ok: true, message: 'Report entry deleted' });
+        } catch (e) {
+            await conn.rollback();
+            console.error('[TASK_REPORT][DELETE]', e);
+            res.status(500).json({ ok: false, error: e.message });
+        } finally {
+            conn.release();
         }
     }
 };

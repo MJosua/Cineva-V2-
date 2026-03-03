@@ -5,7 +5,7 @@ const { dbmeetingbook } = require('../../config/db');
 // GET all day colors
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await dbmeetingbook.query("SELECT * FROM day_colors");
+    const rows = await dbmeetingbook.query("SELECT * FROM day_colors");
     const colorMap = {};
     rows.forEach(row => {
       colorMap[row.day_idx] = row.hex_color;

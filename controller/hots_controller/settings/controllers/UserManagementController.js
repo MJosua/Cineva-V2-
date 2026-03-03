@@ -522,5 +522,31 @@ module.exports = {
             if (!results.length) return res.status(405).send({ success: false, message: 'No members found for the given team ID!' });
             res.status(200).send({ success: true, message: "GET MEMBER SUCCESS", data: results });
         });
+    },
+
+    searchUsers: async (req, res) => {
+        const { query } = req.query;
+        if (!query) return res.status(200).json({ success: true, data: [] });
+
+        try {
+            const searchTerm = `%${query}%`;
+            const [rows] = await dbHots.promise().query(
+                `SELECT user_id, firstname, lastname, uid 
+                 FROM hots.user 
+                 WHERE (
+                    firstname LIKE ? 
+                    OR lastname LIKE ? 
+                    OR uid LIKE ? 
+                    OR CONCAT(firstname, ' ', lastname) LIKE ?
+                    OR CONCAT(lastname, ' ', firstname) LIKE ?
+                 ) 
+                 AND finished_date IS NULL 
+                 LIMIT 10`,
+                [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]
+            );
+            res.status(200).json({ success: true, data: rows });
+        } catch (err) {
+            res.status(500).json({ success: false, message: err.message });
+        }
     }
 };

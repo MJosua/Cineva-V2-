@@ -503,7 +503,7 @@ module.exports = {
                 </div>
                     `
             const mailLogId = await module.exports.insertMailerLog({
-                subject: `[E-Order] Order Submission ${po_buyer} is Successful!`,
+                subject: `[E-Order] Order Submission ${po_buyer} has been submitted successfully`,
                 body: disthtml,
                 order_id: order_id,
                 recipient: distSender,
@@ -514,7 +514,7 @@ module.exports = {
                     from: 'no-reply@indofoodinternational.com',
                     to: distSender,
                     cc: finalMergedEmailList,
-                    subject: `[E-Order] Order Submission ${po_buyer} is Successful!`,
+                    subject: `[E-Order] Order Submission ${po_buyer} has been submitted successfully`,
                     html: disthtml,
                 });
                 console.log(timestamp + 'Email Sent to distributor: ' + dist_mail)
@@ -622,7 +622,7 @@ module.exports = {
 
 
             const mailLogId = await module.exports.insertMailerLog({
-                subject: `[E-Order] Order Submission ${po_buyer} is Successful!`,
+                subject: `[E-Order] Order Submission ${po_buyer} has been submitted successfully!`,
                 body: analysthtml,
                 order_id: order_id,
                 recipient: emailAnalisList,
@@ -635,7 +635,7 @@ module.exports = {
                     cc: ['rangga.primanto@icbp.indofood.co.id', 'tripomo@icbp.indofood.co.id'],
                     bcc: ['etria.purba@icbp.indofood.co.id', 'yosua.gultom@icbp.indofood.co.id', 'muhammad.asmarakusuma@icbp.indofood.co.id'],
 
-                    subject: `[E-Order] Order Submission ${po_buyer} - ${company_name} is Successful!`,
+                    subject: `[E-Order] Order ${po_buyer} for ${company_name} has been submitted successfully!`,
                     html: analysthtml
                     ,
                 });

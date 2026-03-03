@@ -1,0 +1,7 @@
+{
+    "name": "{www.Indofoodinternational.com}",
+    "integrations": {
+      "capacitor": {}
+    },
+    "type": "react"
+  }

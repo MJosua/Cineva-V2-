@@ -41,13 +41,18 @@ route.post('/download/zip/', decodeTokenHT, hotsTicket.downloadzip)
 // route.post('/create/ticket/:service_id', decodeTokenHT, dynamicUploadMiddleware, hotsTicket.createTicket)
 route.post('/create/ticket/:service_id', decodeTokenHT, dynamicUploadMiddleware, async (req, res) => {
     // Adapter for engine create
-    req.body.service_id = req.params.service_id;
+    const service_id = parseInt(req.params.service_id, 10);
+    req.body.service_id = service_id;
     req.body.creator_id = req.dataToken.user_id;
     req.body.creator_email = req.dataToken.email;
-    // Engine expects 'form_data'. Legacy might send fields directly? 
-    // Assuming new frontend sends 'form_data' or we wrap body? 
-    // Legacy frontend often sent individual fields. If new frontend is used, it sends structured data.
-    // User said "Ticket Creatiion use the engine ticket", assuming frontend is updated or compatible.
+
+    // [Specfic Logic for Meeting Room (13)]
+    // If PIC_user_id is provided (e.g. Kiosk/Tablet booking), 
+    // we impersonate the creator so the ticket appears in the PIC's "My Tickets" list.
+    if (service_id === 13 && req.body.form_data && req.body.form_data.PIC_user_id && req.body.form_data.PIC_user_id.value) {
+        req.body.creator_id = req.body.form_data.PIC_user_id.value;
+    }
+
     return engineTicket.create(req, res);
 });
 
@@ -64,6 +69,16 @@ route.get('/task_count', decodeTokenHT, engineTicket.dashboard); // Dashboard re
 // Ticket details (Mapped to Engine)
 route.get('/detail/:ticket_id', decodeTokenHT, engineTicket.detail);
 route.put('/detail/:ticket_id', decodeTokenHT, engineTicket.updateDetail);
+
+// Meeting Room specific action endpoint (supports Web with token, or Kiosk without token but with password)
+const optionalDecodeTokenHT = (req, res, next) => {
+    if (req.body && req.body.kiosk_password) {
+        // Bypass token requirement since we validate via PIC password in controller
+        return next();
+    }
+    return decodeTokenHT(req, res, next);
+};
+route.post('/meetingroom/action', optionalDecodeTokenHT, engineTicket.meetingRoomAction);
 
 // Ticket actions (Mapped to Engine with Adapters)
 route.post('/approve/:ticket_id', decodeTokenHT, (req, res) => {

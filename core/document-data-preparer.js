@@ -1,5 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const QRCode = require('qrcode');
+const encrypts = require('../config/encrypts');
 
 /**
  * Helper: Convert local image file to Base64 Data URL
@@ -214,6 +216,36 @@ async function prepareSRFData(ticketId, { db, eventSnapshot = null }) {
         approvalEvents = await query(approvalSql, [ticketId]);
     }
 
+    // 4b. Resolve Missing Approver Names (Critical for Snapshots)
+    const missingNameIds = [...new Set(approvalEvents.filter(e => !e.approver_name && e.approver_id).map(e => e.approver_id))];
+    if (missingNameIds.length > 0) {
+        const userSql = `SELECT user_id, CONCAT(firstname, ' ', lastname) as fullname FROM user WHERE user_id IN (?)`;
+        const userRows = await db.promise().query(userSql, [missingNameIds]);
+        const userMap = {};
+        if (Array.isArray(userRows[0])) {
+            // Handle mysql2 binary row format if needed, though typically just rows
+            userRows[0].forEach(u => userMap[u.user_id] = u.fullname);
+        } else {
+            // Standard array return
+            userRows.forEach(u => userMap[u.user_id] = u.fullname);
+            // Note: Depending on driver config, it might be [rows, fields] or just rows. 
+            // The helper 'query' returns [0], but here we use raw db.promise() for IN clause safety or map manually.
+            // Actually, let's use the helper if we can, but helper expects parameterized array?
+            // db.promise().query usually returns [rows, fields].
+        }
+
+        // Let's stick to safe raw query pattern:
+        const [users] = await db.promise().query(userSql, [missingNameIds]);
+        const nameLookup = {};
+        users.forEach(u => nameLookup[u.user_id] = u.fullname);
+
+        approvalEvents.forEach(e => {
+            if (!e.approver_name && e.approver_id) {
+                e.approver_name = nameLookup[e.approver_id] || 'Unknown User';
+            }
+        });
+    }
+
     // Helper for robust signature resolution
     const resolveSignature = async (userId) => {
         if (!userId) return null;
@@ -221,7 +253,16 @@ async function prepareSRFData(ticketId, { db, eventSnapshot = null }) {
             // 1. Try DB-stored path (Profile Handsign)
             const [profile] = await query(`SELECT attribute_value FROM user_profile WHERE user_id = ? AND attribute_name = 'default_signature' AND is_active = 1 LIMIT 1`, [userId]);
             if (profile?.attribute_value) {
-                const dataUrl = imageToDataURL(profile.attribute_value);
+                let dataUrl = imageToDataURL(profile.attribute_value);
+                if (dataUrl) return dataUrl;
+
+                // Fallback: Try swapping extensions (jpg <-> png) in case of mismatch
+                const ext = path.extname(profile.attribute_value).toLowerCase();
+                if (ext === '.jpg' || ext === '.jpeg') {
+                    dataUrl = imageToDataURL(profile.attribute_value.replace(ext, '.png'));
+                } else if (ext === '.png') {
+                    dataUrl = imageToDataURL(profile.attribute_value.replace(ext, '.jpg'));
+                }
                 if (dataUrl) return dataUrl;
             }
             // 2. Try legacy hardcoded path pattern (TTD Fallback)
@@ -285,7 +326,7 @@ async function prepareSRFData(ticketId, { db, eventSnapshot = null }) {
         registered_date: ticket.creation_date,
         srf_document_number: workData['srf_document_number'] || `DRAFT/${ticketId}`,
         purpose: getByLabel("Purpose"),
-        deliver_to: getByLabel("Deliver to"),
+        deliver_to: getByLabel("deliver_to") || getByLabel("Deliver to"),
         sample_category: getByLabel("Category_field"),
         request_details,
         notes: noteField,
@@ -301,4 +342,96 @@ async function prepareSRFData(ticketId, { db, eventSnapshot = null }) {
     };
 }
 
-module.exports = { prepareSRFData };
+/**
+ * Prepare data for Business Card generation
+ * @param {number|string} entityId - User ID
+ * @param {Object} context - { db, eventSnapshot }
+ */
+async function prepareCardData(entityId, { db, eventSnapshot = null }) {
+    let rawData;
+    const query = async (sql, params) => {
+        if (db && db.promise) return (await db.promise().query(sql, params));
+        if (db && db.query) return new Promise((resolve, reject) => {
+            db.query(sql, params, (err, res) => err ? reject(err) : resolve([res]));
+        }); // Normalize to [rows]
+        throw new Error('Database connection not available');
+    };
+
+    // 1. Fetch Data (Snapshot vs Live)
+    if (eventSnapshot) {
+        rawData = eventSnapshot;
+    } else {
+        const userSql = `
+            SELECT 
+                u.user_id, u.firstname, u.lastname, u.email, u.phone, 
+                u.jobtitle_id, j.job_title as job_title_name,
+                u.department_id, d.department_name
+            FROM user u
+            LEFT JOIN m_job_title j ON u.jobtitle_id = j.jobtitle_id
+            LEFT JOIN m_department d ON u.department_id = d.department_id
+            WHERE u.user_id = ?
+         `;
+        const [rows] = await query(userSql, [entityId]);
+        if (!rows || rows.length === 0) throw new Error(`User ${entityId} not found`);
+        rawData = rows[0];
+
+        // Fetch additional profile attributes like 'phone'
+        const [profileRows] = await query(`
+            SELECT attribute_name, attribute_value 
+            FROM user_profile 
+            WHERE user_id = ? AND is_active = 1
+         `, [entityId]);
+
+        if (profileRows) {
+            profileRows.forEach(attr => {
+                if (attr.attribute_name === 'phone') rawData.cell_phone = attr.attribute_value;
+            });
+        }
+    }
+
+    // 2. Format & Enrich
+    const fullname = rawData.fullname || `${rawData.firstname || ''} ${rawData.lastname || ''}`.trim();
+
+    // QR Code Generation
+    let qrCodeDataUrl = '';
+    try {
+        let employeeIdForQR = rawData.user_id;
+
+        // Try to encrypt ID for security
+        try {
+            if (encrypts && typeof encrypts.encryptEmployeeId === 'function') {
+                employeeIdForQR = encrypts.encryptEmployeeId(rawData.user_id);
+            }
+        } catch (encErr) {
+            console.warn('[prepareCardData] Encryption failed, falling back to raw ID:', encErr.message);
+        }
+
+        const encodedId = encodeURIComponent(employeeIdForQR);
+        // Use the correct public facing URL
+        const profileUrl = `https://hots.indofood.com/hots/card/card?employee_id=${encodedId}`;
+
+        qrCodeDataUrl = await QRCode.toDataURL(profileUrl, {
+            width: 100,
+            margin: 1,
+            color: { dark: '#000000', light: '#ffffff' }
+        });
+    } catch (err) {
+        console.warn('[prepareCardData] QR Gen Failed:', err.message);
+    }
+
+    return {
+        name: fullname,
+        position: rawData.job_title_name || '',
+        department_name: rawData.department_name || '',
+        email: rawData.email || '',
+        cellPhone: rawData.cell_phone || rawData.phone || '',
+        extPhone: rawData.ext_phone || '',
+        company: 'PT. INDOFOOD CBP SUKSES MAKMUR',
+        qr_code_url: qrCodeDataUrl
+    };
+}
+
+module.exports = {
+    prepareSRFData,
+    prepareCardData
+};

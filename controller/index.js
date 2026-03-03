@@ -1,5 +1,5 @@
 const authController = require('./OnlineOrder/auth');
-const authTmController = require('./authTM');
+// const authTmController = require('./authTM'); // Decommissioned
 const cartController = require('./OnlineOrder/cart');
 const userController = require('./user');
 const orderController = require('./OnlineOrder/order');
@@ -8,8 +8,8 @@ const eventController = require('./OnlineOrder/event');
 const productController = require('./OnlineOrder/product');
 const adminController = require('./admin');
 const spectatorController = require('./OnlineOrder/spectator');
-const trademarkController = require('./trademark')
-const authControllerTest = require('./auth_test')
+// const trademarkController = require('./trademark'); // Decommissioned
+const authControllerTest = require('./auth_test');
 const productControllerTest = require('./debug_controller')
 
 const cardGenerator = require('./cardGenerator')
@@ -19,7 +19,11 @@ const cardGenerator = require('./cardGenerator')
 const hotsAuth = require('./hots_controller/auth/controllers/authController'); // HOTS authentication (organized in auth folder)
 const hotsAdmin = require('./hots_controller/admin/controllers/adminController'); // 🔧 Phase 5: Moved to module
 const hotsTicket = require('./hots_controller/_old/hotsTicket_legacy'); // 🔧 Reorganized: moved to _old
-const hotsSettingsController = require('./hots_controller/settings/controllers/settingsController'); // 🔧 Phase 5: Moved to module
+const hotsUserManagement = require('./hots_controller/settings/controllers/UserManagementController');
+const hotsServiceCatalog = require('./hots_controller/settings/controllers/ServiceCatalogController');
+const hotsWorkflowConfig = require('./hots_controller/settings/controllers/WorkflowConfigController');
+const hotsMetadata = require('./hots_controller/settings/controllers/MetadataController');
+const hotsSystemUtility = require('./hots_controller/settings/controllers/SystemUtilityController');
 const hotsTps = require('./hots_controller/tps/controllers/tpsController'); // 🔧 Phase 5: Moved to module
 const hotscustomfunctionController = require('./hots_controller/customfunction/controllers/customfunctionController'); // 🔧 Phase 5: Moved to module
 const hotsSRFController = require('./hots_controller/srf/controllers/srfController'); // 🔧 Phase 5: Moved to module
@@ -50,7 +54,7 @@ const couponController = require('./couponController');
 
 module.exports = {
     authController,
-    authTmController,
+    // authTmController, // Decommissioned
     cartController,
     userController,
     orderController,
@@ -58,7 +62,7 @@ module.exports = {
     productController,
     adminController,
     spectatorController,
-    trademarkController,
+    // trademarkController, // Decommissioned
     authControllerTest,
     productControllerTest,
     cardGenerator,
@@ -72,7 +76,11 @@ module.exports = {
     hotsAuth,
     hotsAdmin,
     hotsTicket,
-    hotsSettingsController,
+    hotsUserManagement,
+    hotsServiceCatalog,
+    hotsWorkflowConfig,
+    hotsMetadata,
+    hotsSystemUtility,
     hotsDashboardController,
     hotsPublicController,
 

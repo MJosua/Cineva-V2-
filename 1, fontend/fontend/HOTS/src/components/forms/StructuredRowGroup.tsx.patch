@@ -1,0 +1,44 @@
+<<<<<<<
+  useEffect(() => {
+    if (rows.length === 0) {
+      const defaultRow: RowData[] = [
+        {
+          id: Date.now().toString(),
+          firstValue: '',
+          secondValue: '',
+          thirdValue: ''
+        }
+      ];
+      onUpdateRowGroup(groupIndex, defaultRow);
+    }
+  }, []);
+=======
+
+  useEffect(() => {
+    if (rows.length === 0) {
+      const defaultRow: RowData[] = [
+        {
+          id: Date.now().toString(),
+          firstValue: '',
+          secondValue: '',
+          thirdValue: ''
+        }
+      ];
+      onUpdateRowGroup(groupIndex, defaultRow);
+    }
+  }, []);
+
+  // Compute total of secondValue fields as numbers
+  const totalSecondValue = useMemo(() => {
+    return rows.reduce((sum, row) => {
+      const num = Number(row.secondValue);
+      return sum + (isNaN(num) ? 0 : num);
+    }, 0);
+  }, [rows]);
+>>>>>>>
+
+<<<<<<<
+              <Input readOnly value="123" />
+=======
+              <Input readOnly value={totalSecondValue.toString()} />
+>>>>>>>

@@ -1,62 +1,38 @@
-# ---------------------------
-# Node & Backend
-# ---------------------------
-node_modules/
-**/node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-logs/
-*.log
+# Knowledge base and database scripts
+3. knowledge/database/sql/*.sql
+3. knowledge/action/*.js
+3. knowledge/database/json/*.json
+!3. knowledge/**/*.md
+!3. knowledge/architecture/*.md
+!3. knowledge/action/*.sql
 
-# Environment files
-.env
-.env.*
-
-# Build output
-dist/
-build/
-.tmp/
-.temp/
-
-# ---------------------------
-# React Frontend
-# ---------------------------
-fontend/node_modules/
-fontend/build/
-fontend/.env
-fontend/.env.*
-
-# Do NOT ignore /public (needed by React)
-
-# ---------------------------
-# Large/sensitive assets
-# ---------------------------
-*.pdf
-*.xlsx
+# Scripts and temporary files
+*.sql
 *.zip
-
-# SQL dumps (too large for Git, but AI can read locally)
-# tables.json and relations.json are still tracked!
-knowledge/sql/*.sql
-
-# Optional: images if you really want to exclude them
-*.jpg
-*.jpeg
-*.png
-
-# ---------------------------
-# IDE & System files
-# ---------------------------
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-
-# ---------------------------
-# Upload folders (backend)
-# ---------------------------
-/uploads/
-/storage/
-knowledge/sql/*.sql 
+*.log
+tmp/
+.continue/
+*.lnk
+check_step_fix.js
+columns.txt
+debug_ticket_list.js
+diag_kiosk.js
+find_user.js
+fix_noodle.js
+inspect_schema.js
+live_api_test.js
+migrate_env.js
+migrate_task_report.js
+schema_output.txt
+simulate_searates.js
+tables_list.txt
+test-complete-route.js
+test-crypto.js
+views_def.txt
+views_def_utf8.txt
+workflow_schema.txt
+node_modules/
+dist/
+.env*
+!1, fontend/HOTS/.env
+!1, fontend/HOTS/.env.production

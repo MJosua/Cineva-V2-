@@ -15,6 +15,7 @@
 const { dbQueryHots, dbHots } = require('../config/db');
 const RuleExecutor = require('./ruleExecutor'); // Phase 4.2
 const sseManager = require('../core/sse-manager'); // Phase 5: Live Updates
+const { encryptUrlSafe, decryptUrlSafe } = require('../core/cryptoUtil');
 
 /**
  * Log administrative action to EVENT_t_log
@@ -671,7 +672,13 @@ async function getPoolItems(poolId, filters = {}) {
     sql += ` LIMIT ?`;
     params.push(parseInt(limit));
 
-    const items = await dbQueryHots(sql, params);
+    const rawItems = await dbQueryHots(sql, params);
+
+    // Attach encrypted value for frontend QR generation
+    const items = rawItems.map(item => ({
+        ...item,
+        encrypted_value: encryptUrlSafe(item.value)
+    }));
 
     return { items, total };
 }
@@ -753,6 +760,7 @@ module.exports = {
     // Analytics
     getDailySubmissionStats,
     getWinnersByCampaign,
+    getWinnersForExport,
     publishCampaign,
     getPublicCampaign,
 
@@ -1060,6 +1068,46 @@ async function getWinnersByCampaign(slug) {
     return rows;
 }
 
+/**
+ * Get all winners for export (flat list)
+ * @param {string} slug - Campaign slug
+ * @returns {Promise<Array>} Flat winner list
+ */
+async function getWinnersForExport(slug) {
+    const campaignId = await getCampaignIdBySlug(slug);
+    if (!campaignId) return [];
+
+    const sql = `
+        SELECT 
+            w.winner_id,
+            w.drawn_at,
+            w.claimed,
+            w.draw_strategy,
+            p.name as pool_name,
+            pi.value as prize_value,
+            w.submission_id,
+            s.participant_name,
+            s.participant_contact,
+            s.receipt_codes,
+            s.ip_address,
+            s.submitted_at
+        FROM EVENT_t_winner w
+        JOIN EVENT_m_pool p ON w.pool_id = p.pool_id
+        JOIN EVENT_m_pool_item pi ON w.item_id = pi.item_id
+        LEFT JOIN EVENT_t_submission s ON w.submission_id = s.submission_id
+        WHERE w.campaign_id = ?
+        ORDER BY w.drawn_at DESC
+    `;
+
+    const rows = await dbQueryHots(sql, [campaignId]);
+
+    // Format boolean for CSV
+    return rows.map(w => ({
+        ...w,
+        claimed: w.claimed ? 'Yes' : 'No'
+    }));
+}
+
 // ============================================================================
 // SUBMISSIONS (WRITE)
 // ============================================================================
@@ -1289,7 +1337,7 @@ async function getAuditLogs(slug, filters = {}) {
  * @param {string} slug 
  * @param {Object} submissionData 
  */
-async function submitEntry(slug, { participant_name, participant_contact, receipt_codes, extra_data }) {
+async function submitEntry(slug, { participant_name, participant_contact, receipt_codes, extra_data, is_encrypted }) {
     // 1. Get Campaign
     const campaign = await getCampaignBySlug(slug);
     if (!campaign) throw new Error("Campaign not found");
@@ -1299,9 +1347,15 @@ async function submitEntry(slug, { participant_name, participant_contact, receip
     const submissionId = `SUB-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     // Ensure receipt_codes is a string (JSON array) or null
+    let finalCodes = receipt_codes;
+    if (receipt_codes && is_encrypted) {
+        const codeArray = Array.isArray(receipt_codes) ? receipt_codes : [receipt_codes];
+        finalCodes = codeArray.map(c => decryptUrlSafe(c)).filter(Boolean);
+    }
+
     let codesStr = '[]';
-    if (receipt_codes) {
-        codesStr = Array.isArray(receipt_codes) ? JSON.stringify(receipt_codes) : JSON.stringify([receipt_codes]);
+    if (finalCodes && finalCodes.length > 0) {
+        codesStr = Array.isArray(finalCodes) ? JSON.stringify(finalCodes) : JSON.stringify([finalCodes]);
     }
     const extra = extra_data ? (typeof extra_data === 'string' ? extra_data : JSON.stringify(extra_data)) : '{}';
 
@@ -1362,7 +1416,7 @@ async function submitEntry(slug, { participant_name, participant_contact, receip
               AND (i.is_used = 0 OR p.type = 'VOUCHER') -- Vouchers are reusable
         `;
 
-        const codeArray = Array.isArray(receipt_codes) ? receipt_codes : [receipt_codes];
+        const codeArray = Array.isArray(finalCodes) ? finalCodes : [finalCodes];
         const validItems = await dbQueryHots(findSql, [campaign.campaign_id, codeArray]);
 
         if (validItems.length > 0) {
@@ -1459,5 +1513,84 @@ module.exports = {
     searchUsers,
     searchUsers,
     getSubmissionsForExport,
-    getAuditLogs
+    getAuditLogs,
+
+    // Coupon Check (Public)
+    checkCoupon,
 };
+
+// ============================================================================
+// COUPON CHECK (appended after exports to avoid reference issues)
+// ============================================================================
+
+/**
+ * Check if a coupon code is valid for a specific pool in a campaign.
+ *
+ * @param {string} slug        Campaign slug
+ * @param {number|null} poolId Pool ID to check. If null, checks ALL pools of the campaign.
+ * @param {string} rawCode     The coupon code string (either raw or encrypted)
+ * @param {boolean} isEncrypted Whether rawCode is an encrypted payload
+ * @returns {{ status: 'AVAILABLE'|'ALREADY_USED'|'INVALID', message: string, item: Object|null }}
+ */
+async function checkCoupon(slug, poolId, rawCode, isEncrypted = false) {
+    let code = rawCode;
+    if (isEncrypted) {
+        code = decryptUrlSafe(rawCode);
+        if (!code) {
+            return { status: 'INVALID', message: 'Invalid or corrupted coupon code payload.' };
+        }
+    }
+
+    // 1. Resolve campaign_id from slug
+    const [campaign] = await dbQueryHots(
+        `SELECT campaign_id FROM EVENT_t_campaign WHERE slug = ? LIMIT 1`,
+        [slug]
+    );
+    if (!campaign) {
+        return { status: 'INVALID', message: 'Campaign not found.' };
+    }
+    const campaignId = campaign.campaign_id;
+
+    // 2. Build pool filter
+    //    If poolId is provided, verify it belongs to this campaign.
+    //    If no poolId, check across all pools of this campaign.
+    let poolFilter = '';
+    const params = [campaignId, code];
+
+    if (poolId) {
+        // Validate pool belongs to campaign
+        const [pool] = await dbQueryHots(
+            `SELECT pool_id FROM EVENT_m_pool WHERE pool_id = ? AND campaign_id = ? LIMIT 1`,
+            [poolId, campaignId]
+        );
+        if (!pool) {
+            return { status: 'INVALID', message: 'Invalid pool configuration.' };
+        }
+        poolFilter = `AND pi.pool_id = ?`;
+        params.push(poolId);
+    }
+
+    // 3. Look up the code in EVENT_m_pool_item
+    const sql = `
+        SELECT pi.item_id, pi.pool_id, pi.value, pi.is_used, pi.used_by_submission_id, pi.used_at
+        FROM EVENT_m_pool_item pi
+        INNER JOIN EVENT_m_pool p ON p.pool_id = pi.pool_id
+        WHERE p.campaign_id = ?
+          AND pi.value = ?
+          ${poolFilter}
+        LIMIT 1
+    `;
+
+    const [item] = await dbQueryHots(sql, params);
+
+    if (!item) {
+        return { status: 'INVALID', message: 'Coupon code not found.' };
+    }
+
+    if (item.is_used) {
+        return { status: 'ALREADY_USED', message: 'This code has already been claimed.', item };
+    }
+
+    return { status: 'AVAILABLE', message: 'Code is valid.', item };
+}
+

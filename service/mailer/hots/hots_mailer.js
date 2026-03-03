@@ -451,11 +451,26 @@ module.exports = {
         }
     },
 
-    hotsApproveRequest: async (test = "false", ticket_id,) => {
-        let date = new Date();
-        let timestamp =
-            date.toLocaleDateString("id") + " " + date.toLocaleTimeString("id") + " : ";
+    hotsApproveRequest: async (test = "false", ticket_id, hidden_approval_steps = []) => {
+        const date = new Date();
 
+        const datePart = date.toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "short",
+            day: "2-digit",
+            timeZone: "Asia/Jakarta"
+        });
+
+        const timePart = date.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false,
+            timeZone: "Asia/Jakarta"
+        });
+
+        const formatted = `${datePart} | ${timePart} Jakarta Time`;
 
 
         const [dataResult] = await dbHots.promise().execute(
@@ -487,10 +502,16 @@ module.exports = {
                 t_ticket_event ae
                 left join 
                 user u on ae.approver_id = u.user_id
-                where ae.ticket_id = ? `,
+                where ae.ticket_id = ? 
+                and
+                ae.approver_leader = 1
+                and
+                ae.event_type = 'approve'
+                `,
             [ticket_id]
         );
 
+        // Ensure recipients are based purely on current step (Step 2 will receive email)
         const emailAddresses = approvalResult
             .filter(item => Number(item.approval_order) === Number(currentstep) && !!item.email)
             .map(item => item.email);
@@ -556,29 +577,32 @@ module.exports = {
         let totalQty = 0;
         for (let i = 0; i < itemRows.length; i++) {
             if (itemRows[i].lbl_col === 'Item Name') {
-                const itemName = itemRows[i].cstm_col;
+                const itemName = itemRows[i].value;
 
-                const qty = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity / Unit')
-                    ? itemRows[i + 1].cstm_col
+                // Helper to check if next row is Quantity or Quantity / Unit
+                const isQtyRow = (row) => row && (row.lbl_col === 'Quantity / Unit' || row.lbl_col === 'Quantity');
+
+                const qty = (itemRows[i + 1] && isQtyRow(itemRows[i + 1]))
+                    ? itemRows[i + 1].value
                     : '';
 
-                const qtypcs = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity / Unit' && itemRows[i + 1].cstm_col.toLowerCase().includes('pcs'))
-                    ? itemRows[i + 1].cstm_col
+                const qtypcs = (itemRows[i + 1] && isQtyRow(itemRows[i + 1]) && (itemRows[i + 1].value || '').toLowerCase().includes('pcs'))
+                    ? itemRows[i + 1].value
                     : '';
 
-                const qtyctn = (itemRows[i + 1] && itemRows[i + 1].lbl_col === 'Quantity / Unit' && itemRows[i + 1].cstm_col.toLowerCase().includes('ctn'))
-                    ? itemRows[i + 1].cstm_col
+                const qtyctn = (itemRows[i + 1] && isQtyRow(itemRows[i + 1]) && (itemRows[i + 1].value || '').toLowerCase().includes('ctn'))
+                    ? itemRows[i + 1].value
                     : '';
 
                 let pcs = '', ctn = '';
 
-                if (qty.toLowerCase().includes('pcs')) {
+                if ((qty || '').toLowerCase().includes('pcs')) {
                     pcs = qty;
                     const val = parseInt(qty);
                     if (!isNaN(val)) totalPcs += val;
                 }
 
-                if (qty.toLowerCase().includes('ctn')) {
+                if ((qty || '').toLowerCase().includes('ctn')) {
                     ctn = qty;
                     const val = parseInt(qty);
                     if (!isNaN(val)) totalCtn += val;
@@ -618,7 +642,14 @@ module.exports = {
 
 
 
-        const approvalTable = approvalResult.map(row => `
+        // Configurable Logic: Hide specific approval steps if configured in trigger
+        const approvalTable = approvalResult
+            .filter(row => {
+                // If hidden_approval_steps contains the row's order number, hide it
+                if (hidden_approval_steps.includes(Number(row.approval_order))) return false;
+                return true;
+            })
+            .map(row => `
             <tr >
                 <th style="text-align:left;border:2px solid black; padding: 8px; font-weight:bold;">${row.user_name}</th>
                 <td style=" border:2px solid black; text-align : center;  "  > ${row.approval_status === 0 ? "📝" : "✅"}  </td>
@@ -642,13 +673,10 @@ module.exports = {
 
                 <tr>
                     <th style="text-align:left" >Request Date</th>
-                    <td style="padding-left:20px;">: ${date}</td>
+                    <td style="padding-left:20px;">: ${formatted}</td>
                 </tr>
 
-                <tr>
-                    <th style="text-align:left">Requested By</th>
-                    <td style="padding-left:20px;">: ${user_name}</td>
-                </tr>
+              
 
                 ${requestTable}
 

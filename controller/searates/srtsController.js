@@ -304,6 +304,139 @@ async function _saveSearatesRecord(record, number) {
  * @param {object} data - Normalized SeaRates data
  * @returns {object} - Data with enriched vessels
  */
+/**
+ * Check if API quota is still available for today
+ * @returns {object} - { allowed: boolean, usageCount: number }
+ */
+async function _checkAndQuotaAllowed() {
+    try {
+        const [config] = await dbQuerySR("SELECT daily_limit FROM api_quota_config WHERE api_name = 'searates_tracking' LIMIT 1");
+        const limit = config?.[0]?.daily_limit ?? 200;
+
+        const [usage] = await dbQuerySR(`
+            SELECT COUNT(*) as count 
+            FROM api_usage_log 
+            WHERE api_name = 'searates_tracking' 
+            AND DATE(hit_timestamp) = CURDATE()
+            AND status_code NOT IN ('LIMIT', 'LIMIT_ALERT')
+        `);
+        const usageCount = usage?.[0]?.count ?? 0;
+
+        return {
+            allowed: usageCount < limit,
+            usageCount: usageCount,
+            limit: limit
+        };
+    } catch (err) {
+        console.error("❌ Error checking quota:", err.message);
+        return { allowed: true, usageCount: 0, limit: 200 }; // Fail safe: allow if quota check fails
+    }
+}
+
+/**
+ * Log an API hit attempt
+ * @param {string} number - Tracking number
+ * @param {string|number} so_id - Sales Order ID
+ * @param {string} status - 'SUCCESS', 'FAIL', 'LIMIT', 'LIMIT_ALERT'
+ * @param {object|null} errorData - Optional error details
+ */
+async function _logApiHit(number, so_id, status, errorData = null) {
+    try {
+        await dbQuerySR(`
+            INSERT INTO api_usage_log (api_name, tracking_number, so_id, status_code, error_details_json)
+            VALUES (?, ?, ?, ?, ?)
+        `, [
+            'searates_tracking',
+            number || null,
+            so_id || 0,
+            status,
+            errorData ? JSON.stringify(errorData) : null
+        ]);
+        console.log(`📝 Logged API Hit: ${number} | Status: ${status}`);
+    } catch (err) {
+        console.error("❌ Error logging API hit:", err.message);
+    }
+}
+
+/**
+ * Create a system alert ticket in HOTS Service 7
+ * @param {string} number - Tracking number that triggered the alert
+ */
+async function _createHotsAlertTicket(number) {
+    const timestamp = blue + new Date().toLocaleString('id') + ' : ';
+    console.log(timestamp + `🚨 Generating HOTS Alert Ticket for SeaRates Quota Limit...`);
+
+    try {
+        // 1. Check if alert already sent today to avoid spam
+        const [existingAlert] = await dbQuerySR(`
+            SELECT log_id FROM api_usage_log 
+            WHERE api_name = 'searates_tracking' 
+            AND status_code = 'LIMIT_ALERT' 
+            AND DATE(hit_timestamp) = CURDATE() 
+            LIMIT 1
+        `);
+
+        if (existingAlert?.length) {
+            console.log(timestamp + "⚠️ Alert ticket already created today. Skipping.");
+            return;
+        }
+
+        // 2. Fetch Service 7 Config
+        const [serviceConfig] = await dbQuery("SELECT service_name FROM m_service WHERE service_id = 7");
+        if (!serviceConfig?.length) {
+            console.error(timestamp + "❌ Service 7 not found in m_service");
+            return;
+        }
+
+        // 3. Generate Ticket ID (using HOTS logic)
+        // Note: We'll use a simplified version of generateCustomTicketID logic for system alert
+        const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, ''); // YYMMDD
+        const prefix = `26${dateStr}07`; // Assuming 26 is the year/system prefix, 07 is service_id
+
+        const [lastTicket] = await dbQuery(`
+            SELECT ticket_id FROM t_ticket 
+            WHERE ticket_id LIKE ? ORDER BY ticket_id DESC LIMIT 1
+        `, [`${prefix}%`]);
+
+        let seq = 1;
+        if (lastTicket?.length) {
+            const lastSeq = parseInt(lastTicket[0].ticket_id.slice(-4));
+            seq = lastSeq + 1;
+        }
+        const ticketId = `${prefix}${seq.toString().padStart(4, '0')}`;
+
+        // 4. Insert into t_ticket
+        await dbQuery(`
+            INSERT INTO t_ticket (ticket_id, service_id, status_id, created_by, creation_date, last_update, workflow_step)
+            VALUES (?, 7, 1, 0, NOW(), NOW(), 1)
+        `, [ticketId]);
+
+        // 5. Insert into t_ticket_detail (EAV structure)
+        const details = [
+            [ticketId, 'requester_name', 'Requester Name', 'System Alert', null, 'text', null, null, 0, JSON.stringify({ label: 'Requester Name' })],
+            [ticketId, 'support_type', 'Support Type', 'Software Issue', null, 'dropdown', null, null, 0, JSON.stringify({ label: 'Support Type' })],
+            [ticketId, 'urgency', 'Urgency', 'Critical', null, 'dropdown', null, null, 0, JSON.stringify({ label: 'Urgency' })],
+            [ticketId, 'issue_description', 'Issue Description',
+                `SeaRates daily limit (200) has been reached.\nTriggered by Tracking Number: ${number}\nPlease check for SQL logic errors or potential data leaks in srtsController.js.`,
+                null, 'textarea', null, null, 0, JSON.stringify({ label: 'Issue Description' })
+            ]
+        ];
+
+        await dbQuery(
+            'INSERT INTO t_ticket_detail (ticket_id, cstm_col, lbl_col, value, field_id, field_type, row_index, column_key, revision, field_meta_json) VALUES ?',
+            [details]
+        );
+
+        // 6. Log the alert creation
+        await _logApiHit(number, 0, 'LIMIT_ALERT', { ticket_id: ticketId });
+        console.log(timestamp + `✅ HOTS Alert Ticket Created: ${ticketId}`);
+
+    } catch (err) {
+        console.error(timestamp + "❌ Failed to create alert ticket:", err.message);
+    }
+}
+
+
 function _enrichVesselsWithVoyage(data) {
     if (!data?.vessels?.length || !data?.containers?.length) return data;
 
@@ -319,6 +452,55 @@ function _enrichVesselsWithVoyage(data) {
     });
 
     return data;
+}
+
+/**
+ * Sync tracking results to Online Order (IOD) for audience visibility
+ * @param {string} number - Tracking number
+ * @param {object} data - Normalized SeaRates data
+ * @param {number} so_id - Sales Order ID
+ */
+async function _syncToOnlineOrder(number, data) {
+    try {
+        const route = data.route || {};
+        const ata = route.pod?.actual === true ? route.pod.date : null;
+        const atd = route.pol?.actual === true ? route.pol.date : null;
+        const scac = data.metadata?.sealine || null;
+
+        // 1. Find all SOs sharing this tracking number (BL, Booking, or Container)
+        const [sos] = await dbQuery(`
+            SELECT DISTINCT r.so_id 
+            FROM iod.trs_realization r
+            LEFT JOIN iod.trs_invoice i ON r.invoice_id = i.invoice_id
+            WHERE i.bl_no = ? OR r.book_no = ? OR r.cont_id = ?
+        `, [number, number, number]);
+
+        if (!sos?.length) return;
+
+        const soIds = sos.map(s => s.so_id);
+
+        // 2. Batch Update trs_realization_searates
+        const updateRealizationQuery = `
+            INSERT INTO iod.trs_realization_searates (so_id, invoice_id, cont_id, ata, atd, scac)
+            SELECT so_id, invoice_id, ?, ?, ?, ? FROM iod.trs_realization WHERE so_id IN (?)
+            ON DUPLICATE KEY UPDATE invoice_id = VALUES(invoice_id), ata = VALUES(ata), atd = VALUES(atd), scac = VALUES(scac)
+        `;
+        await dbQuery(updateRealizationQuery, [number, ata, atd, scac, soIds]);
+
+        // 3. Batch Auto-close Orders if Arrived
+        if (ata) {
+            const updateOrderQuery = `
+                UPDATE iod.m_order mo
+                JOIN iod.trs_sales_order tso ON mo.order_id = tso.e_order
+                SET mo.status = 4
+                WHERE tso.so_id IN (?) AND mo.status < 4
+            `;
+            await dbQuery(updateOrderQuery, [soIds]);
+            console.log(`📦 Group updated ${soIds.length} orders to DELIVERED for ${number}.`);
+        }
+    } catch (err) {
+        console.error("❌ Error syncing to Online Order:", err.message);
+    }
 }
 
 
@@ -564,8 +746,10 @@ module.exports = {
                        l.lng as location_lng ,
                        v.vessel_id as vessel_vesid,
                        v.name as vessel_name,
-                       v.imo as vessel_imo
+                       v.imo as vessel_imo,
+                       ts.ata as integration_ata
                    FROM sea_rates.shipments s 
+                   LEFT JOIN iod.trs_realization_searates ts ON s.so_id = ts.so_id
                    LEFT JOIN sea_rates.containers c 	
                        ON s.shipment_id = c.shipment_id 
                    LEFT JOIN sea_rates.events e 
@@ -583,40 +767,87 @@ module.exports = {
                    order by e.order_id ASC 
            `, [number, number, so_id, so_id]);
 
-            // 2️⃣ DETERMINE IF REFRESH NEEDED
+            // 2️⃣ DETERMINE IF REFRESH NEEDED (Smart Caching)
             let reload = false;
-            if (refresh) {
-                reload = true;
-                console.log(`🔄 Refresh requested for ${number}, fetching fresh data from SeaRates...`);
+            const lastUpdated = results.length ? new Date(results[0].last_updated_date) : null;
+            const isArrived = results.some(r =>
+                (r.actual === 1 && r.location_name && r.description?.toLowerCase().includes('arrival')) ||
+                r.integration_ata !== null
+            ); // Robust ATA check
+
+            if (isArrived) {
+                console.log(`🛑 ${number} has arrived. Refresh blocked.`);
+                reload = false; // Block refresh for arrived
+            } else if (refresh) {
+                // Manual refresh requested
+                const diffHours = lastUpdated ? (new Date() - lastUpdated) / (1000 * 60 * 60) : 999;
+                if (diffHours < 24) {
+                    console.log(`⏳ ${number} was refreshed ${Math.round(diffHours)}h ago. 24h cooldown active.`);
+                    reload = false;
+                } else {
+                    reload = true;
+                }
             } else if (results.length) {
-                const diffHours = (new Date() - new Date(results[0].last_updated_date)) / (1000 * 60 * 60);
-                reload = diffHours >= 5 || !results[0].so_id;
+                // Normal background/auto refresh (5-day rule for UI is overkill, but let's stick to 24h for UI)
+                const diffHours = (new Date() - lastUpdated) / (1000 * 60 * 60);
+                reload = diffHours >= 24 || !results[0].so_id;
             }
 
             // 3️⃣ FETCH FROM SEARATES IF NEEDED
             if (!results.length || reload) {
-                const checkQuery = so_id === "0" ? `
-                   SELECT ti.bl_no, tso.so_id, s.so_id, s.last_updated_date
-                   FROM trs_realization tr
-                   LEFT JOIN trs_sales_order tso ON tr.so_id = tso.so_id
-                   LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
-                   LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
-                   WHERE s.number = ? ORDER BY s.last_updated_date DESC LIMIT 1
-               ` : `
-                   SELECT ti.bl_no, tso.so_id, s.so_id, s.last_updated_date
-                   FROM trs_realization tr
-                   LEFT JOIN trs_sales_order tso ON tr.so_id = tso.so_id
-                   LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
-                   LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
-                   WHERE s.so_id = ? ORDER BY s.last_updated_date DESC LIMIT 1
-               `;
+                // Fetch carrier mapping and SO details
+                const checkQuery = `
+                    SELECT 
+                        ti.bl_no, 
+                        tr.book_no, 
+                        tr.cont_id, 
+                        tr.so_id, 
+                        msl.scac as sealine, 
+                        msl.type as mapping_type
+                    FROM trs_realization tr
+                    LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
+                    LEFT JOIN sea_rates.m_shipping_line msl
+                        ON msl.i2i_shipline LIKE CONCAT('%', tr.ship_line, '%')
+                        OR msl.i2i_shipline LIKE CONCAT('%', tr.fwd, '%')
+                    WHERE ${so_id === "0" ? 'tr.cont_id = ? OR ti.bl_no = ?' : 'tr.so_id = ?'}
+                    LIMIT 1
+                `;
 
-                const checkresult = await dbQuery(checkQuery, [so_id === "0" ? number : so_id]);
-                const bl_no = checkresult[0]?.bl_no;
+                const checkParams = so_id === "0" ? [number, number] : [so_id];
+                const [checkresult] = await dbQuery(checkQuery, checkParams);
 
-                const url = bl_no
-                    ? `https://tracking.searates.com/tracking?api_key=${key}&number=${bl_no}&sealine=${sealine}&force_update=false&type=bl&route=true&ais=false`
-                    : `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=${sealine}&force_update=false&route=true&ais=false`;
+                const mapping = checkresult || {};
+                const finalSealine = sealine !== 'auto' ? sealine : (mapping.sealine || 'auto');
+
+                // Smart Number Selection based on Carrier Mapping
+                let finalNumber = number;
+                let finalType = 'auto';
+
+                if (mapping.mapping_type === 'BK' && mapping.book_no) {
+                    finalNumber = mapping.book_no;
+                    finalType = 'bk';
+                } else if (mapping.mapping_type === 'CT' && mapping.cont_id) {
+                    finalNumber = mapping.cont_id;
+                    finalType = 'ct';
+                } else if (mapping.bl_no) {
+                    finalNumber = mapping.bl_no;
+                    finalType = 'bl';
+                }
+
+                const url = `https://tracking.searates.com/tracking?api_key=${key}&number=${finalNumber}&sealine=${finalSealine}&force_update=false&type=${finalType}&route=true&ais=false`;
+
+                // 3.1️⃣ QUOTA CHECK
+                const quota = await _checkAndQuotaAllowed();
+                if (!quota.allowed) {
+                    console.warn(`🛑 SeaRates Limit Reached (${quota.usageCount}/${quota.limit}). Aborting request for ${number}`);
+                    await _createHotsAlertTicket(number);
+                    await _logApiHit(number, so_id, 'LIMIT');
+                    return res.status(429).send({
+                        message: "Daily SeaRates tracking limit (200) has been reached. Please contact IT Support (Service 7).",
+                        usage: quota.usageCount,
+                        limit: quota.limit
+                    });
+                }
 
                 let searatesRes = await _callSeaRatesAPI(url);
 
@@ -624,7 +855,7 @@ module.exports = {
                 let normalizedData = _normalizeSeaRatesData(searatesRes);
 
                 if (!normalizedData) {
-                    console.warn(`⚠️ First attempt failed for ${number}, retrying with auto sealine...`);
+                    console.warn(`⚠️ First attempt failed for ${finalNumber}, retrying with auto detection...`);
                     const fallbackUrl = `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=auto&force_update=false&route=true&ais=false`;
                     searatesRes = await _callSeaRatesAPI(fallbackUrl);
                     normalizedData = _normalizeSeaRatesData(searatesRes);
@@ -633,13 +864,16 @@ module.exports = {
                 // 5️⃣ SAVE ONLY IF VALID
                 if (normalizedData) {
                     const record = {
-                        so_id: so_id ?? checkresult[0]?.so_id ?? 0,
-                        shipment_id: checkresult[0]?.shipment_id ?? null,
+                        so_id: so_id !== "0" ? so_id : (mapping.so_id ?? 0),
+                        shipment_id: results[0]?.shipment_id ?? null,
                         cont_id: number,
                         data: normalizedData
                     };
 
                     await _saveSearatesRecord(record, number);
+
+                    // NEW: Sync to Online Order (IOD)
+                    await _syncToOnlineOrder(number, normalizedData);
 
                     // Enrich vessels with voyage
                     const enrichedData = _enrichVesselsWithVoyage(normalizedData);
@@ -649,6 +883,7 @@ module.exports = {
                         data: { data: enrichedData }
                     });
                 } else {
+                    _logApiHit(number, so_id, 'FAIL', searatesRes); // Log total failure
                     console.warn(`⚠️ No valid data from SeaRates for ${number}`);
                     return res.status(404).send({ message: "No data from SeaRates" });
                 }
@@ -838,191 +1073,225 @@ module.exports = {
             // 3️⃣ FETCH FROM SEARATES IF NEEDED
             if (!results.length || reload) {
                 const checkQuery = so_id === "0" ? `
-                    SELECT ti.bl_no, tso.so_id, s.so_id, s.last_updated_date
+                    SELECT ti.bl_no, tso.so_id, s.so_id, s.last_updated_date, msl.type, tr.eta
                     FROM trs_realization tr
                     LEFT JOIN trs_sales_order tso ON tr.so_id = tso.so_id
                     LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
                     LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
+                    LEFT JOIN sea_rates.m_shipping_line msl ON msl.i2i_shipline LIKE CONCAT('%', tr.ship_line, '%') OR msl.i2i_shipline LIKE CONCAT('%', tr.fwd, '%')
                     WHERE s.number = ? ORDER BY s.last_updated_date DESC LIMIT 1
                 ` : `
-                    SELECT ti.bl_no, tso.so_id, s.so_id, s.last_updated_date
+                    SELECT ti.bl_no, tso.so_id, s.so_id, s.last_updated_date, msl.type, tr.eta
                     FROM trs_realization tr
                     LEFT JOIN trs_sales_order tso ON tr.so_id = tso.so_id
                     LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
                     LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
+                    LEFT JOIN sea_rates.m_shipping_line msl ON msl.i2i_shipline LIKE CONCAT('%', tr.ship_line, '%') OR msl.i2i_shipline LIKE CONCAT('%', tr.fwd, '%')
                     WHERE s.so_id = ? ORDER BY s.last_updated_date DESC LIMIT 1
                 `;
 
                 const checkresult = await dbQuery(checkQuery, [so_id === "0" ? number : so_id]);
                 const bl_no = checkresult[0]?.bl_no;
+                const mslType = checkresult[0]?.type?.toLowerCase() || 'ct'; // Assume CT if unknown for safety
+                const etaDate = checkresult[0]?.eta ? new Date(checkresult[0].eta) : null;
+                const finalTrackingType = (mslType === 'bl' && bl_no) ? 'bl' : 'ct';
 
-                const url = bl_no
-                    ? `https://tracking.searates.com/tracking?api_key=${key}&number=${bl_no}&sealine=${sealine}&force_update=false&type=bl&route=true&ais=false`
-                    : `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=${sealine}&force_update=false&route=true&ais=false`;
-
-                let searatesRes = await _callSeaRatesAPI(url);
-
-                // 4️⃣ VALIDATE API RESPONSE
-                let normalizedData = _normalizeSeaRatesData(searatesRes);
-
-                if (!normalizedData) {
-                    console.warn(`⚠️ First attempt failed for ${number}, retrying with auto sealine...`);
-                    const fallbackUrl = `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=auto&force_update=false&route=true&ais=false`;
-                    searatesRes = await _callSeaRatesAPI(fallbackUrl);
-                    normalizedData = _normalizeSeaRatesData(searatesRes);
-                }
-
-                // 5️⃣ SAVE ONLY IF VALID
-                if (normalizedData) {
-                    const record = {
-                        so_id: so_id ?? checkresult[0]?.so_id ?? 0,
-                        shipment_id: checkresult[0]?.shipment_id ?? null,
-                        cont_id: number,
-                        data: normalizedData
-                    };
-
-                    await _saveSearatesRecord(record, number);
-
-                    // Flatten and deduplicate events
-                    const allEvents = (normalizedData.containers || []).flatMap(c => c.events || []);
-                    const uniqueEvents = allEvents.reduce((acc, event) => {
-                        const exists = acc.some(e =>
-                            e.order_id === event.order_id &&
-                            e.event_code === event.event_code &&
-                            e.location === event.location
-                        );
-                        if (!exists) acc.push(event);
-                        return acc;
-                    }, []);
-
-                    const enrichedData = _enrichVesselsWithVoyage(normalizedData);
-
-                    const normalized = {
-                        shipment_id: checkresult[0]?.shipment_id ?? null,
-                        so_id: so_id ?? checkresult[0]?.so_id ?? 0,
-                        metadata: enrichedData.metadata,
-                        container: enrichedData.containers || [],
-                        events: uniqueEvents,
-                        locations: enrichedData.locations || [],
-                        vessels: enrichedData.vessels || [],
-                        dataRoute: [{
-                            pol: enrichedData.route?.pol ? [enrichedData.route.pol] : [],
-                            pod: enrichedData.route?.pod ? [enrichedData.route.pod] : []
-                        }],
-                        pin_location: enrichedData.route_data?.pin
-                            ? { lat: enrichedData.route_data.pin[0], lng: enrichedData.route_data.pin[1] }
-                            : {}
-                    };
-
-                    return res.status(200).send({
-                        message: "Fetched from SeaRates and saved",
-                        data: { data: enrichedData }
-                    });
-                }
-
-                console.warn(`⚠️ No valid data from SeaRates for ${number}`);
-                return res.status(404).send({ message: "No data from SeaRates" });
-            }
-
-            // 6️⃣ RETURN CACHED DATA FROM DB
-            const shipmentData = {};
-            for (const row of results) {
-                const id = row.shipment_id;
-                if (!shipmentData[id]) {
-                    shipmentData[id] = {
-                        so_id: so_id ?? results[0]?.so_id ?? 0,
-                        shipment_id: id,
-                        metadata: {
-                            last_updated_date: row.last_updated_date,
-                            number: row.number,
-                            so_id: row.so_id,
-                            sealine_name: row.sealine_name,
-                            status: row.status
-                        },
-                        container: [],
-                        events: [],
-                        locations: [],
-                        vessels: []
-                    };
-                }
-
-                // Containers
-                if (row.container_number && !shipmentData[id].container.some(c => c.container_number === row.container_number)) {
-                    shipmentData[id].container.push({
-                        container_number: row.container_number,
-                        so_id: row.so_id,
-                        sealine_name: row.sealine_name,
-                        container_status: row.status
-                    });
-                }
-                // Events - deduplicate based on order_id, event_code, and location_id
-                if (row.event_id && !shipmentData[id].events.some(e =>
-                    e.order_id === row.order_id &&
-                    e.event_code === row.event_code &&
-                    e.location_id === row.location_id
-                )) {
-                    shipmentData[id].events.push({
-                        event_id: row.event_id,
-                        order_id: row.order_id,
-                        description: row.description,
-                        event_type: row.event_type,
-                        event_code: row.event_code,
-                        date: row.date,
-                        actual: row.actual,
-                        vessel_id: row.vessel_id,
-                        voyage: row.voyage,
-                        location_id: row.location_id
-                    });
-                }
-
-                // Locations (add IDs)
-                if (row.location_name && !shipmentData[id].locations.some(l => l.name === row.location_name)) {
-                    shipmentData[id].locations.push({
-                        location_id: row.location_id,
-                        location_list_id: row.location_id,
-                        name: row.location_name,
-                        lat: row.location_lat,
-                        lng: row.location_lng
-                    });
-                }
-
-                // Vessels - collect with voyage from events
-                if (row.vessel_vesid && !shipmentData[id].vessels.some(v => v.vessel_id === row.vessel_vesid)) {
-                    shipmentData[id].vessels.push({
-                        vessel_id: row.vessel_vesid,
-                        name: row.vessel_name,
-                        imo: row.vessel_imo,
-                        voyage: row.voyage || null  // Get voyage from event
-                    });
-                } else if (row.vessel_vesid && row.voyage) {
-                    // Update voyage if vessel exists but didn't have voyage yet
-                    const existingVessel = shipmentData[id].vessels.find(v => v.vessel_id === row.vessel_vesid);
-                    if (existingVessel && !existingVessel.voyage) {
-                        existingVessel.voyage = row.voyage;
+                // 🛑 NEW: EXPIRE OLD PHYSICAL CONTAINERS
+                // If this is a CT track, do not fetch live data if the ETA was > 5 days ago to prevent fetching a reused routing!
+                if (finalTrackingType === 'ct' && etaDate) {
+                    const daysSinceETA = (new Date() - etaDate) / (1000 * 60 * 60 * 24);
+                    if (daysSinceETA > 5) {
+                        console.warn(`🛑 Container ${number} (SO: ${so_id}) expired ${daysSinceETA.toFixed(1)} days ago. Blocking live Searates Refresh to prevent fetching dirty re-used container data.`);
+                        reload = false;
                     }
                 }
-            }
 
-            // 🧭 Add route + pin_location from separate tables
-            await Promise.all(Object.keys(shipmentData).map(async (id) => {
-                const [pol] = await dbQuerySR(`
+                if (!results.length || reload) {
+                    const url = bl_no
+                        ? `https://tracking.searates.com/tracking?api_key=${key}&number=${bl_no}&sealine=${sealine}&force_update=false&type=bl&route=true&ais=false`
+                        : `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=${sealine}&force_update=false&route=true&ais=false`;
+
+                    // 3.1️⃣ QUOTA CHECK
+                    const quota = await _checkAndQuotaAllowed();
+                    if (!quota.allowed) {
+                        console.warn(`🛑 SeaRates Limit Reached (${quota.usageCount}/${quota.limit}). Aborting request for ${number}`);
+                        await _createHotsAlertTicket(number);
+                        await _logApiHit(number, so_id, 'LIMIT');
+                        return res.status(429).send({
+                            message: "Daily SeaRates tracking limit (200) has been reached. Please contact IT Support (Service 7).",
+                            usage: quota.usageCount,
+                            limit: quota.limit
+                        });
+                    }
+
+                    let searatesRes = await _callSeaRatesAPI(url);
+
+                    // 4️⃣ VALIDATE API RESPONSE
+                    let normalizedData = _normalizeSeaRatesData(searatesRes);
+
+                    if (!normalizedData) {
+                        console.warn(`⚠️ First attempt failed for ${number}, retrying with auto sealine...`);
+                        const fallbackUrl = `https://tracking.searates.com/tracking?api_key=${key}&number=${number}&sealine=auto&force_update=false&route=true&ais=false`;
+                        searatesRes = await _callSeaRatesAPI(fallbackUrl);
+                        normalizedData = _normalizeSeaRatesData(searatesRes);
+                    }
+
+                    // 5️⃣ SAVE ONLY IF VALID
+                    if (normalizedData) {
+                        const record = {
+                            so_id: so_id ?? checkresult[0]?.so_id ?? 0,
+                            shipment_id: checkresult[0]?.shipment_id ?? null,
+                            cont_id: number,
+                            data: normalizedData
+                        };
+
+                        await _saveSearatesRecord(record, number);
+
+                        // NEW: Sync to Online Order (IOD)
+                        await _syncToOnlineOrder(number, normalizedData);
+
+                        // Flatten and deduplicate events
+                        const allEvents = (normalizedData.containers || []).flatMap(c => c.events || []);
+                        const uniqueEvents = allEvents.reduce((acc, event) => {
+                            const exists = acc.some(e =>
+                                e.order_id === event.order_id &&
+                                e.event_code === event.event_code &&
+                                e.location === event.location
+                            );
+                            if (!exists) acc.push(event);
+                            return acc;
+                        }, []);
+
+                        const enrichedData = _enrichVesselsWithVoyage(normalizedData);
+
+                        const normalized = {
+                            shipment_id: checkresult[0]?.shipment_id ?? null,
+                            so_id: so_id ?? checkresult[0]?.so_id ?? 0,
+                            metadata: enrichedData.metadata,
+                            container: enrichedData.containers || [],
+                            events: uniqueEvents,
+                            locations: enrichedData.locations || [],
+                            vessels: enrichedData.vessels || [],
+                            dataRoute: [{
+                                pol: enrichedData.route?.pol ? [enrichedData.route.pol] : [],
+                                pod: enrichedData.route?.pod ? [enrichedData.route.pod] : []
+                            }],
+                            pin_location: enrichedData.route_data?.pin
+                                ? { lat: enrichedData.route_data.pin[0], lng: enrichedData.route_data.pin[1] }
+                                : {}
+                        };
+
+                        return res.status(200).send({
+                            message: "Fetched from SeaRates and saved",
+                            data: { data: enrichedData }
+                        });
+                    } else {
+                        _logApiHit(number, so_id, 'FAIL', searatesRes); // Log total failure
+                        console.warn(`⚠️ No valid data from SeaRates for ${number}`);
+                        return res.status(404).send({ message: "No data from SeaRates" });
+                    }
+                }
+
+                // 6️⃣ RETURN CACHED DATA FROM DB
+                const shipmentData = {};
+                for (const row of results) {
+                    const id = row.shipment_id;
+                    if (!shipmentData[id]) {
+                        shipmentData[id] = {
+                            so_id: so_id ?? results[0]?.so_id ?? 0,
+                            shipment_id: id,
+                            metadata: {
+                                last_updated_date: row.last_updated_date,
+                                number: row.number,
+                                so_id: row.so_id,
+                                sealine_name: row.sealine_name,
+                                status: row.status
+                            },
+                            container: [],
+                            events: [],
+                            locations: [],
+                            vessels: []
+                        };
+                    }
+
+                    // Containers
+                    if (row.container_number && !shipmentData[id].container.some(c => c.container_number === row.container_number)) {
+                        shipmentData[id].container.push({
+                            container_number: row.container_number,
+                            so_id: row.so_id,
+                            sealine_name: row.sealine_name,
+                            container_status: row.status
+                        });
+                    }
+                    // Events - deduplicate based on order_id, event_code, and location_id
+                    if (row.event_id && !shipmentData[id].events.some(e =>
+                        e.order_id === row.order_id &&
+                        e.event_code === row.event_code &&
+                        e.location_id === row.location_id
+                    )) {
+                        shipmentData[id].events.push({
+                            event_id: row.event_id,
+                            order_id: row.order_id,
+                            description: row.description,
+                            event_type: row.event_type,
+                            event_code: row.event_code,
+                            date: row.date,
+                            actual: row.actual,
+                            vessel_id: row.vessel_id,
+                            voyage: row.voyage,
+                            location_id: row.location_id
+                        });
+                    }
+
+                    // Locations (add IDs)
+                    if (row.location_name && !shipmentData[id].locations.some(l => l.name === row.location_name)) {
+                        shipmentData[id].locations.push({
+                            location_id: row.location_id,
+                            location_list_id: row.location_id,
+                            name: row.location_name,
+                            lat: row.location_lat,
+                            lng: row.location_lng
+                        });
+                    }
+
+                    // Vessels - collect with voyage from events
+                    if (row.vessel_vesid && !shipmentData[id].vessels.some(v => v.vessel_id === row.vessel_vesid)) {
+                        shipmentData[id].vessels.push({
+                            vessel_id: row.vessel_vesid,
+                            name: row.vessel_name,
+                            imo: row.vessel_imo,
+                            voyage: row.voyage || null  // Get voyage from event
+                        });
+                    } else if (row.vessel_vesid && row.voyage) {
+                        // Update voyage if vessel exists but didn't have voyage yet
+                        const existingVessel = shipmentData[id].vessels.find(v => v.vessel_id === row.vessel_vesid);
+                        if (existingVessel && !existingVessel.voyage) {
+                            existingVessel.voyage = row.voyage;
+                        }
+                    }
+                }
+
+                // 🧭 Add route + pin_location from separate tables
+                await Promise.all(Object.keys(shipmentData).map(async (id) => {
+                    const [pol] = await dbQuerySR(`
                     SELECT location_id as location, date, actual FROM sea_rates.pol WHERE shipment_id = ? LIMIT 1
                 `, [id]);
 
-                const [pod] = await dbQuerySR(`
+                    const [pod] = await dbQuerySR(`
                     SELECT location_id as location, date, actual, predictive_eta FROM sea_rates.pod WHERE shipment_id = ? LIMIT 1
                 `, [id]);
 
-                const [pin] = await dbQuerySR(`
+                    const [pin] = await dbQuerySR(`
                     SELECT lat, \`long\` FROM sea_rates.route WHERE shipment_id = ? LIMIT 1
                 `, [id]);
 
-                shipmentData[id].dataRoute = [{
-                    pol: pol ? [pol] : [],
-                    pod: pod ? [pod] : []
-                }];
-                shipmentData[id].pin_location = pin ? { lat: pin.lat, lng: pin.long } : {};
-            }));
+                    shipmentData[id].dataRoute = [{
+                        pol: pol ? [pol] : [],
+                        pod: pod ? [pod] : []
+                    }];
+                    shipmentData[id].pin_location = pin ? { lat: pin.lat, lng: pin.long } : {};
+                }));
+            } // END of if (!results.length || reload)
 
             console.log(`✅ Returning cached shipment data (${Object.keys(shipmentData).length} records)`);
             return res.status(200).send(Object.values(shipmentData));
@@ -1045,96 +1314,117 @@ module.exports = {
 
         // 🟣 Main Process
         try {
-            // 1️⃣ CHECK LOCAL DATABASE FIRST (with parameterized query - FIXED SQL INJECTION)
-            const query = `
-                SELECT ti.bl_no, tso.so_id, s.so_id, s.shipment_id, tr.cont_id, s.last_updated_date
+            // 1️⃣ CHECK LOCAL DATABASE FIRST
+            const checkQuery = `
+                SELECT 
+                    ti.bl_no, 
+                    tr.book_no, 
+                    tr.cont_id, 
+                    tr.so_id, 
+                    msl.scac as sealine, 
+                    msl.type as mapping_type,
+                    s.last_updated_date,
+                    s.status
                 FROM trs_realization tr
                 LEFT JOIN trs_sales_order tso ON tr.so_id = tso.so_id
                 LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
                 LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
-                LEFT JOIN sea_rates.pod pod ON s.shipment_id = pod.shipment_id
+                LEFT JOIN sea_rates.m_shipping_line msl
+                    ON msl.i2i_shipline LIKE CONCAT('%', tr.ship_line, '%')
+                    OR msl.i2i_shipline LIKE CONCAT('%', tr.fwd, '%')
                 WHERE tso.e_order = ?
-                AND (
-                    s.last_updated_date >= NOW() - INTERVAL 2 WEEK
-                    OR (pod.date <= NOW() AND pod.actual = 1)
-                );
+                LIMIT 1
             `;
 
-            const results = await dbQuery(query, [number]);
-
-            // 2️⃣ IF DATA EXISTS AND IS VALID, RETURN IT
-            if (results.length) {
-                console.log(`✅ Using cached Searates data for SO ID: ${results[0].so_id}`);
-                return res.status(200).send(results);
-            }
-
-            // 3️⃣ NO LOCAL DATA - FETCH FROM SEARATES
-            console.log(`🔄 No data found locally, fetching new for e_order: ${number}`);
-
-            const querycheck_so_Id = `
-                SELECT ti.bl_no, tso.so_id, s.so_id, s.shipment_id, tr.cont_id, s.last_updated_date
-                FROM trs_realization tr
-                LEFT JOIN trs_sales_order tso ON tr.so_id = tso.so_id
-                LEFT JOIN trs_invoice ti ON ti.invoice_id = tr.invoice_id
-                LEFT JOIN sea_rates.shipments s ON s.so_id = tso.so_id
-                WHERE tso.e_order = ?;
-            `;
-
-            const checkresult = await dbQuery(querycheck_so_Id, [number]);
-            if (!checkresult.length) {
+            const [mapping] = await dbQuery(checkQuery, [number]);
+            if (!mapping) {
                 return res.status(200).send({ message: "No matching record found in DB" });
             }
 
-            const contIdClean = checkresult[0]?.cont_id?.replace("-", "") ?? "";
-            const bl_no = checkresult[0]?.bl_no;
+            // 2️⃣ DETERMINE IF REFRESH NEEDED
+            let reload = false;
+            const lastUpdated = mapping.last_updated_date ? new Date(mapping.last_updated_date) : null;
+            const isArrived = mapping.status?.toLowerCase().includes('arrival') || mapping.status?.toLowerCase().includes('delivered');
 
-            const url = bl_no
-                ? `https://tracking.searates.com/tracking?api_key=${key}&number=${bl_no}&sealine=auto&force_update=false&route=true&ais=false`
-                : `https://tracking.searates.com/tracking?api_key=${key}&number=${contIdClean}&sealine=auto&force_update=false&route=true&ais=false`;
+            if (isArrived) {
+                console.log(`🛑 ${number} has arrived. Refresh blocked.`);
+                reload = false;
+            } else {
+                const diffHours = lastUpdated ? (new Date() - lastUpdated) / (1000 * 60 * 60) : 999;
+                reload = diffHours >= 24; // 24h cooldown for manual check
+            }
+
+            if (!reload && lastUpdated) {
+                console.log(`✅ Using cached Searates data for e_order: ${number}`);
+                // Fetch full history to return
+                const fullData = await dbQuerySR(`SELECT * FROM sea_rates.v_shipmet_tracking_detail WHERE number = ?`, [mapping.bl_no || mapping.book_no || mapping.cont_id]);
+                return res.status(200).send(fullData);
+            }
+
+            // 3️⃣ FETCH FROM SEARATES
+            console.log(`🔄 Fetching fresh data for e_order: ${number}`);
+
+            const finalSealine = mapping.sealine || 'auto';
+            let finalNumber = mapping.cont_id;
+            let finalType = 'auto';
+
+            if (mapping.mapping_type === 'BK' && mapping.book_no) {
+                finalNumber = mapping.book_no;
+                finalType = 'bk';
+            } else if (mapping.mapping_type === 'CT' && mapping.cont_id) {
+                finalNumber = mapping.cont_id;
+                finalType = 'ct';
+            } else if (mapping.bl_no) {
+                finalNumber = mapping.bl_no;
+                finalType = 'bl';
+            }
+
+            const url = `https://tracking.searates.com/tracking?api_key=${key}&number=${finalNumber}&sealine=${finalSealine}&force_update=false&type=${finalType}&route=true&ais=false`;
+
+            // 3.1️⃣ QUOTA CHECK
+            const quota = await _checkAndQuotaAllowed();
+            if (!quota.allowed) {
+                console.warn(`🛑 SeaRates Limit Reached (${quota.usageCount}/${quota.limit}). Aborting request for ${number}`);
+                await _createHotsAlertTicket(number);
+                await _logApiHit(number, mapping.so_id, 'LIMIT');
+                return res.status(200).send({
+                    message: "Daily SeaRates tracking limit (200) has been reached. Please contact IT Support (Service 7)."
+                });
+            }
 
             let searatesRes = await _callSeaRatesAPI(url);
-
-            // 4️⃣ VALIDATE API RESPONSE
             let normalizedData = _normalizeSeaRatesData(searatesRes);
 
             if (!normalizedData) {
-                console.warn(`⚠️ First attempt failed, retrying with contIdClean: ${contIdClean}`);
-                const fallbackUrl = `https://tracking.searates.com/tracking?api_key=${key}&number=${contIdClean}&sealine=auto&force_update=false&route=true&ais=false`;
+                _logApiHit(number, mapping.so_id, 'FAIL', searatesRes);
+                console.warn(`⚠️ First attempt failed, retrying with auto detection...`);
+                const fallbackUrl = `https://tracking.searates.com/tracking?api_key=${key}&number=${finalNumber}&sealine=auto&force_update=false&route=true&ais=false`;
                 searatesRes = await _callSeaRatesAPI(fallbackUrl);
                 normalizedData = _normalizeSeaRatesData(searatesRes);
             }
 
             // 5️⃣ SAVE ONLY IF VALID
-            if (!normalizedData) {
-                console.warn(`⚠️ SeaRates returned no valid data for e_order: ${number}`);
+            if (normalizedData) {
+                const record = {
+                    so_id: mapping.so_id,
+                    shipment_id: mapping.shipment_id,
+                    cont_id: mapping.cont_id,
+                    data: normalizedData
+                };
+
+                await _saveSearatesRecord(record, finalNumber);
+                await _syncToOnlineOrder(finalNumber, normalizedData);
+                _logApiHit(finalNumber, mapping.so_id, 'SUCCESS');
+
+                const enrichedData = _enrichVesselsWithVoyage(normalizedData);
                 return res.status(200).send({
-                    message: "Tracking data not available. SeaRates may be unreachable or subscription expired."
+                    message: "Saved from SeaRates",
+                    data: { data: enrichedData }
                 });
+            } else {
+                _logApiHit(finalNumber, mapping.so_id, 'FAIL', searatesRes);
+                return res.status(200).send({ message: "Tracking data not available at SeaRates." });
             }
-
-            const record = {
-                so_id: checkresult[0]?.so_id,
-                shipment_id: checkresult[0]?.shipment_id,
-                cont_id: contIdClean,
-                data: normalizedData
-            };
-
-            const savedShipmentId = await _saveSearatesRecord(record, contIdClean || bl_no || number);
-
-            if (!savedShipmentId) {
-                console.warn(`⚠️ Failed to save SeaRates data for ${number}`);
-                return res.status(500).send({ message: "Failed to save tracking data" });
-            }
-
-            console.log(`✅ Saved new tracking for SO ID: ${checkresult[0]?.so_id}`);
-
-            // Enrich vessels with voyage
-            const enrichedData = _enrichVesselsWithVoyage(normalizedData);
-
-            return res.status(200).send({
-                message: "Saved from SeaRates",
-                data: { data: enrichedData }
-            });
 
         } catch (error) {
             console.error(timestamp + " ❌ Error at SearatesCheck:", error);

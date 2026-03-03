@@ -176,29 +176,23 @@ module.exports = {
         }
         // `       Jadi BOM`
         const queryRM = `
-            select
-                distinct 
-                UPPER(
-                    CONCAT(
-                        coalesce(mb.rm_matcode, ''), 
-                        ' | ',
-                        mbt.rm_type,
-                        ' ',
-                        mp.product_sku,
-                        ' | ',
-                        mb.rm_desc
-                    
-                    )
-                ) as product_name_complete,
-                mb.rm_type
-            from
-                iod.mst_bom mb
-            left join iod.mst_product mp
-                on
-                mb.fg_matcode = mp.product_code
-            left join iod.mst_bom_type mbt 
-                on
-                mbt.id = mb.rm_type
+         SELECT DISTINCT
+    UPPER(
+        CONCAT(
+            COALESCE(mb.rm_matcode, ''),
+            ' | ',
+            COALESCE(mb.rm_desc, ''),
+            ' | ',
+            COALESCE(mp.product_sku, '')
+        )
+    ) AS product_name_complete,
+    mb.rm_type
+        FROM iod.mst_bom mb
+        LEFT JOIN iod.mst_product mp
+            ON mb.fg_matcode = mp.product_code
+        LEFT JOIN iod.mst_bom_type mbt
+            ON mbt.id = mb.rm_type;
+
         `;
 
 

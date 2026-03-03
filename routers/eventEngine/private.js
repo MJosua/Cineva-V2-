@@ -166,6 +166,7 @@ router.post('/pools/:id/draw', eventEngineController.drawWinners);
  * Get list of winners
  */
 router.get('/campaigns/:slug/winners', eventEngineController.getWinnersByCampaign);
+router.get('/campaigns/:slug/winners/export', eventEngineController.exportWinners);
 
 // ============================================================================
 // TEAM MANAGEMENT

@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Background & Foreground */
+    --background: 0 0% 98%;
+    /* #FAFAFA */
+    --foreground: 230 15% 15%;
+    /* #262B33 — soft dark */
+
+    /* Card & Popover */
+    --card: 0 0% 100%;
+    /* #FFFFFF */
+    --card-foreground: 230 15% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 15% 15%;
+
+    /* Primary Colors (Buttons, Links) */
+    --primary: 210 100% 40%;
+    /* #1D4ED8 — soft blue */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 20% 95%;
+    /* #F4F4F9 — very light gray-blue */
+    --secondary-foreground: 230 20% 20%;
+
+    --muted: 240 10% 94%;
+    /* #F0F0F5 */
+    --muted-foreground: 230 15% 30%;
+
+    --accent: 240 10% 92%;
+    /* #E8E8F0 */
+    --accent-foreground: 230 20% 20%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Border, Input, Ring */
+    --border: 240 10% 90%;
+    /* #E4E4EC */
+    --input: 240 10% 90%;
+    --ring: 210 100% 40%;
+
+    /* Radius */
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 230 15% 15%;
+    --sidebar-primary: 210 100% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 10% 92%;
+    --sidebar-accent-foreground: 230 15% 15%;
+    --sidebar-border: 240 10% 90%;
+    --sidebar-ring: 210 100% 40%;
+
+    /* Custom Buttons & Highlights */
+    --button-primary: 210 100% 40%;
+    --hover-gray: 0 0% 90%;
+    --text-link: 230 80% 50%;
+    /* Slightly brighter blue */
+  }
+
+  .dark {
+    --background: 222 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 213 27% 84%;
+
+    --sidebar-background: 220 9% 7%;
+    --sidebar-foreground: 220 14% 96%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 222.2 84% 4.9%;
+    --sidebar-accent: 220 9% 15%;
+    --sidebar-accent-foreground: 220 14% 96%;
+    --sidebar-border: 220 9% 15%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    width: 100%;
+    min-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  #root {
+    width: 100%;
+    min-width: 100%;
+  }
+}
+
+/* Search highlight styles */
+.search-highlight {
+  background-color: hsl(var(--accent));
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: 500;
+  color: hsl(var(--accent-foreground));
+}
+
+/* Custom utility classes for the new color palette */
+.bg-button-primary {
+  background-color: hsl(var(--button-primary));
+}
+
+.text-link {
+  color: hsl(var(--text-link));
+}
+
+.hover-gray:hover {
+  background-color: hsl(var(--hover-gray));
+}
+
+/* Sidebar scrollbar styling */
+[data-sidebar="content"]::-webkit-scrollbar {
+  width: 6px;
+}
+
+[data-sidebar="content"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-sidebar="content"]::-webkit-scrollbar-thumb {
+  background: hsl(var(--sidebar-border));
+  border-radius: 10px;
+}
+
+[data-sidebar="content"]::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--sidebar-foreground) / 0.2);
+}

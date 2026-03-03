@@ -208,7 +208,7 @@ module.exports = {
 
       // Fetch ALL rows for this service/workflow
       const rows = await dbQueryHots(
-        `SELECT workflow_id, name, definition, level, resolver, approver_user, is_active, created_at, updated_at
+        `SELECT workflow_id, name, definition, is_active, created_at, updated_at
          FROM m_service_workflow
          WHERE workflow_id = ?`,
         [service_id]
@@ -220,7 +220,7 @@ module.exports = {
       }
 
       // 1. Try to find if any row has a JSON definition
-      const mainRow = rows.find(r => r.definition && r.definition.length > 5);
+      const mainRow = rows.find(r => r.definition && (typeof r.definition === 'object' || r.definition.length > 5));
       let definition = null;
       let workflowName = rows[0].name || `Workflow ${service_id}`;
 
@@ -228,48 +228,16 @@ module.exports = {
         definition = mainRow.definition;
         workflowName = mainRow.name || workflowName;
         if (typeof definition === 'string') {
-          try { definition = JSON.parse(definition); } catch (e) { /* keep as string */ }
+          try {
+            definition = JSON.parse(definition);
+          } catch (e) {
+            console.warn("Invalid JSON in definition:", e);
+            definition = null;
+          }
         }
       }
 
-      // 2. If no definition or it's empty, build from legacy rows
-      if (!definition || !definition.steps || definition.steps.length === 0) {
-        const legacyRows = rows.filter(r => r.level);
-        if (legacyRows.length > 0) {
-          logDebug("GET DEFINITION → Bridging legacy data for service_id", service_id);
-
-          const bridgedSteps = legacyRows.map(row => {
-            let step_type = 'team';
-            let assigned_value = row.resolver;
-
-            if (row.approver_user) {
-              step_type = 'specific_user';
-              assigned_value = row.approver_user;
-            } else if (['superior', 'finalsuperior', 'direct_superior', 'superior_final'].includes(row.resolver)) {
-              step_type = 'superior';
-            } else if (!isNaN(Number(row.resolver)) && row.resolver !== '') {
-              step_type = 'team';
-              assigned_value = Number(row.resolver);
-            }
-
-            return {
-              level: row.level,
-              step_type,
-              assigned_value,
-              resolver: row.resolver,
-              description: row.approver_user
-                ? `Specific User Approval (${row.approver_user})`
-                : `Level ${row.level} Approval (${row.resolver})`,
-              approver: assigned_value
-            };
-          }).sort((a, b) => a.level - b.level);
-
-          definition = {
-            steps: bridgedSteps,
-            tasks: []
-          };
-        }
-      }
+      // 2. Legacy bridging disabled.
 
       // 3. Fallback to empty if still nothing
       if (!definition) {

@@ -15,7 +15,7 @@
  */
 
 const authRouter = require('./auth')
-const authTmRouter = require('./authTM')
+// const authTmRouter = require('./authTM') // Decommissioned
 const cartRouter = require('./OnlineOrder/cart')
 const userRouter = require('./OnlineOrder/user')
 const orderRouter = require('./OnlineOrder/order')
@@ -23,7 +23,7 @@ const eventRouter = require('./OnlineOrder/event/event')
 const productRouter = require('./OnlineOrder/product')
 const adminRouter = require('./OnlineOrder/admin')
 const spectatorRouter = require('./OnlineOrder/spectator')
-const trademarkRouter = require('./trademark')
+// const trademarkRouter = require('./trademark') // Decommissioned
 const authRouterTest = require('./auth_test')
 const debugRouter = require('./debug')
 const cardGenerator = require('./cardGenerator')
@@ -86,14 +86,14 @@ const eventEnginePrivateRouter = require('./eventEngine/private')
 
 module.exports = {
     authRouter,
-    authTmRouter,
+    // authTmRouter, // Decommissioned
     cartRouter,
     userRouter,
     orderRouter,
     productRouter,
     adminRouter,
     spectatorRouter,
-    trademarkRouter,
+    // trademarkRouter, // Decommissioned
     authRouterTest,
 
     cardGenerator,

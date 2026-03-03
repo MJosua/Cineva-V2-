@@ -12,6 +12,8 @@ dotenv.config();
 const express = require("express");
 const App = express();
 // const { Server } = require("socket.io");
+const jwt = require('jsonwebtoken'); // Added for Early Auth Check
+const authController = require("./controller/OnlineOrder/auth"); // Direct import to avoid circular dependency
 
 const bearerToken = require("express-bearer-token");
 const helmet = require("helmet");
@@ -28,7 +30,7 @@ const { PORT, API_URL } = require("./config/env")
 // 🔥 Database Imports (Moved to top for Session Store)
 const {
   dbConf,
-  dbTM,
+  // dbTM, // Decommissioned
   dbIndomieku,
   dbHots,
   dbQueryHots,
@@ -108,7 +110,55 @@ const sessionStore = new MySQLStore({
   }
 }, dbHots); // Reuse existing robust connection pool!
 
-// 1️⃣ MUST come FIRST — session + security
+// 1️⃣  Security & Core Headers (MUST BE FIRST)
+App.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
+App.use(cors({
+  origin: (origin, callback) => {
+    callback(null, true);
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+  credentials: true,
+  optionsSuccessStatus: 200,
+}));
+
+// Allow OPTIONS preflight
+App.options('*', cors({
+  origin: (origin, callback) => callback(null, true),
+  credentials: true,
+}));
+
+// 2️⃣ Basic Parsing
+App.use(express.json({ limit: '50mb' }));
+App.use(bearerToken());
+App.use(cookieParser());
+
+// 🚀 PERFORMANCE BUMP: High-Speed Ping 
+// Must be after CORS but BEFORE Session (Database lookup)
+App.get("/auth/ping", authController.isOpenLoginPage);
+
+// 🚀 PERFORMANCE BUMP: Early Auth Check (Prevent Ghost Delay)
+// Reject expired tokens before they trigger expensive MySQL session lookups
+App.use((req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    if (token) {
+      try {
+        const decoded = jwt.decode(token);
+        if (decoded && decoded.exp && Date.now() >= decoded.exp * 1000) {
+          return res.status(401).send({ success: false, message: 'TOKEN_EXPIRED' });
+        }
+      } catch (e) { }
+    }
+  }
+  next();
+});
+
+// 3️⃣ Session Store (Heavy - ONLY reached if Token is valid or empty)
 App.use(
   session({
     resave: false,
@@ -123,36 +173,9 @@ App.use(
   })
 );
 
-// 2️⃣ CORS FIRST — allow headers before anything else
-App.use(cors({
-  origin: (origin, callback) => {
-    // Allow all origins dynamically (required for credentials)
-    callback(null, true);
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
-  credentials: true,
-  optionsSuccessStatus: 200, // Some legacy browsers choke on 204
-}));
 
-// Allow OPTIONS preflight — required for CMS admin POST
-App.options('*', cors({
-  origin: (origin, callback) => callback(null, true),
-  credentials: true,
-}));
+// 5️⃣ Public static moved to bottom block for better control
 
-// 3️⃣ JSON + Token before routers
-App.use(express.json({ limit: '50mb' }));
-App.use(bearerToken());
-App.use(cookieParser());
-
-// 4️⃣ Helmet AFTER cors
-App.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-}));
-
-// 5️⃣ Public static AFTER CMS so CMS catches routes
-App.use('/public', express.static(path.join(__dirname, 'public')));
 
 /* ===================================================================
    🔥  LOG WRAPPER (Updated for SSE)
@@ -192,14 +215,14 @@ if (!global.consoleOverridden) {
 // Load all routers
 const {
   authRouter,
-  authTmRouter,
+  // authTmRouter, // Decommissioned
   cartRouter,
   userRouter,
   productRouter,
   orderRouter,
   adminRouter,
   spectatorRouter,
-  trademarkRouter,
+  // trademarkRouter, // Decommissioned
   authRouterTest,
   productRouterTest,
   cardGenerator,
@@ -245,6 +268,7 @@ const {
   engineRouter,
   engineWorkDataRouter,
   engineAssignmentRouter,
+  engineReportRouter,
   workflowadminRouter,
   triggerRouter,
   couponRouter,
@@ -277,10 +301,10 @@ dbConf.getConnection((e, conn) => {
   else { console.log(`DB e-Order connected ${conn.threadId}`); checkDone(); }
 });
 
-dbTM.getConnection((e, conn) => {
-  if (e) console.log("Error DB Trademark Connection!", e.sqlMessage);
-  else { console.log(`DB TM connected ${conn.threadId}`); checkDone(); }
-});
+// dbTM.getConnection((e, conn) => {
+//   if (e) console.log("Error DB Trademark Connection!", e.sqlMessage);
+//   else { console.log(`DB TM connected ${conn.threadId}`); checkDone(); }
+// });
 
 dbCardGenerator.getConnection((e, conn) => {
   if (e) console.log("Error DB CardGen Connection!", e.sqlMessage);
@@ -324,6 +348,7 @@ App.use('/cms', cmsRouter);
 App.use("/engine", engineRouter);
 App.use("/engine", engineWorkDataRouter);
 App.use("/engine", engineAssignmentRouter);
+App.use("/engine", engineReportRouter);  // 🆕 Report endpoints (suggest, card-reports)
 App.use("/workflow-engine", workflowadminRouter);
 App.use("/triggers", triggerRouter);
 /* -------------------------------------------------------------------
@@ -356,7 +381,7 @@ App.use("/event", eventRouter);
 
 App.use("/admin", adminRouter);
 App.use("/spectator", spectatorRouter);
-App.use("/tm_card", trademarkRouter);
+// App.use("/tm_card", trademarkRouter); // Decommissioned
 App.use("/card_generator", cardGenerator);
 
 App.use("/hots_auth", hotsAuth);
@@ -410,15 +435,24 @@ App.use("/api/event-engine/admin",
 global.sseManager = sseManager;
 
 /* ===================================================================
-   🔥 STATIC FILES (Placed AFTER routers)
+   🔥 STATIC FILES & ASSETS
+   These allow both absolute paths (/public/...) and shortcut aliases.
 =================================================================== */
-App.use('/public/files/hots/it_support', express.static(path.join(__dirname, 'public', 'files', 'hots', 'it_support')));
-App.use('/public/hots/generateddocuments', express.static(path.join(__dirname, 'public', 'hots', 'generateddocuments')));
-App.use('/hots/profile', express.static(path.join(__dirname, 'public', 'hots', 'profile'))); // User profile files (signatures, avatars)
+
+// 1. Primary Static Folder (Handles /public/hots/..., /public/image/..., etc.)
+App.use('/public', express.static(path.join(__dirname, 'public')));
+
+// 2. Shortcut Aliases for cleaner URLs in documents/CSS
 App.use('/image', express.static(path.join(__dirname, 'public', 'image')));
 App.use('/files', express.static(path.join(__dirname, 'public', 'files')));
-App.use('/aset', express.static(path.join(__dirname, 'public', 'aset'))); // Assets for documents (logos, etc.)
-App.use('/ttd', express.static(path.join(__dirname, 'public', 'ttd'))); // Signature images
+App.use('/aset', express.static(path.join(__dirname, 'public', 'aset')));
+App.use('/ttd', express.static(path.join(__dirname, 'public', 'ttd')));
+
+// 3. System Specific Shortcuts
+App.use('/hots/profile', express.static(path.join(__dirname, 'public', 'hots', 'profile')));
+App.use('/public/files/hots/it_support', express.static(path.join(__dirname, 'public', 'files', 'hots', 'it_support')));
+App.use('/public/hots/generateddocuments', express.static(path.join(__dirname, 'public', 'hots', 'generateddocuments')));
+
 
 /* ===================================================================
    🔥 404 HANDLER — MUST BE LAST
@@ -448,13 +482,13 @@ svr.listen(PORT, () => {
    🔥 AUTOMATION (unchanged)
 =================================================================== */
 const {
-  trademarkMgmtAuto,
+  // trademarkMgmtAuto, // Decommissioned
   notification,
   cleanup,
   automatemb,
 } = require('./service/automation');
 
-trademarkMgmtAuto.runCheck();
+// trademarkMgmtAuto.runCheck(); // Decommissioned
 notification.shippingMailNotification();
 cleanup.cleanupOrphan();
 

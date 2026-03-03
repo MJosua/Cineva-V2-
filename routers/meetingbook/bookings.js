@@ -71,6 +71,31 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ error: "Missing required fields (user_id, date, room_key, start_time)" });
         }
 
+        // 🔒 Validation: Check for Overlapping Bookings
+        const startDateTime = `${date} ${start_time}`;
+        const endDateTime = `${date} ${end_time}`;
+
+        const [existing] = await conn.query(`
+            SELECT reservation_id FROM resource_t_reservation 
+            WHERE resource_category = 'meeting_room' 
+            AND resource_key = ? 
+            AND status = 'active'
+            AND (
+                (start_time < ? AND end_time > ?) OR  -- Overlaps start
+                (start_time < ? AND end_time > ?) OR  -- Overlaps end
+                (start_time >= ? AND end_time <= ?)   -- Fully inside
+            )
+            LIMIT 1
+        `, [String(room_key), endDateTime, startDateTime, endDateTime, startDateTime, startDateTime, endDateTime]);
+
+        if (existing.length > 0) {
+            await conn.rollback();
+            return res.status(409).json({
+                success: false,
+                message: "Time slot already booked by another user."
+            });
+        }
+
         // 1. Transactional Event Log (Ledger)
         const [eventResult] = await conn.query(`
             INSERT INTO resource_t_event (resource_category, resource_key, event_type, event_data, created_by)
@@ -82,14 +107,22 @@ router.post('/', async (req, res) => {
         const eventId = eventResult.insertId;
 
         // 2. Update Current Reservation State
-        // Start/End time handled as DATE for now, 
-        // to be refined with specific timeslot integration
         await conn.query(`
             INSERT INTO resource_t_reservation (resource_category, resource_key, reference_id, start_time, end_time, status)
             VALUES (?, ?, ?, ?, ?, ?)
-        `, ['meeting_room', String(room_key), String(eventId), date, date, 'active']);
+        `, ['meeting_room', String(room_key), String(eventId), startDateTime, endDateTime, 'active']);
 
         await conn.commit();
+
+        // 📡 SSE Broadcast: Update Schedule
+        if (global.sseManager) {
+            global.sseManager.broadcast('update_meeting_schedule', {
+                room_id: room_key,
+                action: 'booked',
+                by: name
+            });
+        }
+
         res.status(201).json({ success: true, message: "Booking created successfully", id: eventId });
     } catch (err) {
         await conn.rollback();
@@ -125,6 +158,16 @@ router.delete('/', async (req, res) => {
         `, ['meeting_room', String(room_id), 'ROOM_CANCELLED', JSON.stringify({ reservation_id: id }), user_id]);
 
         await conn.commit();
+
+        // 📡 SSE Broadcast: Update Schedule
+        if (global.sseManager) {
+            global.sseManager.broadcast('update_meeting_schedule', {
+                room_id,
+                action: 'cancelled',
+                reservation_id: id
+            });
+        }
+
         res.sendStatus(200);
     } catch (err) {
         await conn.rollback();

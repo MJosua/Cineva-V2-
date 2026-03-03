@@ -309,7 +309,7 @@ const EngineController = {
         return res.status(404).json({ ok: false, error: 'Module not found' });
       }
 
-      const { company_id, creator_id, creator_email, form_data, title } = req.body || {};
+      const { company_id, creator_id, creator_email, form_data, title, parent_ticket_id } = req.body || {};
       console.log('🔍 Loaded module =', module.module_key || module.module_name);
 
 
@@ -321,6 +321,92 @@ const EngineController = {
           console.log('❌ Validation errors:', errors);
           return res.status(400).json({ ok: false, errors });
         }
+      }
+
+      // 🔥 [MEETING ROOM VALIDATION] Service ID 13 Overlap Check
+      if (Number(service_id) === 13 || module.module_key === 'meeting_book') {
+        try {
+          console.log("🔒 Checking Meeting Room Availability...");
+
+          // Extract values from form_data (which handles { value: ... } or direct value)
+          const extractVal = (field) => form_data[field]?.value || form_data[field];
+
+          const dateVal = extractVal('date');
+          const roomVal = extractVal('room_id') || extractVal('room'); // Fallback to room name if ID missing
+          const startVal = extractVal('start_time');
+          const endVal = extractVal('end_time');
+
+          if (dateVal && roomVal && startVal && endVal) {
+            // Check for overlaps in t_ticket based on EAV values
+            // We join t_ticket_detail 3 times to get Date, Room, Start, End
+            // Optimization: We could use a stored procedure, but raw query is fine for now.
+
+            const overlapQuery = `
+                    SELECT t.ticket_id 
+                    FROM t_ticket t
+                    JOIN t_ticket_detail d_date ON t.ticket_id = d_date.ticket_id 
+                        AND LOWER(d_date.lbl_col) IN ('date', 'booking_date') 
+                        AND d_date.value = ?
+                    JOIN t_ticket_detail d_room ON t.ticket_id = d_room.ticket_id 
+                        AND LOWER(d_room.lbl_col) IN ('room', 'room_id', 'room name', 'room_name') 
+                        AND d_room.value = ?
+                    JOIN t_ticket_detail d_start ON t.ticket_id = d_start.ticket_id 
+                        AND LOWER(d_start.lbl_col) IN ('start_time', 'start time', 'start')
+                    JOIN t_ticket_detail d_end ON t.ticket_id = d_end.ticket_id 
+                        AND LOWER(d_end.lbl_col) IN ('end_time', 'end time', 'end')
+                    WHERE t.service_id = 13 
+                      AND t.status_id != 7 -- Ignore Cancelled/Rejected
+                      AND (
+                          (d_start.value < ? AND d_end.value > ?) -- Exact Overlap Logic
+                      )
+                    LIMIT 1
+                  `;
+
+            // Logic: (StartA < EndB) and (EndA > StartB)
+            // Incoming: startVal, endVal
+            // Existing: d_start.value, d_end.value
+            // Existing Start < Incoming End AND Existing End > Incoming Start
+
+            const [overlaps] = await dbHots.promise().query(overlapQuery, [
+              dateVal,
+              String(roomVal),
+              endVal,
+              startVal
+            ]);
+
+            if (overlaps.length > 0) {
+              console.warn(`⚠️ Booking Overlap Detected for Room ${roomVal} on ${dateVal} (${startVal}-${endVal})`);
+              return res.status(409).json({
+                ok: false,
+                error: `Room is already booked for this time slot (Ticket #${overlaps[0].ticket_id}). Please choose another time.`
+              });
+            }
+            console.log("✅ Room is available.");
+          }
+        } catch (valErr) {
+          console.error("❌ Validation Error:", valErr);
+          // Don't block on system error, but log it
+        }
+      }
+
+      let newDepth = 0;
+      let rootTicketId = null;
+
+      if (parent_ticket_id) {
+        const [parentRows] = await dbHots.promise().query(
+          'SELECT root_ticket_id, ticket_depth FROM t_ticket WHERE ticket_id = ? AND company_id = ?',
+          [parent_ticket_id, company_id]
+        );
+        if (!parentRows.length) {
+          return res.status(400).json({ ok: false, error: 'Parent ticket not found or does not belong to your company' });
+        }
+        if (parentRows[0].ticket_depth >= 3) {
+          return res.status(400).json({ ok: false, error: 'Maximum nesting depth limit (4 levels) reached' });
+        }
+        newDepth = parentRows[0].ticket_depth + 1;
+        rootTicketId = parentRows[0].root_ticket_id && parentRows[0].root_ticket_id !== ''
+          ? parentRows[0].root_ticket_id
+          : parent_ticket_id;
       }
 
       const ticket_id = await generateCustomTicketID(dbHots, service_id, creator_id);
@@ -351,10 +437,11 @@ const EngineController = {
               `INSERT INTO t_ticket
                (ticket_id, parent_ticket_id, company_id, service_id, service_name,
                 created_by, creator_email, status_id, workflow_step, creation_date, submitted_at,
-                last_update, engine_version, json_snapshot, title)
-               VALUES (?, NULL, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW(), NOW(), ?, ?, ?)`,
+                last_update, engine_version, json_snapshot, title, root_ticket_id, ticket_depth)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW(), NOW(), ?, ?, ?, ?, ?)`,
               [
                 ticket_id,
+                parent_ticket_id || null,
                 company_id || null,
                 sid,
                 module.module_name || module.module_key,
@@ -363,9 +450,12 @@ const EngineController = {
                 initialStatus,
                 module.engine_version || 4,
                 JSON.stringify(form_data || {}),
-                title || module.module_name
+                title || module.module_name,
+                rootTicketId || ticket_id,
+                newDepth
               ]
             );
+
 
             // insert details (EAV) — pass serviceItems for data separation
             await saveEav(p, ticket_id, form_data, null, module.items, sid);
@@ -445,6 +535,17 @@ const EngineController = {
         } catch (e) { console.error('SSE Push Error:', e.message); }
       } else {
         console.warn(`⚠️ [SSE_DEBUG] Skipping emit. conditions not met.`);
+      }
+
+      // 🔥 [MEETING ROOM SSE] Broadcast schedule update
+      if (global.sseManager && (Number(service_id) === 13 || module.module_key === 'meeting_book')) {
+        console.log("📡 Broadcasting 'update_meeting_schedule'");
+        global.sseManager.broadcast('update_meeting_schedule', {
+          type: 'new_booking',
+          ticket_id: result.ticket_id,
+          date: form_data.date,
+          room: form_data.room
+        });
       }
 
       return res.json(result);
@@ -844,8 +945,8 @@ const EngineController = {
                 -- Previous Commenters
                 SELECT user_id FROM t_ticket_comment WHERE ticket_id = ?
             ) AS all_users
-            WHERE user_id IS NOT NULL AND user_id != ?
-        `, [ticket_id, ticket_id, ticket_id, ticket_id, ticket_id, commenterId]);
+            WHERE user_id IS NOT NULL
+        `, [ticket_id, ticket_id, ticket_id, ticket_id, ticket_id]);
 
         const recipientIds = stakeholders.map(s => s.user_id);
 
@@ -862,6 +963,9 @@ const EngineController = {
             message: comment || 'Sent an attachment',
             service_name: serviceName,
             url: `/ticket/${ticket_id}`
+          }, {
+            title: `New Comment - #${ticket_id} ${serviceName}`,
+            message: `${commenterName}: ${comment || 'Sent an attachment'}`
           });
         }
       }
@@ -905,7 +1009,7 @@ const EngineController = {
 
       // Handle mine filter
       if (mine === 'true' && user_id) {
-        conditions += ` AND t.created_by = ${dbHots.escape(user_id)} `;
+        conditions += ` AND (t.created_by = ${dbHots.escape(user_id)} OR EXISTS (SELECT 1 FROM t_ticket_detail td WHERE td.ticket_id = t.ticket_id AND td.cstm_col = 'PIC_user_id' AND td.value = ${dbHots.escape(user_id)})) `;
       }
 
       const sql = `
@@ -950,7 +1054,24 @@ const EngineController = {
         // Convert EAV to flat object
         eavRows.forEach(row => {
           ticket[row.cstm_col] = row.value;
+
+          // [Robust Purpose Extraction]
+          if (!ticket.purpose_extracted) {
+            const key = (row.cstm_col || '').toLowerCase();
+            const label = (row.lbl_col || '').toLowerCase();
+            if (key.includes('purpose') || label.includes('purpose')) {
+              ticket.purpose_extracted = row.value;
+            }
+          }
         });
+
+
+
+        // [Enhanced Visibility] Append Purpose to Service Name
+        const displayPurpose = ticket.purpose || ticket.purpose_extracted;
+        if (displayPurpose && typeof displayPurpose === 'string' && displayPurpose.trim() !== '') {
+          ticket.service_name = `${ticket.service_name} : ${displayPurpose.trim()}`;
+        }
       }
 
       // Debugging: Show first few rows
@@ -1008,9 +1129,38 @@ const EngineController = {
         FROM t_ticket t 
         LEFT JOIN m_service s ON s.service_id = t.service_id
         LEFT JOIN m_service_status ts ON ts.status_id = t.status_id
-        WHERE t.created_by = ? 
+        WHERE (t.created_by = ? OR EXISTS (SELECT 1 FROM t_ticket_detail td WHERE td.ticket_id = t.ticket_id AND td.cstm_col = 'PIC_user_id' AND td.value = ?))
         ORDER BY t.creation_date DESC
-      `, [user_id]);
+      `, [user_id, user_id]);
+
+      // Fetch form data for each ticket
+      for (const ticket of rows) {
+        const [eavRows] = await dbHots.promise().query(
+          'SELECT cstm_col, lbl_col, value, field_type FROM t_ticket_detail WHERE ticket_id = ? AND (revision IS NULL OR revision = (SELECT MAX(revision) FROM t_ticket_detail WHERE ticket_id = ?))',
+          [ticket.ticket_id, ticket.ticket_id]
+        );
+
+        // Convert EAV to flat object
+        eavRows.forEach(row => {
+          ticket[row.cstm_col] = row.value;
+
+          // [Robust Purpose Extraction]
+          // Check cstm_col or lbl_col case-insensitively for "purpose"
+          if (!ticket.purpose_extracted) {
+            const key = (row.cstm_col || '').toLowerCase();
+            const label = (row.lbl_col || '').toLowerCase();
+            if (key.includes('purpose') || label.includes('purpose')) {
+              ticket.purpose_extracted = row.value;
+            }
+          }
+        });
+
+        // [Enhanced Visibility] Append Purpose to Service Name
+        const displayPurpose = ticket.purpose || ticket.purpose_extracted;
+        if (displayPurpose && typeof displayPurpose === 'string' && displayPurpose.trim() !== '') {
+          ticket.service_name = `${ticket.service_name} : ${displayPurpose.trim()}`;
+        }
+      }
 
       console.log(timestamp, `🔍 [ENGINE][MY_REQUESTS] Found ${rows.length} request(s)`);
       if (rows.length > 0) console.table(rows.slice(0, 3).map(r => ({ id: r.ticket_id, status: r.status, approvals: r.list_approval?.length || 0 })));
@@ -1171,7 +1321,11 @@ const EngineController = {
         const [rows] = await p.query('SELECT * FROM t_ticket WHERE ticket_id = ?', [ticket_id]);
         if (!rows.length) throw new Error('ticket not found');
         const header = rows[0];
-        if (String(header.created_by) !== String(user_id)) throw new Error('not authorized to cancel');
+        // Allow BOTH creator AND designated PIC to cancel
+        const [picRows] = await p.query("SELECT 1 FROM t_ticket_detail WHERE ticket_id = ? AND cstm_col = 'PIC_user_id' AND value = ?", [ticket_id, user_id]);
+        const isAuthorized = String(header.created_by) === String(user_id) || picRows.length > 0;
+
+        if (!isAuthorized) throw new Error('not authorized to cancel');
         if (!['submitted', 'draft'].includes(header.status)) throw new Error('Cannot cancel ticket. It has already entered approval.');
         await p.query('UPDATE t_ticket SET status = ?, last_update = NOW() WHERE ticket_id = ?', ['cancelled', ticket_id]);
         await p.query('INSERT INTO t_ticket_event (ticket_id, event_type, approval_order, actor_id, status, created_at) VALUES (?, "cancel", 0, ?, ?, NOW())', [ticket_id, user_id, 'cancelled']);
@@ -1575,6 +1729,144 @@ const EngineController = {
     } catch (e) {
       log('updateDetail error', e);
       return res.status(500).json({ ok: false, error: e.message || e });
+    }
+  },
+
+  /* MEETING ROOM ACTION (Kiosk / Web API) */
+  async meetingRoomAction(req, res) {
+    let timestamp = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString('id') + ' : ';
+    try {
+      const { action_type, ticket_id, kiosk_password, end_time } = req.body;
+      const user_id = req.dataToken ? req.dataToken.user_id : null;
+
+      if (!action_type || !ticket_id) {
+        return res.status(400).json({ ok: false, error: "action_type and ticket_id are required" });
+      }
+
+      const conn = await dbHots.promise().getConnection();
+
+      try {
+        await conn.beginTransaction();
+
+        // 1. Fetch ticket and details
+        const [hdrRows] = await conn.query('SELECT * FROM t_ticket WHERE ticket_id = ?', [ticket_id]);
+        if (!hdrRows.length) throw new Error("Ticket not found");
+        const header = hdrRows[0];
+
+        const [picRows] = await conn.query("SELECT value FROM t_ticket_detail WHERE ticket_id = ? AND cstm_col = 'PIC_user_id'", [ticket_id]);
+        const pic_user_id = picRows.length > 0 ? picRows[0].value : null;
+
+        // 2. Authentication Logic
+        const isKioskMode = !!kiosk_password;
+        if (isKioskMode) {
+          if (!pic_user_id) throw new Error("No PIC assigned to this meeting to validate against.");
+          // Fetch PIC user's hash
+          const [userRows] = await conn.query("SELECT pswd FROM user WHERE user_id = ?", [pic_user_id]);
+          if (!userRows.length) throw new Error("Invalid PIC User.");
+
+          const { hashPasswordHT } = require('../../config/encrypts');
+          const hashedInput = hashPasswordHT(kiosk_password);
+
+          if (kiosk_password !== userRows[0].pswd && hashedInput !== userRows[0].pswd) {
+            throw new Error("Invalid Kiosk Password.");
+          }
+        } else {
+          // Normal Web Mode: Validate token ownership (creator or PIC)
+          if (!user_id || (String(header.created_by) !== String(user_id) && String(pic_user_id) !== String(user_id))) {
+            throw new Error("You are not authorized to modify this booking.");
+          }
+        }
+
+        // 3. Action Logic
+        if (action_type === 'cancel') {
+          await conn.query('UPDATE t_ticket SET status_id = 7, last_update = NOW() WHERE ticket_id = ?', [ticket_id]);
+          await conn.query('INSERT INTO t_ticket_history (ticket_id, actor_id, action, meta_json, created_at) VALUES (?, ?, ?, ?, NOW())',
+            [ticket_id, isKioskMode ? pic_user_id : user_id, 'cancelled', JSON.stringify({ source: isKioskMode ? 'kiosk' : 'web' })]);
+
+          // Emit SSE if generic cancel isn't sufficient
+          if (global.sseManager) {
+            global.sseManager.broadcast('update_meeting_schedule', {
+              type: 'cancel_booking',
+              ticket_id: ticket_id
+            });
+          }
+
+        } else if (action_type === 'edit') {
+          if (!end_time) throw new Error("end_time is required for edit action");
+
+          // Extract date, room, and start_time to validate overlap
+          const [dateRows] = await conn.query("SELECT value FROM t_ticket_detail WHERE ticket_id = ? AND cstm_col IN ('date', 'booking_date')", [ticket_id]);
+          const [roomRows] = await conn.query("SELECT value FROM t_ticket_detail WHERE ticket_id = ? AND cstm_col IN ('room', 'room_name', 'room_id')", [ticket_id]);
+          const [startRows] = await conn.query("SELECT value FROM t_ticket_detail WHERE ticket_id = ? AND cstm_col IN ('start_time', 'time_start')", [ticket_id]);
+
+          const bookingDate = dateRows[0]?.value;
+          const roomName = roomRows[0]?.value;
+          const startTime = startRows[0]?.value;
+
+          if (bookingDate && roomName && startTime) {
+            // Overlap check (Excluding self)
+            const overlapQuery = `
+              SELECT t.ticket_id 
+              FROM t_ticket t
+              JOIN t_ticket_detail d_date ON t.ticket_id = d_date.ticket_id 
+                  AND LOWER(d_date.lbl_col) IN ('date', 'booking_date') 
+                  AND d_date.value = ?
+              JOIN t_ticket_detail d_room ON t.ticket_id = d_room.ticket_id 
+                  AND LOWER(d_room.lbl_col) IN ('room', 'room_id', 'room name', 'room_name') 
+                  AND d_room.value = ?
+              JOIN t_ticket_detail d_start ON t.ticket_id = d_start.ticket_id 
+                  AND LOWER(d_start.lbl_col) IN ('start_time', 'start time', 'start')
+              JOIN t_ticket_detail d_end ON t.ticket_id = d_end.ticket_id 
+                  AND LOWER(d_end.lbl_col) IN ('end_time', 'end time', 'end')
+              WHERE t.service_id = 13 
+                AND t.status_id != 7 
+                AND t.ticket_id != ?
+                AND (d_start.value < ? AND d_end.value > ?)
+              LIMIT 1
+            `;
+            const [overlaps] = await conn.query(overlapQuery, [bookingDate, roomName, ticket_id, end_time, startTime]);
+
+            if (overlaps.length > 0) {
+              const e = new Error("Room is already booked for this requested extension time.");
+              e.statusCode = 409;
+              throw e;
+            }
+          }
+
+          // Update solely the end_time
+          await conn.query(`
+            UPDATE t_ticket_detail 
+            SET value = ? 
+            WHERE ticket_id = ? AND cstm_col IN ('end_time', 'time_end')
+          `, [end_time, ticket_id]);
+
+          await conn.query('UPDATE t_ticket SET last_update = NOW() WHERE ticket_id = ?', [ticket_id]);
+          await conn.query('INSERT INTO t_ticket_history (ticket_id, actor_id, action, meta_json, created_at) VALUES (?, ?, ?, ?, NOW())',
+            [ticket_id, isKioskMode ? pic_user_id : user_id, 'edited', JSON.stringify({ source: isKioskMode ? 'kiosk' : 'web', new_end_time: end_time })]);
+
+          if (global.sseManager) {
+            global.sseManager.broadcast('update_meeting_schedule', {
+              type: 'edit_booking',
+              ticket_id: ticket_id,
+              end_time: end_time
+            });
+          }
+        } else {
+          throw new Error("Invalid action_type");
+        }
+
+        await conn.commit();
+        conn.release();
+
+        return res.json({ ok: true, message: `Meeting successfully ${action_type === 'edit' ? 'updated' : 'cancelled'}` });
+      } catch (e) {
+        await conn.rollback().catch(() => { });
+        conn.release();
+        throw e;
+      }
+    } catch (e) {
+      console.error(timestamp, 'meetingRoomAction error:', e);
+      return res.status(e.statusCode || 500).json({ ok: false, error: e.message || e });
     }
   },
 

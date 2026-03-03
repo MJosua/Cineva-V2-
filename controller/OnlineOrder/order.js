@@ -312,8 +312,8 @@ module.exports = {
                     mod2.remarks order_remarks,
                     tr.cont_id container_id,
                     coalesce(DATE_FORMAT(tr.delv_date, '%b %d, %Y'), 0) stuffing_date,
-                    coalesce(DATE_FORMAT(tr.etd, '%b %d, %Y'), 0) etd,
-                    coalesce(DATE_FORMAT(tr.eta, '%b %d, %Y'), 0) eta,
+                    coalesce(DATE_FORMAT(trs.atd, '%b %d, %Y'), DATE_FORMAT(tr.etd, '%b %d, %Y'), 0) etd,
+                    coalesce(DATE_FORMAT(trs.ata, '%b %d, %Y'), DATE_FORMAT(tr.eta, '%b %d, %Y'), 0) eta,
                     mo.delv_week,
                     stp.company_id,
                     mo.status -- Include status here
@@ -356,6 +356,8 @@ module.exports = {
                     tso.e_order = mo.order_id
                 left join trs_realization tr on
                     tso.so_id = tr.so_id
+                left join iod.trs_realization_searates trs on
+                    trs.so_id = tr.so_id and trs.invoice_id = tr.invoice_id
                 left join trs_realization_detail trd on
                     tr.so_id = trd.so_id
                     and tr.invoice_id = trd.invoice_id
@@ -1399,8 +1401,8 @@ WHERE
                         tr.cont_id,
                         COALESCE(mp.product_name_no, mp.product_name) product_name,
                         trd.qty, 
-                        DATE_FORMAT(tr.etd, '%d-%b-%Y') etd,
-                        DATE_FORMAT(tr.eta, '%d-%b-%Y') eta
+                        DATE_FORMAT(COALESCE(trs.atd, tr.etd), '%d-%b-%Y') etd,
+                        DATE_FORMAT(COALESCE(trs.ata, tr.eta), '%d-%b-%Y') eta
                     from
                         m_order_dtl det
                     join mst_company mco on
@@ -1412,6 +1414,8 @@ WHERE
                         and so.cancel = 0
                     left join trs_realization tr on
                         so.so_id = tr.so_id    
+                    left join iod.trs_realization_searates trs on
+                        trs.so_id = tr.so_id and trs.invoice_id = tr.invoice_id
                     left join trs_realization_detail trd on
                         tr.cont_id = trd.cont_id
                         and tr.so_id = trd.so_id
@@ -2538,8 +2542,8 @@ WHERE
                 tr.ship_name vessel_name,
                 tr.ship_line shipping_line,
                 tr.cont_id,
-                DATE_FORMAT(tr.etd, '%d-%b-%Y') etd,
-                DATE_FORMAT(tr.eta, '%d-%b-%Y') eta,
+                DATE_FORMAT(COALESCE(trs.atd, tr.etd), '%d-%b-%Y') etd,
+                DATE_FORMAT(COALESCE(trs.ata, tr.eta), '%d-%b-%Y') eta,
                 mos.status_order,
                 mos.notes status_detail,
                 COALESCE(mp.product_name_no, mp.product_name) product_name,
@@ -2558,6 +2562,8 @@ WHERE
                 mo.order_id = tso.e_order
             LEFT JOIN trs_realization tr ON
                 tso.so_id = tr.so_id
+            LEFT JOIN iod.trs_realization_searates trs on
+                trs.so_id = tr.so_id and trs.invoice_id = tr.invoice_id
             LEFT JOIN trs_invoice tri on
                 tr.invoice_id = tri.invoice_id    
             LEFT JOIN trs_realization_detail trd ON

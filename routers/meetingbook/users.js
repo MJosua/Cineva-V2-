@@ -8,7 +8,7 @@ router.get("/:uid", async (req, res) => {
   const uid = req.params.uid;
 
   try {
-    const [rows] = await dbmeetingbook.execute("SELECT email, uid, role FROM users WHERE uid = ?", [uid]);
+    const rows = await dbmeetingbook.query("SELECT email, uid, role FROM users WHERE uid = ?", [uid]);
 
     if (rows.length === 0) {
       return res.status(404).json({ error: "User not found" });

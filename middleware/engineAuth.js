@@ -14,16 +14,20 @@ const engineAuth = {
      * 2. IOD (Distributor - Read Only)
      */
     normalizeUser: async (req, res, next) => {
+        let token = null;
         const authHeader = req.headers['authorization'];
-        if (!authHeader) {
-            // No token provided. req.user remains undefined.
-            // DO NOT error here. Let requireUser handle the error.
-            // This allows this middleware to be used on optional-auth routes if needed.
-            return next();
+
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        } else if (req.query.token) {
+            token = req.query.token;
         }
 
-        const token = authHeader.split(' ')[1];
-        if (!token) return next();
+        if (!token) {
+            // No token provided. req.user remains undefined.
+            // DO NOT error here. Let requireUser handle the error.
+            return next();
+        }
 
         let decoded = null;
         let source = null;

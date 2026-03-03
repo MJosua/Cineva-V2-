@@ -7,22 +7,143 @@ let yellowTerminal = "\x1b[33m";
  * Handles Meeting Rooms, Operational Calendar (todaysweek), and Trigger Config/Schema
  */
 module.exports = {
-    getmeetingroom: (req, res) => {
+    getmeetingroom: async (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-        dbHots.execute(`SELECT * FROM m_meeting_room`, (err1, results1) => {
-            if (err1) return res.status(500).send({ success: false, message: err1 });
-            res.status(200).send({ success: true, message: "GET meetingroom SUCCESS", data: results1 });
-        });
+        try {
+            const query = `
+                SELECT
+                    t.ticket_id,
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('room', 'room_name', 'room_id', 'room name') THEN d.value END) AS room,
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('start_time', 'time_start', 'start', 'start time') THEN d.value END) AS start_time,
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('end_time', 'time_end', 'end', 'end time') THEN d.value END) AS end_time,
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('pic', 'p.i.c', 'organizer') THEN d.value END) AS PIC,
+                    MAX(CASE WHEN LOWER(d.cstm_col) = 'pic_user_id' THEN d.value END) AS PIC_user_id,
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('purpose', 'purpose of meeting', 'title', 'event') THEN d.value END) AS purpose,
+                    dpt.department_name AS booked_by,
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('date', 'booking_date', 'start_date') THEN d.value END) AS date
+                FROM t_ticket t
+                LEFT JOIN t_ticket_detail d ON d.ticket_id = t.ticket_id
+                LEFT JOIN user u ON u.user_id = t.created_by
+                LEFT JOIN m_department dpt ON u.department_id = dpt.department_id
+                WHERE t.service_id = 13 AND t.status_id != 7
+                GROUP BY t.ticket_id
+                HAVING 
+                STR_TO_DATE(MAX(CASE WHEN LOWER(d.lbl_col) IN ('date', 'booking_date', 'start_date') THEN d.value END), '%Y-%m-%d') BETWEEN DATE_SUB(CURDATE(), INTERVAL 3 MONTH) AND DATE_ADD(CURDATE(), INTERVAL 3 MONTH)
+                ORDER BY t.ticket_id DESC
+            `;
+            const results = await dbQueryHots(query);
+            res.status(200).send({ success: true, message: "GET meetingroom SUCCESS", data: results });
+        } catch (err) {
+            res.status(500).send({ success: false, message: err.message });
+        }
     },
 
-    getmeetingroom_static: (req, res) => {
-        let date = new Date();
-        let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-        dbHots.execute(`SELECT * FROM m_meeting_room_static`, (err1, results1) => {
-            if (err1) return res.status(500).send({ success: false, message: err1 });
-            res.status(200).send({ success: true, message: "GET meetingroom static SUCCESS", data: results1 });
-        });
+    getmeetingroom_static: async (req, res) => {
+        const currentDate = new Date();
+        const timestamp = yellowTerminal + currentDate.toLocaleDateString('id') + ' ' + currentDate.toLocaleTimeString('id') + ' : ';
+        let { date, room } = req.query;
+
+        if (!date) {
+            return res.status(400).json({
+                success: false,
+                message: "Tanggal (date) harus disediakan dalam format YYYY-MM-DD"
+            });
+        }
+        try {
+            const query = `
+                SELECT
+                    t.ticket_id,
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('room', 'room_name', 'room_id', 'room name') THEN d.value END) AS room,
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('start_time', 'time_start', 'start', 'start time') THEN d.value END) AS start_time,
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('end_time', 'time_end', 'end', 'end time') THEN d.value END) AS end_time,
+                    dpt.department_name AS booked_by,
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('date', 'booking_date', 'start_date') THEN d.value END) AS date,
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('pic', 'p.i.c', 'organizer') THEN d.value END) AS PIC,
+                    MAX(CASE WHEN LOWER(d.cstm_col) = 'pic_user_id' THEN d.value END) AS PIC_user_id,
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('purpose', 'purpose of meeting', 'title', 'event') THEN d.value END) AS purpose
+                FROM t_ticket t
+                LEFT JOIN t_ticket_detail d ON d.ticket_id = t.ticket_id
+                LEFT JOIN user u ON u.user_id = t.created_by
+                LEFT JOIN m_department dpt ON u.department_id = dpt.department_id
+                WHERE t.service_id = 13 AND t.status_id != 7
+                GROUP BY t.ticket_id
+                HAVING
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('date', 'booking_date', 'start_date') THEN d.value END) = ?
+                    ${room ? "AND MAX(CASE WHEN LOWER(d.lbl_col) IN ('room', 'room_id', 'room_name', 'meeting room', 'room name') THEN d.value END) = ?" : ""}
+                ORDER BY t.ticket_id DESC
+            `;
+
+            const params = [date];
+            if (room) params.push(room);
+
+            const results = await dbQueryHots(query, params);
+
+            res.status(200).json({
+                success: true,
+                data: results,
+                message: "Meeting room bookings retrieved successfully"
+            });
+        } catch (err) {
+            res.status(500).json({
+                success: false,
+                message: "Terjadi kesalahan saat mengambil data meeting room: " + err.message
+            });
+        }
+    },
+
+    getMeetingRoomBoundary: async (req, res) => {
+        let date_request = new Date();
+        let timestamp = yellowTerminal + date_request.toLocaleDateString('id') + ' ' + date_request.toLocaleTimeString('id') + ' : ';
+        const { date, room, current_time, ticket_id } = req.query;
+
+        if (!date || !room || !current_time) {
+            return res.status(400).json({
+                success: false,
+                message: "date (YYYY-MM-DD), room, and current_time (HH:mm) are required query parameters."
+            });
+        }
+
+        try {
+            // Find the MIN(start_time) that is greater than or equal to current_time for the specified date and room.
+            // ticket_id is used to exclude the current ticket from the boundary calculation (when editing).
+            let query = `
+                SELECT
+                    MIN(CASE WHEN LOWER(d.lbl_col) IN ('start_time', 'time_start', 'start', 'start time') THEN d.value END) AS next_start_time
+                FROM t_ticket t
+                LEFT JOIN t_ticket_detail d ON d.ticket_id = t.ticket_id
+                WHERE t.service_id = 13 AND t.status_id != 7
+                GROUP BY t.ticket_id
+                HAVING 
+                    MAX(CASE WHEN LOWER(d.lbl_col) IN ('date', 'booking_date', 'start_date') THEN d.value END) = ?
+                    AND MAX(CASE WHEN LOWER(d.lbl_col) IN ('room', 'room_id', 'room_name', 'meeting room', 'room name') THEN d.value END) = ?
+                    AND MAX(CASE WHEN LOWER(d.lbl_col) IN ('start_time', 'time_start', 'start', 'start time') THEN d.value END) >= ?
+            `;
+            const params = [date, room, current_time];
+
+            if (ticket_id) {
+                query += ` AND t.ticket_id != ?`;
+                params.push(ticket_id);
+            }
+
+            query = `SELECT MIN(next_start_time) as max_extension_time FROM (${query}) AS subquery`;
+
+            const results = await dbQueryHots(query, params);
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    max_extension_time: results[0]?.max_extension_time || null
+                },
+                message: "Boundary calculated successfully"
+            });
+        } catch (err) {
+            console.error(timestamp, "Error in getMeetingRoomBoundary:", err);
+            res.status(500).json({
+                success: false,
+                message: "Failed to calculate meeting room boundary: " + err.message
+            });
+        }
     },
 
     todaysweek: async (req, res) => {

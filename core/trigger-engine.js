@@ -115,8 +115,9 @@ class TriggerEngine {
           .catch(err => console.error(`❌ [TRIGGER][EMAIL] Submit email failed (async):`, err.message));
       } else if (template === 'approve') {
         // Use hotsApproveRequest for approval notifications
+        const hiddenApprovalSteps = params.hidden_approval_steps || [];
         // Fire-and-forget: no await, log errors but don't block
-        hotsApproveRequest(false, ticketId)
+        hotsApproveRequest(false, ticketId, hiddenApprovalSteps)
           .catch(err => console.error(`❌ [TRIGGER][EMAIL] Approve email failed (async):`, err.message));
       } else if (template === 'assignment_complete') {
         // Use hotsAssignmentCompleteMailer for assignment completion

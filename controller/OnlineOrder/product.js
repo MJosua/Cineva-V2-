@@ -427,13 +427,10 @@ WHERE
     NOW() BETWEEN mi.creation_date AND COALESCE(mi.finish_date, '9999-12-31')
     AND mi.distributor_id = ${req.dataToken.company_id}
     AND mf.company_id = 100
-
-    -- ✅ THE ONLY RULE THAT MATTERS
     AND JSON_CONTAINS(
         mffd.tolling_id,
         CAST(mp.tolling_id AS JSON)
     )
-
 ORDER BY
     mpc.product_type_id DESC;
 

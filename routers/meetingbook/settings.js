@@ -7,7 +7,7 @@ const { dbmeetingbook } = require('../../config/db');;
 // GET current start and end time
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await dbmeetingbook.query('SELECT end_time FROM settings WHERE id = 1');
+    const rows = await dbmeetingbook.query('SELECT end_time FROM settings WHERE id = 1');
     res.json(rows[0]);
   } catch (err) {
     console.error(err);

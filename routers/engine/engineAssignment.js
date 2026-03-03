@@ -52,7 +52,22 @@ router.delete('/assignment/:assignmentId/tasks/:taskId', decodeTokenHT, engineAs
 router.post('/assignment/:assignmentId/tasks/:taskId/steps', decodeTokenHT, engineAssignment.createTaskStep);
 
 // Toggle/update a task step (checked, label)
-router.patch('/assignment/:assignmentId/tasks/:taskId/steps/:stepId', decodeTokenHT, engineAssignment.toggleTaskStep);
+router.patch('/assignment/:assignmentId/tasks-steps/:stepId', decodeTokenHT, engineAssignment.toggleTaskStep);
+
+// Delete an individual task step
+router.delete('/assignment/:assignmentId/tasks-steps/:stepId', decodeTokenHT, engineAssignment.deleteTaskStep);
+
+// Reorder tasks (DND bulk sort_order update)
+router.post('/assignment/:assignmentId/tasks/reorder', decodeTokenHT, engineAssignment.reorderTasks);
+
+// ── Per-card multi-entry report CRUD ──────────────────────────────────────
+router.get('/assignment/:assignmentId/tasks/:taskId/reports', decodeTokenHT, engineAssignment.getTaskReports);
+router.post('/assignment/:assignmentId/tasks/:taskId/reports', decodeTokenHT, engineAssignment.addTaskReport);
+router.patch('/assignment/:assignmentId/tasks/:taskId/reports/:reportId', decodeTokenHT, engineAssignment.editTaskReport);
+router.delete('/assignment/:assignmentId/tasks/:taskId/reports/:reportId', decodeTokenHT, engineAssignment.deleteTaskReport);
+
+// Get active assignment users (for targeted @mentions)
+router.get('/assignment/:assignmentId/active-users', decodeTokenHT, engineAssignment.getActiveUsers);
 
 // =========================================================================
 // DATA EXECUTION TOOLS ROUTES

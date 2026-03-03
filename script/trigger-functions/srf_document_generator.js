@@ -42,7 +42,7 @@ module.exports = async function srf_document_generator({ ticketId, context, dbQu
                 ticket_id: ticketId,
                 status: 'processing',
                 step: context?.workflow_step,
-                url: `/hots/ticket/${ticketId}`
+                url: `/ticket/${ticketId}`
             }
         });
         console.log(`📄 [SRF_DOC_GEN] Created processing notification: ${notificationId}`);
@@ -137,7 +137,7 @@ module.exports = async function srf_document_generator({ ticketId, context, dbQu
                                 view_url: `/hots_settings/document/${result.documentId}/view`,
                                 download_url: `/hots_settings/document/${result.documentId}/download`,
                                 step: context?.workflow_step,
-                                url: `/hots/ticket/${ticketId}`
+                                url: `/ticket/${ticketId}`
                             }
                         });
                     } catch (updateErr) {
@@ -172,7 +172,7 @@ module.exports = async function srf_document_generator({ ticketId, context, dbQu
                                 ticket_id: ticketId,
                                 status: 'error',
                                 error: result.error,
-                                url: `/hots/ticket/${ticketId}`
+                                url: `/ticket/${ticketId}`
                             }
                         });
                     } catch (updateErr) {

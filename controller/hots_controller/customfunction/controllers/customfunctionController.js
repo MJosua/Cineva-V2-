@@ -26,7 +26,7 @@ const encrypts = require('../../../../config/encrypts');
 
 // Base URL for static files (signatures, images, etc.)
 // Priority: BE_URL_HOTS (HOTS dev) > BE_URL (production) > fallback
-const API_URL = process.env.BE_URL_HOTS || process.env.BE_URL || 'https://backend.indofoodinternational.com:2864';
+const API_URL = process.env.BE_URL_HOTS || process.env.BE_URL;
 
 /**
  * Custom Function Controller
@@ -597,7 +597,13 @@ module.exports = {
             }
 
             const factorySname = factoryResult[0].factory_sname || 'UNK';
-            const category = product_category.toUpperCase(); // RM, FG, or GEN
+            let category = product_category.toUpperCase(); // Fallback
+
+            // Try to resolve a shorter name if product_category is a resource key (e.g. 'fg_noodle')
+            const resource = await resourceEngine.getResource(RESOURCE_CATEGORIES.SAMPLE_CATEGORY, product_category.toLowerCase());
+            if (resource) {
+                category = (resource.attributes?.samplecat_shortname || resource.attributes?.shortname || resource.resource_key || product_category).toUpperCase();
+            }
 
             // Get current month and year
             const now = new Date();
@@ -678,7 +684,7 @@ module.exports = {
                 );
 
                 if (resource) {
-                    const shortname = resource.attributes?.samplecat_shortname || resource.resource_key || 'GEN';
+                    const shortname = resource.attributes?.samplecat_shortname || resource.attributes?.shortname || resource.resource_key || 'GEN';
                     console.log(`🔍 [AutoCategory] ticket=${ticketId}, category=${shortname} (from ResourceEngine)`);
                     return res.json({
                         success: true,
@@ -1215,332 +1221,6 @@ module.exports = {
         }
     },
 
-    /**
-     * generateSRFVirtualHtml
-     * Exact mirror of generateSRFHtml but uses frozen events from snapshot
-     * instead of live database queries for approvals.
-     */
-    generateSRFVirtualHtml: async (ticketData, snapshotData, params) => {
-        // PRIORITY: Use snapshot data for 100% stability, fallback to live for older docs
-        const snapshotDetailRows = snapshotData?.detail_rows || [];
-
-        if (Array.isArray(ticketData)) {
-            const baseInfo = {
-                ticket_id: ticketData[0]?.ticket_id,
-                service_id: ticketData[0]?.service_id,
-                status_id: ticketData[0]?.status_id,
-                created_by: ticketData[0]?.created_by,
-                assigned_team: ticketData[0]?.assigned_team,
-                assigned_to: ticketData[0]?.assigned_to,
-                creation_date: ticketData[0]?.creation_date,
-                last_update: ticketData[0]?.last_update,
-                workflow_step: ticketData[0]?.workflow_step,
-                requester_name: params?.requester_name || ticketData[0]?.fullname || ticketData[0]?.requester_name
-            };
-
-            // If we have snapshot rows, use them. Otherwise map from live ticketData
-            detailRows = snapshotDetailRows.length > 0
-                ? snapshotDetailRows
-                : ticketData.map(r => ({
-                    lbl_col: r.lbl_col,
-                    value: r.value,
-                    cstm_col: r.cstm_col,
-                    order_col: r.order_col,
-                    field_type: r.field_type,
-                }));
-            data = { ...baseInfo, ...params, detail_rows: detailRows };
-        } else if (ticketData && typeof ticketData === 'object') {
-            data = { ...ticketData, ...params };
-            detailRows = snapshotDetailRows.length > 0 ? snapshotDetailRows : (params.detail_rows || ticketData.detail_rows || []);
-        }
-
-        const cleanValue = (value) => {
-            try {
-                const parsed = JSON.parse(value);
-                return Array.isArray(parsed) ? parsed.join(', ') : parsed;
-            } catch { return value; }
-        };
-
-        const getByLabel = (labelKeyword) => {
-            let row = detailRows.find(r => r.cstm_col?.toLowerCase().includes(labelKeyword.toLowerCase()));
-            if (row) return cleanValue(row?.value || '');
-            row = detailRows.find(r => r.lbl_col?.toLowerCase().includes(labelKeyword.toLowerCase()));
-            return cleanValue(row?.cstm_col || row?.value || '') || 'No Data Found';
-        };
-
-        const getFactoryByFactoryId = async (factoryId) => {
-            try {
-                if (!factoryId) return '';
-                const [result] = await dbHots.promise().query('SELECT factory_sname, factory_name FROM mst_factory WHERE factory_id = ?', [factoryId]);
-                return result[0]?.factory_sname || result[0]?.factory_name || '';
-            } catch { return ''; }
-        };
-
-        const getFactoryIdFromWorkData = async (ticketId) => {
-            try {
-                const [result] = await dbHots.promise().query(
-                    `SELECT field_value FROM t_ticket_work_data WHERE ticket_id = ? AND field_name = 'factory_id' ORDER BY created_at DESC LIMIT 1`,
-                    [ticketId]
-                );
-                return result[0]?.field_value || null;
-            } catch { return null; }
-        };
-
-        const getFactoryPPIC = async (factoryId) => {
-            try {
-                if (!factoryId) return [];
-                const [results] = await dbHots.promise().query('SELECT pic_name, flag FROM iod.map_factory_pic WHERE factory_id = ? AND end_date IS NULL ORDER BY flag ASC', [factoryId]);
-                return results || [];
-            } catch { return []; }
-        };
-
-        const getSRFNumber = async (ticket_id) => {
-            try {
-                const [existingSRF] = await dbHots.promise().query(
-                    `SELECT field_value AS doc_no FROM t_ticket_work_data WHERE ticket_id = ? AND field_name = 'srf_document_number' LIMIT 1`,
-                    [ticket_id]
-                );
-                return existingSRF[0]?.doc_no || 'To Be Generated';
-            } catch { return 'Error'; }
-        };
-
-        // TRANSLATION LAYER: Map Snapshot IDs to Names/Emails
-        const snapshotEvents = snapshotData.events || [];
-        const userIds = [...new Set(snapshotEvents.map(e => e.approver_id).filter(id => id))];
-        let userMap = {};
-        if (userIds.length > 0) {
-            const [users] = await dbHots.promise().query('SELECT user_id, CONCAT(firstname, " ", lastname) as fullname, email FROM user WHERE user_id IN (?)', [userIds]);
-            users.forEach(u => userMap[u.user_id] = u);
-        }
-
-        const getApproval = async () => {
-            // Use frozen workflow if available, otherwise fallback to live (for backward compatibility)
-            const workflowDef = snapshotData.workflow_definition || await (async () => {
-                const [workflow] = await dbHots.promise().query('SELECT definition FROM m_service_workflow WHERE workflow_id = ? AND is_active = 1', [data.service_id]);
-                return workflow.length ? (typeof workflow[0].definition === 'string' ? JSON.parse(workflow[0].definition) : workflow[0].definition) : null;
-            })();
-
-            if (!workflowDef) return [];
-            const steps = workflowDef.steps || [];
-
-            return steps.map((step) => {
-                const event = snapshotEvents.find(e => e.approval_order === step.level);
-                return {
-                    approval_order: step.level,
-                    step_name: step.meta?.name || step.meta?.description || `Step ${step.level}`,
-                    approve_date: event?.approve_date || null,
-                    approver_id: event?.approver_id || null,
-                    fullname: userMap[event?.approver_id]?.fullname || null,
-                    email: userMap[event?.approver_id]?.email || null,
-                    remark: event?.remark || ''
-                };
-            });
-        };
-
-        const getApprovalLeaderOnly = async () => {
-            // Use frozen workflow if available, otherwise fallback to live (for backward compatibility)
-            const workflowDef = snapshotData.workflow_definition || await (async () => {
-                const [workflow] = await dbHots.promise().query('SELECT definition FROM m_service_workflow WHERE workflow_id = ? AND is_active = 1', [data.service_id]);
-                return workflow.length ? (typeof workflow[0].definition === 'string' ? JSON.parse(workflow[0].definition) : workflow[0].definition) : null;
-            })();
-
-            if (!workflowDef) return [];
-            const steps = workflowDef.steps || [];
-
-            return steps.map((step) => {
-                const event = snapshotEvents.find(e => e.approval_order === step.level && e.approver_leader == 1);
-                return {
-                    approval_order: step.level,
-                    step_name: step.meta?.name || step.meta?.description || `Step ${step.level}`,
-                    approve_date: event?.approve_date || null,
-                    approver_id: event?.approver_id || null,
-                    fullname: userMap[event?.approver_id]?.fullname || null,
-                    email: userMap[event?.approver_id]?.email || null,
-                    remark: event?.remark || ''
-                };
-            }).filter(step => step.approver_id !== null);
-        };
-
-        const getSignatureUrl = async (userId) => {
-            if (!userId) return '';
-            try {
-                // 1. Try profile path (Profile Handsign)
-                const signPath = await profileController.getUserSignaturePath(userId);
-                if (signPath) {
-                    const url = imageToDataURL(signPath);
-                    if (url) return url;
-                }
-                // 2. Fallback to legacy path (TTD Fallback)
-                return imageToDataURL(`public/ttd/sign-${userId}.jpg`) || '';
-            } catch (err) {
-                console.warn(`[getSignatureUrl] Error for user ${userId}:`, err.message);
-                return '';
-            }
-        };
-
-        // EXACT Logic from legacy generateSRFHtml
-        let factory_id = await getFactoryIdFromWorkData(data?.ticket_id);
-        let factory = '';
-
-        if (factory_id) {
-            factory = await getFactoryByFactoryId(factory_id);
-        } else {
-            factory_id = getByLabel('factory_id');
-            factory = getByLabel('factory');
-        }
-
-        const factoryPIC = await getFactoryPPIC(factory_id);
-        const approvallistRaw = await getApproval();
-        const approvallistLeaderOnly = await getApprovalLeaderOnly();
-        const approvallist = approvallistLeaderOnly.filter(a => a.approval_order !== 2);
-        const generatesrf = await getSRFNumber(data?.ticket_id);
-
-        // Build item rows
-        let totalPcs = 0, totalCtn = 0, itemRowsHtml = '';
-        const isEngineFormat = detailRows.some(r => r.field_type === 'rowgroup_item' || r.lbl_col?.toLowerCase() === 'quantity' || r.lbl_col?.toLowerCase() === 'item name');
-
-        if (isEngineFormat) {
-            const itemRows = detailRows.filter(r => r.lbl_col?.toLowerCase() === 'item name' || (r.field_type === 'rowgroup_item' && r.lbl_col?.toLowerCase().includes('item')));
-            const quantityRows = detailRows.filter(r => r.lbl_col?.toLowerCase() === 'quantity' || (r.field_type === 'rowgroup_item' && r.lbl_col?.toLowerCase().includes('quantity')));
-            itemRows.forEach((itemRow, i) => {
-                const itemName = itemRow.value || '';
-                const itemIndex = itemRow.cstm_col?.match(/\d+/)?.[0] || i.toString();
-                const qtyRow = quantityRows.find(q => q.cstm_col?.includes(itemIndex)) || quantityRows[i];
-                const qtyValue = qtyRow?.value || '';
-                let pcs = '', ctn = '';
-                const cleanQty = qtyValue.replace(/\|/g, '').trim();
-                if (cleanQty.toLowerCase().includes('pcs')) { const val = parseInt(cleanQty); if (!isNaN(val)) { totalPcs += val; pcs = val.toLocaleString(); } }
-                if (cleanQty.toLowerCase().includes('ctn')) { const val = parseInt(cleanQty); if (!isNaN(val)) { totalCtn += val; ctn = val.toLocaleString(); } }
-                itemRowsHtml += `<tr><td>${i + 1}</td><td>${itemName}</td><td>${pcs}</td><td>${ctn}</td></tr>`;
-            });
-        } else {
-            const itemRows = detailRows.filter(r => r.lbl_col?.toLowerCase().includes('item'));
-            itemRows.forEach((row, i) => {
-                const itemName = row.value || row.cstm_col || '';
-                const qtyRow = detailRows.find(r => r.lbl_col?.toLowerCase().includes('quantity') && r.order_col === row.order_col + 1) || detailRows[i + 1];
-                const qty = qtyRow?.value || qtyRow?.cstm_col || '';
-                let pcs = '', ctn = '';
-                if (qty.toLowerCase().includes('pcs')) { const val = parseInt(qty); if (!isNaN(val)) { totalPcs += val; pcs = val.toLocaleString(); } }
-                if (qty.toLowerCase().includes('ctn')) { const val = parseInt(qty); if (!isNaN(val)) { totalCtn += val; ctn = val.toLocaleString(); } }
-                itemRowsHtml += `<tr><td>${i + 1}</td><td>${itemName}</td><td>${pcs}</td><td>${ctn}</td></tr>`;
-            });
-        }
-
-        let notesHtml = '';
-        snapshotEvents.filter(e => e.remark).forEach(e => {
-            notesHtml += `<li>${userMap[e.approver_id]?.fullname || 'Unknown'} (${e.approval_order}): ${e.remark}</li>`;
-        });
-
-        const toPICs = factoryPIC.filter(p => p.flag === 1).map(p => p.pic_name);
-        const ccPICs = factoryPIC.filter(p => p.flag === 2).map(p => p.pic_name);
-
-        const approvalColumnsHtml = (await Promise.all(approvallist.map(async (approver) => {
-            const signUrl = approver.approve_date ? await getSignatureUrl(approver.approver_id) : '';
-            return `<td style="padding:10px;vertical-align:top;text-align:center;">
-                <div style="height:100px;display:flex;align-items:center;justify-content:center;">
-                    ${signUrl ? `<img src="${signUrl}" style="width:120px;" />` : ''}
-                </div>
-                <br><strong>${approver.fullname || "—"}</strong><br><span style="font-size:11px;">${approver.step_name}</span>
-            </td>`;
-        }))).join("");
-
-        const requesterSignUrl = await getSignatureUrl(data.created_by);
-
-        return `<html>
-            <head>
-                <meta charset="utf-8" />
-                <title>SAMPLE REQUEST FORM ( SRF ) - PREVIEW</title>
-                <style>
-                    body { font-family: Arial, sans-serif; font-size: 12px; margin: 40px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                    th, td { border: 1px solid #000; padding: 5px; text-align: left; }
-                    .no-border td { border: none; }
-                    .center { text-align: center; }
-                    .bold { font-weight: bold; }
-                    .section-title { margin-top: 20px; font-weight: bold; font-size: 16px; text-align: center; }
-                    .note { border: 1px solid #000; padding: 10px; margin-top: 10px; }
-                    .approval-table td { height: 60px; vertical-align: bottom; text-align: center; }
-                    .small { font-size: 10px; }
-                    .no-border { width: 100%; table-layout: fixed; border-collapse: collapse; }
-                    .no-border td { vertical-align: top; padding: 4px; }
-                    .label { width: 12%; font-weight: bold; }
-                    .content { width: 38%; }
-                </style>
-            </head>
-            <body>
-                <div style="display:flex;justify-content:space-between;width:100%;">
-                    <div><img src="${imageToDataURL('public/aset/image/indofood_header_logo.png')}" style="height:35px" /></div>
-                    <div style="display:flex;justify-content:flex-end;"><img src="${imageToDataURL('public/aset/image/icbp_header_logo.png')}" style="height:35px" /></div>
-                </div>
-
-                <br>
-                <table class="no-border">
-                    <tr><td><strong>PT. INDOFOOD CBP SUKSES MAKMUR</strong></td><td style="text-align:right;">To&nbsp;: <em> ${toPICs.join(', ')} </em> </td></tr>
-                    <tr><td><strong>Division</strong>&nbsp;: IOD </td><td style="text-align:right;"></td></tr>
-                    <tr><td><strong>Location</strong>&nbsp;: INDOFOOD TOWER LT.23</td><td></td></tr>
-                    <tr><td><strong>SRF NO</strong>&nbsp;: ${generatesrf}</td><td></td></tr>
-                </table>
-
-                <div class="section-title">SAMPLE REQUEST FORM ( SRF )</div>
-
-                <table class="no-border">
-                    <tr>
-                        <td class="label">To</td><td class="content">: ${toPICs.join(', ')}</td>
-                        <td class="label">Name/Title</td><td class="content">: ${getByLabel('name')}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Cc</td><td class="content">: ${ccPICs.join(', ')}</td>
-                        <td class="label">Purposes</td><td class="content">: ${getByLabel('purpose')}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Deliver to</td><td class="content">: ${getByLabel('deliver_to')}</td>
-                        <td class="label">Category</td><td class="content">: ${getByLabel('Category_field')}</td>
-                    </tr>
-                </table>
-
-                <table>
-                    <thead><tr><th>NO</th><th>DESCRIPTION</th><th>QUANTITY IN PCS</th><th>QUANTITY IN CTN</th></tr></thead>
-                    <tbody>
-                        ${itemRowsHtml}
-                        <tr><td colspan="2" class="bold" style="text-align: right;">TOTAL</td><td class="bold">${totalPcs.toLocaleString()} PCS</td><td class="bold">${totalCtn.toLocaleString()} CTN</td></tr>
-                    </tbody>
-                </table>
-
-                <div class="note">
-                    <strong>Request Detail:</strong>
-                    ${(() => {
-                const po = getByLabel("PO_Number") || "";
-                return !po.toLowerCase().includes("no data found") ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${po}</p>` : "";
-            })()}
-
-                    ${getByLabel('Week Delivery') && getByLabel('Week Delivery') !== "No Data Found" ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>` : ''}
-                    <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('field_1761105177705').toLocaleString() === `true` ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
-                </div>
-
-                <div class="note">
-                    <strong>Note:</strong><br>
-                    ${getByLabel('field_1761105303599') ? `<p>${getByLabel('field_1761105303599')}</p>` : ''}
-                    ${notesHtml}
-                    <strong>Thank you</strong>
-                </div>
-
-                <table class="approval-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
-                    <tr class="bold">
-                        <td style="text-align:center; vertical-align:middle;">Request by</td>
-                        <td style="text-align:center; vertical-align:middle;" colspan="${approvallist.length}">Approved by</td>
-                    </tr>
-                    <tr>
-                        <td style="padding:10px;vertical-align:top;text-align:center;">
-                            <div style="height: 100%; max-height:130px;display:flex; align-items: center; justify-content:center;">
-                                <img alt="sign" src="${requesterSignUrl}" style="width:120px;display:block;margin:0 auto 5px auto;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%2260%22><text y=%2230%22 fill=%22red%22>Image Error</text></svg>'" />
-                            </div>
-                            <br>${data?.requester_name || ''}<br><span style="font-size:12px;color:#555;">${params.business_analyst || 'Business Analyst'}</span>
-                        </td>
-                        ${approvalColumnsHtml}
-                    </tr>
-                </table>
-            </body></html>`;
-    },
 
     /**
      * Render Virtual Document (HTML or PDF)
@@ -1551,86 +1231,38 @@ module.exports = {
             const { documentId } = req.params;
             const format = req.query.format || 'html';
 
-            // Fetch from Engine
-            const document = await documentEngine.getDocument(documentId);
-            if (!document || !document.snapshot_data) return res.status(404).send('Document not found');
-
-            // Fetch Live Ticket Context (Detail Rows)
-            const [ticketData] = await dbHots.promise().query(
-                'SELECT * FROM t_ticket t LEFT JOIN t_ticket_detail td ON t.ticket_id = td.ticket_id WHERE t.ticket_id = ?',
-                [document.entity_id]
-            );
-
-            // Get requester info
-            const [requesterData] = await dbHots.promise().query(`
-                SELECT CONCAT(u.firstname, ' ', u.lastname) as requester_name, u.email as requester_email
-                FROM t_ticket t JOIN user u ON t.created_by = u.user_id WHERE t.ticket_id = ?
-            `, [document.entity_id]);
-
-            const params = {
-                requester_name: requesterData[0]?.requester_name || 'Unknown',
-                requester_email: requesterData[0]?.requester_email || '',
-                manual_trigger: false
-            };
-
-            // Render HTML using mirror generator
-            const htmlContent = await module.exports.generateSRFVirtualHtml(ticketData, document.snapshot_data, params);
-
-            // Serve PDF if requested
-            if (format === 'pdf') {
-                let browser;
-                try {
-                    browser = await puppeteer.launch({
-                        headless: true,
-                        args: [
-                            '--no-sandbox',
-                            '--disable-setuid-sandbox',
-                            '--disable-dev-shm-usage',
-                            '--disable-gpu',
-                            '--font-render-hinting=none'
-                        ]
-                    });
-                    const page = await browser.newPage();
-
-                    // Set content and wait for basic DOM
-                    await page.setContent(htmlContent, { waitUntil: 'domcontentloaded', timeout: 30000 });
-
-                    // Wait a bit for base64 images to be ready
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-
-                    const pdfBuffer = await page.pdf({
-                        format: 'A4',
-                        printBackground: true,
-                        margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' }
-                    });
-
-                    await browser.close();
-
-                    // Clear any previous generic headers
-                    res.removeHeader('Transfer-Encoding');
-
-                    res.status(200).set({
-                        'Content-Type': 'application/pdf',
-                        'Content-Disposition': `attachment; filename="${document.file_name.replace('.html', '.pdf')}"`,
-                        'Cache-Control': 'no-cache'
-                    });
-
-                    // Send as Buffer to ensure binary integrity
-                    return res.send(Buffer.from(pdfBuffer));
-                } catch (pdfErr) {
-                    if (browser) await browser.close();
-                    console.error('❌ [PDF_GEN] Puppeteer Error:', pdfErr.message);
-                    throw pdfErr; // Re-throw to main catch
-                }
+            // 1. Render HTML using the Engine
+            // renderHtml accepts documentId and handles fetching + template selection
+            const result = await documentEngine.renderHtml(documentId);
+            if (!result.ok) {
+                return res.status(404).json({ ok: false, error: result.error || 'Document not found' });
             }
 
-            // Serve HTML (For View/Iframe)
+            const htmlContent = result.html;
+
+            // 2. Output
+            if (format === 'pdf') {
+                const browser = await puppeteer.launch({
+                    headless: 'new',
+                    args: ['--no-sandbox', '--disable-setuid-sandbox']
+                });
+                const page = await browser.newPage();
+                await page.setContent(htmlContent, { waitUntil: 'domcontentloaded', timeout: 60000 });
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+                await browser.close();
+
+                res.set('Content-Type', 'application/pdf');
+                return res.send(pdfBuffer);
+            }
+
+            // HTML
             res.set('Content-Type', 'text/html');
             res.send(htmlContent);
 
         } catch (error) {
-            console.error('Render Virtual Doc Error:', error);
-            res.status(500).send('Failed to render document: ' + error.message);
+            console.error('❌ [renderVirtualDocument] Error:', error);
+            res.status(500).send('Error rendering document: ' + error.message);
         }
     },
 
@@ -1732,772 +1364,67 @@ module.exports = {
      * @param {Object} params - Additional parameters
      * @returns {string} File path of generated PDF
      */
+    /**
+     * SRF Document Generator (Physical PDF)
+     * UNIFIED VERSION
+     * Uses core/document-data-preparer and core/renderers/srf-renderer
+     */
     srf_document_generator: async (template, ticketData, params) => {
-        const fileName = `document_SRF_${ticketData[0]?.ticket_id || 'unknown'}_${Date.now()}.pdf`;
-        const filePath = path.join('public', 'hots', 'generateddocuments', fileName);
+        try {
+            console.log('📄 [CONTROLLER] Generating Physical SRF Document via Unified Renderer...');
 
+            // Extract Ticket ID
+            const ticketId = Array.isArray(ticketData) ? ticketData[0]?.ticket_id : (ticketData?.ticket_id || params.ticket_id);
+            if (!ticketId) throw new Error("Ticket ID mismatch or missing.");
 
-        const dirPath = path.dirname(filePath);
-        if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });
-        }
+            const fileName = `document_SRF_${ticketId}_${Date.now()}.pdf`;
+            const folderPath = path.join('public', 'hots', 'generateddocuments');
+            const filePath = path.join(folderPath, fileName);
 
-        // const data = !Array.isArray(ticketData) ? { ...ticketData, ...params } : { ...params };
-        // const detailRows = Array.isArray(params.detail_rows) ? params.detail_rows : Array.isArray(ticketData) ? ticketData : [];
-        // 🧠 Normalize ticket data
-        let data = {};
-        let detailRows = [];
-
-        // Case 1: When ticketData is an array (as in your logs)
-        if (Array.isArray(ticketData)) {
-            // Extract general ticket-level fields (from the first row)
-            const baseInfo = {
-                ticket_id: ticketData[0]?.ticket_id,
-                service_id: ticketData[0]?.service_id,
-                status_id: ticketData[0]?.status_id,
-                created_by: ticketData[0]?.created_by,
-                assigned_team: ticketData[0]?.assigned_team,
-                assigned_to: ticketData[0]?.assigned_to,
-                creation_date: ticketData[0]?.creation_date,
-                last_update: ticketData[0]?.last_update,
-                workflow_step: ticketData[0]?.workflow_step,
-            };
-
-
-            // Store all rows as details
-            detailRows = ticketData.map(r => ({
-                lbl_col: r.lbl_col,
-                value: r.value,
-                cstm_col: r.cstm_col,
-                order_col: r.order_col,
-            }));
-
-            // Merge params (contains requester_name, service_name, etc.)
-            data = { ...baseInfo, ...params, detail_rows: detailRows };
-
-            // Case 2: When ticketData is a single object (fallback)
-        } else if (ticketData && typeof ticketData === 'object') {
-            data = { ...ticketData, ...params };
-            detailRows = params.detail_rows || ticketData.detail_rows || [];
-        }
-
-        // ✅ Final output
-
-
-        let itemRowsHtml = '';
-        let totalPcs = 0;
-        let totalCtn = 0;
-
-
-
-        const cleanValue = (value) => {
-            try {
-                const parsed = JSON.parse(value);
-                return Array.isArray(parsed) ? parsed.join(', ') : parsed;
-            } catch {
-                return value;
+            if (!fs.existsSync(folderPath)) {
+                fs.mkdirSync(folderPath, { recursive: true });
             }
-        };
 
-        // 🔥 Support both HOTS and Core Engine field formats
-        // HOTS: lbl_col = field_id, cstm_col = value
-        // Core Engine: cstm_col = field_id, lbl_col = field_name, value = field value
-        const getByLabel = (labelKeyword) => {
-            // First try Core Engine format (cstm_col contains field_id)
-            let row = detailRows.find(r =>
-                r.cstm_col?.toLowerCase().includes(labelKeyword.toLowerCase())
-            );
-            if (row) return cleanValue(row?.value || '');
+            // 1. Prepare Data
+            // Use the centralized data preparer to ensure consistency with Virtual Documents
+            const { prepareSRFData } = require('../../../../core/document-data-preparer');
+            // prepareSRFData requires { db } context for database queries
+            const data = await prepareSRFData(ticketId, { db: dbHots });
 
-            // Fallback to HOTS format (lbl_col contains field_id)
-            row = detailRows.find(r =>
-                r.lbl_col?.toLowerCase().includes(labelKeyword.toLowerCase())
-            );
-            return cleanValue(row?.cstm_col || row?.value || '');
-        };
+            // 2. Generate HTML
+            // Use the unified Source of Truth renderer
+            const htmlContent = renderSRFHtml(data);
 
-
-
-        const getteamleaderEmail = async (teamId) => {
-            try {
-                const query = `
-                        SELECT
-                            u.email AS team_leader_email,
-                CONCAT(u.firstname, ' ', u.lastname) AS team_leader_name
-                        FROM
-                            m_team_member mtm
-                        JOIN user u ON mtm.user_id = u.user_id
-                        WHERE
-                            mtm.team_leader = "1"
-                            AND mtm.team_id = ${teamId}
-                        LIMIT 1
-                `;
-                const result = await dbQueryHots(query);
-                return result[0] || { team_leader_name: 'Unknown', team_leader_email: '-' };
-            } catch (error) {
-                console.error('Error fetching team leader:', error);
-                return { team_leader_name: 'Unknown', team_leader_email: '-' };
-            }
-        };
-
-        const getFactoryPPIC = async (factory) => {
-            try {
-                const query = `
-                                  select
-                                        pic_name,
-                flag
-                                    from
-                                        iod.map_factory_pic
-                                    where
-                                        plant_id = ?
-                    and 
-                                                end_date is null
-                                    order by
-                                        flag
-                    `;
-                const result = await dbQuery(query, [factory]);
-                return (result && result.length > 0) ? result : [{ pic_name: '', flag: '1' }];
-            } catch (error) {
-                console.error('Error fetching team leader:', error);
-                return { team_leader_name: 'Unknown', team_leader_email: '-' };
-            }
-        };
-
-        // Get factory shortname by factory_id from iod.mst_factory (for SRF number)
-        const getFactoryByFactoryId = async (factoryId) => {
-            try {
-                if (!factoryId) return '';
-                const result = await dbQuery(
-                    'SELECT factory_name, factory_sname FROM iod.mst_factory WHERE factory_id = ?',
-                    [factoryId]
-                );
-                console.log(`📍[getFactoryByFactoryId] factory_id = ${factoryId}, factory_sname = ${result[0]?.factory_sname}`);
-                // Return shortname for SRF number format
-                return result[0]?.factory_sname || result[0]?.factory_name || '';
-            } catch (error) {
-                console.error('Error fetching factory by ID:', error);
-                return '';
-            }
-        };
-
-        // Get factory_id from t_ticket_work_data (set by executor)
-        const getFactoryIdFromWorkData = async (ticketId) => {
-            try {
-                const [result] = await dbHots.promise().query(
-                    `SELECT field_value FROM t_ticket_work_data 
-                     WHERE ticket_id = ? AND field_name = 'factory_id' 
-                     ORDER BY created_at DESC LIMIT 1`,
-                    [ticketId]
-                );
-                console.log(`📍[getFactoryIdFromWorkData] ticket = ${ticketId}, factory_id = ${result[0]?.field_value}`);
-                return result[0]?.field_value || null;
-            } catch (error) {
-                console.error('Error fetching factory_id from work_data:', error);
-                return null;
-            }
-        };
-
-        const getApproval = async (ticket_id) => {
-            try {
-                // 1. Get ticket service_id
-                const [ticket] = await dbHots.promise().query(
-                    'SELECT service_id FROM t_ticket WHERE ticket_id = ?',
-                    [ticket_id]
-                );
-                if (!ticket.length) {
-                    console.warn(`Ticket ${ticket_id} not found`);
-                    return [];
-                }
-
-                // 2. Get workflow definition
-                const [workflow] = await dbHots.promise().query(
-                    'SELECT definition FROM m_service_workflow WHERE workflow_id = ? AND is_active = 1',
-                    [ticket[0].service_id]
-                );
-                if (!workflow.length) {
-                    console.warn(`No workflow found for service ${ticket[0].service_id}`);
-                    return [];
-                }
-
-                // Parse definition - might already be object if MySQL2 auto-parsed JSON
-                const defRaw = workflow[0].definition;
-                const workflowDef = typeof defRaw === 'string' ? JSON.parse(defRaw) : defRaw;
-                const steps = workflowDef.steps || [];
-
-                // 3. Get approvals from t_ticket_event (only leaders for document signatures)
-                const [events] = await dbHots.promise().query(`
-                    SELECT
-                        e.approval_order,
-                        e.approve_date,
-                        e.approver_id,
-                        e.approver_leader,
-                        e.remark,
-                        CONCAT(u.firstname, ' ', u.lastname) AS fullname,
-                        u.email
-                    FROM t_ticket_event e
-                    LEFT JOIN user u ON e.approver_id = u.user_id
-                    WHERE e.ticket_id = ?
-                        AND e.event_type = 'approve'
-                    ORDER BY e.approval_order
-                `, [ticket_id]);
-
-                // 4. Map workflow steps to actual approvals (only for steps that have a leader approver)
-                return steps
-                    .map((step) => {
-                        const event = events.find(e => e.approval_order === step.level);
-
-                        return {
-                            approval_order: step.level,
-                            step_name: step.meta?.name || step.meta?.description || `Step ${step.level}`,
-                            approve_date: event?.approve_date || null,
-                            approver_id: event?.approver_id || null,
-                            approver_leader: event?.approver_leader || null,
-                            fullname: event?.fullname || null,
-                            email: event?.email || null,
-                            remark: event?.remark || ''
-                        };
-                    })
-                    .filter(step => step.approver_id !== null); // Only include steps that have a leader assigned
-            } catch (error) {
-                console.error('Error fetching approvals:', error);
-                return [];
-            }
-        };
-
-        const getApprovalLeaderOnly = async (ticket_id) => {
-            try {
-                // 1. Get ticket service_id
-                const [ticket] = await dbHots.promise().query(
-                    'SELECT service_id FROM t_ticket WHERE ticket_id = ?',
-                    [ticket_id]
-                );
-                if (!ticket.length) {
-                    console.warn(`Ticket ${ticket_id} not found`);
-                    return [];
-                }
-
-                // 2. Get workflow definition
-                const [workflow] = await dbHots.promise().query(
-                    'SELECT definition FROM m_service_workflow WHERE workflow_id = ? AND is_active = 1',
-                    [ticket[0].service_id]
-                );
-                if (!workflow.length) {
-                    console.warn(`No workflow found for service ${ticket[0].service_id}`);
-                    return [];
-                }
-
-                // Parse definition - might already be object if MySQL2 auto-parsed JSON
-                const defRaw = workflow[0].definition;
-                const workflowDef = typeof defRaw === 'string' ? JSON.parse(defRaw) : defRaw;
-                const steps = workflowDef.steps || [];
-
-                // 3. Get approvals from t_ticket_event (only leaders for document signatures)
-                const [events] = await dbHots.promise().query(`
-                    SELECT
-                        e.approval_order,
-                        e.approve_date,
-                        e.approver_id,
-                        e.approver_leader,
-                        e.remark,
-                        CONCAT(u.firstname, ' ', u.lastname) AS fullname,
-                        u.email
-                    FROM t_ticket_event e
-                    LEFT JOIN user u ON e.approver_id = u.user_id
-                    WHERE e.ticket_id = ?
-                        AND e.event_type = 'approve'
-                        AND e.approver_leader = 1
-                    ORDER BY e.approval_order
-                `, [ticket_id]);
-
-                // 4. Map workflow steps to actual approvals (only for steps that have a leader approver)
-                return steps
-                    .map((step) => {
-                        const event = events.find(e => e.approval_order === step.level);
-
-                        return {
-                            approval_order: step.level,
-                            step_name: step.meta?.name || step.meta?.description || `Step ${step.level}`,
-                            approve_date: event?.approve_date || null,
-                            approver_id: event?.approver_id || null,
-                            approver_leader: event?.approver_leader || null,
-                            fullname: event?.fullname || null,
-                            email: event?.email || null,
-                            remark: event?.remark || ''
-                        };
-                    })
-                    .filter(step => step.approver_id !== null); // Only include steps that have a leader assigned
-            } catch (error) {
-                console.error('Error fetching approvals:', error);
-                return [];
-            }
-        };
-
-        const monthToRoman = (month) => {
-            const romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
-            return romans[month - 1];
-        };
-
-        const getSRFNumber = async (ticket_id) => {
-            try {
-                // Priority 1: Check t_ticket_work_data for srf_document_number (set by executor)
-                const [workDataRows] = await dbHots.promise().query(
-                    `SELECT field_value FROM hots.t_ticket_work_data 
-                     WHERE ticket_id = ? AND field_name = 'srf_document_number' LIMIT 1`,
-                    [ticket_id]
-                );
-                if (workDataRows[0]?.field_value) {
-                    return workDataRows[0].field_value;
-                }
-
-                // Priority 2: Fallback to t_ticket_doc_no
-                const [existingSRF] = await dbHots.promise().query(
-                    `SELECT doc_no FROM hots.t_ticket_doc_no WHERE ticket_id = ? AND service_id = 6 LIMIT 1`,
-                    [ticket_id]
-                );
-                return existingSRF[0]?.doc_no || 'To Be Generated';
-            } catch (error) {
-                return 'To Be Generated';
-            }
-        };
-
-
-
-
-
-        const teamLeader = await getteamleaderEmail(17);
-
-        // 📍 Factory Resolution Priority:
-        // 1. Check t_ticket_work_data (set by executor)
-        // 2. Fallback to t_ticket_detail (from form)
-        let factory_id = await getFactoryIdFromWorkData(data?.ticket_id);
-        let factory = '';
-
-        if (factory_id) {
-            // Get factory name from mst_factory
-            factory = await getFactoryByFactoryId(factory_id);
-            console.log(`📍[SRF] Using factory from work_data: ${factory} (id: ${factory_id})`);
-        } else {
-            // Fallback to ticket_detail
-            factory_id = getByLabel('factory_id');
-            factory = getByLabel('factory');
-            console.log(`📍[SRF] Using factory from ticket_detail: ${factory} (id: ${factory_id})`);
-        }
-
-        const factoryPIC = await getFactoryPPIC(factory_id);
-        const approvallistRaw = await getApproval(data?.ticket_id);
-
-        const approvallistLeaderOnly = await getApprovalLeaderOnly(data?.ticket_id);
-
-        const approvallist = approvallistLeaderOnly.filter(a => a.approval_order !== 2);
-        const sample = getByLabel('sample');
-
-        // Pass forceRegenerate=true when triggered manually (replaces old SRF)
-        const forceRegenerate = params?.manual_trigger === true;
-        const generatesrf = await getSRFNumber(data?.ticket_id);
-
-
-        // 🔥 Handle Core Engine rowgroup format
-        // Core Engine: field_type = 'rowgroup_item', lbl_col = 'Item Name' or 'Quantity', value = actual data
-        // cstm_col = 'item_0', 'item_1', etc. for item index
-
-        // Check if we're using Core Engine format (has rowgroup_item field_type)
-        const isEngineFormat = detailRows.some(r =>
-            r.field_type === 'rowgroup_item' ||
-            r.lbl_col?.toLowerCase() === 'quantity' ||
-            r.lbl_col?.toLowerCase() === 'item name'
-        );
-
-        console.log('📊 [DOC_GEN] isEngineFormat:', isEngineFormat);
-        console.log('📊 [DOC_GEN] detailRows sample:');
-        if (detailRows && detailRows.length > 0) {
-            console.table(detailRows.slice(0, 5));
-        }
-
-        if (isEngineFormat) {
-            // Core Engine format: find Item Name and Quantity rows
-            // Item rows have lbl_col = 'Item Name', cstm_col = 'item_0', 'item_1', etc.
-            const itemRows = detailRows.filter(r =>
-                r.lbl_col?.toLowerCase() === 'item name' ||
-                r.field_type === 'rowgroup_item' && r.lbl_col?.toLowerCase().includes('item')
-            );
-
-            const quantityRows = detailRows.filter(r =>
-                r.lbl_col?.toLowerCase() === 'quantity' ||
-                (r.field_type === 'rowgroup_item' && r.lbl_col?.toLowerCase().includes('quantity'))
-            );
-
-            console.log('📊 [DOC_GEN] Found item rows:', itemRows.length);
-            console.log('📊 [DOC_GEN] Found quantity rows:', quantityRows.length);
-
-            // Match items with quantities by index (item_0 with quantity_0, etc.)
-            itemRows.forEach((itemRow, i) => {
-                const itemName = itemRow.value || '';
-
-                // Try to find matching quantity by same index
-                const itemIndex = itemRow.cstm_col?.match(/\d+/)?.[0] || i.toString();
-                const qtyRow = quantityRows.find(q => q.cstm_col?.includes(itemIndex)) || quantityRows[i];
-
-                const qtyValue = qtyRow?.value || '';
-
-                console.log(`📊[DOC_GEN] Row ${i}: item = "${itemName}", qty = "${qtyValue}"`);
-
-                // Parse quantity: look for pcs or ctn
-                let pcs = '', ctn = '';
-                const cleanQty = qtyValue.replace(/\|/g, '').trim();
-
-                if (cleanQty.toLowerCase().includes('pcs')) {
-                    const val = parseInt(cleanQty);
-                    if (!isNaN(val)) {
-                        totalPcs += val;
-                        pcs = val.toLocaleString();
-                    }
-                }
-                if (cleanQty.toLowerCase().includes('ctn')) {
-                    const val = parseInt(cleanQty);
-                    if (!isNaN(val)) {
-                        totalCtn += val;
-                        ctn = val.toLocaleString();
-                    }
-                }
-
-                itemRowsHtml += `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td>${itemName}</td>
-                        <td>${pcs}</td>
-                        <td>${ctn}</td>
-                    </tr>`;
+            // 3. Generate PDF
+            const browser = await puppeteer.launch({
+                headless: 'new',
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
-        } else {
-            // Old HOTS format
-            const itemRows = detailRows.filter(row =>
-                row.lbl_col?.toLowerCase().includes('item')
-            );
+            const page = await browser.newPage();
 
-            itemRows.forEach((row, i) => {
-                const itemName = row.value || row.cstm_col || '';
+            // Set content and wait for network/images
+            await page.setContent(htmlContent, { waitUntil: 'networkidle0', timeout: 60000 });
 
-                // Attempt to find the related quantity row by order_col or index
-                const qtyRow = detailRows.find(
-                    r => r.lbl_col?.toLowerCase().includes('quantity') &&
-                        r.order_col === row.order_col + 1
-                ) || detailRows[i + 1];
-
-                const qty = qtyRow?.value || qtyRow?.cstm_col || '';
-                let pcs = '', ctn = '';
-
-                if (qty.toLowerCase().includes('pcs')) {
-                    pcs = qty;
-                    const val = parseInt(qty);
-                    if (!isNaN(val)) {
-                        totalPcs += val;
-                        pcs = val.toLocaleString();
-                    }
-                }
-
-                if (qty.toLowerCase().includes('ctn')) {
-                    ctn = qty;
-                    const val = parseInt(qty);
-                    if (!isNaN(val)) {
-                        totalCtn += val;
-                        ctn = val.toLocaleString();
-                    }
-                }
-
-                itemRowsHtml += `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td>${itemName}</td>
-                        <td>${pcs}</td>
-                        <td>${ctn}</td>
-                    </tr>`;
+            const pdfBuffer = await page.pdf({
+                format: 'A4',
+                printBackground: true,
+                margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' }
             });
+            await browser.close();
+
+            // 4. Write to Disk
+            fs.writeFileSync(filePath, pdfBuffer);
+
+            return filePath;
+
+        } catch (error) {
+            console.error('❌ [CONTROLLER] Error generating physical SRF:', error);
+            throw error;
         }
-
-        let notesHtml = '';
-
-        if (approvallistLeaderOnly && approvallistLeaderOnly.length > 0) {
-            console.table(approvallistLeaderOnly.map(a => ({
-                order: a.approval_order,
-                step: a.step_name,
-                approver: a.fullname,
-                status: a.approve_date ? 'Approved' : 'Pending'
-            })));
-        } else {
-            console.log("No approvals found");
-        }
-        approvallistRaw.forEach((data, i) => {
-            if (data.remark && data.remark.trim() !== '') {
-                const stepInfo = data.step_name ? `(${data.step_name})` : '';
-                notesHtml += `<li>${data.fullname} ${stepInfo}: ${data.remark}</li>`;
-            }
-        });
-
-        const toPICs = factoryPIC.filter(p => p.flag === 1).map(p => p.pic_name);
-
-        // Group 2 (Cc)
-        const ccPICs = factoryPIC.filter(p => p.flag === 2).map(p => p.pic_name);
-
-        // Helper to get signature Data URL from user_profile or fallback to legacy /ttd/
-        const getSignatureUrl = async (userId) => {
-            if (!userId) return '';
-            try {
-                // 1. Try profile path (Profile Handsign)
-                const signPath = await profileController.getUserSignaturePath(userId);
-                if (signPath) {
-                    const dataUrl = imageToDataURL(signPath);
-                    if (dataUrl) return dataUrl;
-                }
-                // 2. Fallback to legacy path (TTD Fallback)
-                return imageToDataURL(`public/ttd/sign-${userId}.jpg`) || '';
-            } catch (err) {
-                console.warn(`[getSignatureUrl] Error for user ${userId}:`, err.message);
-                return '';
-            }
-        };
-
-        // Build approval columns with proper signature paths
-        const approvalColumnsPromises = approvallist
-            .filter(a => a.approval_order !== 2) // Hide Logistic Analyst (step 2) signature
-            .map(async (approver, index) => {
-                const isApproved = !!approver.approve_date;
-
-                let signBlock = '';
-                if (isApproved) {
-                    const signUrl = await getSignatureUrl(approver.approver_id);
-                    signBlock = `
-                        <div style="height: 100%; max-height:130px; display:flex; align-items:center;">
-                            <img
-                                alt="sign"
-                                src="${signUrl}"
-                                style="width:120px;display:block;margin:0 auto 5px auto;"
-                            />
-                        </div>
-                    `;
-                } else {
-                    signBlock = `
-                        <div style="height: 100%; max-height:130px; display:flex; align-items:center;"></div>
-                    `;
-                }
-
-                // Use dynamic step name from workflow definition
-                const positionLabel = approver.step_name || `Step ${approver.approval_order}`;
-
-                return `
-                    <td style="padding:10px 10px 15px 10px;vertical-align:top;">
-                        ${signBlock}
-                        <br>
-                        ${approver.fullname || "—"}
-                        <br>
-                        <span style="font-size:12px;color:#555;display:inline-block;margin-bottom:10px;">${positionLabel}</span>
-                    </td>
-                `;
-            });
-
-        const approvalColumnsHtml = (await Promise.all(approvalColumnsPromises)).join("");
-
-        // Get requester signature URL
-        const requesterSignUrl = await getSignatureUrl(data.created_by);
-
-
-
-
-
-        const html = `
-    <html>
-        <head>
-            <meta charset="utf-8" />
-            <title>SAMPLE REQUEST FORM ( SRF )</title>
-            <style>
-                body {font - family: Arial, sans-serif; font-size: 12px; margin: 40px; min-width: 700px; max-width: 794px; }
-                table {width: 100%; border-collapse: collapse; margin-top: 10px; }
-                th, td {border: 1px solid #000; padding: 5px; text-align: left; }
-                .no-border td {border: none; }
-                .center {text - align: center; }
-                .bold {font - weight: bold; }
-                .section-title {margin - top: 20px; font-weight: bold; font-size: 16px; text-align: center; }
-                .note {border: 1px solid #000; padding: 10px; margin-top: 10px; }
-                .approval-table td {height: 60px; vertical-align: bottom; text-align: center; word-break: break-word; overflow-wrap: break-word; }
-                .approval-table {table - layout: fixed; }
-                .approval-table td {width: 25%; }
-                .small {font - size: 10px; }
-            </style>
-        </head>
-        <body>
-
-            <div style="display:flex;justify-content:space-between;width:100%;">
-                <div>
-                    <img
-                        src="${imageToDataURL('public/aset/image/indofood_header_logo.png')}"
-                        style="height:35px"
-                    />
-                </div>
-                <div style="display:flex;justify-content:flex-end;">
-                    <img
-                        src="${imageToDataURL('public/aset/image/icbp_header_logo.png')}"
-                        style="height:35px"
-                    />
-                </div>
-            </div>
-
-
-            <br>
-
-                <table class="no-border">
-                    <tr>
-                        <td><strong>PT. INDOFOOD CBP SUKSES MAKMUR</strong></td>
-                        <td style="text-align:right;">To&nbsp;: <em> ${toPICs.join(', ')} </em> </td>
-                    </tr>
-                    <tr>
-                        <td><strong>Division</strong>&nbsp;: IOD </td>
-                        <td style="text-align:right;"></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Location</strong>&nbsp;: INDOFOOD TOWER LT.23</td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td><strong>SRF NO</strong>&nbsp;: ${generatesrf}</td>
-                        <td></td>
-                    </tr>
-                </table>
-
-                <div class="section-title">SAMPLE REQUEST FORM ( SRF )</div>
-
-                <style>
-                    .no-border {
-                        width: 100%;
-                    table-layout: fixed;
-                    border-collapse: collapse;
-                    }
-                    .no-border td {
-                        vertical - align: top;
-                    padding: 4px;
-                    }
-                    .label {
-                        width: 12%;
-                    font-weight: bold;
-                    }
-                    .content {
-                        width: 38%;
-                    }
-                </style>
-
-                <table class="no-border">
-                    <tr>
-                        <td class="label">To</td>
-                        <td class="content">:  ${toPICs.join(', ')}</td>
-                        <td class="label">Name/Title</td>
-                        <td class="content">: ${getByLabel('name')}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Cc</td>
-                        <td class="content">:  ${ccPICs.join(', ')}</td>
-                        <td class="label">Purposes</td>
-                        <td class="content">: ${getByLabel('purpose')}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Deliver to</td>
-                        <td class="content">: ${getByLabel('deliver_to')}</td>
-                        <td class="label">Category</td>
-                        <td class="content">: ${getByLabel('Category_field')}</td>
-                    </tr>
-                </table>
-
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>NO</th>
-                            <th>DESCRIPTION</th>
-                            <th>QUANTITY IN PCS</th>
-                            <th>QUANTITY IN CTN</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-
-                        ${itemRowsHtml}
-                        <tr>
-                            <td colspan="2" class="bold" style="text-align: right;">TOTAL</td>
-                            <td class="bold">${totalPcs.toLocaleString()} PCS</td>
-                            <td class="bold">${totalCtn.toLocaleString()} CTN</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="note">
-                    <strong>Request Detail:</strong>
-                    ${(() => {
-                const po = getByLabel("PO_Number") || "";
-                return !po.toLowerCase().includes("no data found")
-                    ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA PO ${po}</p>`
-                    : "";
-            })()}
-
-                    ${getByLabel('Week Delivery') && getByLabel('Week Delivery') !== "No Data Found"
-                ? `<p>MOHON AGAR PERMINTAAN SAMPLE DIPROSES PADA WEEK ${getByLabel('Week Delivery')}</p>`
-                : ''}
-                    <p>MOHON AGAR PERMINTAAN SAMPLE ${getByLabel('field_1761105177705').toLocaleString() === `true` ? "" : "TIDAK "}DIDECLARE PADA SHIPPING DOCS</p>
-                </div>
-
-                <div class="note">
-                    <strong>Note:</strong>
-                    <br>
-                        ${getByLabel('field_1761105303599') ? `<p>${getByLabel('field_1761105303599')}</p>` : ''}
-                        ${notesHtml}
-                        <strong>Thank you</strong>
-                </div>
-
-                <table class="approval-table" style="width:100%; table-layout:fixed; border-collapse:collapse;">
-
-                    <tr class="bold">
-                        <td style="text-align:center; vertical-align:middle;">Request by</td>
-                        <td style="text-align:center; vertical-align:middle;">Approved by</td>
-                        <td style="text-align:center; vertical-align:middle;">Approved by</td>
-                        <td style="text-align:center; vertical-align:middle;">Approved by</td>
-                    </tr>
-                    <tr>
-
-                        <td style="padding:10px 10px 15px 10px;vertical-align:top;">
-                            <div style="height: 100%; max-height:130px;display:flex; align-items: center;">
-
-                                <img
-                                    alt="sign"
-                                    src="${requesterSignUrl}"
-                                    style="width:120px;display:block;margin:0 auto 5px auto;"
-                                />
-                            </div>
-                            <br>
-                                ${data?.requester_name || ''}
-                                <br>
-                                    <span style="font-size:12px;color:#555;display:inline-block;margin-bottom:10px;">${data.business_analyst || 'Requester'}</span>
-                                </td>
-
-
-                                ${approvalColumnsHtml}
-
-                            </tr>
-                        </table>
-
-                    </body>
-                </html>
-                `;
-
-        const browser = await puppeteer.launch();
-        const page = await browser.newPage();
-        // Use domcontentloaded instead of networkidle0 to avoid timeout on slow/failed images
-        await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 });
-        // Give images a chance to load (signature images, logos)
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        await page.pdf({ path: filePath, format: 'A4' });
-        await browser.close();
-
-        return filePath;
-
-
-
-
     },
+
+
+
 
 
     /**
@@ -3553,7 +2480,7 @@ module.exports = {
         // Asset path: /public/hots/aset/cardgenerator/
 
         // Use localhost for development, production URL when deployed
-        const ASSET_BASE = 'https://backend.indofoodinternational.com:2864/public/hots/aset/cardgenerator';
+        const ASSET_BASE = API_URL + '/public/hots/aset/cardgenerator';
 
         // Calculate email font size based on length
         const emailLength = data.email.length;
@@ -3813,450 +2740,172 @@ module.exports = {
         return html;
     },
 
-    /**
-     * Card Name Document Generator
-     * Generates PDF business card for a user
-     * @param {Object} config - Template configuration
-                                    * @param {number} targetUserId - User ID to generate card for
-                                    * @param {Object} params - Additional parameters
-                                    * @returns {string} File path of generated PDF
-                                    */
-    cardname_document_generator: async (config, targetUserId, params = {}) => {
-        const documentType = 'business_card';
-
-        // Check if document already exists in t_generated_document
-        const [existingDoc] = await dbHots.promise().query(`
-                                    SELECT id, file_path, file_name, generated_date
-                                    FROM t_generated_documents
-                                    WHERE document_type = ? AND created_by = ? AND ticket_id = 0
-                                    ORDER BY generated_date DESC
-                                    LIMIT 1
-                                    `, [documentType, targetUserId]);
-
-        if (existingDoc && existingDoc.length > 0) {
-            const existingPath = existingDoc[0].file_path;
-            // Check if file still exists
-            if (fs.existsSync(existingPath)) {
-                console.log(`📇 [CARD_GEN] Using cached card for user ${targetUserId}: ${existingPath}`);
-                return existingPath;
-            }
-        }
-
-        // Generate new document
-        const fileName = `card_${targetUserId}_${Date.now()}.pdf`;
-        const filePath = path.join('public', 'hots', 'generateddocuments', 'cards', fileName);
-
-        const dirPath = path.dirname(filePath);
-        if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });
-        }
-
-        // Fetch user data with job title and profile
-        const [userData] = await dbHots.promise().query(`
-                                    SELECT
-                                    u.user_id,
-                                    u.firstname,
-                                    u.lastname,
-                                    CONCAT(u.firstname, ' ', u.lastname) AS fullname,
-                                    u.email,
-                                    u.phone AS ext_phone,
-                                    jt.job_title AS job_title_name,
-                                    d.department_name
-                                    FROM user u
-                                    LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
-                                    LEFT JOIN m_department d ON u.department_id = d.department_id
-                                    WHERE u.user_id = ?
-                                    `, [targetUserId]);
-
-        if (!userData || userData.length === 0) {
-            throw new Error(`User not found with ID: ${targetUserId}`);
-        }
-
-        const user = userData[0];
-
-        // Fetch cell phone from user_profile
-        const [profileData] = await dbHots.promise().query(`
-                                    SELECT attribute_value
-                                    FROM user_profile
-                                    WHERE user_id = ? AND attribute_name = 'phone' AND is_active = 1
-                                    LIMIT 1
-                                    `, [targetUserId]);
-
-        user.cell_phone = profileData[0]?.attribute_value || '';
-
-        console.log(`📇 [CARD_GEN] Generating card for user ${targetUserId}: ${user.fullname}`);
-
-        // Generate HTML
-        const html = await module.exports.generateCardNameHTML(user, params);
-
-        // Generate PDF using Puppeteer
-        const browser = await puppeteer.launch({
-            headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
-        const page = await browser.newPage();
-
-        await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Allow fonts/images to load
-
-        // PDF height: 312px × 2 cards + 20px gap = 644px
-        await page.pdf({
-            path: filePath,
-            width: '510px',
-            height: '644px',
-            printBackground: true,
-            margin: { top: 0, right: 0, bottom: 0, left: 0 }
-        });
-
-        await browser.close();
-
-        // Save to t_generated_document to prevent regeneration
-        try {
-            await dbHots.promise().query(`
-                INSERT INTO t_generated_documents 
-                (ticket_id, document_type, file_path, file_name, generated_date, template_used, created_by)
-                VALUES (0, ?, ?, ?, NOW(), 'business_card_v1', ?)
-            `, [documentType, filePath, fileName, targetUserId]);
-            console.log(`📇 [CARD_GEN] Document record saved to t_generated_document`);
-        } catch (dbError) {
-            console.error('Failed to save document record:', dbError);
-            // Don't throw - document was still generated
-        }
-
-        console.log(`📇 [CARD_GEN] Card generated: ${filePath}`);
-
-        return filePath;
-    },
+    // cardname_document_generator: REMOVED (Migrated to document-engine)
 
     /**
      * Get User Card Data (for frontend preview)
      * Returns user info for the Card Generator widget
      */
 
-    fetchUserCardData: async (userId) => {
-        const [userData] = await dbHots.promise().query(`
-                                    SELECT
-                                    u.user_id,
-                                    u.nik,
-                                    u.firstname,
-                                    u.lastname,
-                                    CONCAT(u.firstname, ' ', u.lastname) AS fullname,
-                                    u.email,
-                                    u.phone AS ext_phone,
-                                    jt.job_title AS job_title_name,
-                                    d.department_name
-                                    FROM user u
-                                    LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
-                                    LEFT JOIN m_department d ON u.department_id = d.department_id
-                                    WHERE u.user_id = ?
-                                    `, [userId]);
+    // --- UNIFIED CARD GENERATOR LOGIC ---
+    // Legacy fetchUserCardData: REMOVED
 
-        if (!userData || userData.length === 0) {
-            return null;
-        }
-
-        const user = userData[0];
-
-        // Fetch cell phone from user_profile
-        const [profileData] = await dbHots.promise().query(`
-                                    SELECT attribute_value
-                                    FROM user_profile
-                                    WHERE user_id = ? AND attribute_name = 'phone' AND is_active = 1
-                                    LIMIT 1
-                                    `, [userId]);
-
-        // Check for existing active card
-        const [existingCard] = await dbHots.promise().query(`
-                                    SELECT id, file_path, file_name, generated_date
-                                    FROM t_generated_documents
-                                    WHERE document_type = 'business_card' AND created_by = ? AND ticket_id = 0
-                                    ORDER BY generated_date DESC
-                                    LIMIT 1
-                                    `, [userId]);
-
-        user.cell_phone = profileData[0]?.attribute_value || '';
-
-        // Return normalized object directly
-        return {
-            user_id: user.user_id,
-            nik: user.nik,
-            fullname: user.fullname,
-            company_name: 'PT. INDOFOOD CBP SUKSES MAKMUR', // Default company
-            job_title_name: user.job_title_name || '', // Use correct property name matching generateCardNameHTML expectation
-            department_name: user.department_name || '',
-            email: user.email,
-            cell_phone: user.cell_phone || '',
-            ext_phone: user.ext_phone || '',
-            existing_card: existingCard[0] || null // Return existing card if any
-        };
-    },
-
+    // API: Preview Virtual Card
     getUserCardData: async (req, res) => {
         try {
             const { userId } = req.params;
-            const data = await module.exports.fetchUserCardData(userId);
+            const { prepareCardData } = require('../../../../core/document-data-preparer');
 
-            if (!data) {
-                return res.status(404).json({ success: false, message: 'User not found' });
-            }
+            // Use unified preparer (Live Mode)
+            const data = await prepareCardData(userId, { db: dbHots });
 
             res.json({
                 success: true,
                 data: {
+                    user_id: parseInt(userId),
+                    encrypted_id: encodeURIComponent(encrypts.encryptEmployeeId(userId)), // Secure ID for public URL
+                    fullname: data.name,
                     ...data,
-                    // Frontend expects these specific keys for display
-                    job_title: data.job_title_name,
+                    // Frontend backward compatibility
+                    job_title: data.position,
                     department: data.department_name
                 }
             });
         } catch (error) {
-            console.error('❌ [getUserCardData] Error:', error);
+            console.error('Error fetching card data:', error);
             res.status(500).json({ success: false, message: error.message });
         }
     },
 
-    /**
-     * Get Card Profile (PUBLIC - no auth required)
-     * GET /hots_settings/card/profile?employee_id=xxx
-     * Used by QR code to display user's digital business card
-     */
+    // API: Public Profile (QR Code Target)
     getCardProfile: async (req, res) => {
         try {
             const { employee_id } = req.query;
+            if (!employee_id) return res.status(400).json({ success: false, message: 'Employee ID is required' });
 
-            if (!employee_id) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Employee ID is required'
-                });
-            }
-
-            // Decrypt the employee ID (or accept raw user_id for testing)
+            // Decrypt ID
             let userId;
             try {
-                userId = encrypts.decryptEmployeeId(decodeURIComponent(employee_id));
-            } catch (decryptError) {
-                // Fallback: accept raw user_id for testing purposes
-                if (/^\d+$/.test(employee_id)) {
-                    userId = employee_id;
-                    console.log(`⚠️ [getCardProfile] Using raw user_id for testing: ${userId}`);
+                if (encrypts.decryptEmployeeId) {
+                    userId = encrypts.decryptEmployeeId(decodeURIComponent(employee_id));
                 } else {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Invalid employee ID'
-                    });
+                    return res.status(500).json({ success: false, message: 'Encryption service unavailable' });
                 }
+            } catch (err) {
+                return res.status(400).json({ success: false, message: 'Invalid or expired ID. Please scan a fresh QR code.' });
             }
 
-            // Fetch user data
-            const [userData] = await dbHots.promise().query(`
-                                    SELECT
-                                    u.user_id,
-                                    u.firstname,
-                                    u.lastname,
-                                    CONCAT(u.firstname, ' ', u.lastname) AS fullname,
-                                    u.email,
-                                    u.phone AS ext_phone,
-                                    jt.job_title AS job_title_name,
-                                    d.department_name
-                                    FROM user u
-                                    LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
-                                    LEFT JOIN m_department d ON u.department_id = d.department_id
-                                    WHERE u.user_id = ? AND u.active = 1
-                                    `, [userId]);
-
-            if (!userData || userData.length === 0) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'User not found'
-                });
-            }
-
-            const user = userData[0];
-
-            // Fetch profile attributes (phone, linkedin)
-            const [profileData] = await dbHots.promise().query(`
-                                    SELECT attribute_name, attribute_value
-                                    FROM user_profile
-                                    WHERE user_id = ? AND is_active = 1
-                                    `, [userId]);
-
-            // Map profile attributes
-            const profileMap = {};
-            profileData.forEach(attr => {
-                profileMap[attr.attribute_name] = attr.attribute_value;
-            });
-
-            // Check for existing business card (latest)
-            const [cards] = await dbHots.promise().query(
-                'SELECT file_path FROM t_generated_documents WHERE document_type = ? AND created_by = ? AND ticket_id = 0 ORDER BY generated_date DESC LIMIT 1',
-                ['business_card', userId]
-            );
-
-            let downloadUrl = null;
-            if (cards.length > 0) {
-                const rawPath = cards[0].file_path;
-                const normalizedPath = rawPath.replace(/\\/g, '/');
-                downloadUrl = `${process.env.APP_URL || 'https://backend.indofoodinternational.com:2864'}/${normalizedPath}`;
-            }
-
-            // Build response with social links
-            const response = {
-                success: true,
-                data: {
-                    user_id: user.user_id,
-                    fullname: user.fullname,
-                    position: user.job_title_name || '',
-                    department: user.department_name || 'International Operations Division',
-                    email: user.email,
-                    phone: profileMap.phone || user.ext_phone || '',
-                    linkedin: profileMap.linkedin || '',
-                    // Fixed company info
-                    company: 'PT. INDOFOOD CBP SUKSES MAKMUR Tbk',
-                    website: 'https://www.indofoodcbp.com/',
-                    location: 'https://www.google.com/maps/place/Indofood+Tower,+Jl.+Jenderal+Sudirman+No.76-78,+RT.3%2FRW.3,+Kuningan,+Setia+Budi,+Kecamatan+Setiabudi,+Kota+Jakarta+Selatan,+Daerah+Khusus+Ibukota+Jakarta+10250/@-6.2082454,106.8224468,17z',
-                    address: 'Sudirman Plaza, Indofood Tower 23rd Floor, Jl. Jend. Sudirman Kav. 76-78, Jakarta 12910',
-                    // Encrypted ID for card download
-                    encrypted_id: employee_id,
-                    download_url: downloadUrl // Public download URL
-                }
-            };
-
-            res.json(response);
-        } catch (error) {
-            console.error('❌ [getCardProfile] Error:', error);
-            res.status(500).json({ success: false, message: 'Server error' });
-        }
-    },
-
-    /**
-     * Generate Card for User (API endpoint)
-     * POST /hots_settings/custom_functions/generate_card
-     */
-    generateCard: async (req, res) => {
-        try {
-            const { target_user_id } = req.body;
-            const requestingUserId = req.dataToken?.user_id;
-
-            // Dual mode: Use target_user_id if provided, else use self
-            const userIdToGenerate = target_user_id || requestingUserId;
-
-            if (!userIdToGenerate) {
-                return res.status(400).json({ success: false, message: 'No user ID provided' });
-            }
-
-            console.log(`📇 [CARD_API] Generating card for user ${userIdToGenerate} (requested by ${requestingUserId})`);
-
-            const filePath = await module.exports.cardname_document_generator({}, userIdToGenerate, {});
-
-            // Save to generated documents
-            await dbHots.promise().query(`
-                                    INSERT INTO t_generated_documents
-                                    (ticket_id, document_type, file_path, file_name, generated_date, template_used, created_by)
-                                    VALUES (0, 'card_name', ?, ?, NOW(), 'cardname_document', ?)
-                                    `, [filePath, path.basename(filePath), requestingUserId]);
+            // Reuse unified preparer
+            const { prepareCardData } = require('../../../../core/document-data-preparer');
+            const data = await prepareCardData(userId, { db: dbHots });
 
             res.json({
                 success: true,
-                message: 'Card generated successfully',
                 data: {
-                    file_path: filePath,
-                    file_name: path.basename(filePath),
-                    download_url: `/${filePath.replace(/\\/g, '/')}`
+                    user_id: userId,
+                    fullname: data.name,
+                    position: data.position,
+                    department: data.department_name,
+                    email: data.email,
+                    phone: data.cellPhone || data.extPhone,
+                    linkedin: '',
+                    company: data.company,
+                    website: 'https://www.indofoodcbp.com/',
+                    location: 'https://www.google.com/maps/place/Indofood+Tower',
+                    address: 'Sudirman Plaza, Indofood Tower 23rd Floor, Jl. Jend. Sudirman Kav. 76-78, Jakarta 12910',
+                    encrypted_id: employee_id,
+                    download_url: `/hots_settings/custom_functions/card_pdf/${userId}`
                 }
             });
         } catch (error) {
-            console.error('❌ [generateCard] Error:', error);
+            console.error('❌ [getCardProfile] Error:', error);
             res.status(500).json({ success: false, message: error.message });
         }
     },
 
-    /**
-     * Delete Generated Card
-     * POST /hots_settings/custom_functions/delete_card
-     */
-    deleteUserCard: async (req, res) => {
+    // API: Generate/Download PDF
+    generateCardNamePDF: async (req, res) => {
         try {
-            const { target_user_id } = req.body;
+            const { userId } = req.params;
+            const { prepareCardData } = require('../../../../core/document-data-preparer');
+            const renderCardHtml = require('../../../../core/renderers/card-renderer');
 
-            if (!target_user_id) {
-                return res.status(400).json({ success: false, message: 'User ID is required' });
-            }
+            const data = await prepareCardData(userId, { db: dbHots });
+            const html = renderCardHtml(data);
 
-            // Find the latest card
-            const [cards] = await dbHots.promise().query(`
-                                    SELECT id, file_path
-                                    FROM t_generated_documents
-                                    WHERE document_type = 'business_card' AND created_by = ? AND ticket_id = 0
-                                    ORDER BY generated_date DESC
-                                    LIMIT 1
-                                    `, [target_user_id]);
+            const puppeteer = require('puppeteer');
+            const browser = await puppeteer.launch({
+                headless: 'shell', // Use the new faster headless mode
+                args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+            });
+            const page = await browser.newPage();
+            await page.setContent(html, { waitUntil: 'networkidle0' }); // Wait for images if possible
+            const pdfBuffer = await page.pdf({
+                width: '510.2362px',
+                height: '633.622px', // Height of TWO cards (311.811 * 2) + 10px gap
+                printBackground: true,
+                margin: { top: 0, right: 0, bottom: 0, left: 0 }
+            });
+            await browser.close();
 
-            if (cards.length === 0) {
-                return res.status(404).json({ success: false, message: 'No card found to delete' });
-            }
+            // CRITICAL: Puppeteer 24 returns Uint8Array. Express needs Buffer for binary res.send
+            const binaryBuffer = Buffer.from(pdfBuffer);
 
-            const card = cards[0];
-
-            // Delete file if exists
-            if (card.file_path && fs.existsSync(card.file_path)) {
-                try {
-                    fs.unlinkSync(card.file_path);
-                    console.log(`🗑️ [CARD_DELETE] Deleted file: ${card.file_path}`);
-                } catch (err) {
-                    console.error(`⚠️ [CARD_DELETE] Failed to delete file: ${err.message}`);
-                }
-            }
-
-            // Delete record from DB
-            await dbHots.promise().query(`
-                                    DELETE FROM t_generated_documents WHERE id = ?
-                                    `, [card.id]);
-
-            console.log(`🗑️ [CARD_DELETE] Deleted record ID: ${card.id} for user ${target_user_id}`);
-
-            res.json({ success: true, message: 'Card deleted successfully' });
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename=Card_${data.name.replace(/\s+/g, '_')}.pdf`);
+            res.setHeader('Content-Length', binaryBuffer.length);
+            res.send(binaryBuffer);
 
         } catch (error) {
-            console.error('❌ [deleteUserCard] Error:', error);
+            console.error('Error generating Card PDF:', error);
             res.status(500).json({ success: false, message: error.message });
         }
     },
 
-    /**
-     * Preview Card Name HTML
-     * Returns HTML string for immediate frontend preview
-     */
+    // API: Preview Card HTML (for iframe rendering)
+    // GET /card_generator/preview/:target_user_id
     previewCard: async (req, res) => {
         try {
-            const { target_user_id } = req.params;
-            const requestingUserId = req.dataToken?.user_id;
+            const userId = req.params.target_user_id;
+            const { prepareCardData } = require('../../../../core/document-data-preparer');
+            const renderCardHtml = require('../../../../core/renderers/card-renderer');
 
-            // Use target user or requester
-            const userId = target_user_id || requestingUserId;
+            const data = await prepareCardData(userId, { db: dbHots });
+            const html = renderCardHtml(data);
 
-            if (!userId) {
-                return res.status(400).send('User ID required');
-            }
-
-            // Fetch user data using internal helper
-            const userData = await module.exports.fetchUserCardData(userId);
-
-            if (!userData) {
-                return res.status(404).send('User not found');
-            }
-
-            // Generate HTML
-            const html = await module.exports.generateCardNameHTML(userData);
-
+            res.setHeader('Content-Type', 'text/html');
             res.send(html);
         } catch (error) {
-            console.error('❌ [previewCard] Error:', error);
-            res.status(500).send('Error generating preview');
+            console.error('Error previewing card:', error);
+            res.status(500).send('<p>Error generating preview</p>');
         }
     },
 
+    // API: Generate Card (on-the-fly PDF, returns download URL)
+    // POST /card_generator/generate  { target_user_id }
+    generateCard: async (req, res) => {
+        try {
+            const userId = req.body.target_user_id || req.user?.user_id;
+            if (!userId) return res.status(400).json({ success: false, message: 'target_user_id is required' });
 
+            // Return a download URL that points to the on-the-fly PDF endpoint
+            // The frontend uses download_url property to trigger window.open
+            const downloadPath = `hots_settings/custom_functions/card_pdf/${userId}`;
+
+            res.json({
+                success: true,
+                data: {
+                    file_path: downloadPath, // Legacy field
+                    download_url: downloadPath, // Correct field for frontend
+                    file_name: `BusinessCard_${userId}.pdf`,
+                    message: 'Card ready for download (generated on-the-fly)'
+                }
+            });
+        } catch (error) {
+            console.error('Error in generateCard:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
 
     /**
      * Search Users for Card Generator
@@ -4268,24 +2917,24 @@ module.exports = {
             const searchTerm = `%${q || ''}%`;
 
             const [users] = await dbHots.promise().query(`
-                                    SELECT
-                                    u.user_id,
-                                    u.nik,
-                                    CONCAT(u.firstname, ' ', u.lastname) AS fullname,
-                                    jt.job_title AS job_title_name,
-                                    d.department_name
-                                    FROM user u
-                                    LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
-                                    LEFT JOIN m_department d ON u.department_id = d.department_id
-                                    WHERE u.active = 1
-                                    AND (
-                                    CONCAT(u.firstname, ' ', u.lastname) LIKE ?
-                                    OR u.nik LIKE ?
-                                    OR u.email LIKE ?
-                                    )
-                                    ORDER BY u.firstname ASC
-                                    LIMIT 20
-                                    `, [searchTerm, searchTerm, searchTerm]);
+                SELECT
+                u.user_id,
+                u.nik,
+                CONCAT(u.firstname, ' ', u.lastname) AS fullname,
+                jt.job_title AS job_title_name,
+                d.department_name
+                FROM user u
+                LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
+                LEFT JOIN m_department d ON u.department_id = d.department_id
+                WHERE u.active = 1
+                AND (
+                CONCAT(u.firstname, ' ', u.lastname) LIKE ?
+                OR u.nik LIKE ?
+                OR u.email LIKE ?
+                )
+                ORDER BY u.firstname ASC
+                LIMIT 20
+            `, [searchTerm, searchTerm, searchTerm]);
 
             res.json({
                 success: true,

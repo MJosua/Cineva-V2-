@@ -1,11 +1,16 @@
 const axios = require('axios');
 const path = require('path');
+const jwt = require('jsonwebtoken'); // Added for mock token
 // Load env before requiring db config
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const { dbQueryHots } = require('../config/db');
 
-const BASE_URL = 'http://localhost:9999/api/event-engine';
+const BASE_URL = 'http://localhost:9999/api/event-engine/admin';
 const CAMPAIGN_SLUG = 'tw-2024';
+
+// Setup default axios authorization
+const mockToken = jwt.sign({ id: 1, type_id: 9, role_id: 4 }, process.env.SECURITY_TOKEN_KEY_HT || 'testing', { expiresIn: '1h' });
+axios.defaults.headers.common['Authorization'] = `Bearer ${mockToken}`;
 
 async function runE2E() {
     console.log("🚀 Starting Final E2E Verification...");

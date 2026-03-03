@@ -110,7 +110,11 @@ class SSEManager {
 
         const payload = JSON.stringify({
             type: eventType,
-            data,
+            data: {
+                ...data,
+                title: options.title || this._generateTitle(eventType, data),
+                message: options.message || this._generateMessage(eventType, data),
+            },
             timestamp: Date.now(),
             notificationId
         });
@@ -179,15 +183,11 @@ class SSEManager {
      * @param {number[]} userIds 
      * @param {string} eventType 
      * @param {object} data 
+     * @param {object} options - { persist, title, message }
      */
-    emitToUsers(userIds, eventType, data) {
-        let sentCount = 0;
-        userIds.forEach(userId => {
-            if (this.emitToUser(userId, eventType, data)) {
-                sentCount++;
-            }
-        });
-        return sentCount;
+    async emitToUsers(userIds, eventType, data, options = {}) {
+        const promises = userIds.map(userId => this.emitToUser(userId, eventType, data, options));
+        return await Promise.all(promises);
     }
 
     /**

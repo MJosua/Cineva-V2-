@@ -30,6 +30,9 @@ module.exports = {
     readToken: (req, res, next) => {
         jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY, (err, decode) => {
             if (err) {
+                if (err.name === 'TokenExpiredError') {
+                    return res.status(401).send({ success: false, message: 'TOKEN_EXPIRED' });
+                }
                 console.log("Invalid Token Read Token");
                 return res.status(401).send({ message: 'ERROR IN AUTH!' });
             }
@@ -111,6 +114,9 @@ module.exports = {
     decodeTokenHT: (req, res, next) => {
         jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY_HT, (err, decode) => {
             if (err) {
+                if (err.name === 'TokenExpiredError') {
+                    return res.status(401).send({ success: false, message: 'TOKEN_EXPIRED' });
+                }
                 console.log("Invalid Token Read Token HT - Error:", err.message);
                 return res.status(401).send({ message: 'UNAUTHORIZED!' });
             }

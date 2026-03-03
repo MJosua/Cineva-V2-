@@ -45,24 +45,16 @@ function createSafePool(dbName, connectionLimit = 20) {
     });
 
 
-    // Apply lower wait_timeout per connection
+    // Apply lower wait_timeout per connection (1 minute to prevent Zombie connections)
     pool.on("connection", (conn) => {
-        conn.query("SET SESSION wait_timeout=28800");
-        conn.query("SET SESSION interactive_timeout=28800");
+        conn.query("SET SESSION wait_timeout=60");
+        conn.query("SET SESSION interactive_timeout=60");
     });
 
     // if a socket goes bad, remove it from the pool
     pool.on("error", (err) => {
         console.error(`⚠️ MySQL pool ${dbName} error:`, err.code);
-
-        if (["PROTOCOL_CONNECTION_LOST", "ECONNRESET"].includes(err.code)) {
-            console.warn(`🔁 Reconnecting pool ${dbName}...`);
-            setTimeout(() => {
-                const newPool = createSafePool(dbName);
-                module.exports[`dbQuery${dbName}`] = newPool.query;
-                module.exports[`db${dbName}`] = newPool.pool;
-            }, 2000);
-        }
+        // factory handles errors gracefully, no need to replace global exports
     });
 
     const promisePool = pool.promise();
@@ -114,7 +106,7 @@ function createSafePool(dbName, connectionLimit = 20) {
 // =============================================================== //
 // 🔹 Database Pools
 const { pool: dbConf, query: dbQuery } = createSafePool(process.env.DB_NAME);
-const { pool: dbTM, query: dbTMQuery } = createSafePool(process.env.DB_NAME_TM);
+// const { pool: dbTM, query: dbTMQuery } = createSafePool(process.env.DB_NAME_TM); // Decommissioned
 const { pool: dbIndomieku, query: dbQueryIndomieku } = createSafePool(process.env.DB_NAME_INDOMIEKU);
 const { pool: dbCardGenerator, query: dbQueryCardGenerator } = createSafePool(process.env.DB_NAME_CARD_GENERATOR);
 const { pool: dbHots, query: dbQueryHots } = createSafePool(process.env.DB_NAME_HT);
@@ -122,18 +114,13 @@ const { pool: dbPMS, query: dbQueryPMS } = createSafePool(process.env.DB_NAME_PM
 const { pool: dbClick, query: dbQueryClick } = createSafePool(process.env.DB_NAME_Click);
 const { pool: dbSR, query: dbQuerySR } = createSafePool(process.env.DB_NAME_SR);
 
-// MeetingBook (simple promise pool)
-const dbmeetingbook = mysql.createPool({
-    host: host_config,
-    user: user_config,
-    password: password_config,
-    database: "meetingbook",
-}).promise();
+// MeetingBook (using safe factory now)
+const { pool: dbmeetingbookPool, query: dbmeetingbook } = createSafePool("meetingbook");
 
 // =============================================================== //
 // 🔹 SQL Logger
 const addSqlLogger = async (user_id, sql_parameter, message, function_name) => {
-   
+
     // try {
     //     await dbQuery(
     //         `INSERT INTO action_logger (time_event,user_id,sql_code,message,function_name)
@@ -150,16 +137,15 @@ const addSqlLogger = async (user_id, sql_parameter, message, function_name) => {
 if (!production()) {
     setInterval(async () => {
         const pools = { IOD: dbQuery, SR: dbQuerySR, Hots: dbQueryHots };
+        const status = {};
 
         try {
             for (const [name, fn] of Object.entries(pools)) {
                 try {
                     await fn("SELECT 1");
-                    const now = new Date().toLocaleTimeString('id-ID');
-                    console.log(`[${now}] 💚 ${name} pool healthy`);
+                    status[name] = "💚 Healthy";
                 } catch (e) {
-                    const now = new Date().toLocaleTimeString('id-ID');
-                    console.error(`[${now}]💥 ${name} pool unhealthy:`, e.message);
+                    status[name] = `💥 Error: ${e.message}`;
                 }
             }
 
@@ -168,7 +154,12 @@ if (!production()) {
                 (dbSR._allConnections?.length || 0) +
                 (dbHots._allConnections?.length || 0);
 
-            console.log("🔍 Active MySQL connections:", active);
+            // console.table([{
+            //     ...status,
+            //     "Active Connections": active,
+            //     "Timestamp": new Date().toLocaleTimeString('id-ID')
+            // }]);
+
         } catch (e) {
             console.error("💥 Health monitor failure:", e.message);
         }
@@ -179,7 +170,7 @@ if (!production()) {
 // 🔹 Graceful Shutdown
 function gracefulShutdown() {
     console.log("\n🧹 Closing all MySQL pools...");
-    const pools = [dbConf, dbTM, dbIndomieku, dbCardGenerator, dbHots, dbPMS, dbClick, dbSR];
+    const pools = [dbConf, dbIndomieku, dbCardGenerator, dbHots, dbPMS, dbClick, dbSR]; // dbTM removed
     Promise.all(pools.map((p) => p.end()))
         .then(() => {
             console.log("✅ All MySQL connections closed cleanly.");
@@ -207,13 +198,13 @@ process.on('unhandledRejection', (reason, p) => {
 // 🔹 Exports
 module.exports = {
     dbConf, dbQuery,
-    dbTM, dbTMQuery,
+    // dbTM, dbTMQuery, // Decommissioned
     dbIndomieku, dbQueryIndomieku,
     dbCardGenerator, dbQueryCardGenerator,
     dbHots, dbQueryHots,
     dbPMS, dbQueryPMS,
     dbClick, dbQueryClick,
     dbSR, dbQuerySR,
-    dbmeetingbook,
+    dbmeetingbook: { query: dbmeetingbook },
     addSqlLogger,
 };

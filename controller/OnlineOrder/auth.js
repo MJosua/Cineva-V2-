@@ -64,7 +64,11 @@ module.exports = {
         COALESCE(
           JSON_ARRAYAGG(mcn.conditions),
           JSON_ARRAY()
-        ) AS spc_condition
+        ) AS spc_condition,
+        COALESCE(
+          JSON_ARRAYAGG(JSON_OBJECT('id', mcn.conditions, 'value', mcn.value)),
+          JSON_ARRAY()
+        ) AS spc_condition_details
       FROM
         sys_user su
       JOIN mst_company mc ON
@@ -102,6 +106,7 @@ module.exports = {
         su.uid = ?
       AND 
         su.asin = ?
+      GROUP BY su.uid
       LIMIT 1
         `
         dbConf.query(query, [userID, hashPassword(pswd)]
@@ -712,33 +717,10 @@ module.exports = {
 
   },
   isOpenLoginPage: async (req, res) => {
-
-    let date = new Date();
-    let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-
-    // ganti status ini untuk mencegah user login atau menampilkan status tidak bisa login
-    const open = true;
-    //const open = false;
-
-
-
-    if (open) {
-
-      res.status(200).send({
-        status: true,
-        message: "Server are Ready	",
-      });
-      console.log(timestamp + "Server status: Server are Ready");
-
-    } else {
-
-      res.status(200).send({
-        status: false,
-        message: "Sorry We are sleeping now",
-      });
-      console.log(timestamp + "Server status: Sorry We are sleeping now");
-    }
-
-
+    // 🚀 High-speed ping (Bypasses Session Middleware in index.js)
+    res.status(200).send({
+      status: true,
+      message: "Server is Ready",
+    });
   },
 };

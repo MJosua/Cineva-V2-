@@ -33,4 +33,16 @@ router.get('/campaigns/:slug', eventEngineController.getPublicCampaign);
  */
 router.post('/campaigns/:slug/submit', eventEngineController.submitEntry);
 
+// ============================================================================
+// COUPON CHECK
+// ============================================================================
+
+/**
+ * GET /campaigns/:slug/check-coupon/:code
+ * Validate a coupon code (no auth required).
+ * Optional query param: ?pool=<poolId> to scope to a specific pool.
+ */
+router.get('/campaigns/:slug/check-coupon/:code', eventEngineController.checkCoupon);
+
 module.exports = router;
+

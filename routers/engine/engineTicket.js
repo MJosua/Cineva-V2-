@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const engineTicket = require('../../controller/engine/engineTicket');
 const engineAssignment = require('../../controller/engine/engineAssignment');
+const engineTimeline = require('../../controller/engine/engineTimeline');
 const { decodeTokenHT } = require('../../config/encrypts');
 
 // protected endpoints
@@ -33,6 +34,9 @@ router.get('/ticket/revision/:ticket_id/:rev', decodeTokenHT, engineTicket.revis
 
 // task completion endpoint
 router.post('/task/complete', decodeTokenHT, engineTicket.completeTask);
+
+// atomic timeline edit
+router.post('/timeline/edit', decodeTokenHT, engineTimeline.editTimelineEntry);
 
 // reload engine endpoint
 router.get('/reload', decodeTokenHT, engineTicket.reload);

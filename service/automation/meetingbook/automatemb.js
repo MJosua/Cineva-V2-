@@ -31,7 +31,7 @@ const transporter = nodemailer.createTransport({
 const earlyReminders = async () => {
     const today = new Date().toISOString().split("T")[0];
 
-    const [bookings] = await dbmeetingbook.query(
+    const bookings = await dbmeetingbook.query(
         `SELECT b.*, u.email 
          FROM bookings b 
          JOIN users u ON b.user_id = u.uid 
@@ -44,7 +44,7 @@ const earlyReminders = async () => {
         const key = `${booking.user_id}_${booking.date}_${booking.room_id}`;
 
         // Check if there's a booking just before this time slot
-        const [prevRows] = await dbmeetingbook.query(`
+        const prevRows = await dbmeetingbook.query(`
         SELECT * FROM bookings
         WHERE user_id = ? AND date = ? AND room_id = ? AND time_id = ?
     `, [booking.user_id, booking.date, booking.room_id, booking.time_id - 1]);
@@ -57,7 +57,7 @@ const earlyReminders = async () => {
         // 1. Get all consecutive time slots for this booking block
         let endTimeId = booking.time_id;
         while (timeMap[endTimeId + 1]) {
-            const [nextRows] = await dbmeetingbook.query(`
+            const nextRows = await dbmeetingbook.query(`
         SELECT * FROM bookings
         WHERE user_id = ? AND date = ? AND room_id = ? AND time_id = ?
     `, [booking.user_id, booking.date, booking.room_id, endTimeId + 1]);
@@ -108,7 +108,7 @@ cron.schedule("*/1 * * * *", async () => {
     if (!timeId) return; // no matching time_id for this minute
 
     try {
-        const [bookings] = await dbmeetingbook.query(
+        const bookings = await dbmeetingbook.query(
             `SELECT b.*, u.email 
                 FROM bookings b 
                 JOIN users u ON b.user_id = u.uid 
@@ -121,7 +121,7 @@ cron.schedule("*/1 * * * *", async () => {
             const key = `${booking.user_id}_${booking.date}_${booking.room_id}`;
 
             // Check if there's a booking just before this time slot
-            const [prevRows] = await dbmeetingbook.query(`
+            const prevRows = await dbmeetingbook.query(`
                 SELECT * FROM bookings
                 WHERE user_id = ? AND date = ? AND room_id = ? AND time_id = ?
             `, [booking.user_id, booking.date, booking.room_id, booking.time_id - 1]);
@@ -134,7 +134,7 @@ cron.schedule("*/1 * * * *", async () => {
             // 1. Get all consecutive time slots for this booking block
             let endTimeId = booking.time_id;
             while (endTimeId < 12) { // up to 17:00
-                const [nextRows] = await dbmeetingbook.query(`
+                const nextRows = await dbmeetingbook.query(`
                 SELECT * FROM bookings
                 WHERE user_id = ? AND date = ? AND room_id = ? AND time_id = ?
             `, [booking.user_id, booking.date, booking.room_id, endTimeId + 1]);
