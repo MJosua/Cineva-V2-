@@ -37,6 +37,8 @@ export const useSystemVariableContext = (): SystemVariableContext => {
   const userManagement = useAppSelector(state => state.userManagement);
   //srf
   const srf = useAppSelector(state => state.srf);
+  console.log("srf", srf)
+
   const sku = useAppSelector(state => state.sku);
   const srf_purpose = useAppSelector(state => state.srf_purpose)
   const srf_po = useAppSelector(state => state.srf_purpose)
@@ -85,7 +87,6 @@ export const useSystemVariableContext = (): SystemVariableContext => {
 
 
 };
-
 
 export interface SystemVariableEntry {
   key: string;
@@ -167,9 +168,9 @@ export const SYSTEM_VARIABLE_ENTRIES: SystemVariableEntry[] = [
       if (!Array.isArray(ctx.srfsamplecategoryes)) return [];
       return ctx.srfsamplecategoryes.map(item => ({
         item_name: item.samplecat_name,
-        filter: item.bom_type,
-        samplecat_id: item.samplecat_id,       // ✅ Added for master data lookup
-        samplecat_shortname: item.samplecat_shortname  // ✅ Added for document generation
+        filter: item.bom_type, // 👈 Map the bom_type to filter
+        samplecat_id: item.samplecat_id,
+        samplecat_shortname: item.samplecat_shortname
       }));
     },
   },

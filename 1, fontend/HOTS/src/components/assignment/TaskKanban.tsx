@@ -683,8 +683,12 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId, assignedTy
                                 <div className="space-y-2">
                                     <Label>Assignee</Label>
                                     <Select
-                                        value={newTask.assignee?.userId ? String(newTask.assignee.userId) : ""}
+                                        value={newTask.assignee?.userId ? String(newTask.assignee.userId) : "none"}
                                         onValueChange={(val) => {
+                                            if (val === "none") {
+                                                setNewTask({ ...newTask, assignee: null });
+                                                return;
+                                            }
                                             const member = eligibleAssignees.find(m => String(m.user_id) === val);
                                             if (member) {
                                                 setNewTask({
@@ -705,7 +709,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId, assignedTy
                                             <SelectValue placeholder="Select assignee..." />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="">Unassigned</SelectItem>
+                                            <SelectItem value="none">Unassigned</SelectItem>
                                             {eligibleAssignees.map((member) => (
                                                 <SelectItem key={member.user_id} value={String(member.user_id)}>
                                                     {member.user_name || `${member.firstname} ${member.lastname || ''}`}
@@ -896,61 +900,66 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId, assignedTy
 
             {/* Kanban Board — Column Mode */}
             {filters.viewMode === 'column' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {columns.map(column => {
-                        const columnTasks = getTasksByStatus(column.id);
-                        const Icon = column.icon;
-                        const isDragOver = dragOverColumn === column.id;
+                <div className={`grid grid-cols-1 ${filters.statusFilter.length === 1 ? 'md:grid-cols-1 max-w-2xl mx-auto' :
+                        filters.statusFilter.length === 2 ? 'md:grid-cols-2' :
+                            'md:grid-cols-3'
+                    } gap-4`}>
+                    {columns
+                        .filter(col => filters.statusFilter.length === 0 || filters.statusFilter.includes(col.id))
+                        .map(column => {
+                            const columnTasks = getTasksByStatus(column.id);
+                            const Icon = column.icon;
+                            const isDragOver = dragOverColumn === column.id;
 
-                        return (
-                            <div
-                                key={column.id}
-                                className={`rounded-lg border-2 transition-all duration-200 min-h-[200px]
+                            return (
+                                <div
+                                    key={column.id}
+                                    className={`rounded-lg border-2 transition-all duration-200 min-h-[200px]
                                     ${column.bgColor} ${column.borderColor}
                                     ${isDragOver ? 'ring-2 ring-primary ring-offset-2 scale-[1.02]' : ''}
                                 `}
-                                onDragOver={(e) => handleDragOver(e, column.id)}
-                                onDragLeave={handleDragLeave}
-                                onDrop={(e) => handleDrop(e, column.id)}
-                            >
-                                <div className={`p-3 border-b ${column.headerBg} flex items-center justify-between rounded-t-lg`}>
-                                    <div className="flex items-center gap-2">
-                                        <Icon className="w-4 h-4" />
-                                        <span className="font-medium text-sm">{column.title}</span>
+                                    onDragOver={(e) => handleDragOver(e, column.id)}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={(e) => handleDrop(e, column.id)}
+                                >
+                                    <div className={`p-3 border-b ${column.headerBg} flex items-center justify-between rounded-t-lg`}>
+                                        <div className="flex items-center gap-2">
+                                            <Icon className="w-4 h-4" />
+                                            <span className="font-medium text-sm">{column.title}</span>
+                                        </div>
+                                        <Badge variant="secondary" className="text-xs">
+                                            {columnTasks.length}
+                                        </Badge>
                                     </div>
-                                    <Badge variant="secondary" className="text-xs">
-                                        {columnTasks.length}
-                                    </Badge>
-                                </div>
-                                <div className="p-2 space-y-2">
-                                    {columnTasks.length === 0 ? (
-                                        <div className={`text-xs text-muted-foreground text-center py-8 border-2 border-dashed rounded-lg
+                                    <div className="p-2 space-y-2">
+                                        {columnTasks.length === 0 ? (
+                                            <div className={`text-xs text-muted-foreground text-center py-8 border-2 border-dashed rounded-lg
                                             ${isDragOver ? 'border-primary bg-primary/5' : 'border-transparent'}
                                         `}>
-                                            {isDragOver ? 'Drop here' : 'No tasks'}
-                                        </div>
-                                    ) : (
-                                        columnTasks.map(task => (
-                                            <div key={task.entity_id}>
-                                                <TaskCard
-                                                    task={task}
-                                                    assignmentId={assignmentId}
-                                                    eligibleAssignees={eligibleAssignees}
-                                                    onStatusChange={handleStatusChange}
-                                                    onAddSubtask={handleAddSubtask}
-                                                    onDelete={handleDeleteTask}
-                                                    onGenerateReport={handleGenerateTaskReport}
-                                                    draggable
-                                                    onDragStart={handleDragStart}
-                                                    onDragEnd={handleDragEnd}
-                                                />
+                                                {isDragOver ? 'Drop here' : 'No tasks'}
                                             </div>
-                                        ))
-                                    )}
+                                        ) : (
+                                            columnTasks.map(task => (
+                                                <div key={task.entity_id}>
+                                                    <TaskCard
+                                                        task={task}
+                                                        assignmentId={assignmentId}
+                                                        eligibleAssignees={eligibleAssignees}
+                                                        onStatusChange={handleStatusChange}
+                                                        onAddSubtask={handleAddSubtask}
+                                                        onDelete={handleDeleteTask}
+                                                        onGenerateReport={handleGenerateTaskReport}
+                                                        draggable
+                                                        onDragStart={handleDragStart}
+                                                        onDragEnd={handleDragEnd}
+                                                    />
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
                 </div>
             )}
 
@@ -964,8 +973,11 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId, assignedTy
                     const picId = task.primary_assignee_id
                         || task.custom_fields?.assignees?.find((a: any) => a.role === 'PIC')?.userId
                         || task.custom_fields?.assignees?.[0]?.userId
+                        || task.custom_fields?.assignee?.userId
                         || '__unassigned__';
-                    const picName = task.custom_fields?.assignees?.find((a: any) => String(a.userId) === String(picId))?.value || null;
+                    const picName = task.custom_fields?.assignees?.find((a: any) => String(a.userId) === String(picId))?.value
+                        || task.custom_fields?.assignee?.value
+                        || null;
 
                     if (!lanes[picId]) {
                         const member = eligibleAssignees.find(m => String(m.user_id) === String(picId));

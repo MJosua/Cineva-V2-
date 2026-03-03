@@ -61,8 +61,8 @@ export const GanttTaskModal: React.FC<GanttTaskModalProps> = ({
                 return acc;
             }, {} as Record<string, any>);
 
-            const res = await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks/${editingTask.entity_id}`, {
-                method: 'PUT',
+            const response = await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks/${editingTask.entity_id}`, {
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
                     title: editingTask.title,
@@ -80,12 +80,17 @@ export const GanttTaskModal: React.FC<GanttTaskModalProps> = ({
                     }
                 }),
             });
-            const data = await res.json();
-            if (data.ok) {
-                toast({ title: 'Task updated successfully' });
-                onTaskUpdated();
+            if (response.ok) {
+                const data = await response.json();
+                if (data.ok) {
+                    toast({ title: 'Task updated successfully' });
+                    onTaskUpdated();
+                } else {
+                    toast({ title: 'Error', description: data.error || 'Failed to update', variant: 'destructive' });
+                }
             } else {
-                toast({ title: 'Error', description: data.error || 'Failed to update', variant: 'destructive' });
+                const errorData = await response.json();
+                toast({ title: 'Error', description: errorData.error || 'Failed to update', variant: 'destructive' });
             }
         } catch {
             toast({ title: 'Error', description: 'Connection failed', variant: 'destructive' });

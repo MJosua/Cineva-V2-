@@ -69,7 +69,7 @@ const DashboardCardEnhanced: React.FC<DashboardCardEnhancedProps> = ({ func, sum
     return (
         <Card
             className="group hover:shadow-lg hover:border-blue-200 transition-all duration-300 cursor-pointer relative overflow-hidden"
-            onClick={() => navigate(`/dashboard/view/${func.id}`)}
+            onClick={() => navigate(func.path || `/dashboard/view/${func.id}`)}
         >
             {/* Subtle gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-br from-white via-white to-blue-50/30 pointer-events-none" />
@@ -182,7 +182,7 @@ const DashboardCardEnhanced: React.FC<DashboardCardEnhancedProps> = ({ func, sum
                     className="w-full justify-between text-blue-600 hover:text-blue-700 hover:bg-blue-50 group/btn"
                     onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/dashboard/view/${func.id}`);
+                        navigate(func.path || `/dashboard/view/${func.id}`);
                     }}
                 >
                     <span>Open Dashboard</span>

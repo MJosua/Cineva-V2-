@@ -411,7 +411,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                         onDragEnd(e);
                     }
                 }}
-                className={isSubtask ? "border-transparent bg-transparent shadow-none rounded-none" : "mb-3 shadow-sm transition-shadow hover:shadow-md border"}
+                className={isSubtask
+                    ? "border-transparent bg-transparent shadow-none rounded-none"
+                    : `mb-3 shadow-sm transition-all hover:shadow-md border ${task.status === 'done' ? 'bg-slate-50/80 border-slate-200 opacity-80' : 'bg-white border-slate-200'}`}
             >
                 <CardHeader className={isSubtask ? "p-0 pb-1" : "p-3 pb-2"}>
                     <div className="flex items-start justify-between">
@@ -456,7 +458,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                                             </Badge>
                                         )}
                                         {task.priority && (
-                                            <Badge className={`text-[10px] px-1.5 h-4.5 uppercase font-bold tracking-tight shadow-none border-0 ${priorityColors[task.priority].replace('bg-', 'bg-').replace('text-', 'text-')}`}>
+                                            <Badge className={`text-[10px] px-1.5 h-4.5 uppercase font-bold tracking-tight shadow-none border-0 ${task.status === 'done' ? 'bg-slate-100 text-slate-400' : priorityColors[task.priority]}`}>
                                                 {task.priority}
                                             </Badge>
                                         )}
@@ -497,7 +499,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                                                 displayValue = `${remaining.toLocaleString('id-ID')} / ${total.toLocaleString('id-ID')}`;
                                             }
 
-                                            const colorClass = `bg-${color}-50 text-${color}-600 border-[0.5px] border-${color}-200`;
+                                            const colorClass = task.status === 'done'
+                                                ? `bg-slate-50 text-slate-400 border-[0.5px] border-slate-200`
+                                                : `bg-${color}-50 text-${color}-600 border-[0.5px] border-${color}-200`;
                                             return (
                                                 <Badge key={key} variant="secondary" className={`text-[10px] px-1.5 h-4.5 font-medium tracking-tight shadow-none ${colorClass}`}>
                                                     <span className="opacity-60 mr-1">{key}:</span>
@@ -606,7 +610,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                                 </Badge>
                             )}
                             {task.priority && (
-                                <Badge className={`text-[10px] px-1.5 h-4.5 uppercase font-bold tracking-tight ${priorityColors[task.priority]}`}>
+                                <Badge className={`text-[10px] px-1.5 h-4.5 uppercase font-bold tracking-tight ${task.status === 'done' ? 'bg-slate-100 text-slate-400' : priorityColors[task.priority]}`}>
                                     {task.priority}
                                 </Badge>
                             )}
@@ -680,7 +684,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                                     displayValue = `${remaining.toLocaleString('id-ID')} / ${total.toLocaleString('id-ID')}`;
                                 }
 
-                                const colorClass = `bg-${color}-100 text-${color}-800 border-[0.5px] border-${color}-200`;
+                                const colorClass = task.status === 'done'
+                                    ? `bg-slate-100 text-slate-400 border-[0.5px] border-slate-200`
+                                    : `bg-${color}-100 text-${color}-800 border-[0.5px] border-${color}-200`;
                                 return (
                                     <Badge key={key} variant="secondary" className={`text-[10px] px-1.5 h-4.5 font-medium tracking-tight ${colorClass}`}>
                                         <span className="opacity-60 mr-1">{key}:</span>

@@ -93,6 +93,7 @@ export function applyFieldRules(
     rowContext?: { rowGroupId?: string; rowId?: string; columnKey?: string; currentEditingRowId?: string };
     setGlobalValues?: React.Dispatch<React.SetStateAction<Record<string, any>>>;
     onUpdateRowGroup?: (groupId: string, updatedRows: any[]) => void;
+    schema?: any;
   }
 ) {
 
@@ -206,25 +207,29 @@ export function applyFieldRules(
 
       if (rowContext?.rowGroupId) {
         // 🧩 Update inside rowgroup (structured input)
-        setGlobalValues?.((prev) => {
-          const rows = prev?.[rowContext.rowGroupId] || [];
-          const updatedRows = rows.map((r) =>
-            r.id === rowContext.rowId
-              ? { ...r, [fieldMap[fieldName] || "thirdValue"]: newVal }
-              : r
-          );
-          console.log(
-            `✅ Updated rowgroup '${rowContext.rowGroupId}' → ${fieldName}=${newVal}`
-          );
-          return { ...prev, [rowContext.rowGroupId]: updatedRows };
+        queueMicrotask(() => {
+          setGlobalValues?.((prev) => {
+            const rows = prev?.[rowContext.rowGroupId] || [];
+            const updatedRows = rows.map((r) =>
+              r.id === rowContext.rowId
+                ? { ...r, [fieldMap[fieldName] || "thirdValue"]: newVal }
+                : r
+            );
+            console.log(
+              `✅ Updated rowgroup '${rowContext.rowGroupId}' → ${fieldName}=${newVal}`
+            );
+            return { ...prev, [rowContext.rowGroupId]: updatedRows };
+          });
         });
       } else {
         // 🌐 Update global fields
-        setGlobalValues?.((prev) => {
-          const oldVal = prev?.[fieldName];
-          if (isSame(oldVal, newVal)) return prev;
-          console.log(`✅ Updated global field '${fieldName}'=${newVal}`);
-          return { ...prev, [fieldName]: newVal };
+        queueMicrotask(() => {
+          setGlobalValues?.((prev) => {
+            const oldVal = prev?.[fieldName];
+            if (isSame(oldVal, newVal)) return prev;
+            console.log(`✅ Updated global field '${fieldName}'=${newVal}`);
+            return { ...prev, [fieldName]: newVal };
+          });
         });
       }
     };
@@ -336,7 +341,7 @@ export function applyFieldRules(
                   globalValues,
                   selectedObjects,
                 });
-                
+
                 // Refresh options if dependsOn exists
                 if (depField && globalSnapshot[depField]) {
                   console.log(`🔁 Field '${field.name}' depends on '${depField}', using schema-defined options`);

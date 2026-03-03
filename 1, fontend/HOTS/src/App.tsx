@@ -82,6 +82,7 @@ import JobListPage from "./pages/dashboard/report/JobListPage";
 import AssignmentDetailPage from "./pages/dashboard/AssignmentDetailPage";
 import ServiceAnalyticsView from "./pages/dashboard/ServiceAnalyticsView";
 import DashboardView from "./pages/dashboard/DashboardView";
+import ProjectDashboard from "./pages/project/ProjectDashboard";
 import CardGeneratorPage from "./pages/CardGeneratorPage";
 import CardProfilePage from "./pages/public/CardProfilePage";
 
@@ -197,6 +198,7 @@ const AppContentInner = () => {
           <Route path="/dashboard/analytics/:serviceId" element={<ServiceAnalyticsView />} />
           <Route path="/dashboard/view/:dashboardId" element={<DashboardView />} />
           <Route path="/dashboard/job-list" element={<JobListPage />} />
+          <Route path="/project-dashboard/:serviceId" element={<ProjectDashboard />} />
           <Route path="/card-generator" element={<CardGeneratorPage />} />
 
           {dynamicDashboardRoutes}

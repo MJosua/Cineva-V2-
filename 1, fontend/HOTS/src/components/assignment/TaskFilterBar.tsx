@@ -183,7 +183,8 @@ export function applyTaskFilters(tasks: any[], filters: TaskFilters): any[] {
         // Assignee filter (by primary_assignee_id)
         if (filters.assigneeFilter.length > 0) {
             const taskPrimaryId = task.primary_assignee_id
-                || task.custom_fields?.assignees?.[0]?.userId;
+                || task.custom_fields?.assignees?.[0]?.userId
+                || task.custom_fields?.assignee?.userId;
             if (!taskPrimaryId || !filters.assigneeFilter.includes(String(taskPrimaryId))) return false;
         }
 

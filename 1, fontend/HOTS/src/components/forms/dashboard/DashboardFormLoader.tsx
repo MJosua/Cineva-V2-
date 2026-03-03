@@ -7,20 +7,8 @@ import { useAppSelector, useAppDispatch } from "@/hooks/useAppSelector";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchDashboardFunctions } from "@/store/slices/dashboardSlice";
 import { DashboardFunction } from "@/types/hotsDashboard";
-
-// ✅ Automatically import all .tsx files under /dashboard/report/
-const moduleFiles = import.meta.glob("@/pages/dashboard/report/*.tsx", { eager: true });
-
-// Build a dynamic registry: key = filename without extension
-const moduleRegistry: Record<string, React.FC> = {};
-
-for (const path in moduleFiles) {
-    const fileName = path.split("/").pop()?.replace(".tsx", "");
-    const mod = moduleFiles[path] as any;
-    if (fileName && mod?.default) {
-        moduleRegistry[fileName.toLowerCase()] = mod.default;
-    }
-}
+import DashboardPanelRenderer from "@/pages/dashboard/DashboardPanelRenderer";
+import { CUSTOM_COMPONENT_REGISTRY } from "@/pages/dashboard/PanelContent";
 
 export const DashboardModuleLoader: React.FC = () => {
     const navigate = useNavigate();
@@ -28,6 +16,7 @@ export const DashboardModuleLoader: React.FC = () => {
     const params = useParams();
     const location = useLocation();
 
+    // Resolve current path from URL
     const currentPath =
         params["*"] ||
         Object.values(params)[0] ||
@@ -43,18 +32,16 @@ export const DashboardModuleLoader: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const usertoken = localStorage.getItem("tokek");
-
-    // Fetch if not available
+    // Fetch dashboard definitions if not available
     useEffect(() => {
-            dispatch(fetchDashboardFunctions());
+        dispatch(fetchDashboardFunctions());
     }, [dispatch]);
 
     // Match dashboard info by path
     useEffect(() => {
         if (!loading && dashboardFunctions.length > 0) {
             const module = dashboardFunctions.find(
-                (f) => f.path.replace(/^\/+/, "") === currentPath
+                (f) => f.path?.replace(/^\/+/, "") === currentPath
             );
             if (!module) {
                 setError(`No dashboard module found for path: ${currentPath}`);
@@ -66,6 +53,7 @@ export const DashboardModuleLoader: React.FC = () => {
             setIsLoading(false);
         }
     }, [dashboardFunctions, loading, currentPath]);
+
     // Loading skeleton
     if (isLoading) {
         return (
@@ -99,13 +87,9 @@ export const DashboardModuleLoader: React.FC = () => {
         );
     }
 
-    const normalizeType = (type?: string) =>
-        type?.toLowerCase().replace(/[_\s]+/g, "") || "defaultdashboard";
-    // ✅ Dynamically load matching module
-    const moduleKey = normalizeType(dashboardInfo.type);
-    const ModuleComponent = moduleRegistry[moduleKey] || moduleRegistry["defaultdashboard"];
-
-    console.log("moduleKey",moduleKey)
+    // ✅ Resolve component from central registry using the 'widget' key from DB
+    const widgetKey = dashboardInfo.widget;
+    const Component = CUSTOM_COMPONENT_REGISTRY[widgetKey];
 
     return (
         <div className="space-y-4 p-4">
@@ -120,9 +104,9 @@ export const DashboardModuleLoader: React.FC = () => {
                     {dashboardInfo.title}
                 </div>
 
-                {dashboardInfo.type && (
+                {dashboardInfo.widget && (
                     <div className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                        Type: {dashboardInfo.type}
+                        Widget: {dashboardInfo.widget}
                     </div>
                 )}
             </div>
@@ -133,8 +117,22 @@ export const DashboardModuleLoader: React.FC = () => {
             )}
 
             {/* Module Body */}
-            <div className="border rounded-lg p-4 bg-white shadow-sm">
-                {ModuleComponent ? <ModuleComponent /> : <div>⚠️ No module found</div>}
+            <div className="border rounded-lg p-6 bg-white shadow-sm min-h-[500px]">
+                {Component ? (
+                    <React.Suspense fallback={
+                        <div className="flex items-center justify-center py-20">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                        </div>
+                    }>
+                        <Component serviceId={dashboardInfo.related_service_id || undefined} />
+                    </React.Suspense>
+                ) : (
+                    /* Fallback to panel renderer (composite dashboards) */
+                    <DashboardPanelRenderer
+                        dashboardId={dashboardInfo.id}
+                        serviceId={dashboardInfo.related_service_id || undefined}
+                    />
+                )}
             </div>
         </div>
     );

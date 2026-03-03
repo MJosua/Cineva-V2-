@@ -14,8 +14,10 @@ const ChartPanel = React.lazy(() => import('./panels/ChartPanel'));
 // EXPLICIT COMPONENT REGISTRY - Required for production builds
 // Dynamic imports with variables don't work in Vite production builds,
 // so we must explicitly list all custom components here
-const CUSTOM_COMPONENT_REGISTRY: Record<string, React.LazyExoticComponent<React.ComponentType<any>>> = {
+export const CUSTOM_COMPONENT_REGISTRY: Record<string, React.LazyExoticComponent<React.ComponentType<any>>> = {
     'srf_report': React.lazy(() => import('./report/srf_report')),
+    'report_srf2': React.lazy(() => import('./report/srf_report2')),
+    'report_srf': React.lazy(() => import('./report/srf_report')),
     'EOrderReporting': React.lazy(() => import('./report/EOrderReporting')),
     'JobListPage': React.lazy(() => import('./report/JobListPage')),
     'DefaultDashboard': React.lazy(() => import('./report/DefaultDashboard')),
@@ -27,6 +29,7 @@ const CUSTOM_COMPONENT_REGISTRY: Record<string, React.LazyExoticComponent<React.
     'LaporanKoreksi': React.lazy(() => import('./report/LaporanKoreksi')),
     'LaporanLembur': React.lazy(() => import('./report/LaporanLembur')),
     'CardNameGenerator': React.lazy(() => import('./report/CardNameGenerator')),
+    'ProjectDashboard': React.lazy(() => import('./report/ProjectDashboard')),
 };
 
 // Dynamic component loader - looks up from registry for production compatibility
