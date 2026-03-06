@@ -8,9 +8,9 @@ import ReactFlow, {
     useNodesState,
     useEdgesState,
     addEdge,
-    Connection,
     ReactFlowProvider,
     ReactFlowInstance,
+    KeyCode,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -161,7 +161,10 @@ export const VisualWorkflowEditor: React.FC<VisualWorkflowEditorProps> = ({
             <WorkflowNodePalette onDragStart={onDragStart} />
 
             {/* Center: Canvas */}
-            <div className="flex-1 h-full" ref={reactFlowWrapper}>
+            <div className="flex-1 h-full relative" ref={reactFlowWrapper}>
+                <div className="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur text-xs px-3 py-2 rounded-md shadow-sm border border-slate-200 text-slate-600 pointer-events-none">
+                    <p><strong>Tip:</strong> Select a line (edge) or node and press <kbd className="bg-slate-100 border border-slate-300 rounded px-1 font-mono">Delete</kbd> or <kbd className="bg-slate-100 border border-slate-300 rounded px-1 font-mono">Backspace</kbd> to remove it.</p>
+                </div>
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
@@ -174,6 +177,7 @@ export const VisualWorkflowEditor: React.FC<VisualWorkflowEditorProps> = ({
                     onDrop={onDrop}
                     onDragOver={onDragOver}
                     nodeTypes={nodeTypes}
+                    deleteKeyCode={[KeyCode.Delete, KeyCode.Backspace]}
                     fitView
                     snapToGrid
                     snapGrid={[15, 15]}

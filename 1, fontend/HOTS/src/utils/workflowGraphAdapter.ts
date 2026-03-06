@@ -62,7 +62,11 @@ export function workflowJsonToFlow(definition: WorkflowDefinition | null): { nod
     const edges: Edge[] = [];
 
     // Sort steps by level
-    const sortedSteps = [...definition.steps].sort((a, b) => a.level - b.level);
+    const sortedSteps = [...definition.steps].sort((a: any, b: any) => {
+        const aLevel = a.level !== undefined ? a.level : (a.step !== undefined ? a.step : 0);
+        const bLevel = b.level !== undefined ? b.level : (b.step !== undefined ? b.step : 0);
+        return aLevel - bLevel;
+    });
     const tasks = definition.tasks || [];
 
     // Calculate center X
@@ -78,9 +82,20 @@ export function workflowJsonToFlow(definition: WorkflowDefinition | null): { nod
     });
 
     // 2. Approval Step Nodes
-    sortedSteps.forEach((step, index) => {
-        const nodeId = `approval-${step.level}`;
+    sortedSteps.forEach((step: any, index) => {
+        const level = step.level !== undefined ? step.level : (step.step !== undefined ? step.step : index + 1);
+        const nodeId = `approval-${level}`;
         const y = START_Y + VERTICAL_SPACING * (index + 1);
+
+        // Handle legacy resolver object if present
+        let parsedStepType = step.step_type;
+        let parsedAssignedValue = step.assigned_value;
+        if (!parsedStepType && step.resolver && typeof step.resolver === 'object') {
+            parsedStepType = 'team'; // Default to team grouping for legacy
+            if (step.resolver.team_id) {
+                parsedAssignedValue = String(step.resolver.team_id);
+            }
+        }
 
         nodes.push({
             id: nodeId,
@@ -88,12 +103,17 @@ export function workflowJsonToFlow(definition: WorkflowDefinition | null): { nod
             position: { x: centerX - NODE_WIDTH / 2, y },
             data: {
                 ...step,
-                label: step.description || `Level ${step.level} Approval`,
+                level: level,
+                step_type: parsedStepType || 'team',
+                assigned_value: parsedAssignedValue || '',
+                label: step.description || step.role || step.label || `Level ${level} Approval`,
             },
         });
 
         // Edge from previous node
-        const sourceId = index === 0 ? 'start' : `approval-${sortedSteps[index - 1].level}`;
+        const prevStep: any = sortedSteps[index - 1];
+        const prevLevel = prevStep ? (prevStep.level !== undefined ? prevStep.level : (prevStep.step || index)) : 0;
+        const sourceId = index === 0 ? 'start' : `approval-${prevLevel}`;
         edges.push({
             id: `e-${sourceId}-${nodeId}`,
             source: sourceId,
@@ -123,8 +143,11 @@ export function workflowJsonToFlow(definition: WorkflowDefinition | null): { nod
         });
 
         // Edge from previous node
+        const lastStep: any = sortedSteps.length > 0 ? sortedSteps[sortedSteps.length - 1] : null;
+        const lastLevel = lastStep ? (lastStep.level !== undefined ? lastStep.level : (lastStep.step || sortedSteps.length)) : 0;
+
         const sourceId = index === 0
-            ? (sortedSteps.length > 0 ? `approval-${sortedSteps[sortedSteps.length - 1].level}` : 'start')
+            ? (sortedSteps.length > 0 ? `approval-${lastLevel}` : 'start')
             : `task-${tasks[index - 1].task_order}`;
 
         edges.push({
@@ -152,9 +175,14 @@ export function workflowJsonToFlow(definition: WorkflowDefinition | null): { nod
     });
 
     // Edge to end node
-    const lastNodeId = tasks.length > 0
-        ? `task-${tasks[tasks.length - 1].task_order}`
-        : (sortedSteps.length > 0 ? `approval-${sortedSteps[sortedSteps.length - 1].level}` : 'start');
+    let lastNodeId = 'start';
+    if (tasks.length > 0) {
+        lastNodeId = `task-${tasks[tasks.length - 1].task_order}`;
+    } else if (sortedSteps.length > 0) {
+        const lastStep: any = sortedSteps[sortedSteps.length - 1];
+        const lastLevel = lastStep.level !== undefined ? lastStep.level : (lastStep.step || sortedSteps.length);
+        lastNodeId = `approval-${lastLevel}`;
+    }
 
     edges.push({
         id: `e-${lastNodeId}-end`,
