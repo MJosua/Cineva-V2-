@@ -68,9 +68,7 @@ export const loginMiddleware = (userID, pswd) => {
 };
 
 export const logoutAction = () => {
-  window.location.replace("/");
-
-  //delete all stored data on localstore
+  // Clear all stored data from localStorage
   localStorage.removeItem("userLogStore");
   localStorage.removeItem("tokek");
   localStorage.removeItem("temporaryCart");
@@ -81,9 +79,8 @@ export const logoutAction = () => {
   sessionStorage.removeItem("orderDetails");
   sessionStorage.removeItem("containerOrdersInformation");
   sessionStorage.removeItem("containerOrders");
+  sessionStorage.removeItem("truckOrders"); // Added for completeness
 
-  //delete data on state
-  // setTimeout(() => { window.location.reload(); }, 300);
   return {
     type: "LOGOUT_SUCCESS",
   };
@@ -91,8 +88,8 @@ export const logoutAction = () => {
 
 export const seasonOut = () => {
   sessionStorage.clear();
-  window.location.replace("/");
-  window.location.reload(true);
+  localStorage.removeItem("userLogStore");
+  localStorage.removeItem("tokek");
 };
 
 

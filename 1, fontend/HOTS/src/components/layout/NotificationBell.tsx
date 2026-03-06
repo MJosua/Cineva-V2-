@@ -47,7 +47,7 @@ const NotificationBell: React.FC = () => {
     const fetchNotifications = useCallback(async () => {
         setIsLoading(true);
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(`${API_URL}/hots_notifications`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -63,7 +63,7 @@ const NotificationBell: React.FC = () => {
 
     const fetchUnreadCount = useCallback(async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(`${API_URL}/hots_notifications/unread_count`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -115,7 +115,7 @@ const NotificationBell: React.FC = () => {
 
     const markAsRead = async (notificationId: number) => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             await axios.post(`${API_URL}/hots_notifications/read/${notificationId}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -130,7 +130,7 @@ const NotificationBell: React.FC = () => {
 
     const markAllRead = async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             await axios.post(`${API_URL}/hots_notifications/read_all`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });

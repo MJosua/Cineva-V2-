@@ -1,4 +1,4 @@
-const { dbHots, dbQueryHots } = require("../../../../config/db");
+const { dbHots, dbQueryHots, dbQuery } = require("../../../../config/db");
 
 let yellowTerminal = "\x1b[33m";
 
@@ -151,12 +151,16 @@ module.exports = {
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
         try {
             const query = `
-                SELECT opcal_id, week, year, DATE(FROM_UNIXTIME(opcal_id * 100)) as date_converted
+                SELECT 
+                    opcal_id, 
+                    week AS actualWeek, 
+                    year AS deliveryYear, 
+                    DATE(FROM_UNIXTIME(opcal_id * 100)) as date_converted
                 FROM dat_operational_calendar
                 WHERE DATE(FROM_UNIXTIME(opcal_id * 100)) = CURDATE()
                 LIMIT 1
             `;
-            const [result] = await dbHots.promise().query(query);
+            const result = await dbQuery(query);
             res.status(200).json({ success: true, data: result[0] });
         } catch (err) {
             res.status(500).json({ success: false, message: err.message });

@@ -20,7 +20,7 @@ export default function TicketDetailPage() {
     setTicket(json.ticket);
     setEvents(json.events);
   }
-  const token = localStorage.getItem("tokek");
+  const token = localStorage.getItem("hots_tokek");
 
   async function doApprove() {
     const res = await fetch(`${API_URL}/engine/approve`, {

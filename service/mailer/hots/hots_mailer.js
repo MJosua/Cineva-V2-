@@ -161,6 +161,34 @@ module.exports = {
         }
     },
 
+    // Helper to render attachment links
+    renderAttachment: (value) => {
+        if (!value || value === '[object Object]') return '-';
+
+        try {
+            // Check if it's a JSON string (could be an array or object of files)
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) {
+                return parsed.map(file => {
+                    const name = file.name || file.originalname || 'Preview';
+                    const url = file.url || file.uri || '#';
+                    return `<a href="${url}" target="_blank" style="color:#007bff; text-decoration:none;">📎 ${name}</a>`;
+                }).join('<br>');
+            } else if (typeof parsed === 'object') {
+                const name = parsed.name || parsed.originalname || 'Preview';
+                const url = parsed.url || parsed.uri || '#';
+                return `<a href="${url}" target="_blank" style="color:#007bff; text-decoration:none;">📎 ${name}</a>`;
+            }
+        } catch (e) {
+            // Not a JSON string, check if it looks like a URL
+            if (value.startsWith('http') || value.startsWith('/')) {
+                const fileName = value.split('/').pop() || 'Attachment';
+                return `<a href="${value}" target="_blank" style="color:#007bff; text-decoration:none;">📎 ${fileName}</a>`;
+            }
+        }
+
+        return value; // Fallback to raw value
+    },
 
     hotsForgotPasswordMailer: async (address, token) => {
         let date = new Date();
@@ -233,18 +261,24 @@ module.exports = {
         }
 
         // Generate first table
-        const requestTable = requestRows.map(row => `
-            ${row.value ?
+        const requestTable = requestRows.map(row => {
+            let processedValue = row.value || '';
+
+            // Special handling for Attachment field
+            if (row.lbl_col === 'Attachment') {
+                processedValue = module.exports.renderAttachment(processedValue);
+            }
+
+            return processedValue ?
                 `
             <tr>
                 <th style="text-align:left">${row.lbl_col}</th>
-                <td style="padding-left:20px;">: ${row.value || ''}</td>
+                <td style="padding-left:20px;">: ${processedValue}</td>
             </tr>
                 `
                 :
-                ``
-            }
-        `).join('');
+                ``;
+        }).join('');
 
         // Generate second table
         let itemsTable = '';
@@ -323,7 +357,7 @@ module.exports = {
                 t_ticket_event ae
                 left join 
                 user u on ae.approver_id = u.user_id
-                where approval_id = ? and approver_leader = 1`,
+                where ae.ticket_id = ? and ae.approver_leader = 1`,
             [ticket_id]
         );
 
@@ -333,7 +367,15 @@ module.exports = {
 
 
 
-        const approvalTable = approvalResult.map(row => `
+        const approvalTable = approvalResult
+            .filter(row => {
+                // Special Rule for SRF (Service ID 6): Hide Rizki Salsabila specifically as requested
+                if (service_name.includes("Sample Request Form") && row.user_name.includes("Rizki Salsabila")) {
+                    return false;
+                }
+                return true;
+            })
+            .map(row => `
             <tr >
                 <th style="text-align:left;border:2px solid black; padding: 8px; font-weight:bold;">${row.user_name}</th>
                 <td style=" border:2px solid black; text-align : center;  "  > ${row.approval_status === 0 ? "📝" : "✅"}  </td>
@@ -544,19 +586,24 @@ module.exports = {
         }
 
         // Generate first table
-        const requestTable = requestRows.map(row => `
-            ${row.value ?
+        const requestTable = requestRows.map(row => {
+            let processedValue = row.value || '';
+
+            // Special handling for Attachment field
+            if (row.lbl_col === 'Attachment') {
+                processedValue = module.exports.renderAttachment(processedValue);
+            }
+
+            return processedValue ?
                 `
             <tr>
                 <th style="text-align:left">${row.lbl_col}</th>
-                <td style="padding-left:20px;">: ${row.value || ''}</td>
+                <td style="padding-left:20px;">: ${processedValue}</td>
             </tr>
                 `
                 :
-                ``
-            }
-           
-        `).join('');
+                ``;
+        }).join('');
 
         // Generate second table
         let itemsTable = '';
@@ -647,6 +694,12 @@ module.exports = {
             .filter(row => {
                 // If hidden_approval_steps contains the row's order number, hide it
                 if (hidden_approval_steps.includes(Number(row.approval_order))) return false;
+
+                // Special Rule for SRF (Service ID 6): Hide Rizki Salsabila specifically as requested
+                if (service_name.includes("Sample Request Form") && (row.user_name || '').includes("Rizki Salsabila")) {
+                    return false;
+                }
+
                 return true;
             })
             .map(row => `
@@ -897,5 +950,52 @@ module.exports = {
         }
     },
 
+    /**
+     * Send low battery alert email to IT team with CC
+     * @param {string[]} toEmails - IT team email addresses
+     * @param {string[]} ccEmails  - CC recipients
+     * @param {string}   resourceKey  - Room identifier (e.g. ANZPAC)
+     * @param {number}   batteryLevel - Current battery percentage
+     */
+    hotsBatteryAlertMailer: async (toEmails, ccEmails, resourceKey, batteryLevel) => {
+        const date = new Date();
+        const timestamp = date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
+        const htmlContent = `
+        <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px;">
+            <h2 style="color: #e53e3e;">⚠️ Low Battery Alert — Meeting Room Kiosk</h2>
+            <p>Dear IT Team,</p>
+            <p>This is an automated alert from the HOTS Kiosk Monitoring System.</p>
+            <table style="border-collapse: collapse; margin: 20px 0; width: 100%;">
+                <tr>
+                    <th style="text-align:left; padding: 8px; background:#f7f7f7; border: 1px solid #ddd;">Room</th>
+                    <td style="padding: 8px; border: 1px solid #ddd;"><strong>${resourceKey}</strong></td>
+                </tr>
+                <tr>
+                    <th style="text-align:left; padding: 8px; background:#f7f7f7; border: 1px solid #ddd;">Battery Level</th>
+                    <td style="padding: 8px; border: 1px solid #ddd; color: #e53e3e;"><strong>${batteryLevel}%</strong></td>
+                </tr>
+                <tr>
+                    <th style="text-align:left; padding: 8px; background:#f7f7f7; border: 1px solid #ddd;">Time</th>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${date.toLocaleString('en-GB')}</td>
+                </tr>
+            </table>
+            <p>Please visit meeting room <strong>${resourceKey}</strong> and ensure the tablet is plugged in for charging.</p>
+            <p>Best regards,<br><strong>HOTS Kiosk Monitoring System</strong></p>
+        </div>`;
+
+        try {
+            const info = await transporter.sendMail({
+                from: mailaccount,
+                to: toEmails,
+                cc: ccEmails,
+                subject: `[HOTS ALERT] Low Battery on ${resourceKey} Kiosk — ${batteryLevel}%`,
+                html: htmlContent,
+            });
+            console.log(`${timestamp} ✅ Battery alert sent → TO: ${toEmails} CC: ${ccEmails}`);
+            console.log(`Message ID: ${info.messageId}`);
+        } catch (error) {
+            console.error(`${timestamp} ❌ ERROR in hotsBatteryAlertMailer:`, error);
+        }
+    },
 }

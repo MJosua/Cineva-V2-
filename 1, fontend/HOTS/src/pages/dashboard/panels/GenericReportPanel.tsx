@@ -46,7 +46,7 @@ const GenericReportPanel: React.FC<GenericReportPanelProps> = ({ config, service
     const fetchData = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             // Build endpoint with service_id replacement
             const endpoint = apiEndpoint?.replace('{service_id}', String(serviceId))

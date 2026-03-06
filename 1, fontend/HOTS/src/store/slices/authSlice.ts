@@ -47,9 +47,9 @@ const clearPersistentUserData = () => {
 
 const initialState: AuthState = {
   user: null,
-  token: localStorage.getItem('tokek'),
+  token: localStorage.getItem('hots_tokek'),
   isLoading: false,
-  isAuthenticated: !!localStorage.getItem('tokek'),
+  isAuthenticated: !!localStorage.getItem('hots_tokek'),
   error: null,
   loginAttempts: 0,
   isLocked: false,
@@ -68,14 +68,14 @@ export const loginUser = createAsyncThunk(
       });
 
       if (response.data.success) {
-        const { tokek, userData, current_delv_week } = response.data;
-        localStorage.setItem('tokek', tokek);
+        const { hots_tokek, userData, current_delv_week } = response.data;
+        localStorage.setItem('hots_tokek', hots_tokek);
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('current_delv_week', current_delv_week);
         // Persist user data for recovery scenarios
         persistUserData(userData);
         
-        return { token: tokek, userData };
+        return { token: hots_tokek, userData };
       } else {
         return rejectWithValue(response.data.message);
       }
@@ -87,7 +87,7 @@ export const loginUser = createAsyncThunk(
 
 // Async thunk for logout
 export const logoutUser = createAsyncThunk('auth/logoutUser', async () => {
-  localStorage.removeItem('tokek');
+  localStorage.removeItem('hots_tokek');
   localStorage.removeItem('isAuthenticated');
   clearPersistentUserData();
 });

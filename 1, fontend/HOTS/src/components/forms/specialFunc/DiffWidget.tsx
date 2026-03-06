@@ -78,7 +78,7 @@ export const DiffWidget: React.FC<DiffWidgetProps> = ({ config, globalValues, se
                 // Ensure the URL starts with API_URL
                 const url = apiPath.startsWith('http') ? apiPath : `${API_URL}${apiPath}`;
 
-                const token = localStorage.getItem('tokek');
+                const token = localStorage.getItem('hots_tokek');
 
                 // MOCK DATA for now until backend is ready
                 // Remove this block when backend is real

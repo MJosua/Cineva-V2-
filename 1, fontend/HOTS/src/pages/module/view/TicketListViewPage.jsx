@@ -25,7 +25,7 @@ export default function TicketListPage() {
     try {
       const res = await fetch(`${API_URL}/engine/tickets?${params.toString()}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("tokek")}`
+          Authorization: `Bearer ${localStorage.getItem("hots_tokek")}`
         }
       });
 

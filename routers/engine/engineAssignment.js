@@ -1,8 +1,11 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const { decodeTokenHT } = require('../../config/encrypts');
-const engineAssignment = require('../../controller/engine/engineAssignment');
-const engineWorkData = require('../../controller/engine/engineWorkData');
+const engineAssignment = require('../../controller/hots_controller/engine/engineAssignment');
+const engineWorkData = require('../../controller/hots_controller/engine/engineWorkData');
+const { hotsITSupport } = require('../../config/uploader');
+
+const uploadAssignmentTimeline = hotsITSupport('timeline', 'TL_').array('file', 10);
 
 // Get my assignments
 router.get('/my-assignments', decodeTokenHT, engineAssignment.getMyAssignments);
@@ -23,6 +26,7 @@ router.get('/assignment/:assignmentId/work-data', decodeTokenHT, engineWorkData.
 router.post('/assignment/:assignmentId/complete', decodeTokenHT, engineAssignment.completeAssignment);
 
 // Timeline routes
+router.post('/assignment/upload', decodeTokenHT, uploadAssignmentTimeline, engineAssignment.uploadTimelineFile);
 router.get('/assignment/:assignmentId/timeline', decodeTokenHT, engineAssignment.getTimeline);
 router.post('/assignment/:assignmentId/timeline', decodeTokenHT, engineAssignment.addTimelineUpdate);
 

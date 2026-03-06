@@ -46,7 +46,7 @@ export const TaskGantt: React.FC<TaskGanttProps> = ({ assignmentId, assignedType
 
     const fetchTasks = async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -63,7 +63,7 @@ export const TaskGantt: React.FC<TaskGanttProps> = ({ assignmentId, assignedType
 
     const fetchEligibleAssignees = async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             if (assignedType === 'team') {
                 const response = await fetch(`${API_URL}/hots_settings/get/team_members/${assignedId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }

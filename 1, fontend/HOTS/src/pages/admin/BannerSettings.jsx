@@ -64,7 +64,7 @@ function Itemconfig() {
     const [userData, setUserData] = useState([]);
 
     const getUserData = () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         Axios.get(API_URL + "/admin/account", {
             headers: {
                 Authorization: `Bearer ${userToken}`,
@@ -80,7 +80,7 @@ function Itemconfig() {
     };
 
     const onSubmit = async () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
 
         if (image === '') {
             toast({
@@ -135,7 +135,7 @@ function Itemconfig() {
     };
 
     const onEdit = async () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
 
         if (image === '') {
             toast({
@@ -191,7 +191,7 @@ function Itemconfig() {
 
 
     const deleteData = async (id) => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         try {
             await Axios.delete(`${API_URL}/admin/banner/`, {
                 headers: {
@@ -214,7 +214,7 @@ function Itemconfig() {
     const [itemData, setItemData] = useState([]);
 
     const getItemData = async () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         await Axios.get(API_URL + `/admin/banner`, {
             headers: {
                 Authorization: `Bearer ${userToken}`,

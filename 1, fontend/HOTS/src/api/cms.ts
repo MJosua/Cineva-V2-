@@ -2,7 +2,7 @@ import axios from "axios";
 import { API_URL } from '@/config/sourceConfig';
 
 // Always read token safely
-const token = () => localStorage.getItem("tokek") || "";
+const token = () => localStorage.getItem("hots_tokek") || "";
 
 /* ============================================================
    PUBLIC PAGE

@@ -19,7 +19,7 @@ export const ReportService: React.FC = () => {
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        const token = localStorage.getItem("tokek");
+        const token = localStorage.getItem("hots_tokek");
         const res = await axios.get(`${API_URL}/hotsdashboard/report_service`, {
           headers: { Authorization: `Bearer ${token}` },
         });

@@ -69,7 +69,7 @@ const ProfilePage = (state) => {
                 if (!res.success && res.message == 'error_auth') {
                 }
             }).catch((err) => {
-               // console.log("Ã‹rror get files at axios", err)
+                // console.log("Ã‹rror get files at axios", err)
 
             })
     }
@@ -82,10 +82,8 @@ const ProfilePage = (state) => {
 
     //function for log out. the log out function on authAction
     const onLogOut = () => {
-        return (
-            logoutAction(),
-            navigate('/e-order')
-        )
+        dispatch(logoutAction());
+        navigate('/e-order');
     }
 
     return (
@@ -162,7 +160,7 @@ const ProfilePage = (state) => {
                                                     <Select placeholder='Select option' className="fs-6  my-2">
                                                         <option value='option1'>Event</option>
                                                         <option value='option2'>News</option>
-                                                       
+
                                                     </Select>
                                                 </div>
                                                 <div className="col-3">
@@ -197,15 +195,15 @@ const ProfilePage = (state) => {
                                                 <div className="row mt-1">
 
                                                     <div className="col-6 pe-0">
-                                                    
-                                                    <Input
-                                                        className='grey_text fs-6 w-100'
-                                                        type="text"
-                                                        placeholder="Thumbnail..."
-                                                        user-select="none"
-                                                        borderRadius="10px 0px 0px 10px"
 
-                                                    />
+                                                        <Input
+                                                            className='grey_text fs-6 w-100'
+                                                            type="text"
+                                                            placeholder="Thumbnail..."
+                                                            user-select="none"
+                                                            borderRadius="10px 0px 0px 10px"
+
+                                                        />
                                                     </div>
                                                     <div className="col-6 ms-0">
                                                         <button className="btn btn-dark border2_radius_10px ms-0" >

@@ -38,7 +38,11 @@ import { useData } from "../../../auth/components/CheckToken/FetchData/DataConte
 
 const ContainerOrderConfirmationPage = ({ edit = false }) => {
 
-  const { flavours, flavoursTrucking, ports, shipToParties, ostp } = useData();
+  const { flavours: allFlavours, ports, shipToParties, ostp } = useData();
+
+  const flavours = allFlavours.filter(p =>
+    Array.isArray(p.shipment_type) && p.shipment_type.includes(0)
+  );
 
 
   const location = useLocation();

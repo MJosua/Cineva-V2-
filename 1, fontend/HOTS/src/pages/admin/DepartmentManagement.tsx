@@ -63,7 +63,7 @@ const DepartmentManagement = () => {
       if (modalMode === 'add') {
         await axios.post(`${API_URL}/hots_settings/post/department`, department, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+            Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
           }
         });
         toast({
@@ -74,7 +74,7 @@ const DepartmentManagement = () => {
         // console.log("department", department)
         await axios.put(`${API_URL}/hots_settings/update/department/${selectedDepartment?.department_id}`, department, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+            Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
           }
         });
         toast({
@@ -97,7 +97,7 @@ const DepartmentManagement = () => {
       try {
         await axios.delete(`${API_URL}/hots_settings/delete/department/${selectedDepartment.department_id}`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+            Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
           }
         });
         toast({

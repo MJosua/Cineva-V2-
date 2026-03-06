@@ -91,7 +91,7 @@ const ServiceFormEditor = () => {
 
     try {
       const res = await axios.get(`${API_URL}/triggers/${serviceId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
 
       console.log("📥 Raw trigger API response:", res.data);
@@ -179,7 +179,7 @@ const ServiceFormEditor = () => {
       try {
         // Use the unified API that joins m_service + m_service_triggers + m_workflow
         const response = await axios.get(`${API_URL}/hots_settings/get_service/${id}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+          headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
         });
 
         if (response.data.success && response.data.data) {
@@ -428,7 +428,7 @@ const ServiceFormEditor = () => {
     try {
       // Load workflow definition
       const workflowRes = await axios.get(`${API_URL}/workflow-engine/definition/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
       if (workflowRes.data?.definition) {
         setWorkflowDefinition(workflowRes.data.definition);
@@ -436,7 +436,7 @@ const ServiceFormEditor = () => {
 
       // Load triggers
       const triggersRes = await axios.get(`${API_URL}/triggers/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
       if (triggersRes.data) {
         setTriggers(triggersRes.data);
@@ -533,7 +533,7 @@ const ServiceFormEditor = () => {
 
       const response = await axios.post(`${API_URL}/hots_settings/insertupdate/service_catalog`, payload, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+          Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
         }
       });
 

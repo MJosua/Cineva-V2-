@@ -11,7 +11,7 @@
 
 const express = require('express');
 const router = express.Router();
-const eventEngineController = require('../../controller/eventEngineController');
+const eventEngineController = require('../../controller/event/eventEngineController');
 
 // ============================================================================
 // PUBLIC CAMPAIGN VIEW

@@ -1,4 +1,4 @@
-const {
+﻿const {
     dbHots,
     dbQueryHots,
 } = require("../../../config/db");
@@ -11,7 +11,7 @@ const workflowEngine = require("../../../core/workflow-engine");
 const triggerEngine = require("../../../core/trigger-engine");
 
 const hotsCheckApprovalLevel = require("../../../config/hotsCheckApprovalLevel");
-// const { generateTokenHT, hashPasswordHT } = require("../config/encrypts"); 
+// const { generateTokenHT, hashPasswordHT } = require("../../../../config/encrypts"); 
 
 const fs = require('fs');
 const { hotsMailer, hotsSubmitMailer, hotsApproveRequest } = require('../../../service/mailer/hots/hots_mailer');
@@ -1905,7 +1905,25 @@ module.exports = {
 
 
     }
-    , laptopSpeck: async (req, res) => {
+    ,    /* 
+    ARCHIVED: setTicket has been moved to Engine (engineTicket.js)
+    The router now redirects /setTicket/:service_id to engineTicket.create
+    ----------------------------------------------------------------------
+    setTicket: async (req, res) => {
+        let { service_id, ticket_reason, service_reason } = req.body
+        let user_id = req.dataToken.user_id
+        let date = new Date();
+        let timestamp = magenta + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+
+        if (service_id) {
+            switch (parseInt(service_id)) {
+                // ... cases ...
+            }
+        }
+    }
+    */
+
+    laptopSpeck: async (req, res) => {
 
         let date = new Date();
         let timestamp = magenta + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';

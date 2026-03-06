@@ -37,7 +37,11 @@ import { useData } from "../../../../components/auth/CheckToken/FetchData/DataCo
 
 const CartContainerOrderConfirmationPage = () => {
 
-  const { flavours, ports, shipToParties } = useData();
+  const { flavours: allFlavours, ports, shipToParties } = useData();
+
+  const flavours = allFlavours.filter(p =>
+    Array.isArray(p.shipment_type) && p.shipment_type.includes(0)
+  );
 
 
   const location = useLocation();

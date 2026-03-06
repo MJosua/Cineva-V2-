@@ -1,4 +1,5 @@
 const { dbConf, dbQuery, addSqlLogger } = require("../../config/db");
+const log = require('../../core/logger');
 const { hashPassword, createToken } = require("../../config/encrypts");
 const { forgotPasswordMailSender } = require('../../service/mailer/eorder/eorder_mailer');
 
@@ -121,7 +122,7 @@ module.exports = {
                 // token: [],
                 err
               });
-              console.log(`${timestamp} ERROR at auth -> login message: ${err}`);
+              log.eorder.info(`${timestamp} ERROR at auth -> login message: ${err}`);
 
             } else {
 
@@ -133,11 +134,11 @@ module.exports = {
               //berhasil login
               if (results[0]) {
 
-                console.log("results[0]", results[0])
+                log.eorder.info("results[0]", results[0])
 
                 if (results[0].type_id === 1 || results[0].type_id === 2 || results[0].type_id === 4) {
 
-                  console.log("results[0]", results[0])
+                  log.eorder.info("results[0]", results[0])
                   res.status(200).send({
                     message: ` Wrong username`,
                     success: false,
@@ -163,8 +164,8 @@ module.exports = {
                 //new token
                 let token = createToken(dataToken);
 
-                //console.log(timestamp, "userData[0] @login", userData[0])
-                //console.log(timestamp, "dataToken @login", dataToken)
+                //log.eorder.info("userData[0] @login", userData[0])
+                //log.eorder.info("dataToken @login", dataToken)
 
 
                 // UPDATE TOKEN yang disimpan di sys_user untuk proses kalibrasi validasi token existing
@@ -195,7 +196,7 @@ module.exports = {
                     token,
                     message: `Your Account is Not Authorized to log in!`
                   });
-                  console.log(timestamp + `==> Auth Login ${userID} UNAUTHORIZED TO LOGIN`);
+                  log.eorder.info(`==> Auth Login ${userID} UNAUTHORIZED TO LOGIN`);
 
                 } else if (userData[0].active === null || userData[0].active === undefined) {
 
@@ -206,7 +207,7 @@ module.exports = {
                     token,
                     message: `Wrong combination of Username or Password!`
                   });
-                  console.log(timestamp + `==> Auth Login ${userID} False`);
+                  log.eorder.info(`==> Auth Login ${userID} False`);
                 } else {
 
                   //login berhasil
@@ -217,7 +218,7 @@ module.exports = {
                     message: `Welcome ${userID}!`
                   });
                   addSqlLogger((userData[0].user_id), query, 'success: true', 'login')
-                  console.log(timestamp + `==> Auth Login ${userID} SUCCESS`);
+                  log.eorder.info(`==> Auth Login ${userID} SUCCESS`);
                 }
 
                 //salah password
@@ -253,11 +254,11 @@ module.exports = {
                   // token,
 
                 });
-                console.log(timestamp + `==> Auth Login ${userID} success: false`);
+                log.eorder.info(`==> Auth Login ${userID} success: false`);
 
               }
 
-              // console.log(`token from ${userID} => ${token}`)
+              // log.eorder.info(`token from ${userID} => ${token}`)
 
             }
           }
@@ -273,7 +274,7 @@ module.exports = {
         // token,
         err: ''
       });
-      console.log(timestamp + `==> Auth Login E-Order ${userID}: Username is not exist`);
+      log.eorder.info(`==> Auth Login E-Order ${userID}: Username is not exist`);
     }
 
 
@@ -291,7 +292,7 @@ module.exports = {
       `SELECT asin FROM sys_user WHERE uid= ${rev_userID} AND pswd= ${rev_pswd} `
     );
     try {
-      console.log(timestamp + "Auth checkPass", checkPass[0].asin);
+      log.eorder.info("Auth checkPass", checkPass[0].asin);
 
       if (!checkPass[0].asin) {
         dbConf.query(
@@ -301,13 +302,13 @@ module.exports = {
             `
         ),
           (err, results) => {
-            console.log(timestamp + err);
+            log.eorder.info(err);
             if (err) {
               res.status(500).send(err);
-              console.log(timestamp + "error hash password :", err);
+              log.eorder.info("error hash password :", err);
             }
             res.status(200).send(results);
-            console.log(timestamp + `Successfully hash for ${userID}`);
+            log.eorder.info(`Successfully hash for ${userID}`);
           };
       }
       res.status(200).send({
@@ -315,7 +316,7 @@ module.exports = {
         message: " hash pass success!",
       });
     } catch (error) {
-      console.log(timestamp + "Error query SQL hash password :", error);
+      log.eorder.info("Error query SQL hash password :", error);
       res.status(500).send({
         success: false,
         message: "Failed on HASH ❌",
@@ -341,17 +342,17 @@ module.exports = {
 
         if (validateToken.length > 0 && validateToken[0]) break; // Success, exit loop
 
-        console.log(`Retry attempt ${attempt + 1} failed. Retrying...`);
+        log.eorder.info(`Retry attempt ${attempt + 1} failed. Retrying...`);
         await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 500ms before retrying
         attempt++;
       }
       if (validateToken[0]) {
-        console.log(timestamp + "=>> Auth Keep login for : " + req.dataToken.uid);
-        console.log("--------------------------")
-        console.log("Auth Keep login for : " + req.dataToken.user_id)
-        console.log("--------------------------")
-        console.log("Token : ", req.token ? "exist" : "not exist");
-        console.log("--------------------------")
+        log.eorder.info("=>> Auth Keep login for : " + req.dataToken.uid);
+        log.eorder.info("--------------------------")
+        log.eorder.info("Auth Keep login for : " + req.dataToken.user_id)
+        log.eorder.info("--------------------------")
+        log.eorder.info("Token : ", req.token ? "exist" : "not exist");
+        log.eorder.info("--------------------------")
 
         let userID = await dbQuery(
           `
@@ -434,8 +435,8 @@ module.exports = {
             type_id: rawDataToken.type_id
           }
 
-          //console.log(timestamp,"dataToken @keepLogin", dataToken)
-          //console.log(timestamp, "userID[0] @keepLogin", userID[0])
+          //log.eorder.info("dataToken @keepLogin", dataToken)
+          //log.eorder.info("userID[0] @keepLogin", userID[0])
 
 
           //pisahkan data yang diencrypt dan dikirim 
@@ -462,12 +463,12 @@ module.exports = {
       } else {
 
         res.status(401).send([]);
-        console.log(timestamp + "! Error query SQL keeplogin 401 can't login :", res.data);
+        log.eorder.info("! Error query SQL keeplogin 401 can't login :", res.data);
 
       }
 
     } catch (error) {
-      console.log(timestamp + "! Error query SQL  keeplogin catch:", error.message);
+      log.eorder.info("! Error query SQL  keeplogin catch:", error.message);
       res.status(500).send(error.message);
     }
   },
@@ -488,9 +489,9 @@ module.exports = {
       );
 
       if (req.dataToken.uid) {
-        // console.log(Date.now() + "req.dataToken.uid",req.dataToken.uid)
-        // console.log(Date.now() + "hash prev password", hashPassword(pswd));
-        // console.log(Date.now() + "hash new password", hashPassword(newPswd));
+        // log.eorder.info(Date.now() + "req.dataToken.uid",req.dataToken.uid)
+        // log.eorder.info(Date.now() + "hash prev password", hashPassword(pswd));
+        // log.eorder.info(Date.now() + "hash new password", hashPassword(newPswd));
 
         if (userCheck[0]) {
 
@@ -524,7 +525,7 @@ module.exports = {
           message: "unauthorized",
         });
       }
-      console.log(timestamp + "Auth password change userCheck", userCheck[0].uid);
+      log.eorder.info("Auth password change userCheck", userCheck[0].uid);
 
     } catch (error) {
 
@@ -532,7 +533,7 @@ module.exports = {
         success: false,
         message: "ERROR 500",
       });
-      console.log(timestamp + error);
+      log.eorder.info(error);
     }
   },
   forgotPassword: async (req, res) => {
@@ -574,11 +575,11 @@ module.exports = {
           message: "Reset Password Link has been sent into your email",
         });
 
-        console.log(timestamp + '##### FORGOT PASSWORD =>' + req.body.uid + "=> uid valid")
+        log.eorder.info('##### FORGOT PASSWORD =>' + req.body.uid + "=> uid valid")
 
       } else {
 
-        console.log(timestamp + '##### FORGOT PASSWORD =>' + req.body.uid + "uid tidak ditemukan")
+        log.eorder.info('##### FORGOT PASSWORD =>' + req.body.uid + "uid tidak ditemukan")
 
         res.status(200).send({
           success: false,
@@ -589,7 +590,7 @@ module.exports = {
 
     } catch (error) {
 
-      console.log(timestamp + error);
+      log.eorder.info(error);
 
       res.status(500).send({
         success: false,
@@ -629,7 +630,7 @@ module.exports = {
             message: "token is valid, keep going",
           });
 
-          console.log(timestamp + `auth token verification for ${req.dataToken.email}`)
+          log.eorder.info(`auth token verification for ${req.dataToken.email}`)
           addSqlLogger(0, query, (JSON.stringify(validateToken)), 'verifyTokenForgotPassword');
 
         } else {
@@ -639,7 +640,7 @@ module.exports = {
             message: "The RESET Password link has already EXPIRED. Please try to input email again",
           });
 
-          console.log(timestamp + `auth token verification Failed. `)
+          log.eorder.info(`auth token verification Failed. `)
         }
 
       }
@@ -647,7 +648,7 @@ module.exports = {
 
 
     } catch (error) {
-      console.log(error);
+      log.eorder.info(error);
       res.status(500).send({
         success: false,
         message: "error 500",
@@ -693,20 +694,20 @@ module.exports = {
           message: "Your Password has Changed!",
         });
         addSqlLogger(req.dataToken.employee_id, query, (JSON.stringify(sqlInject)), 'changePasswordForgotPassword');
-        console.log(timestamp + "Auth forgot password change for email:", req.dataToken.email);
+        log.eorder.info("Auth forgot password change for email:", req.dataToken.email);
 
       } else {
         res.status(401).send({
           success: false,
           message: "unauthorized",
         });
-        console.log(timestamp + "Auth forgot password change for email UNANUNUNUN bodo ah");
+        log.eorder.info("Auth forgot password change for email UNANUNUNUN bodo ah");
       }
 
 
     } catch (error) {
 
-      console.log(timestamp + error);
+      log.eorder.info(error);
       res.status(500).send({
         success: false,
         message: "something wrong",

@@ -74,7 +74,7 @@ const AccountManagementPage = () => {
     let changed_suspend = existSuspend == 1 ? 2 : existSuspend == 0 ? 2 : 0;
 
     const getUserData = () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         Axios.get(API_URL + "/admin/account", {
             headers: {
                 Authorization: `Bearer ${userToken}`,
@@ -102,7 +102,7 @@ const AccountManagementPage = () => {
     const [telp, setTelp] = useState();
 
     const getUserDetails = async (user_id) => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         await Axios.post(API_URL + '/admin/account-detail',
 
             { user_id }
@@ -161,7 +161,7 @@ const AccountManagementPage = () => {
             }
             return user;
         });
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
 
         setUserData(updatedUserData);
 
@@ -207,7 +207,7 @@ const AccountManagementPage = () => {
             }
             return user;
         });
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
 
         setUserData(updatedUserData);
         await Axios.patch(

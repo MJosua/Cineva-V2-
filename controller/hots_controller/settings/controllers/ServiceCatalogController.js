@@ -105,7 +105,7 @@ module.exports = {
 
     getActiveServices: async (req, res) => {
         try {
-            const [services] = await dbHots.promise().query(`SELECT * FROM hots.m_service WHERE status = 'active' AND finished_date IS NULL ORDER BY service_name`);
+            const [services] = await dbHots.promise().query(`SELECT * FROM hots.m_service WHERE active = 1 AND finished_date IS NULL ORDER BY service_name`);
             res.status(200).json({ success: true, data: services });
         } catch (err) {
             res.status(500).json({ success: false, message: err.message });
@@ -114,7 +114,7 @@ module.exports = {
 
     getInactiveServices: async (req, res) => {
         try {
-            const [services] = await dbHots.promise().query(`SELECT * FROM hots.m_service WHERE status = 'inactive' AND finished_date IS NULL ORDER BY service_name`);
+            const [services] = await dbHots.promise().query(`SELECT * FROM hots.m_service WHERE active = 0 AND finished_date IS NULL ORDER BY service_name`);
             res.status(200).json({ success: true, data: services });
         } catch (err) {
             res.status(500).json({ success: false, message: err.message });

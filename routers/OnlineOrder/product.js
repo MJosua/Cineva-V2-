@@ -5,8 +5,8 @@ const { productController } = require('../../controller');
 // const product = require('../controller/product');
 
 
-route.get('/order', readToken, productController.getProductOrder)
-route.get('/trucking', readToken, productController.getProductTrucking)
+route.get('/order', readToken, productController.getProductCatalog)
+route.get('/trucking', readToken, productController.getProductCatalog)
 route.get('/catalog', readToken, productController.getProductCatalog)
 route.get('/omcode', readToken, productController.getOMCode)
 // route.put('/edit', authController.editProduct)

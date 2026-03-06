@@ -36,8 +36,8 @@ const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Get token from localStorage (HOTS uses 'tokek')
-  const getToken = () => localStorage.getItem('tokek');
+  // Get token from localStorage (HOTS uses 'hots_tokek')
+  const getToken = () => localStorage.getItem('hots_tokek');
 
   // Fetch profile data when modal opens
   useEffect(() => {

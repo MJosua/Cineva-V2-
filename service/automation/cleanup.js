@@ -19,7 +19,7 @@ module.exports = {
                     SELECT upload_id, file_path 
                     FROM t_temp_upload 
                     WHERE is_used = FALSE 
-                    AND upload_date < DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                    AND upload_date < DATE_SUB(NOW(), INTERVAL 7 DAY)
                     `);
 
                 if (files.length === 0) {
@@ -46,6 +46,6 @@ module.exports = {
             }
         });
     },
-    
+
 
 }

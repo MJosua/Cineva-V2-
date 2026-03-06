@@ -189,7 +189,7 @@ const SearchBarComponent = ({
 
 
     const handleConfirmEditProf = () => {
-    let userToken = localStorage.getItem("tokek");
+    let userToken = localStorage.getItem("hots_tokek");
     Axios.post(
             API_URL + "/user/request-change-data",
             {
@@ -262,7 +262,7 @@ const SearchBarComponent = ({
     };
 
     const onChangePassword = () => {
-    let userToken = localStorage.getItem("tokek");
+    let userToken = localStorage.getItem("hots_tokek");
     const huruf = /[a-zA-Z]/;
         const angka = /[0-9]/;
         if (

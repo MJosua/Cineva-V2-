@@ -23,7 +23,7 @@ const NotFoundPage = (props) => {
 
   useEffect(() => {
     const refreshUserToken = async () => {
-      const latestToken = localStorage.getItem("tokek");
+      const latestToken = localStorage.getItem("hots_tokek");
 
       if (latestToken) {
         try {
@@ -35,7 +35,7 @@ const NotFoundPage = (props) => {
             const [userData, newToken] = res.data;
 
             if (newToken && newToken !== latestToken) {
-              localStorage.setItem("tokek", newToken);
+              localStorage.setItem("hots_tokek", newToken);
             }
 
             dispatch(loginAction(userData));

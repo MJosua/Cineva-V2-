@@ -73,7 +73,7 @@ import { useData } from "../../auth/components/CheckToken/FetchData/DataContext"
 
 const TestCart = () => {
 
-  const { ports, shipToParties, container, ostp, flavours, flavoursTrucking } = useData();
+  const { ports, shipToParties, container, ostp, flavours } = useData();
 
 
   const [buttonLoading, setButtonLoading] = useState(false);
@@ -234,19 +234,6 @@ const TestCart = () => {
   };
 
 
-  useEffect(() => {
-    if (flavours.length > 1) {
-      const sortedData1 = flavours.sort((a, b) => a.cat_name.localeCompare(b.cat_name));
-      setFlavours(prevFlavours => [...prevFlavours, ...sortedData1]);
-
-    }
-    if (flavoursTrucking.length > 1) {
-
-      const sortedData2 = flavoursTrucking.sort((a, b) => a.cat_name.localeCompare(b.cat_name));
-      setFlavours(prevFlavours => [...prevFlavours, ...sortedData2]);
-    }
-
-  }, [flavours, flavoursTrucking])
 
 
 
@@ -261,7 +248,7 @@ const TestCart = () => {
   // get order details
   const [cartDetails, setCartDetails] = useState([]);
 
-  const [flavoursData, setFlavours] = useState([]);
+  const flavoursData = flavours;
 
 
   const [billtoparties, setbilltoparties] = useState([]);

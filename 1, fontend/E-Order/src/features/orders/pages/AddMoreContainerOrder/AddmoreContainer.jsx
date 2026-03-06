@@ -20,7 +20,11 @@ import containerRules from "../../../../utils/containerRules";
 
 function AddMoreContainerTest({ mode }) {
 
-    const { flavours, ports, shipToParties, container, globalLoading, ostp } = useData();
+    const { flavours: allFlavours, ports, shipToParties, container, globalLoading, ostp } = useData();
+
+    const flavours = allFlavours.filter(p =>
+        Array.isArray(p.shipment_type) && p.shipment_type.includes(0)
+    );
 
     const [billtoparties, setbilltoparties] = useState([]);
     const [stuffingWeeks, setStuffingWeeks] = useState([]);

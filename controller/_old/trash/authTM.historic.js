@@ -1,5 +1,5 @@
-const { dbTM, dbTMQuery } = require("../config/db");
-const { hashPasswordTM, createTokenTM } = require("../config/encrypts");
+﻿const { dbTM, dbTMQuery } = require("../../config/db");
+const { hashPasswordTM, createTokenTM } = require("../../config/encrypts");
 
 
 let gray = "\x1b[90m"

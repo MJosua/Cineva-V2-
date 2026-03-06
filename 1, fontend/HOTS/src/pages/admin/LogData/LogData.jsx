@@ -42,7 +42,7 @@ const ProductCatalogPage = () => {
   const [logs, setLogs] = useState([]);
 
   useEffect(() => {
-    const token = localStorage.getItem('tokek');
+    const token = localStorage.getItem('hots_tokek');
     if (!token) return;
 
     const eventSource = new EventSource(`${API_URL}/sse/logs?token=${token}`);

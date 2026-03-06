@@ -56,7 +56,7 @@ const DashboardPanelRenderer: React.FC<DashboardPanelRendererProps> = ({ dashboa
     const fetchPanels = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const res = await axios.get(`${API_URL}/hotsdashboard/panels/${dashboardId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });

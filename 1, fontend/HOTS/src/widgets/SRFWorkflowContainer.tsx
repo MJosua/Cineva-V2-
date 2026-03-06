@@ -42,6 +42,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
     const [selectedFactoryId, setSelectedFactoryId] = useState<number | null>(null);
     const [productCategory, setProductCategory] = useState<'RM' | 'FG' | 'GEN'>('GEN');
     const [srfDocumentNumber, setSrfDocumentNumber] = useState<string | null>(null);
+    const [isLocked, setIsLocked] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
     const [factorySaving, setFactorySaving] = useState(false);
     const [docNumberSaving, setDocNumberSaving] = useState(false);
@@ -65,6 +66,15 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
         }
     }, [ticketId]);
 
+    // 🆕 SSE Signal Listener: Refresh work data when ticket work data changes
+    useEffect(() => {
+        if (sseSignals?.ticket && ticketId) {
+            console.log('📡 [SRFWorkflowContainer] SSE Signal: Refreshing Work Data (Ticket Update)');
+            fetchWorkData();
+        }
+    }, [sseSignals?.ticket, ticketId]);
+
+
     // 🆕 SSE Signal Listener: Refresh documents when SSE signal received
     useEffect(() => {
         if (sseSignals?.document && ticketId) {
@@ -72,7 +82,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
             // Inline fetch to avoid referencing fetchDocuments before declaration
             (async () => {
                 try {
-                    const token = localStorage.getItem('tokek');
+                    const token = localStorage.getItem('hots_tokek');
                     const response = await axios.get(`${API_URL}/hots_customfunction/documents/${ticketId}`, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
@@ -89,7 +99,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
 
     const fetchFactories = async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(`${API_URL}/hots_settings/factories`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -102,7 +112,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
     const fetchWorkData = useCallback(async () => {
         if (!ticketId) return;
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             // ✅ NEW: Auto-detect category from m_sample_category via t_ticket_work_data
             const autoCatRes = await axios.get(
@@ -110,9 +120,11 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
                 { headers: { Authorization: `Bearer ${token}` } }
             ).catch(() => null);
 
+            let currentCategory = productCategory;
             if (autoCatRes?.data?.success && autoCatRes?.data?.category) {
                 const cat = autoCatRes.data.category as 'RM' | 'FG' | 'GEN';
                 setProductCategory(cat);
+                currentCategory = cat;
                 console.log('🔑 [SRF] Auto-detected category:', cat);
             } else {
                 // Fallback: fetch from saved product_category
@@ -122,25 +134,36 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
                 ).catch(() => null);
                 if (catRes?.data?.value) {
                     setProductCategory(catRes.data.value as 'RM' | 'FG' | 'GEN');
+                    currentCategory = catRes.data.value;
                 }
             }
 
             // Fetch factory_id
+            let currentFactoryId = selectedFactoryId;
             const factoryRes = await axios.get(
                 `${API_URL}/engine/ticket/${ticketId}/work-data/factory_id`,
                 { headers: { Authorization: `Bearer ${token}` } }
             ).catch(() => null);
             if (factoryRes?.data?.value) {
                 setSelectedFactoryId(parseInt(factoryRes.data.value));
+                currentFactoryId = parseInt(factoryRes.data.value);
             }
 
-            // Fetch srf_document_number
+            // Fetch srf_document_number (If it exists and doesn't contain To Be Generated, it's locked)
             const numRes = await axios.get(
                 `${API_URL}/engine/ticket/${ticketId}/work-data/srf_document_number`,
                 { headers: { Authorization: `Bearer ${token}` } }
             ).catch(() => null);
+
             if (numRes?.data?.value) {
                 setSrfDocumentNumber(numRes.data.value);
+                // Assume locked if it has a proper number saved in the database
+                if (!numRes.data.value.includes('To Be')) {
+                    setIsLocked(true);
+                }
+            } else if (currentFactoryId && currentCategory && !isLocked) {
+                // Fetch preview if we have factory and category but no saved number
+                fetchPreviewNumber(currentFactoryId, currentCategory);
             }
         } catch (error) {
             console.error('Error fetching work data:', error);
@@ -151,7 +174,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
         if (!ticketId) return;
         try {
             setDocumentsLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(`${API_URL}/hots_customfunction/documents/${ticketId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -170,13 +193,14 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
         if (!factoryId || !category) return;
         try {
             setPreviewLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(`${API_URL}/hots_customfunction/srf/preview_number`, {
                 params: { factory_id: factoryId, product_category: category },
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (response.data?.success) {
                 setSrfDocumentNumber(response.data.preview_number);
+                setIsLocked(false);
             }
         } catch (error) {
             console.error('Error fetching preview number:', error);
@@ -189,7 +213,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
         if (!selectedFactoryId || !ticketId) return;
         try {
             setFactorySaving(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             await axios.post(
                 `${API_URL}/engine/ticket/${ticketId}/work-data`,
                 { field_name: 'factory_id', field_value: selectedFactoryId.toString() },
@@ -210,6 +234,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
     };
 
     const handleCategoryChange = (cat: 'RM' | 'FG' | 'GEN') => {
+        if (isLocked) return;
         setProductCategory(cat);
         if (selectedFactoryId) {
             fetchPreviewNumber(selectedFactoryId, cat);
@@ -220,7 +245,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
         if (!ticketId) return;
         try {
             setDocNumberSaving(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.post(
                 `${API_URL}/hots_customfunction/srf/save_number`,
                 {
@@ -233,6 +258,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
             );
             if (response.data.success) {
                 setSrfDocumentNumber(response.data.doc_no);
+                setIsLocked(true);
                 toast({ title: 'Confirmed', description: 'Document number: ' + response.data.doc_no });
                 fetchWorkData();
             } else {
@@ -249,7 +275,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
         if (!ticketId) return;
         try {
             setGenerating(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.post(
                 `${API_URL}/hots_customfunction/srf/generate`,
                 { ticket_id: ticketId },
@@ -280,7 +306,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
         document.body.removeChild(link);
     };
 
-    const canGenerate = selectedFactoryId && productCategory && srfDocumentNumber && !srfDocumentNumber.includes('To Be');
+    const canGenerate = selectedFactoryId && productCategory && srfDocumentNumber && isLocked;
 
     // Group documents by date
     const groupedDocuments = useMemo(() => {
@@ -343,6 +369,7 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
                         <label className="text-xs font-medium text-slate-600">Factory</label>
                         <div className="flex gap-2">
                             <Select
+                                disabled={isLocked}
                                 value={selectedFactoryId?.toString() || ''}
                                 onValueChange={(value) => setSelectedFactoryId(Number(value))}
                             >
@@ -361,14 +388,16 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
                     </div>
 
                     {/* Save Factory Button */}
-                    <Button
-                        onClick={handleSaveFactory}
-                        disabled={!selectedFactoryId || factorySaving}
-                        className="w-full gap-2 bg-amber-600 hover:bg-amber-700"
-                    >
-                        {factorySaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        Choose Factory
-                    </Button>
+                    {!isLocked && (
+                        <Button
+                            onClick={handleSaveFactory}
+                            disabled={!selectedFactoryId || factorySaving || isLocked}
+                            className="w-full gap-2 bg-amber-600 hover:bg-amber-700"
+                        >
+                            {factorySaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            Choose Factory
+                        </Button>
+                    )}
 
                     {/* Document Number Preview */}
                     <div className="space-y-2 pt-2 border-t">
@@ -377,21 +406,27 @@ const SRFWorkflowContainer: React.FC<WidgetProps> = ({ ticketData, widgetData })
                             <span className="font-mono text-sm">
                                 {previewLoading ? 'Loading...' : srfDocumentNumber || 'Select factory first'}
                             </span>
-                            {srfDocumentNumber && (
+                            {srfDocumentNumber && !isLocked && (
                                 <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
                                     <Hash className="w-3 h-3 mr-1" />
                                     Preview
                                 </Badge>
                             )}
+                            {isLocked && (
+                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    Official
+                                </Badge>
+                            )}
                         </div>
                         <Button
                             onClick={handleConfirmDocNumber}
-                            disabled={!selectedFactoryId || docNumberSaving}
-                            className="w-full gap-2"
-                            variant="secondary"
+                            disabled={!selectedFactoryId || docNumberSaving || isLocked || !srfDocumentNumber}
+                            className={`w-full gap-2 ${isLocked ? 'bg-green-600 hover:bg-green-600 opacity-100 disabled:opacity-100 text-white' : ''}`}
+                            variant={isLocked ? 'default' : 'secondary'}
                         >
                             {docNumberSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                            Confirm & Lock Number
+                            {isLocked ? 'Confirmed & Locked' : 'Confirm & Lock Number'}
                         </Button>
                     </div>
                 </div>

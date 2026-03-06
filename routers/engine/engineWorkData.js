@@ -1,8 +1,8 @@
-// routers/engine/engineWorkData.js
+﻿// routers/engine/engineWorkData.js
 const express = require('express');
 const router = express.Router();
 const { decodeTokenHT } = require('../../config/encrypts');
-const engineWorkData = require('../../controller/engine/engineWorkData');
+const engineWorkData = require('../../controller/hots_controller/engine/engineWorkData');
 
 // Get work data for an assignment
 router.get('/assignment/:assignmentId/work-data', decodeTokenHT, engineWorkData.getAssignmentWorkData);

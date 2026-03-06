@@ -1,10 +1,10 @@
-const express = require('express')
+﻿const express = require('express')
 const route = express.Router();
 const { decodeTokenHT } = require('../../config/encrypts')
 
 
 const { hotsTicket } = require('../../controller');
-const engineTicket = require('../../controller/engine/engineTicket'); // Import Engine Ticket
+const engineTicket = require('../../controller/hots_controller/engine/engineTicket'); // Import Engine Ticket
 const { hotsPS, hotsITSupport, hotsITComment } = require('../../config/uploader');
 
 const uploadFileITSupport = hotsITSupport('it_support', 'it_support').array('file', 10);
@@ -106,7 +106,32 @@ route.get('/attachment/:ticket_id', decodeTokenHT, hotsTicket.getTicketAttachmen
 route.post('/admin/cleanup/orphan-files', hotsTicket.cleanupOrphanFiles);
 
 
-route.post('/setTicket/:service_id', decodeTokenHT, dynamicUploadMiddleware, hotsTicket.setTicket)
+route.post('/setTicket/:service_id', decodeTokenHT, dynamicUploadMiddleware, async (req, res) => {
+    // Adapter for legacy setTicket to Engine
+    const service_id = parseInt(req.params.service_id, 10);
+    req.body.service_id = service_id;
+    req.body.creator_id = req.dataToken.user_id;
+    req.body.creator_email = req.dataToken.email;
+
+    // Map legacy top-level body to form_data if form_data is missing
+    if (!req.body.form_data) {
+        const { service_id: _, creator_id: __, creator_email: ___, ...formData } = req.body;
+
+        // Handle SRF specifically if needed (JSON.parse Sample)
+        if (service_id === 6 && typeof formData.Sample === 'string') {
+            try {
+                formData.Sample = JSON.parse(formData.Sample);
+            } catch (e) {
+                console.warn('⚠️ Failed to parse Sample JSON in legacy SRF adapter');
+            }
+        }
+
+        req.body.form_data = formData;
+    }
+
+    console.log(`🔄 [ROUTER] Redirecting legacy /setTicket/${service_id} to Engine`);
+    return engineTicket.create(req, res);
+});
 
 
 route.post('/pc_request', decodeTokenHT, hotsTicket.addTicketPCRequest)

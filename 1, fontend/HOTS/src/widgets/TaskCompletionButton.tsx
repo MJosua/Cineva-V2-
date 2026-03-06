@@ -43,7 +43,7 @@ export const TaskCompletionButton: React.FC<TaskCompletionButtonProps> = ({
         setError(null);
 
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await fetch(`${API_URL}/engine/task/complete`, {
                 method: 'POST',
                 headers: {

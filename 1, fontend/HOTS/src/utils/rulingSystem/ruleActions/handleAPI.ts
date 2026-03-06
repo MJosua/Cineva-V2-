@@ -17,7 +17,7 @@ export async function handleAPI(ruleThen: any, checkVal: any) {
   }
 
   try {
-    const token = localStorage.getItem("tokek") || "";
+    const token = localStorage.getItem("hots_tokek") || "";
     let resolvedUrl = ruleThen.api;
 
     // 🧠 Normalize checkVal to primitive

@@ -59,7 +59,7 @@ const TriggerFunctionManager: React.FC = () => {
     // User role check (from localStorage or context)
     const isAdmin = (() => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             if (token) {
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 // HOTS uses role_id 4 for admin
@@ -80,7 +80,7 @@ const TriggerFunctionManager: React.FC = () => {
             if (!showInactive) params.append('is_active', 'true');
 
             const url = `${API_BASE}/trigger-functions?${params}`;
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             console.log('🔍 [TFM] Fetching functions from:', url);
             console.log('🔍 [TFM] Token present:', !!token);
             console.log('🔍 [TFM] Token preview:', token?.substring(0, 50) + '...');
@@ -109,7 +109,7 @@ const TriggerFunctionManager: React.FC = () => {
     const fetchCategories = async () => {
         try {
             const response = await fetch(`${API_BASE}/trigger-functions/categories`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('tokek')}` }
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('hots_tokek')}` }
             });
             const data = await response.json();
             if (data.success) {
@@ -129,7 +129,7 @@ const TriggerFunctionManager: React.FC = () => {
     const handleSelectFunction = async (func: TriggerFunction) => {
         try {
             const response = await fetch(`${API_BASE}/trigger-functions/${func.function_key}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('tokek')}` }
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('hots_tokek')}` }
             });
             const data = await response.json();
             if (data.success) {
@@ -233,7 +233,7 @@ const TriggerFunctionManager: React.FC = () => {
             const response = await fetch(url, {
                 method: isNew ? 'POST' : 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('tokek')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('hots_tokek')}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(body)
@@ -266,7 +266,7 @@ const TriggerFunctionManager: React.FC = () => {
             const response = await fetch(`${API_BASE}/trigger-functions/${selectedFunction.function_key}/execute`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('tokek')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('hots_tokek')}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ params: testParams })
@@ -287,7 +287,7 @@ const TriggerFunctionManager: React.FC = () => {
         try {
             const response = await fetch(`${API_BASE}/trigger-functions/${selectedFunction.function_key}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('tokek')}` }
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('hots_tokek')}` }
             });
 
             const data = await response.json();

@@ -82,7 +82,7 @@ import JobListPage from "./pages/dashboard/report/JobListPage";
 import AssignmentDetailPage from "./pages/dashboard/AssignmentDetailPage";
 import ServiceAnalyticsView from "./pages/dashboard/ServiceAnalyticsView";
 import DashboardView from "./pages/dashboard/DashboardView";
-import ProjectDashboard from "./pages/project/ProjectDashboard";
+import ProjectDashboard from "./pages/dashboard/report/ProjectDashboard";
 import CardGeneratorPage from "./pages/CardGeneratorPage";
 import CardProfilePage from "./pages/public/CardProfilePage";
 

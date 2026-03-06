@@ -324,6 +324,13 @@ export default function UrlCouponBlock({
                         {field.type === "textarea" && (
                             <Textarea value={formData[field.name] || ""} onChange={e => handleChange(field.name, e.target.value)} rows={3} />
                         )}
+                        {field.type === 'date' && (
+                            <Input
+                                type="date"
+                                value={formData[field.name] || ""}
+                                onChange={(e) => handleChange(field.name, e.target.value)}
+                            />
+                        )}
                         {field.type === "select" && (
                             <Select value={formData[field.name] || ""} onChange={e => handleChange(field.name, e.target.value)}>
                                 <option value="">Select…</option>

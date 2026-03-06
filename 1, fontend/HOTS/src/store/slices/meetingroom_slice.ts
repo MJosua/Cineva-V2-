@@ -9,6 +9,9 @@ export interface MeetingRoom {
   resource_key?: string;
   capacity?: number;
   location?: string;
+  battery_level?: number;
+  is_charging?: boolean;
+  last_battery_update?: string;
 }
 
 export interface MeetingBooking {
@@ -22,6 +25,7 @@ export interface MeetingBooking {
   purpose?: string;
   PIC?: string;
   PIC_user_id?: string;
+  room_id?: string;
 }
 
 interface MeetingRoomState {
@@ -42,7 +46,7 @@ export const fetchMeetingRooms = createAsyncThunk(
   "meetingroom/fetchRooms",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("tokek");
+      const token = localStorage.getItem("hots_tokek");
       const res = await axios.get(`${API_URL}/api/rooms`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -66,7 +70,7 @@ export const fetchMeetingBookings = createAsyncThunk(
   "meetingroom/fetchBookings",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("tokek");
+      const token = localStorage.getItem("hots_tokek");
       // Changed to use the HOTS settings endpoint to match t_ticket source of truth
       const res = await axios.get(`${API_URL}/hots_settings/get/meetingroom`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -85,6 +89,7 @@ export const fetchMeetingBookings = createAsyncThunk(
         booked_by: item.booked_by,
         PIC: item.PIC,
         PIC_user_id: item.PIC_user_id,
+        room_id: item.room_id,
         purpose: item.purpose,
       })) as MeetingBooking[];
     } catch (err: any) {

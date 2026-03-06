@@ -55,7 +55,7 @@ export const GanttTaskModal: React.FC<GanttTaskModalProps> = ({
         if (!editingTask || !editingTask.title.trim()) return;
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const payloadCustomFields = editCustomFields.reduce((acc, curr) => {
                 if (curr.key && curr.value) acc[curr.key] = { value: curr.value, color: curr.color, type: curr.type };
                 return acc;

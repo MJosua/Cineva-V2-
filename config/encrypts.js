@@ -140,6 +140,14 @@ module.exports = {
         }
     },
 
+    verifyTokenEO: (token) => {
+        try {
+            return jwt.verify(token, process.env.SECURITY_TOKEN_KEY);
+        } catch (error) {
+            throw new Error("Invalid or expired E-Order token");
+        }
+    },
+
     // ======================================================
     // 🔹 Card Generator - Employee ID Encryption (AES-256-CBC)
     // ======================================================

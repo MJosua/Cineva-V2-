@@ -1,12 +1,12 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { Box, Heading, Flex, Button, useToast, useDisclosure, VStack, Text, IconButton, HStack, Tabs, TabList, Tab, TabPanels, TabPanel, FormControl, FormLabel, Input, Select, Badge } from "@chakra-ui/react";
+import { Box, Heading, Flex, Button, useToast, useDisclosure, VStack, Text, IconButton, HStack, Tabs, TabList, Tab, TabPanels, TabPanel, FormControl, FormLabel, Input, Select, Badge, Tooltip } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { getCampaignBySlug, updateCampaign } from "../../services/eventEngineApi";
 import EngineRenderer from "../../components/Engine/EngineRenderer";
 import BlockList from "./EditorComponents/BlockList";
 import BlockEditor from "./EditorComponents/BlockEditor";
 import AddBlockModal from "./EditorComponents/AddBlockModal";
-import { MdAdd, MdSave, MdArrowBack, MdLayers } from "react-icons/md";
+import { MdAdd, MdSave, MdArrowBack, MdLayers, MdOpenInNew } from "react-icons/md";
 
 export default function EventEditor() {
     const { slug, pageKey } = useParams();
@@ -166,6 +166,18 @@ export default function EventEditor() {
                         <Badge colorScheme="purple" fontSize="xs" fontFamily="mono">{currentPage}</Badge>
                     </VStack>
                     <HStack>
+                        <Tooltip label="View Live Page" hasArrow>
+                            <IconButton
+                                icon={<MdOpenInNew />}
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                    const url = `${window.location.origin}/event/${slug}${currentPage === "/" ? "" : currentPage}`;
+                                    window.open(url, "_blank");
+                                }}
+                                aria-label="View Live"
+                            />
+                        </Tooltip>
                         <Button size="sm" colorScheme="blue" leftIcon={<MdSave />} onClick={handleSave}>Save</Button>
                     </HStack>
                 </Flex>

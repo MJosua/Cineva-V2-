@@ -103,7 +103,18 @@ async function apiFetch(endpoint, options = {}) {
         if (response.status === 401 && isAdminRoute) {
             if (!_sessionExpiredFired) {
                 _sessionExpiredFired = true;
+
+                // Clear state and force redirect as requested
+                localStorage.removeItem("event_admin");
+                localStorage.removeItem("current_event");
+
                 window.dispatchEvent(new CustomEvent("session-expired"));
+
+                // If not already on login page, throw them there
+                if (!window.location.pathname.includes('/admin/login')) {
+                    window.location.href = '/event/admin/login';
+                }
+
                 // Reset after 5s so subsequent 401s after re-login also work
                 setTimeout(() => { _sessionExpiredFired = false; }, 5000);
             }

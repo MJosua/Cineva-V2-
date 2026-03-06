@@ -192,7 +192,7 @@ export const fetchUsers = createAsyncThunk(
   async () => {
     const response = await axios.get(`${API_URL}/hots_settings/get/user`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -204,7 +204,7 @@ export const createUser = createAsyncThunk(
   async (userData: Omit<UserType, 'user_id' | 'is_active'>) => {
     const response = await axios.post(`${API_URL}/hots_settings/post/user`, userData, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
         'Content-Type': 'application/json'
       }
     });
@@ -218,7 +218,7 @@ export const updateUser = createAsyncThunk(
   async ({ id, data }: { id: number; data: Partial<UserType> }) => {
     const response = await axios.put(`${API_URL}/hots_settings/update/user/${id}`, data, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
         'Content-Type': 'application/json'
       }
     });
@@ -232,7 +232,7 @@ export const deleteUser = createAsyncThunk(
   async (id: number) => {
     const response = await axios.delete(`${API_URL}/hots_settings/delete/user/${id}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     // console.log("user deleted", response.data);
@@ -247,7 +247,7 @@ export const fetchTeams = createAsyncThunk(
     try {
       const response = await axios.get(`${API_URL}/hots_settings/get/team`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+          Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
         }
       });
       // console.log("teams fetch", response.data);
@@ -264,7 +264,7 @@ export const createTeam = createAsyncThunk(
   async (teamData: Omit<Team, 'team_id' | 'creation_date' | 'member_count'>) => {
     const response = await axios.post(`${API_URL}/hots_settings/post/team`, teamData, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
         'Content-Type': 'application/json'
       }
     });
@@ -278,7 +278,7 @@ export const updateTeam = createAsyncThunk(
   async ({ id, data }: { id: number; data: Partial<Team> }) => {
     const response = await axios.put(`${API_URL}/hots_settings/update/team/${id}`, data, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
         'Content-Type': 'application/json'
       }
     });
@@ -292,7 +292,7 @@ export const deleteTeam = createAsyncThunk(
   async (id: number) => {
     const response = await axios.delete(`${API_URL}/hots_settings/delete/team/${id}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     // console.log("team deleted", response.data);
@@ -305,7 +305,7 @@ export const fetchTeamMembers = createAsyncThunk(
   async (teamId: number) => {
     const response = await axios.get(`${API_URL}/hots_settings/get/team_members/${teamId}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -317,7 +317,7 @@ export const fetchTeamLeaders = createAsyncThunk(
   async (teamId: number) => {
     const response = await axios.get(`${API_URL}/hots_settings/get/team_leaders/${teamId}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -329,7 +329,7 @@ export const addTeamMember = createAsyncThunk(
   async (memberData: Omit<TeamMember, 'member_id' | 'creation_date'>) => {
     const response = await axios.post(`${API_URL}/hots_settings/post/team_member`, memberData, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -341,7 +341,7 @@ export const updateTeamMember = createAsyncThunk(
   async ({ id, data }: { id: number; data: Partial<TeamMember> }) => {
     const response = await axios.put(`${API_URL}/hots_settings/update/team_member/${id}`, data, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -353,7 +353,7 @@ export const removeTeamMember = createAsyncThunk(
   async ({ team_id, user_id }: { team_id: number; user_id: number }) => {
     await axios.delete(`${API_URL}/hots_settings/delete/team_member/${team_id}/${user_id}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return { team_id, user_id };
@@ -366,7 +366,7 @@ export const fetchDepartments = createAsyncThunk(
   async () => {
     const response = await axios.get(`${API_URL}/hots_settings/get/departments`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -378,7 +378,7 @@ export const createDepartment = createAsyncThunk(
   async (departmentData: Omit<Department, 'department_id' | 'created_date'>) => {
     const response = await axios.post(`${API_URL}/hots_settings/post/department`, departmentData, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -390,7 +390,7 @@ export const updateDepartment = createAsyncThunk(
   async ({ id, data }: { id: number; data: Partial<Department> }) => {
     const response = await axios.put(`${API_URL}/hots_settings/update/department/${id}`, data, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -402,7 +402,7 @@ export const deleteDepartment = createAsyncThunk(
   async (id: number) => {
     await axios.delete(`${API_URL}/hots_settings/delete/department/${id}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return id;
@@ -414,7 +414,7 @@ export const fetchTeamsByDepartment = createAsyncThunk(
   async (departmentId: number) => {
     const response = await axios.get(`${API_URL}/hots_settings/get/departments/${departmentId}/teams`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -427,7 +427,7 @@ export const fetchRoles = createAsyncThunk(
   async () => {
     const response = await axios.get(`${API_URL}/hots_settings/get/role`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     // console.log("roles fetch", response.data);
@@ -440,7 +440,7 @@ export const createRole = createAsyncThunk(
   async (roleData: Omit<Role, 'role_id' | 'created_date'>) => {
     const response = await axios.post(`${API_URL}/hots_settings/post/role`, roleData, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -452,7 +452,7 @@ export const updateRole = createAsyncThunk(
   async ({ id, data }: { id: number; data: Partial<Role> }) => {
     const response = await axios.put(`${API_URL}/hots_settings/update/role/${id}`, data, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -464,7 +464,7 @@ export const deleteRole = createAsyncThunk(
   async (id: number) => {
     await axios.delete(`${API_URL}/hots_settings/delete/role/${id}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return id;
@@ -477,7 +477,7 @@ export const fetchJobTitles = createAsyncThunk(
   async () => {
     const response = await axios.get(`${API_URL}/hots_settings/get/jobtitle`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     // console.log("job titles fetch", response.data);
@@ -490,7 +490,7 @@ export const createJobTitle = createAsyncThunk(
   async (jobTitleData: Omit<JobTitle, 'jobtitle_id' | 'created_date'>) => {
     const response = await axios.post(`${API_URL}/hots_settings/post/jobtitle`, jobTitleData, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -502,7 +502,7 @@ export const updateJobTitle = createAsyncThunk(
   async ({ id, data }: { id: number; data: Partial<JobTitle> }) => {
     const response = await axios.put(`${API_URL}/hots_settings/update/jobtitle/${id}`, data, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -514,7 +514,7 @@ export const deleteJobTitle = createAsyncThunk(
   async (id: number) => {
     await axios.delete(`${API_URL}/hots_settings/delete/jobtitle/${id}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return id;
@@ -527,7 +527,7 @@ export const fetchServices = createAsyncThunk(
   async () => {
     const response = await axios.get(`${API_URL}/hots_settings/get/services`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     })
     return response.data.data;
@@ -539,7 +539,7 @@ export const fetchActiveServices = createAsyncThunk(
   async () => {
     const response = await axios.get(`${API_URL}/hots_settings/get/services/active`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -551,7 +551,7 @@ export const fetchInactiveServices = createAsyncThunk(
   async () => {
     const response = await axios.get(`${API_URL}/hots_settings/get/services/inactive`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -563,7 +563,7 @@ export const toggleServiceStatus = createAsyncThunk(
   async (serviceData: { service_id: number; is_active: boolean }) => {
     const response = await axios.post(`${API_URL}/hots_settings/toggle/service`, serviceData, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -576,7 +576,7 @@ export const fetchSuperiors = createAsyncThunk(
   async () => {
     const response = await axios.get(`${API_URL}/hots_settings/get_superior`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     // console.log("superiors fetch", response.data);
@@ -591,7 +591,7 @@ export const fetchWorkflowGroups = createAsyncThunk(
     try {
       const response = await axios.get(`${API_URL}/hots_settings/get/workflow_groups`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+          Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
         }
       });
       // console.log("workflow groups fetch", response.data);
@@ -609,7 +609,7 @@ export const createWorkflowGroup = createAsyncThunk(
     try {
       const response = await axios.post(`${API_URL}/hots_settings/post/workflow_group`, workflowData, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+          Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
           'Content-Type': 'application/json'
         }
       });
@@ -628,7 +628,7 @@ export const updateWorkflowGroup = createAsyncThunk(
     try {
       const response = await axios.put(`${API_URL}/hots_settings/update/workflow_group/${id}`, data, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+          Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
           'Content-Type': 'application/json'
         }
       });
@@ -647,7 +647,7 @@ export const deleteWorkflowGroup = createAsyncThunk(
     try {
       const response = await axios.delete(`${API_URL}/hots_settings/delete/workflow_group/${id}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+          Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
         }
       });
       return id;
@@ -663,7 +663,7 @@ export const fetchWorkflowSteps = createAsyncThunk(
   async (workflowGroupId: number) => {
     const response = await axios.get(`${API_URL}/hots_settings/get/workflow_steps/${workflowGroupId}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     // console.log("workflow steps fetch", response.data);
@@ -676,7 +676,7 @@ export const createWorkflowStep = createAsyncThunk(
   async (stepData: Omit<WorkflowStep, 'step_id' | 'created_at' | 'updated_at'>) => {
     const response = await axios.post(`${API_URL}/hots_settings/post/workflow_step`, stepData, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
         'Content-Type': 'application/json'
       }
     });
@@ -690,7 +690,7 @@ export const updateWorkflowStep = createAsyncThunk(
   async ({ id, data }: { id: number; data: Partial<WorkflowStep> }) => {
     const response = await axios.put(`${API_URL}/hots_settings/update/workflow_step/${id}`, data, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
         'Content-Type': 'application/json'
       }
     });
@@ -704,7 +704,7 @@ export const deleteWorkflowStep = createAsyncThunk(
   async (id: number) => {
     const response = await axios.delete(`${API_URL}/hots_settings/delete/workflow_step/${id}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     // console.log("workflow step deleted", response.data);
@@ -718,7 +718,7 @@ export const fetchWorkflowInstances = createAsyncThunk(
   async () => {
     const response = await axios.get(`${API_URL}/hots_settings/get/workflow_instances`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -730,7 +730,7 @@ export const createWorkflowInstance = createAsyncThunk(
   async (instanceData: Omit<WorkflowInstance, 'workflow_id' | 'created_at' | 'updated_at'>) => {
     const response = await axios.post(`${API_URL}/hots_settings/create/workflow_instance`, instanceData, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;
@@ -742,7 +742,7 @@ export const fetchWorkflowStepExecutions = createAsyncThunk(
   async (workflowId: number) => {
     const response = await axios.get(`${API_URL}/hots_settings/get/workflow_step_executions/${workflowId}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
       }
     });
     return response.data.data;

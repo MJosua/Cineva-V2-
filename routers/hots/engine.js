@@ -1,9 +1,9 @@
-/**
+﻿/**
  * routers/engine.js
  */
 const express = require('express');
 const router = express.Router();
-const engineTicket = require('../../controller/engine/engineTicket');
+const engineTicket = require('../../controller/hots_controller/engine/engineTicket');
 
 router.post('/ticket/create/:moduleKey', engineTicket.create);
 router.get('/ticket/status/:ticket_id', engineTicket.status);

@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { logoutAction } from "../../action/userAction";
 import {
     // Text,
-     Avatar, AvatarBadge, Spinner, Menu,
+    Avatar, AvatarBadge, Spinner, Menu,
     MenuButton,
     MenuList,
     MenuItem,
@@ -43,7 +43,7 @@ const HeaderBar = (props) => {
                             </strong>
                         </div>
 
-                    </div> 
+                    </div>
                     {
                         props.loading ? <Spinner /> :
                             username && !props.loading ?
@@ -60,7 +60,7 @@ const HeaderBar = (props) => {
                                         <MenuItem onClick={() => navigate('/e-order/profile/setting')}>Sesuaikan Profil</MenuItem>
                                         <MenuItem >Tentang Kami</MenuItem>
                                         <MenuItem >Bantuan</MenuItem>
-                                        <MenuItem onClick={() => dispatch(logoutAction(), navigate('/'))}>Keluar<AiOutlineLogout className='ms-2' /></MenuItem>
+                                        <MenuItem onClick={() => { dispatch(logoutAction()); navigate('/'); }}>Keluar<AiOutlineLogout className='ms-2' /></MenuItem>
                                     </MenuList>
                                 </Menu>
                                 :
@@ -106,7 +106,7 @@ const HeaderBar = (props) => {
     )
 }
 
-export default HeaderBar; 
+export default HeaderBar;
 
 
 

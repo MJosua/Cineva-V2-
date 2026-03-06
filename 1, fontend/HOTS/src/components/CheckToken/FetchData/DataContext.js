@@ -32,7 +32,7 @@ export const DataProvider = ({
             return;
         } else {
         }  // Don't fetch without token
-        const latestToken = localStorage.getItem("tokek"); // Ensure latest token
+        const latestToken = localStorage.getItem("hots_tokek"); // Ensure latest token
 
         const fetchAllData = async () => {
 

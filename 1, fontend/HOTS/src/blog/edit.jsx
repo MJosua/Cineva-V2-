@@ -35,7 +35,7 @@ const ProfilePage = (state) => {
     const navigate = useNavigate();
     const [profileData, setProfileData] = React.useState([]);
 
-    // let userData = localStorage.getItem('tokek');
+    // let userData = localStorage.getItem('hots_tokek');
     // let user = JSON.parse(userData);
     // let company_id = user[0].company_id;
     // let profile = profileData[0]
@@ -44,7 +44,7 @@ const ProfilePage = (state) => {
 
     // let userID = user_id;
 
-    let userToken = (localStorage.getItem('tokek'));
+    let userToken = (localStorage.getItem('hots_tokek'));
 
     // console.log("user", user)
 

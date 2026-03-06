@@ -124,19 +124,8 @@ const SearchBarComponent = ({
 
 
     const onLogOut = () => {
-        return (
-            logoutAction(),
-            navigate('/')
-
-            // toast({
-            //     title: `Log Out Success!!!`,
-            //     description: `Please come again, Miss you here `,
-            //     status: "success",
-            //     duration: 6000, //in second
-            //     isClosable: true,
-            //     className: "pb-5"
-            // })
-        )
+        dispatch(logoutAction());
+        navigate('/');
     }
 
     const { isOpen, onOpen, onClose } = useDisclosure()
@@ -304,10 +293,11 @@ const SearchBarComponent = ({
                             isClosable: true,
                         });
                         navigate("/");
-                        logoutAction();
+                        dispatch(logoutAction());
                         setTimeout(() => {
                             seasonOut();
                         }, 1500);
+
                     } else {
                         toast({
                             title: "Oopsie!",

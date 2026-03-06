@@ -19,7 +19,7 @@ export const fetchpo_srf = createAsyncThunk(s
     'settings/fetchpo_file',
     async (_, { rejectWithValue }) => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             const [getpores] = await Promise.all([
                 axios.get(`${API_URL}/hots_settings/get_srf_po`, {

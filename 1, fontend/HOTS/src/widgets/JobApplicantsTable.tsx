@@ -34,7 +34,7 @@ const JobApplicantsTable: React.FC<WidgetProps> = ({ ticketData }) => {
 
     const fetchApplications = async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(
                 `${API_URL}/engine/tickets/${ticketData.ticket_id}/work-data`,
                 {
@@ -67,7 +67,7 @@ const JobApplicantsTable: React.FC<WidgetProps> = ({ ticketData }) => {
 
     const handleCreateAssignment = async (application: Application) => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             // Create assignment for this applicant
             await axios.post(
@@ -112,7 +112,7 @@ const JobApplicantsTable: React.FC<WidgetProps> = ({ ticketData }) => {
 
     const handleRejectApplication = async (application: Application) => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             await axios.patch(
                 `${API_URL}/engine/tickets/${ticketData.ticket_id}/work-data/${application.entity_id}`,

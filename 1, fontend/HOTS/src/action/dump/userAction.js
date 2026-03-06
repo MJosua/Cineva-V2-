@@ -18,7 +18,7 @@ export const loginMiddleware = (userID, pswd) => {
             });
 
             localStorage.setItem('userLogStore', JSON.stringify(res.data));
-            localStorage.setItem('tokek', res.data[1]);
+            localStorage.setItem('hots_tokek', res.data[1]);
 
             // JSON.Stringify(localStorage.userLogStore);s
             // console.log("ini localStorage => userLogStore", localStorage.userLogStore);

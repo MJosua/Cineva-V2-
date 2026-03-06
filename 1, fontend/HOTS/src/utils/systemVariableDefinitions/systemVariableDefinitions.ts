@@ -1,7 +1,7 @@
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useEffect } from 'react';
 
-export type VariableType = 'string' | 'string[]' | 'array' | 'object' | 'array[]';
+export type VariableType = 'string' | 'string[]' | 'array' | 'object' | 'array[]' | 'number' | 'object[]';
 
 
 export interface SystemVariableContext {
@@ -28,8 +28,8 @@ export interface SystemVariableContext {
     purpose: string;
   }
   srf_po?: { po_number: string;[key: string]: any }[];
-  srf_todaysweek?: { actualWeek: number;[key: string]: any }[];
-  meetingrooms?: { id: number; name: string; capacity?: number; location?: string }[];
+  srf_todaysweek?: { actualWeek: number;[key: string]: any }; // Changed from array to object
+  meetingrooms?: { id: number; name?: string; room_name?: string; capacity?: number; location?: string }[];
 }
 
 export const useSystemVariableContext = (): SystemVariableContext => {
@@ -239,9 +239,9 @@ export const SYSTEM_VARIABLE_ENTRIES: SystemVariableEntry[] = [
   },
   {
     key: '${todaysweek}',
-    type: 'number[]',
+    type: 'number',
     description: 'Get today`s week',
-    resolve: (ctx) => ctx.srf_todaysweek?.actualWeek ?? 0,
+    resolve: (ctx) => (ctx.srf_todaysweek as any)?.actualWeek ?? 0,
   },
   {
     key: '${today}',

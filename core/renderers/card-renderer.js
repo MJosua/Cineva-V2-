@@ -8,7 +8,10 @@ const path = require('path');
  * @param {Object} data
  */
 module.exports = function renderCardHtml(data) {
-    const ASSET_BASE = (process.env.BE_URL_HOTS || process.env.BE_URL) + '/public/hots/aset/cardgenerator';
+    const isProd = process.env.NODE_ENV === 'production';
+    const BE_URL = isProd ? process.env.PROD_BE_URL : process.env.DEV_BE_URL;
+    const BE_URL_HOTS = isProd ? process.env.PROD_BE_URL_HOTS : process.env.DEV_BE_URL_HOTS;
+    const ASSET_BASE = (BE_URL_HOTS || BE_URL || 'http://localhost:9999') + '/public/hots/aset/cardgenerator';
 
     // Calculate email font size logic
     const emailLength = (data.email || '').length;

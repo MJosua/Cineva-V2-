@@ -40,7 +40,7 @@ const SRFFactorySelector: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
 
     const fetchFactories = async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(
                 `${API_URL}/hots_settings/factories`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -53,7 +53,7 @@ const SRFFactorySelector: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
 
     const fetchWorkData = async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             // Fetch factory_id
             const factoryRes = await axios.get(
                 `${API_URL}/engine/ticket/${ticketId}/work-data/factory_id`,
@@ -86,7 +86,7 @@ const SRFFactorySelector: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
     const fetchPreviewNumber = async (factoryId: number, category: string) => {
         try {
             setPreviewLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(
                 `${API_URL}/hots_customfunction/srf/preview_number`,
                 {
@@ -108,7 +108,7 @@ const SRFFactorySelector: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
         if (!selectedFactoryId || !ticketId) return;
         try {
             setSaving(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             await axios.post(
                 `${API_URL}/engine/ticket/${ticketId}/work-data`,
                 { field_name: 'factory_id', field_value: selectedFactoryId.toString() },
@@ -142,7 +142,7 @@ const SRFFactorySelector: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
         if (!ticketId) return;
         try {
             setDocNumberSaving(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             // Save to t_ticket_doc_no (and t_ticket_work_data via backend)
             const response = await axios.post(

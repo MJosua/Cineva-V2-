@@ -2,7 +2,7 @@
 // Generic Project Dashboard - Modular & Reusable for IT Project, PDTS Project, etc.
 // Route: /project-dashboard/:serviceId
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '@/config/sourceConfig';
@@ -44,7 +44,17 @@ import {
     Timer,
     AlertCircle,
     ChevronRight,
+    ListFilter,
+    FileUp,
+    FileText,
+    X,
+    FileDown,
+    FilePieChart,
+    Archive,
+    Loader2,
 } from 'lucide-react';
+import { RichTextEditor, RichTextEditorRef } from '@/components/ui/RichTextEditor';
+import { TicketPagination } from '@/components/ui/TicketPagination';
 
 // ============================================================
 // Types
@@ -88,10 +98,20 @@ interface DashboardSummary {
     rejected: number;
 }
 
+interface PaginationData {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+}
+
 // ============================================================
 // Helpers
 // ============================================================
-const getRiskBadge = (risk: string) => {
+const getRiskBadge = (risk: string, statusId?: number) => {
+    if (statusId === 1) {
+        return <Badge variant="outline" className="gap-1 bg-emerald-50 text-emerald-700 border-emerald-200"><CheckCircle2 className="w-3 h-3" /> Completed</Badge>;
+    }
     switch (risk) {
         case 'high':
             return <Badge variant="destructive" className="gap-1"><AlertTriangle className="w-3 h-3" /> At Risk</Badge>;
@@ -137,9 +157,10 @@ const formatDate = (dateStr: string) => {
 // ============================================================
 interface ProjectDashboardProps {
     serviceId?: number | string;
+    searchValue?: string;
 }
 
-const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServiceId }) => {
+const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServiceId, searchValue: externalSearch }) => {
     const { serviceId: paramServiceId } = useParams<{ serviceId: string }>();
     const serviceId = propServiceId || paramServiceId;
     const navigate = useNavigate();
@@ -151,7 +172,12 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServ
     const [service, setService] = useState<ServiceInfo | null>(null);
     const [summary, setSummary] = useState<DashboardSummary | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
+    const [sortOrder, setSortOrder] = useState('active_first');
+    const [pagination, setPagination] = useState<PaginationData | null>(null);
     const [createOpen, setCreateOpen] = useState(false);
     const [creating, setCreating] = useState(false);
 
@@ -163,31 +189,52 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServ
         target_date: '',
         priority: 'medium',
         initial_notes: '',
+        upload_ids: [] as number[],
     });
 
-    const token = localStorage.getItem('tokek');
+    const [attachments, setAttachments] = useState<{
+        upload_id: number; original_name: string; url?: string; size?: number; type?: string;
+    }[]>([]);
+    const [uploadingFiles, setUploadingFiles] = useState<{ tempKey: string; name: string }[]>([]);
+    const attachmentInputRef = useRef<HTMLInputElement>(null);
+    const editorRef = useRef<RichTextEditorRef>(null);
+
+    const token = localStorage.getItem('hots_tokek');
     const headers = { Authorization: `Bearer ${token}` };
 
     // ============================================================
     // Fetchers
     // ============================================================
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm || externalSearch || '');
+            setPage(1); // Reset to page 1 on new search
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm, externalSearch]);
+
     const fetchProjects = useCallback(async () => {
         try {
             setLoading(true);
             const statusParam = statusFilter !== 'all' ? `&status_id=${statusFilter}` : '';
+            const searchParam = debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : '';
+            const sortParam = `&sort=${sortOrder}`;
+
             const res = await axios.get(
-                `${API_URL}/engine/project/list/${serviceId}?limit=100${statusParam}`,
+                `${API_URL}/engine/project/list/${serviceId}?page=${page}&limit=${limit}${statusParam}${searchParam}${sortParam}`,
                 { headers }
             );
             if (res.data.success) {
                 setProjects(res.data.data || []);
+                setPagination(res.data.pagination);
             }
         } catch (err) {
             console.error('Error fetching projects:', err);
         } finally {
             setLoading(false);
         }
-    }, [serviceId, statusFilter]);
+    }, [serviceId, statusFilter, page, limit, debouncedSearch, sortOrder]);
 
     const fetchSummary = useCallback(async () => {
         try {
@@ -214,9 +261,128 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServ
     // ============================================================
     // Actions
     // ============================================================
+    const handleImageUpload = async (file: File): Promise<string> => {
+        const formDataPayload = new FormData();
+        formDataPayload.append('file', file);
+        const res = await axios.post(`${API_URL}/engine/upload-temp`, formDataPayload, {
+            headers: {
+                ...headers,
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+
+        if (res.data.success && res.data.upload_id) {
+            setFormData(prev => ({
+                ...prev,
+                upload_ids: [...prev.upload_ids, res.data.upload_id]
+            }));
+            return res.data.url;
+        }
+        throw new Error("Upload failed");
+    };
+
+    const handleAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (file.size > 3.6 * 1024 * 1024) {
+                toast({ title: 'File too large', description: `${file.name} exceeds 3.6MB`, variant: 'destructive' });
+                continue;
+            }
+
+            const tempKey = `uploading_${Date.now()}_${i}`;
+            const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico'];
+            const fileExt = file.name.toLowerCase().match(/\.[^.]+$/)?.[0] || '';
+            const isImage = file.type.startsWith('image/') || imageExtensions.includes(fileExt);
+
+            // Show loading badge for non-image files
+            if (!isImage) {
+                setUploadingFiles(prev => [...prev, { tempKey, name: file.name }]);
+            }
+
+            const formDataPayload = new FormData();
+            formDataPayload.append('file', file);
+
+            try {
+                const res = await axios.post(`${API_URL}/engine/upload-temp`, formDataPayload, {
+                    headers: { ...headers, 'Content-Type': 'multipart/form-data' }
+                });
+
+                if (res.data.success || res.data.ok) {
+                    const uploadedFile = res.data.data?.[0] || res.data;
+
+                    if (isImage) {
+                        // Insert image into editor via ref
+                        if (editorRef.current) {
+                            editorRef.current.insertImage(uploadedFile.url);
+                        }
+                        setFormData(prev => ({
+                            ...prev,
+                            upload_ids: [...prev.upload_ids, uploadedFile.upload_id]
+                        }));
+                    } else {
+                        // Add as file badge
+                        setAttachments(prev => [...prev, {
+                            upload_id: uploadedFile.upload_id,
+                            original_name: uploadedFile.original_name || uploadedFile.name || file.name,
+                            url: uploadedFile.url,
+                            size: uploadedFile.size || file.size,
+                            type: uploadedFile.mimetype || file.type
+                        }]);
+                        setFormData(prev => ({
+                            ...prev,
+                            upload_ids: [...prev.upload_ids, uploadedFile.upload_id]
+                        }));
+                    }
+                }
+            } catch (err) {
+                toast({ title: 'Upload Failed', description: `${file.name}: Failed to upload`, variant: 'destructive' });
+            } finally {
+                setUploadingFiles(prev => prev.filter(f => f.tempKey !== tempKey));
+            }
+        }
+
+        if (attachmentInputRef.current) attachmentInputRef.current.value = '';
+    };
+
+    const handleRichTextEditorFileUpload = async (file: File): Promise<void> => {
+        if (file.size > 3.6 * 1024 * 1024) {
+            toast({ title: 'File too large', description: 'Maximum file size is 3.6MB', variant: 'destructive' });
+            throw new Error('File too large');
+        }
+        const formDataPayload = new FormData();
+        formDataPayload.append('file', file);
+        const res = await axios.post(`${API_URL}/engine/upload-temp`, formDataPayload, {
+            headers: { ...headers, 'Content-Type': 'multipart/form-data' }
+        });
+        if (res.data.success || res.data.ok) {
+            const uploadedFile = res.data.data?.[0] || res.data;
+            setAttachments(prev => [...prev, {
+                upload_id: uploadedFile.upload_id,
+                original_name: uploadedFile.original_name || uploadedFile.name || file.name,
+                url: uploadedFile.url,
+                size: uploadedFile.size || file.size,
+                type: uploadedFile.mimetype || file.type
+            }]);
+            setFormData(prev => ({
+                ...prev,
+                upload_ids: [...prev.upload_ids, uploadedFile.upload_id]
+            }));
+        }
+    };
+
+    const removeAttachment = (id: number) => {
+        setAttachments(prev => prev.filter(a => a.upload_id !== id));
+        setFormData(prev => ({
+            ...prev,
+            upload_ids: prev.upload_ids.filter(u => u !== id)
+        }));
+    };
     const handleCreate = async () => {
-        if (!formData.project_title || !formData.target_date) {
-            toast({ title: 'Validation Error', description: 'Title and Target Date are required.', variant: 'destructive' });
+        if (!formData.project_title) {
+            toast({ title: 'Validation Error', description: 'Project Title is required.', variant: 'destructive' });
             return;
         }
 
@@ -231,7 +397,8 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServ
             if (res.data.success) {
                 toast({ title: 'Project Created', description: `Ticket ID: ${res.data.ticket_id}` });
                 setCreateOpen(false);
-                setFormData({ project_title: '', project_description: '', project_category: 'HOTS', target_date: '', priority: 'medium', initial_notes: '' });
+                setFormData({ project_title: '', project_description: '', project_category: 'HOTS', target_date: '', priority: 'medium', initial_notes: '', upload_ids: [] });
+                setAttachments([]);
                 fetchProjects();
                 fetchSummary();
             }
@@ -263,16 +430,8 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServ
     // ============================================================
     // Filter
     // ============================================================
-    const filteredProjects = projects.filter(p => {
-        if (!searchTerm) return true;
-        const term = searchTerm.toLowerCase();
-        return (
-            p.ticket_id?.toLowerCase().includes(term) ||
-            p.project_title?.toLowerCase().includes(term) ||
-            p.creator_name?.toLowerCase().includes(term) ||
-            p.form_data?.project_title?.toLowerCase().includes(term)
-        );
-    });
+    // Server-side filtering
+    const displayProjects = projects;
 
     // ============================================================
     // Render
@@ -326,7 +485,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServ
                                     Fill in the request details. This will create a project ticket and an initial timeline entry.
                                 </DialogDescription>
                             </DialogHeader>
-                            <div className="space-y-4 py-4">
+                            <div className="space-y-4 py-4 overflow-y-auto max-h-[70vh] pr-2">
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">Project Title *</label>
                                     <Input
@@ -364,7 +523,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServ
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-sm font-medium mb-1 block">Target Date *</label>
+                                        <label className="text-sm font-medium mb-1 block">Target Date</label>
                                         <Input
                                             type="date"
                                             value={formData.target_date}
@@ -387,11 +546,73 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServ
                                 </div>
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">Initial Notes</label>
-                                    <Textarea
-                                        placeholder="Requirements, targets, initial notes..."
+                                    <RichTextEditor
+                                        ref={editorRef}
                                         value={formData.initial_notes}
-                                        onChange={e => setFormData(p => ({ ...p, initial_notes: e.target.value }))}
-                                        rows={3}
+                                        onChange={v => setFormData(p => ({ ...p, initial_notes: v }))}
+                                        minHeight="120px"
+                                        onImageUpload={handleImageUpload}
+                                        onFileUpload={handleRichTextEditorFileUpload}
+                                    />
+                                </div>
+                                <div className="mt-4">
+                                    <label className="text-sm font-medium mb-1 block">Attachments (PDF, Excel, Zip, etc.)</label>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {uploadingFiles.map(f => (
+                                            <div key={f.tempKey} className="flex items-center gap-2 p-2 rounded-lg border bg-gray-50/50 animate-pulse">
+                                                <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                                                <span className="text-sm text-muted-foreground truncate max-w-[200px]">{f.name}</span>
+                                            </div>
+                                        ))}
+                                        {attachments.map(file => {
+                                            const isExcel = file.original_name.endsWith('.xls') || file.original_name.endsWith('.xlsx');
+                                            const isZip = file.original_name.endsWith('.zip') || file.original_name.endsWith('.rar') || file.original_name.endsWith('.7z');
+                                            return (
+                                                <div key={file.upload_id} className="flex items-center gap-2 bg-slate-100 p-1.5 px-2.5 rounded-md text-xs border border-slate-200">
+                                                    <div className="p-1 rounded bg-white border shadow-sm">
+                                                        {isExcel ? (
+                                                            <FilePieChart className="w-3.5 h-3.5 text-green-600" />
+                                                        ) : isZip ? (
+                                                            <Archive className="w-3.5 h-3.5 text-amber-600" />
+                                                        ) : (
+                                                            <FileText className="w-3.5 h-3.5 text-blue-600" />
+                                                        )}
+                                                    </div>
+                                                    <span className="max-w-[150px] truncate font-medium text-slate-700">{file.original_name}</span>
+                                                    {file.url && (
+                                                        <a
+                                                            href={file.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-slate-400 hover:text-blue-500 transition-colors"
+                                                            title="Download"
+                                                        >
+                                                            <FileDown className="w-3.5 h-3.5" />
+                                                        </a>
+                                                    )}
+                                                    <button onClick={() => removeAttachment(file.upload_id)} className="text-slate-400 hover:text-red-500 transition-colors">
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 border-dashed bg-white border-slate-300 hover:border-indigo-400 hover:text-indigo-600 transition-all"
+                                        onClick={() => attachmentInputRef.current?.click()}
+                                        type="button"
+                                    >
+                                        <FileUp className="w-3.5 h-3.5 mr-2" />
+                                        Add Attachment
+                                    </Button>
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        ref={attachmentInputRef}
+                                        multiple
+                                        onChange={handleAttachmentUpload}
                                     />
                                 </div>
                             </div>
@@ -462,14 +683,14 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServ
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                         className="pl-9"
-                        placeholder="Search by title, ID, or creator..."
+                        placeholder="Search by title, ID, or creator then press enter"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
                 <div className="flex items-center gap-2">
                     <Filter className="w-4 h-4 text-muted-foreground" />
-                    <Select value={statusFilter} onValueChange={v => setStatusFilter(v)}>
+                    <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(1); }}>
                         <SelectTrigger className="w-40">
                             <SelectValue placeholder="Status" />
                         </SelectTrigger>
@@ -482,10 +703,39 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServ
                         </SelectContent>
                     </Select>
                 </div>
+
+                <div className="flex items-center gap-2 border-l pl-4 border-slate-200">
+                    <ListFilter className="w-4 h-4 text-muted-foreground" />
+                    <Select value={sortOrder} onValueChange={v => { setSortOrder(v); setPage(1); }}>
+                        <SelectTrigger className="w-44 bg-white">
+                            <SelectValue placeholder="Sort By" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="active_first">Active & Latest</SelectItem>
+                            <SelectItem value="newest">Newest Created</SelectItem>
+                            <SelectItem value="oldest">Oldest Created</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="flex items-center gap-2 ml-auto">
+                    <span className="text-sm text-muted-foreground">Show</span>
+                    <Select value={String(limit)} onValueChange={v => { setLimit(Number(v)); setPage(1); }}>
+                        <SelectTrigger className="w-20">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="25">25</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             {/* ===== PROJECT LIST ===== */}
-            {filteredProjects.length === 0 ? (
+            {displayProjects.length === 0 ? (
                 <Card className="border-dashed">
                     <CardContent className="p-12 text-center">
                         <FolderKanban className="w-12 h-12 mx-auto text-muted-foreground/40 mb-4" />
@@ -497,7 +747,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServ
                 </Card>
             ) : (
                 <div className="space-y-3">
-                    {filteredProjects.map(project => (
+                    {displayProjects.map(project => (
                         <Card
                             key={project.ticket_id}
                             className={`group hover:shadow-md transition-all duration-200 cursor-pointer border 
@@ -515,7 +765,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServ
                                             <Badge variant="outline" className={`text-xs ${getStatusColor(project.status_id)}`}>
                                                 {project.status_name}
                                             </Badge>
-                                            {getRiskBadge(project.risk_level)}
+                                            {getRiskBadge(project.risk_level, project.status_id)}
                                         </div>
                                         <h3 className="font-semibold text-base truncate group-hover:text-indigo-600 transition-colors">
                                             {project.form_data?.project_title || project.project_title || 'Untitled Project'}
@@ -538,11 +788,17 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServ
                                         <div className="text-center min-w-[80px]">
                                             {project.days_remaining !== null ? (
                                                 <>
-                                                    <p className={`text-xl font-bold ${project.days_remaining <= 3 ? 'text-red-600' : project.days_remaining <= 7 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                                                        {project.days_remaining <= 0 ? 'Overdue' : project.days_remaining}
+                                                    <p className={`text-xl font-bold ${project.status_id === 1 ? 'text-emerald-600' : project.days_remaining <= 3 ? 'text-red-600' : project.days_remaining <= 7 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                        {project.status_id === 1 ? (
+                                                            project.days_remaining === 0 ? 'Today' :
+                                                                project.days_remaining > 0 ? `${project.days_remaining} Early` :
+                                                                    `${Math.abs(project.days_remaining)} Late`
+                                                        ) : (
+                                                            project.days_remaining <= 0 ? 'Overdue' : project.days_remaining
+                                                        )}
                                                     </p>
                                                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                                                        {project.days_remaining <= 0 ? '' : 'Days Left'}
+                                                        {project.status_id === 1 ? 'Settled' : project.days_remaining <= 0 ? '' : 'Days Left'}
                                                     </p>
                                                 </>
                                             ) : (
@@ -586,6 +842,18 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ serviceId: propServ
                             </CardContent>
                         </Card>
                     ))}
+
+                    {/* Pagination */}
+                    {pagination && pagination.pages > 1 && (
+                        <div className="mt-6 pt-6 border-t">
+                            <TicketPagination
+                                currentPage={page}
+                                totalPages={pagination.pages}
+                                onPageChange={setPage}
+                                totalItems={pagination.total}
+                            />
+                        </div>
+                    )}
                 </div>
             )}
         </div>

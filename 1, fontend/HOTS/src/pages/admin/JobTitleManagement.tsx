@@ -45,7 +45,7 @@ const JobTitleManagement = () => {
             setIsLoading(true);
             const response = await axios.get(`${API_URL}/hots_settings/get/jobtitle`, {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+                    Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
                 }
             });
 
@@ -104,7 +104,7 @@ const JobTitleManagement = () => {
             if (modalMode === 'add') {
                 await axios.post(`${API_URL}/hots_settings/post/jobtitle`, formData, {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+                        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
                     }
                 });
                 toast({
@@ -114,7 +114,7 @@ const JobTitleManagement = () => {
             } else {
                 await axios.put(`${API_URL}/hots_settings/update/jobtitle/${selectedJobTitle?.jobtitle_id}`, formData, {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+                        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
                     }
                 });
                 toast({
@@ -139,7 +139,7 @@ const JobTitleManagement = () => {
         try {
             await axios.delete(`${API_URL}/hots_settings/delete/jobtitle/${selectedJobTitle?.jobtitle_id}`, {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+                    Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
                 }
             });
 

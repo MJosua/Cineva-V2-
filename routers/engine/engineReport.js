@@ -1,4 +1,4 @@
-/**
+﻿/**
  * routers/engine/engineReport.js
  * 
  * Exposes reporting endpoints safely.
@@ -6,7 +6,7 @@
 
 const express = require('express');
 const router = express.Router();
-const engineReport = require('../../controller/engine/engineReport');
+const engineReport = require('../../controller/hots_controller/engine/engineReport');
 const { decodeTokenHT } = require('../../config/encrypts');
 
 // Main Generic Reporting Endpoint

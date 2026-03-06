@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
     ClipboardList,
     CheckCircle,
@@ -17,12 +18,18 @@ import {
     ChevronRight,
     ChevronLeft,
     AlertCircle,
-    ListTodo
+    ListTodo,
+    LayoutGrid,
+    Search,
+    Filter
 } from 'lucide-react';
 import { API_URL } from '@/config/sourceConfig';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useHeader } from '@/contexts/HeaderContext';
 import { searchInObject } from '@/utils/searchUtils';
+import { CompactAssignmentCard } from '@/components/assignment/CompactAssignmentCard';
+import { TicketPagination } from '@/components/ui/TicketPagination';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface TaskPreview {
     title: string;
@@ -47,14 +54,32 @@ interface Assignment {
     task_preview: TaskPreview[];
 }
 
+interface PaginationData {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+}
+
 export const MyAssignments: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { searchValue, setSearchPlaceholder } = useHeader();
     const [assignments, setAssignments] = useState<Assignment[]>([]);
+    const [pagination, setPagination] = useState<PaginationData | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'cancelled'>('active');
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
+    const [sortOrder, setSortOrder] = useState<'active_first' | 'newest' | 'oldest'>('active_first');
+    const [viewMode, setViewMode] = useState<'folder' | 'compact'>(() => {
+        return (localStorage.getItem('hots_assignment_view_mode') as 'folder' | 'compact') || 'folder';
+    });
+
+    useEffect(() => {
+        localStorage.setItem('hots_assignment_view_mode', viewMode);
+    }, [viewMode]);
 
     // 🔗 URL Persistence for Category
     const selectedFolder = searchParams.get('category');
@@ -72,7 +97,7 @@ export const MyAssignments: React.FC = () => {
     useEffect(() => {
         fetchAssignments();
         setSearchPlaceholder("Search assignments...");
-    }, [setSearchPlaceholder]);
+    }, [setSearchPlaceholder, page, limit, statusFilter, searchValue, sortOrder]);
 
     useEffect(() => {
         if (sseSignals?.assignment) {
@@ -80,16 +105,27 @@ export const MyAssignments: React.FC = () => {
         }
     }, [sseSignals?.assignment]);
 
+    useEffect(() => {
+        if (searchValue) {
+            setSelectedFolder(null); // Clear folder selection when searching
+        }
+    }, [searchValue]);
+
     const fetchAssignments = async (isRefresh = false) => {
         if (isRefresh) setRefreshing(true);
         try {
-            const token = localStorage.getItem('tokek');
-            const response = await fetch(`${API_URL}/engine/my-assignments`, {
+            const token = localStorage.getItem('hots_tokek');
+            const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
+            const searchParam = searchValue ? `&search=${encodeURIComponent(searchValue)}` : '';
+            const sortParam = `&sort=${sortOrder}`;
+
+            const response = await fetch(`${API_URL}/engine/my-assignments?page=${page}&limit=${limit}${statusParam}${searchParam}${sortParam}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error('Failed to fetch assignments');
             const data = await response.json();
             setAssignments(data.assignments || []);
+            setPagination(data.pagination);
         } catch (err: any) {
             console.error('Failed to fetch assignments:', err);
         } finally {
@@ -99,22 +135,17 @@ export const MyAssignments: React.FC = () => {
     };
 
     // 🧠 Hierarchical Grouping Logic
+    // Grouping logic (now server-side filtered, but UI still groups current page)
     const groupedData = useMemo(() => {
-        const filtered = assignments.filter(a => {
-            const statusMatch = statusFilter === 'all' || a.assignment_status === statusFilter;
-            const searchMatch = !searchValue || searchInObject(a, searchValue);
-            return statusMatch && searchMatch;
-        });
-
         const groups: Record<string, Assignment[]> = {};
-        filtered.forEach(a => {
+        assignments.forEach(a => {
             const cat = a.service_name || "Uncategorized";
             if (!groups[cat]) groups[cat] = [];
             groups[cat].push(a);
         });
 
         return groups;
-    }, [assignments, statusFilter, searchValue]);
+    }, [assignments]);
 
     const activeFolders = Object.keys(groupedData).sort();
 
@@ -164,26 +195,63 @@ export const MyAssignments: React.FC = () => {
     const currentAssignments = selectedFolder ? groupedData[selectedFolder] || [] : [];
     const activeCount = assignments.filter(a => a.assignment_status === 'active').length;
 
+    const { searchValue: localSearchValue, setSearchValue: setHeaderSearchValue } = useHeader();
+
     return (
         <div className="container mx-auto px-4 py-6 max-w-6xl">
             {/* Hierarchical Navigation / Breadcrumbs */}
-            <nav className="flex items-center gap-2 mb-6 text-sm">
-                <button
-                    onClick={() => setSelectedFolder(null)}
-                    className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
-                >
-                    <ClipboardList className="w-4 h-4" />
-                    My Assignments
-                </button>
-                {selectedFolder && (
-                    <>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
-                        <span className="font-semibold text-foreground truncate max-w-[200px]">
-                            {selectedFolder}
-                        </span>
-                    </>
-                )}
-            </nav>
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <nav className="flex items-center gap-2 text-sm">
+                    <button
+                        onClick={() => setSelectedFolder(null)}
+                        className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
+                    >
+                        <Briefcase className="w-4 h-4" />
+                        My Assignments
+                    </button>
+                    {selectedFolder && (
+                        <>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium text-foreground">{selectedFolder}</span>
+                        </>
+                    )}
+                </nav>
+
+
+            </div>
+
+            {/* Filter Bar */}
+            <div className="flex flex-wrap gap-4 items-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-6">
+                <div className="relative flex-1 min-w-[280px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                        className="pl-9 bg-slate-50/50 border-slate-200 focus:bg-white transition-all"
+                        placeholder="Search assignments or ticket titles then press enter"
+                        value={localSearchValue}
+                        onChange={e => setHeaderSearchValue(e.target.value)}
+                    />
+                </div>
+
+                <div className="flex items-center gap-3">
+
+
+                    <div className="w-px h-6 bg-slate-200 mx-1" />
+
+                    <div className="flex items-center gap-2">
+                        <ListTodo className="w-4 h-4 text-muted-foreground" />
+                        <Select value={sortOrder} onValueChange={(v: any) => { setSortOrder(v); setPage(1); }}>
+                            <SelectTrigger className="w-40 bg-white">
+                                <SelectValue placeholder="Sort By" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="active_first">Active First</SelectItem>
+                                <SelectItem value="newest">Newest Assigned</SelectItem>
+                                <SelectItem value="oldest">Oldest Assigned</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+            </div>
 
             {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -201,16 +269,45 @@ export const MyAssignments: React.FC = () => {
 
                 <div className="flex items-center gap-2">
                     <div className="flex bg-muted p-1 rounded-lg">
+                        <button
+                            onClick={() => { setViewMode('folder'); setSelectedFolder(null); }}
+                            className={`p-1.5 rounded-md transition-all ${viewMode === 'folder' ? "bg-background shadow-sm text-blue-600" : "text-muted-foreground hover:text-foreground"}`}
+                            title="Folder View"
+                        >
+                            <Folder className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => { setViewMode('compact'); setSelectedFolder(null); }}
+                            className={`p-1.5 rounded-md transition-all ${viewMode === 'compact' ? "bg-background shadow-sm text-blue-600" : "text-muted-foreground hover:text-foreground"}`}
+                            title="Compact View"
+                        >
+                            <LayoutGrid className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <div className="flex bg-muted p-1 rounded-lg">
                         {(['active', 'completed', 'all'] as const).map((s) => (
                             <button
                                 key={s}
-                                onClick={() => setStatusFilter(s)}
+                                onClick={() => { setStatusFilter(s); setPage(1); }}
                                 className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${statusFilter === s ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                                     }`}
                             >
                                 {s.charAt(0).toUpperCase() + s.slice(1)}
                             </button>
                         ))}
+                    </div>
+                    <div className="flex items-center gap-2 bg-muted p-1 rounded-lg ml-2">
+                        <Select value={String(limit)} onValueChange={v => { setLimit(Number(v)); setPage(1); }}>
+                            <SelectTrigger className="h-8 w-16 bg-transparent border-none shadow-none text-xs font-semibold">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="10">10</SelectItem>
+                                <SelectItem value="25">25</SelectItem>
+                                <SelectItem value="50">50</SelectItem>
+                                <SelectItem value="100">100</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => fetchAssignments(true)} disabled={refreshing}>
                         <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -219,7 +316,34 @@ export const MyAssignments: React.FC = () => {
             </div>
 
             {/* Main Content Area */}
-            {!selectedFolder ? (
+            {viewMode === 'compact' ? (
+                /* COMPACT VIEW GRID - 3 COLUMNS MAX */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+                    {assignments.filter(a => {
+                        const statusMatch = statusFilter === 'all' || a.assignment_status === statusFilter;
+                        const searchMatch = !searchValue || searchInObject(a, searchValue);
+                        return statusMatch && searchMatch;
+                    }).length === 0 ? (
+                        <div className="col-span-full py-20 text-center border-2 border-dashed rounded-lg bg-muted/20">
+                            <LayoutGrid className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                            <p className="text-muted-foreground font-medium">No assignments found for the current filters.</p>
+                        </div>
+                    ) : (
+                        assignments.filter(a => {
+                            const statusMatch = statusFilter === 'all' || a.assignment_status === statusFilter;
+                            const searchMatch = !searchValue || searchInObject(a, searchValue);
+                            return statusMatch && searchMatch;
+                        }).map(assignment => (
+                            <div key={assignment.assignment_id} className="w-full flex justify-center h-full">
+                                <CompactAssignmentCard
+                                    assignment={assignment as any}
+                                    onComplete={() => fetchAssignments(false)}
+                                />
+                            </div>
+                        ))
+                    )}
+                </div>
+            ) : !selectedFolder ? (
                 /* FOLDER GRID - CORPORATE STYLE */
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {activeFolders.length === 0 ? (
@@ -361,6 +485,18 @@ export const MyAssignments: React.FC = () => {
                             </div>
                         );
                     })}
+
+                    {/* Pagination */}
+                    {pagination && pagination.pages > 1 && (
+                        <div className="mt-8 pt-6 border-t">
+                            <TicketPagination
+                                currentPage={page}
+                                totalPages={pagination.pages}
+                                onPageChange={setPage}
+                                totalItems={pagination.total}
+                            />
+                        </div>
+                    )}
                 </div>
             )}
         </div>

@@ -181,7 +181,7 @@ export function AppSidebar() {
 
   const fetchUserProfile = async () => {
     try {
-      const token = localStorage.getItem('tokek');
+      const token = localStorage.getItem('hots_tokek');
       const response = await axios.get(`${API_URL}/hots_auth/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });

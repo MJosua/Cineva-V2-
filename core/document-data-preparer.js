@@ -11,24 +11,34 @@ const encrypts = require('../config/encrypts');
 const imageToDataURL = (filePath) => {
     try {
         if (!filePath) return null;
-        // Remove leading slash if present for relative path resolution
-        const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
-        // Resolve absolute path (assuming running from root)
-        const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(cleanPath);
+        // core/document-data-preparer.js -> root is 1 level up
+        const rootDir = path.resolve(__dirname, '..');
 
-        if (!fs.existsSync(absolutePath)) {
-            // Fallback for public paths if running from subfolder
-            const fallbackPath = path.resolve('public', cleanPath);
-            if (!fs.existsSync(fallbackPath)) {
-                return null;
+        // Remove leading slash for relative resolution
+        const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
+
+        // Try multiple possible physical locations
+        const possiblePaths = [
+            path.isAbsolute(filePath) ? filePath : null, // 1. Raw absolute path
+            path.join(rootDir, cleanPath),              // 2. Relative to root
+            path.join(rootDir, 'public', cleanPath)     // 3. Relative to public folder (common for URL paths)
+        ].filter(Boolean);
+
+        let absolutePath = null;
+        for (const p of possiblePaths) {
+            if (fs.existsSync(p)) {
+                absolutePath = p;
+                break;
             }
-            filePath = fallbackPath;
-        } else {
-            filePath = absolutePath;
         }
 
-        const fileBuffer = fs.readFileSync(filePath);
-        const ext = path.extname(filePath).toLowerCase().replace('.', '');
+        if (!absolutePath) {
+            console.warn(`[imageToDataURL] File not found: ${filePath}`);
+            return null;
+        }
+
+        const fileBuffer = fs.readFileSync(absolutePath);
+        const ext = path.extname(absolutePath).toLowerCase().replace('.', '');
         const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png';
         return `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
     } catch (err) {

@@ -94,7 +94,7 @@ const Default_item_download: React.FC<WidgetProps> = ({
 
     //     axios.get(`${API_URL}/hots_Tps/country/${AnalystID}`, {
     //         headers: {
-    //             Authorization: `Bearer ${"tokek", userToken}`,
+    //             Authorization: `Bearer ${"hots_tokek", userToken}`,
     //         },
     //     }).then((res) => {
     //         // console.log("selectCountry", res.data.results)
@@ -125,7 +125,7 @@ const Default_item_download: React.FC<WidgetProps> = ({
 
     //     axios.get(`${API_URL}/hots_Tps/region/${selectedCountry}`, {
     //         headers: {
-    //             Authorization: `Bearer ${"tokek", userToken}`,
+    //             Authorization: `Bearer ${"hots_tokek", userToken}`,
     //         },
     //     }).then((res) => {
     //         setRegionList(res.data.results)
@@ -144,7 +144,7 @@ const Default_item_download: React.FC<WidgetProps> = ({
 
     //     axios.get(`${API_URL}/hots_Tps/distributor/${idcountry}`, {
     //         headers: {
-    //             Authorization: `Bearer ${"tokek", userToken}`,
+    //             Authorization: `Bearer ${"hots_tokek", userToken}`,
     //         },
     //     }).then((res) => {
     //         setDistributorlist(res.data.results)
@@ -164,7 +164,7 @@ const Default_item_download: React.FC<WidgetProps> = ({
 
     //     axios.get(`${API_URL}/hots_Tps/port/${idcompany}`, {
     //         headers: {
-    //             Authorization: `Bearer ${"tokek", userToken}`,
+    //             Authorization: `Bearer ${"hots_tokek", userToken}`,
     //         },
     //     }).then((res) => {
     //         setPortlist(res.data.results)

@@ -56,7 +56,7 @@ const JobListPage: React.FC = () => {
     const fetchJobs = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             console.log('🔍 [JobList] Fetching jobs from service_id 19');
 
             // Fetch all tickets from Job Marketplace service (service_id = 19)
@@ -85,7 +85,7 @@ const JobListPage: React.FC = () => {
     const fetchApplications = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             console.log('🔍 [JobList] Fetching my applications');
 
             const response = await axios.get(`${API_URL}/engine/tickets/my-applications`, {
@@ -108,7 +108,7 @@ const JobListPage: React.FC = () => {
 
     const handleApply = async (ticketId: string) => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.post(
                 `${API_URL}/engine/tickets/${ticketId}/apply`,
                 {

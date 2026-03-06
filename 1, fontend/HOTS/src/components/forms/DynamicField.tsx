@@ -352,7 +352,7 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
                       formData,
                       {
                         headers: {
-                          Authorization: `Bearer ${localStorage.getItem("tokek")}`,
+                          Authorization: `Bearer ${localStorage.getItem("hots_tokek")}`,
                           "Content-Type": "multipart/form-data",
                         },
                       }

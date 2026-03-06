@@ -117,7 +117,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId, assignedTy
 
     const fetchTasks = async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -155,7 +155,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId, assignedTy
 
     const fetchEligibleAssignees = async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             if (assignedType === 'team') {
                 const response = await fetch(`${API_URL}/hots_settings/get/team_members/${assignedId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -207,7 +207,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId, assignedTy
 
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             const payloadCustomFields = newTask.custom_fields.reduce((acc, curr) => {
                 if (curr.key && curr.value) acc[curr.key] = { value: curr.value, color: curr.color, type: curr.type };
@@ -253,7 +253,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId, assignedTy
 
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             const payloadCustomFields = editCustomFields.reduce((acc, curr) => {
                 if (curr.key && curr.value) acc[curr.key] = { value: curr.value, color: curr.color, type: curr.type };
@@ -331,7 +331,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId, assignedTy
         });
 
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             // Batch update in backend or sequential calls (sequentially for now as backend exists for single)
             for (const upd of statusUpdates) {
                 await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks/${upd.id}`, {
@@ -398,7 +398,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId, assignedTy
 
     const handleDeleteStep = async (taskId: string, stepId: string) => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const res = await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks-steps/${stepId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -422,7 +422,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId, assignedTy
     const handleUpdateStepLabel = async (taskId: string, stepId: string, newLabel: string) => {
         if (!newLabel.trim()) return;
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const res = await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks-steps/${stepId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -450,7 +450,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId, assignedTy
         setTasks(prev => prev.filter(t => t.entity_id !== taskId));
 
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks/${taskId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -464,7 +464,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId, assignedTy
 
     const handleGenerateTaskReport = async (taskId: string) => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await fetch(`${API_URL}/engine/report/suggest`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -550,7 +550,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({ assignmentId, assignedTy
                 });
 
                 // Persist reorder
-                const token = localStorage.getItem('tokek');
+                const token = localStorage.getItem('hots_tokek');
                 await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks/reorder`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

@@ -1,5 +1,6 @@
 import { Box, FormControl, FormLabel, Input, VStack, Heading, Select, Button, Text, HStack, IconButton, useDisclosure, Textarea, Tag, TagLabel, TagCloseButton, Wrap, Switch, Divider, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Code } from "@chakra-ui/react";
-import { MdAdd, MdDelete, MdEdit, MdArrowUpward, MdArrowDownward, MdSettings } from "react-icons/md";
+import { MdAdd, MdDelete, MdEdit, MdArrowUpward, MdArrowDownward, MdSettings, MdDragIndicator } from "react-icons/md";
+import { Reorder } from "framer-motion";
 import RichTextEditor from "./RichTextEditor";
 import AddBlockModal from "./AddBlockModal";
 import ColorPicker from "./ColorPicker";
@@ -29,11 +30,30 @@ export default function BlockEditor({ block, onChange }) {
             .catch(() => setPools([]));
     }, [slug]);
 
+    // Normalize fields: ensure every field has a unique _id for stable D&D keys
+    useEffect(() => {
+        if (block?.props?.fields && Array.isArray(block.props.fields)) {
+            const hasMissingIds = block.props.fields.some(f => !f._id);
+            if (hasMissingIds) {
+                const normalizedFields = block.props.fields.map(f =>
+                    f._id ? f : { ...f, _id: `id_${Math.random().toString(36).substr(2, 9)}_${Date.now()}` }
+                );
+                // We use a direct prop check to avoid infinite loops if onChange doesn't update immediately
+                handleChange("fields", normalizedFields);
+            }
+        }
+    }, [block?.id, block?.type]); // Run when switching blocks or types
+
 
     if (!block) return <Box p={4} textAlign="center" color="gray.500">Select a block to edit</Box>;
 
     const handleChange = (key, value) => {
-        onChange({ ...block, props: { ...block.props, [key]: value } });
+        let finalValue = value;
+        if (key === "fields" && Array.isArray(value)) {
+            // Robust normalization during change
+            finalValue = value.map(f => f._id ? f : { ...f, _id: `id_${Math.random().toString(36).substr(2, 9)}_${Date.now()}` });
+        }
+        onChange({ ...block, props: { ...block.props, [key]: finalValue } });
     };
 
     const handleAddChild = (newBlock) => {
@@ -56,7 +76,13 @@ export default function BlockEditor({ block, onChange }) {
     const removeImage = (i) => handleChange("images", (block.props.images || []).filter((_, j) => j !== i));
     const addLink = () => { if (newLinkLabel.trim()) { handleChange("links", [...(block.props.links || []), { label: newLinkLabel, url: newLinkUrl }]); setNewLinkLabel(""); setNewLinkUrl(""); } };
     const removeLink = (i) => handleChange("links", (block.props.links || []).filter((_, j) => j !== i));
-    const addField = () => { if (newFieldName.trim()) { handleChange("fields", [...(block.props.fields || []), { name: newFieldName.trim(), label: newFieldLabel.trim() || newFieldName.trim(), type: newFieldType }]); setNewFieldName(""); setNewFieldLabel(""); setNewFieldType("text"); } };
+    const addField = () => {
+        if (newFieldName.trim()) {
+            const newId = `id_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
+            handleChange("fields", [...(block.props.fields || []), { _id: newId, name: newFieldName.trim(), label: newFieldLabel.trim() || newFieldName.trim(), type: newFieldType }]);
+            setNewFieldName(""); setNewFieldLabel(""); setNewFieldType("text");
+        }
+    };
     const removeField = (i) => { handleChange("fields", (block.props.fields || []).filter((_, j) => j !== i)); if (editingFieldIndex === i) setEditingFieldIndex(null); };
     const moveField = (i, dir) => { const f = [...(block.props.fields || [])]; if (i + dir < 0 || i + dir >= f.length) return;[f[i], f[i + dir]] = [f[i + dir], f[i]]; handleChange("fields", f); };
     const updateField = (i, key, value) => { const f = [...(block.props.fields || [])]; f[i] = { ...f[i], [key]: value }; handleChange("fields", f); };
@@ -215,54 +241,97 @@ export default function BlockEditor({ block, onChange }) {
                         <Divider />
                         <Box>
                             <Text fontWeight="bold" fontSize="sm" mb={2}>Form Fields (EAV)</Text>
-                            <VStack spacing={2} align="stretch" mb={3}>
-                                {(block.props.fields || []).map((f, i) => (
-                                    <Box key={i} bg={editingFieldIndex === i ? "blue.50" : "gray.50"} p={2} borderRadius="sm" border="1px solid" borderColor={editingFieldIndex === i ? "blue.200" : "transparent"}>
-                                        <HStack>
-                                            <IconButton icon={<MdArrowUpward />} size="xs" variant="ghost" onClick={() => moveField(i, -1)} isDisabled={i === 0} aria-label="Up" />
-                                            <IconButton icon={<MdArrowDownward />} size="xs" variant="ghost" onClick={() => moveField(i, 1)} isDisabled={i === (block.props.fields?.length || 1) - 1} aria-label="Down" />
-                                            <Text fontSize="xs" fontWeight="bold" flex={1}>{f.label}</Text>
-                                            <Tag size="sm" colorScheme="purple"><TagLabel>{f.type || "text"}</TagLabel></Tag>
-                                            <Code fontSize="xs">{f.name}</Code>
-                                            <IconButton
-                                                icon={<MdEdit />}
-                                                size="xs"
-                                                colorScheme={editingFieldIndex === i ? "blue" : "gray"}
-                                                variant={editingFieldIndex === i ? "solid" : "ghost"}
-                                                onClick={() => setEditingFieldIndex(editingFieldIndex === i ? null : i)}
-                                                aria-label="Edit"
-                                            />
-                                            <IconButton icon={<MdDelete />} size="xs" colorScheme="red" variant="ghost" onClick={() => removeField(i)} aria-label="Del" />
-                                        </HStack>
-                                        {editingFieldIndex === i && (
-                                            <VStack mt={2} spacing={2} align="stretch">
+                            <Reorder.Group axis="y" values={block.props.fields || []} onReorder={(newFields) => handleChange("fields", newFields)}>
+                                <VStack spacing={2} align="stretch" mb={3}>
+                                    {(block.props.fields || []).map((f, i) => (
+                                        <Reorder.Item key={f._id} value={f}>
+                                            <Box bg={editingFieldIndex === i ? "blue.50" : "gray.50"} p={2} borderRadius="sm" border="1px solid" borderColor={editingFieldIndex === i ? "blue.200" : "transparent"}>
                                                 <HStack>
-                                                    <Box flex={1}>
-                                                        <Text fontSize="xs" color="gray.500" mb={0.5}>Label (shown to user)</Text>
-                                                        <Input size="xs" value={f.label} onChange={e => updateField(i, "label", e.target.value)} />
+                                                    <Box cursor="grab" color="gray.300" _hover={{ color: "gray.500" }}>
+                                                        <MdDragIndicator size={18} />
                                                     </Box>
-                                                    <Box flex={1}>
-                                                        <Text fontSize="xs" color="gray.500" mb={0.5}>Key (field_name)</Text>
-                                                        <Input size="xs" value={f.name} onChange={e => updateField(i, "name", e.target.value.replace(/\s/g, "_"))} fontFamily="mono" />
-                                                    </Box>
+                                                    <Text fontSize="xs" fontWeight="bold" flex={1}>{f.label}</Text>
+                                                    <Tag size="sm" colorScheme="purple"><TagLabel>{f.type || "text"}</TagLabel></Tag>
+                                                    <Code fontSize="xs">{f.name}</Code>
+                                                    <IconButton
+                                                        icon={<MdEdit />}
+                                                        size="xs"
+                                                        colorScheme={editingFieldIndex === i ? "blue" : "gray"}
+                                                        variant={editingFieldIndex === i ? "solid" : "ghost"}
+                                                        onClick={() => setEditingFieldIndex(editingFieldIndex === i ? null : i)}
+                                                        aria-label="Edit"
+                                                    />
+                                                    <IconButton icon={<MdDelete />} size="xs" colorScheme="red" variant="ghost" onClick={() => removeField(i)} aria-label="Del" />
                                                 </HStack>
-                                                <Box>
-                                                    <Text fontSize="xs" color="gray.500" mb={0.5}>Type</Text>
-                                                    <Select size="xs" value={f.type || "text"} onChange={e => updateField(i, "type", e.target.value)}>
-                                                        <option value="text">Text</option>
-                                                        <option value="coupon">🎫 Coupon</option>
-                                                        <option value="email">Email</option>
-                                                        <option value="phone">Phone</option>
-                                                        <option value="textarea">Long text</option>
-                                                        <option value="select">Select</option>
-                                                        <option value="image">📷 Image upload</option>
-                                                    </Select>
-                                                </Box>
-                                            </VStack>
-                                        )}
-                                    </Box>
-                                ))}
-                            </VStack>
+                                                {editingFieldIndex === i && (
+                                                    <VStack mt={2} spacing={2} align="stretch">
+                                                        <HStack>
+                                                            <Box flex={1}>
+                                                                <Text fontSize="xs" color="gray.500" mb={0.5}>Label (shown to user)</Text>
+                                                                <Input size="xs" value={f.label} onChange={e => updateField(i, "label", e.target.value)} />
+                                                            </Box>
+                                                            <Box flex={1}>
+                                                                <Text fontSize="xs" color="gray.500" mb={0.5}>Key (field_name)</Text>
+                                                                <Input size="xs" value={f.name} onChange={e => updateField(i, "name", e.target.value.replace(/\s/g, "_"))} fontFamily="mono" />
+                                                            </Box>
+                                                        </HStack>
+                                                        <Box>
+                                                            <Text fontSize="xs" color="gray.500" mb={0.5}>Type</Text>
+                                                            <Select size="xs" value={f.type || "text"} onChange={e => updateField(i, "type", e.target.value)}>
+                                                                <option value="text">Text</option>
+                                                                <option value="coupon">🎫 Coupon</option>
+                                                                <option value="email">Email</option>
+                                                                <option value="phone">Phone</option>
+                                                                <option value="textarea">Long text</option>
+                                                                <option value="select">Select</option>
+                                                                <option value="date">📅 Date</option>
+                                                                <option value="image">📷 Image upload</option>
+                                                            </Select>
+                                                        </Box>
+                                                        {f.type === 'select' && (
+                                                            <Box borderTop="1px dashed" borderColor="gray.200" pt={2}>
+                                                                <Text fontSize="xs" fontWeight="bold" color="gray.600" mb={1}>Options</Text>
+                                                                <VStack spacing={1} align="stretch" mb={2}>
+                                                                    {(f.options || []).map((opt, optIdx) => (
+                                                                        <HStack key={optIdx}>
+                                                                            <Input size="xs" value={opt} onChange={(e) => {
+                                                                                const newOptions = [...(f.options || [])];
+                                                                                newOptions[optIdx] = e.target.value;
+                                                                                updateField(i, "options", newOptions);
+                                                                            }} />
+                                                                            <IconButton
+                                                                                icon={<MdDelete />}
+                                                                                size="xs"
+                                                                                colorScheme="red"
+                                                                                variant="ghost"
+                                                                                onClick={() => {
+                                                                                    const newOptions = (f.options || []).filter((_, idx) => idx !== optIdx);
+                                                                                    updateField(i, "options", newOptions);
+                                                                                }}
+                                                                                aria-label="Remove option"
+                                                                            />
+                                                                        </HStack>
+                                                                    ))}
+                                                                </VStack>
+                                                                <Button
+                                                                    size="xs"
+                                                                    leftIcon={<MdAdd />}
+                                                                    onClick={() => {
+                                                                        const newOptions = [...(f.options || []), "New Option"];
+                                                                        updateField(i, "options", newOptions);
+                                                                    }}
+                                                                >
+                                                                    Add Option
+                                                                </Button>
+                                                            </Box>
+                                                        )}
+                                                    </VStack>
+                                                )}
+                                            </Box>
+                                        </Reorder.Item>
+                                    ))}
+                                </VStack>
+                            </Reorder.Group>
                             <HStack><Input placeholder="field_name" size="sm" value={newFieldName} onChange={(e) => setNewFieldName(e.target.value.replace(/\s/g, '_'))} flex={1} />
                                 <Input placeholder="Label" size="sm" value={newFieldLabel} onChange={(e) => setNewFieldLabel(e.target.value)} flex={1} />
                                 <Select size="sm" w="120px" value={newFieldType} onChange={(e) => setNewFieldType(e.target.value)}>
@@ -272,6 +341,7 @@ export default function BlockEditor({ block, onChange }) {
                                     <option value="phone">Phone</option>
                                     <option value="textarea">Long</option>
                                     <option value="select">Select</option>
+                                    <option value="date">📅 Date</option>
                                     <option value="image">📷 Image</option>
                                 </Select>
                                 <Button size="sm" onClick={addField}>Add</Button>
@@ -349,64 +419,109 @@ export default function BlockEditor({ block, onChange }) {
                         </Box>
                         <Divider />
                         <Box>
-                            <Text fontWeight="bold" fontSize="sm" mb={2}>📋 Credential Fields (shown when code is valid)</Text>
-                            <VStack spacing={2} align="stretch" mb={3}>
-                                {(block.props.fields || []).map((f, i) => (
-                                    <Box key={i} bg={editingFieldIndex === i ? "blue.50" : "gray.50"} p={2} borderRadius="sm"
-                                        border="1px solid" borderColor={editingFieldIndex === i ? "blue.200" : "transparent"}>
-                                        <HStack>
-                                            <IconButton icon={<MdArrowUpward />} size="xs" variant="ghost" onClick={() => moveField(i, -1)} isDisabled={i === 0} aria-label="Up" />
-                                            <IconButton icon={<MdArrowDownward />} size="xs" variant="ghost" onClick={() => moveField(i, 1)} isDisabled={i === (block.props.fields?.length || 1) - 1} aria-label="Down" />
-                                            <Text fontSize="xs" fontWeight="bold" flex={1}>{f.label}</Text>
-                                            <Tag size="sm" colorScheme="purple"><TagLabel>{f.type || "text"}</TagLabel></Tag>
-                                            <Code fontSize="xs">{f.name}</Code>
-                                            <IconButton
-                                                icon={<MdEdit />}
-                                                size="xs"
-                                                colorScheme={editingFieldIndex === i ? "blue" : "gray"}
-                                                variant={editingFieldIndex === i ? "solid" : "ghost"}
-                                                onClick={() => setEditingFieldIndex(editingFieldIndex === i ? null : i)}
-                                                aria-label="Edit"
-                                            />
-                                            <IconButton icon={<MdDelete />} size="xs" colorScheme="red" variant="ghost" onClick={() => removeField(i)} aria-label="Del" />
-                                        </HStack>
-                                        {editingFieldIndex === i && (
-                                            <VStack mt={2} spacing={2} align="stretch">
+                            <Text fontWeight="bold" fontSize="sm" mb={2}>Credential Fields (shown when code is valid)</Text>
+                            <Reorder.Group axis="y" values={block.props.fields || []} onReorder={(newFields) => handleChange("fields", newFields)}>
+                                <VStack spacing={2} align="stretch" mb={3}>
+                                    {(block.props.fields || []).map((f, i) => (
+                                        <Reorder.Item key={f._id} value={f}>
+                                            <Box bg={editingFieldIndex === i ? "blue.50" : "gray.50"} p={2} borderRadius="sm"
+                                                border="1px solid" borderColor={editingFieldIndex === i ? "blue.200" : "transparent"}>
                                                 <HStack>
-                                                    <Box flex={1}>
-                                                        <Text fontSize="xs" color="gray.500" mb={1}>Label (shown to user)</Text>
-                                                        <Input size="xs" value={f.label} onChange={e => updateField(i, "label", e.target.value)} />
+                                                    <Box cursor="grab" color="gray.300" _hover={{ color: "gray.500" }}>
+                                                        <MdDragIndicator size={18} />
                                                     </Box>
-                                                    <Box flex={1}>
-                                                        <Text fontSize="xs" color="gray.500" mb={1}>Key (field_name)</Text>
-                                                        <Input size="xs" value={f.name} onChange={e => updateField(i, "name", e.target.value.replace(/\s/g, "_"))} fontFamily="mono" />
-                                                    </Box>
+                                                    <Text fontSize="xs" fontWeight="bold" flex={1}>{f.label}</Text>
+                                                    <Tag size="sm" colorScheme="purple"><TagLabel>{f.type || "text"}</TagLabel></Tag>
+                                                    <Code fontSize="xs">{f.name}</Code>
+                                                    <IconButton
+                                                        icon={<MdEdit />}
+                                                        size="xs"
+                                                        colorScheme={editingFieldIndex === i ? "blue" : "gray"}
+                                                        variant={editingFieldIndex === i ? "solid" : "ghost"}
+                                                        onClick={() => setEditingFieldIndex(editingFieldIndex === i ? null : i)}
+                                                        aria-label="Edit"
+                                                    />
+                                                    <IconButton icon={<MdDelete />} size="xs" colorScheme="red" variant="ghost" onClick={() => removeField(i)} aria-label="Del" />
                                                 </HStack>
-                                                <Box>
-                                                    <Text fontSize="xs" color="gray.500" mb={1}>Type</Text>
-                                                    <Select size="xs" value={f.type || "text"} onChange={e => updateField(i, "type", e.target.value)}>
-                                                        <option value="text">Text</option>
-                                                        <option value="coupon">🎫 Coupon</option>
-                                                        <option value="email">Email</option>
-                                                        <option value="phone">Phone</option>
-                                                        <option value="textarea">Long text</option>
-                                                        <option value="select">Select</option>
-                                                        <option value="image">📷 Image upload</option>
-                                                    </Select>
-                                                </Box>
-                                            </VStack>
-                                        )}
-                                    </Box>
-                                ))}
-                            </VStack>
+                                                {editingFieldIndex === i && (
+                                                    <VStack mt={2} spacing={2} align="stretch">
+                                                        <HStack>
+                                                            <Box flex={1}>
+                                                                <Text fontSize="xs" color="gray.500" mb={1}>Label (shown to user)</Text>
+                                                                <Input size="xs" value={f.label} onChange={e => updateField(i, "label", e.target.value)} />
+                                                            </Box>
+                                                            <Box flex={1}>
+                                                                <Text fontSize="xs" color="gray.500" mb={1}>Key (field_name)</Text>
+                                                                <Input size="xs" value={f.name} onChange={e => updateField(i, "name", e.target.value.replace(/\s/g, "_"))} fontFamily="mono" />
+                                                            </Box>
+                                                        </HStack>
+                                                        <Box>
+                                                            <Text fontSize="xs" color="gray.500" mb={1}>Type</Text>
+                                                            <Select size="xs" value={f.type || "text"} onChange={e => updateField(i, "type", e.target.value)}>
+                                                                <option value="text">Text</option>
+                                                                <option value="coupon">🎫 Coupon</option>
+                                                                <option value="email">Email</option>
+                                                                <option value="phone">Phone</option>
+                                                                <option value="textarea">Long text</option>
+                                                                <option value="select">Select</option>
+                                                                <option value="date">📅 Date</option>
+                                                                <option value="image">📷 Image upload</option>
+                                                            </Select>
+                                                        </Box>
+                                                        {f.type === 'select' && (
+                                                            <Box borderTop="1px dashed" borderColor="gray.200" pt={2}>
+                                                                <Text fontSize="xs" fontWeight="bold" color="gray.600" mb={1}>Options</Text>
+                                                                <VStack spacing={1} align="stretch" mb={2}>
+                                                                    {(f.options || []).map((opt, optIdx) => (
+                                                                        <HStack key={optIdx}>
+                                                                            <Input size="xs" value={opt} onChange={(e) => {
+                                                                                const newOptions = [...(f.options || [])];
+                                                                                newOptions[optIdx] = e.target.value;
+                                                                                updateField(i, "options", newOptions);
+                                                                            }} />
+                                                                            <IconButton
+                                                                                icon={<MdDelete />}
+                                                                                size="xs"
+                                                                                colorScheme="red"
+                                                                                variant="ghost"
+                                                                                onClick={() => {
+                                                                                    const newOptions = (f.options || []).filter((_, idx) => idx !== optIdx);
+                                                                                    updateField(i, "options", newOptions);
+                                                                                }}
+                                                                                aria-label="Remove option"
+                                                                            />
+                                                                        </HStack>
+                                                                    ))}
+                                                                </VStack>
+                                                                <Button
+                                                                    size="xs"
+                                                                    leftIcon={<MdAdd />}
+                                                                    onClick={() => {
+                                                                        const newOptions = [...(f.options || []), "New Option"];
+                                                                        updateField(i, "options", newOptions);
+                                                                    }}
+                                                                >
+                                                                    Add Option
+                                                                </Button>
+                                                            </Box>
+                                                        )}
+                                                    </VStack>
+                                                )}
+                                            </Box>
+                                        </Reorder.Item>
+                                    ))}
+                                </VStack>
+                            </Reorder.Group>
                             <HStack><Input placeholder="field_name" size="sm" value={newFieldName} onChange={(e) => setNewFieldName(e.target.value.replace(/\s/g, '_'))} flex={1} />
                                 <Input placeholder="Label" size="sm" value={newFieldLabel} onChange={(e) => setNewFieldLabel(e.target.value)} flex={1} />
                                 <Select size="sm" w="120px" value={newFieldType} onChange={(e) => setNewFieldType(e.target.value)}>
                                     <option value="text">Text</option>
+                                    <option value="coupon">🎫 Coupon</option>
                                     <option value="email">Email</option>
                                     <option value="phone">Phone</option>
                                     <option value="textarea">Long</option>
                                     <option value="select">Select</option>
+                                    <option value="date">📅 Date</option>
                                     <option value="image">📷 Image</option>
                                 </Select>
                                 <Button size="sm" onClick={addField}>Add</Button>

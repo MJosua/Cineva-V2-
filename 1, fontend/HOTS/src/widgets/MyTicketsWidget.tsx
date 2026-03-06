@@ -26,7 +26,7 @@ const MyTicketsWidget: React.FC<WidgetProps> = ({ data }) => {
     useEffect(() => {
         const fetchTickets = async () => {
             try {
-                const token = localStorage.getItem('tokek');
+                const token = localStorage.getItem('hots_tokek');
                 const response = await axios.get(`${API_URL}/hots_ticket/my-tickets?limit=${limit}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });

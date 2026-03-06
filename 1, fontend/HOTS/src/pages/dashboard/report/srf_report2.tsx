@@ -67,7 +67,7 @@ const ReportSRF: React.FC = () => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const token = localStorage.getItem("tokek");
+                const token = localStorage.getItem("hots_tokek");
 
                 const queryString = buildQueryParams();
                 const url = `${API_URL}/hotsdashboard/report_srf?${queryString}`;

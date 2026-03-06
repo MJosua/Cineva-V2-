@@ -43,7 +43,7 @@ const DashboardAdmin = () => {
     const [logs, setLogs] = useState([]);
 
     useEffect(() => {
-        const token = localStorage.getItem('tokek');
+        const token = localStorage.getItem('hots_tokek');
         if (!token) return;
 
         console.log("🔌 Connecting to Admin Log Stream via SSE...");

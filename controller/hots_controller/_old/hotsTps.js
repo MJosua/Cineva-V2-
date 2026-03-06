@@ -1,4 +1,4 @@
-const {
+﻿const {
     // untuk koneksi ke database hots
     dbHots,
     dbQueryHots,
@@ -6,10 +6,10 @@ const {
     //untuk koneksi ke database i2i
     dbConf,
     dbQuery
-} = require("../../config/db");
+} = require("../../../../config/db");
 
 const { uploadFile } = require("../order");
-const { hotsMailer } = require('../../service/mailer/hots/hots_mailer');
+const { hotsMailer } = require('../../../../service/mailer/hots/hots_mailer');
 
 
 let green = "\x1b[32m"

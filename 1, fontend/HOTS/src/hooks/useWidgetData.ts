@@ -83,7 +83,7 @@ export const useWidgetData = (options: UseWidgetDataOptions) => {
       return cached.data;
     }
 
-    const token = localStorage.getItem('tokek');
+    const token = localStorage.getItem('hots_tokek');
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
     let cancelTokenSource: CancelTokenSource;

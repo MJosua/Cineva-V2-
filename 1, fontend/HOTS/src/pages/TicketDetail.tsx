@@ -78,7 +78,7 @@ const TicketDetail = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('tokek')}`
+          Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`
         },
       });
       console.log("response", response)
@@ -124,7 +124,7 @@ const TicketDetail = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('tokek')}`
+          Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`
         },
       });
       console.log("response", response)
@@ -263,7 +263,7 @@ const TicketDetail = () => {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('tokek')}`
+            Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`
           },
           body: JSON.stringify({ detailFields })
         });
@@ -310,7 +310,7 @@ const TicketDetail = () => {
         method: 'post',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+          Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
         },
         body: JSON.stringify({
           ticket_id: ticketDetail.ticket_id,
@@ -479,7 +479,7 @@ const TicketDetail = () => {
 
     fetch(downloadUrl, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`
       }
     })
       .then(response => response.blob())
@@ -521,7 +521,7 @@ const TicketDetail = () => {
 
     fetch(downloadUrl, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('tokek')}`
+        Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`
       }
     })
       .then(response => response.blob())
@@ -871,7 +871,7 @@ const TicketDetail = () => {
                                       { files: files.map((f) => f.url) },
                                       {
                                         headers: {
-                                          Authorization: `Bearer ${localStorage.getItem("tokek")}`,
+                                          Authorization: `Bearer ${localStorage.getItem("hots_tokek")}`,
                                         },
                                         responseType: "blob",
                                       }

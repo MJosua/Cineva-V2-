@@ -38,13 +38,11 @@ module.exports = {
         try {
             const resources = await resourceEngine.getResourcesByCategory(RESOURCE_CATEGORIES.SAMPLE_CATEGORY);
             const results = resources
-                .filter(r => r.attributes?.samplecat_group === 'NOODLE' || !r.attributes?.samplecat_group)
                 .map(r => ({
                     samplecat_id: r.value,
                     samplecat_name: r.label,
-                    samplecat_shortname: r.attributes?.samplecat_shortname || r.attributes?.shortname || r.resource_key,
-                    samplecat_parent_id: r.attributes?.samplecat_parent_id || null,
-                    samplecat_group: r.attributes?.samplecat_group || 'NOODLE',
+                    samplecat_shortname: r.attributes?.shortname || r.resource_key,
+                    bom_type: r.attributes?.bom_type || "0", // 👈 Added for filtering
                     active: r.is_active ? 1 : 0
                 }));
             res.status(200).send({ success: true, message: "GET getSRFSampleCategory SUCCESS", data: results });

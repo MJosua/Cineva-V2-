@@ -34,7 +34,7 @@ const DashboardView: React.FC = () => {
     const fetchDashboardInfo = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             // Fetch dashboard functions and find the current one
             const res = await axios.get(`${API_URL}/hotsdashboard/functions`, {

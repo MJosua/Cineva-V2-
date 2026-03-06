@@ -121,7 +121,7 @@ const SRFReportPage: React.FC<SRFReportPageProps> = ({ searchValue }) => {
         return initial;
     });
 
-    const token = localStorage.getItem('tokek');
+    const token = localStorage.getItem('hots_tokek');
 
     const fetchData = async () => {
         setLoading(true);

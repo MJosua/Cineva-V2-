@@ -77,7 +77,7 @@ export const SharedTaskEditor: React.FC<SharedTaskEditorProps> = ({
         if (!label) return;
         setIsAddingStep(true);
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const res = await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks/${task.entity_id}/steps`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -99,7 +99,7 @@ export const SharedTaskEditor: React.FC<SharedTaskEditorProps> = ({
 
     const handleDeleteStep = async (stepId: string) => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const res = await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks-steps/${stepId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -116,7 +116,7 @@ export const SharedTaskEditor: React.FC<SharedTaskEditorProps> = ({
     const handleUpdateStepLabel = async (stepId: string, newLabel: string) => {
         if (!newLabel.trim()) return;
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks-steps/${stepId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

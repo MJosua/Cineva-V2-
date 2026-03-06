@@ -47,7 +47,7 @@ const AIChatWidget: React.FC<WidgetProps> = ({ data }) => {
         setLoading(true);
 
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.post(
                 `${API_URL}/ai/chat`,
                 { message: input },

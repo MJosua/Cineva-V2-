@@ -163,7 +163,7 @@ const SubtaskList: React.FC<SubtaskListProps> = ({
         setDraggedId(null); setOverId(null);
         if (assignmentId) {
             try {
-                const token = localStorage.getItem('tokek');
+                const token = localStorage.getItem('hots_tokek');
                 await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks/reorder`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -269,7 +269,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
     const handleAssigneeChange = async (userId: number, userName: string) => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const currentFields = task.custom_fields || {};
 
             // Normalize current assignees from either legacy object or array
@@ -373,7 +373,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     const handleToggleStep = async (stepId: string, checked: boolean) => {
         if (!assignmentId) return;
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const res = await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks-steps/${stepId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

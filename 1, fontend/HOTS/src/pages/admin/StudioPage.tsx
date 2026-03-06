@@ -101,7 +101,7 @@ const StudioPage = () => {
     const loadWorkflow = async (serviceId: number) => {
         try {
             const res = await axios.get(`${API_URL}/workflow-engine/definition/${serviceId}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+                headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
             });
             if (res.data?.ok && res.data?.definition) {
                 setWorkflowDefinition(res.data.definition);
@@ -118,7 +118,7 @@ const StudioPage = () => {
     const loadTriggers = async (serviceId: number) => {
         try {
             const res = await axios.get(`${API_URL}/triggers/${serviceId}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+                headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
             });
             if (res.data?.ok && res.data?.triggers) {
                 // Ensure each action has an ID
@@ -290,7 +290,7 @@ const StudioPage = () => {
             };
 
             await axios.post(`${API_URL}/hots_settings/insertupdate/service_catalog`, payload, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+                headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
             });
 
             // Save workflow definition if we have one
@@ -298,7 +298,7 @@ const StudioPage = () => {
                 await axios.post(
                     `${API_URL}/workflow-engine/definition/${id}`,
                     { definition: workflowDefinition, name: config.title },
-                    { headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` } }
+                    { headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` } }
                 );
             }
 
@@ -307,7 +307,7 @@ const StudioPage = () => {
                 await axios.post(
                     `${API_URL}/triggers/${id}`,
                     { triggers },
-                    { headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` } }
+                    { headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` } }
                 );
             }
 

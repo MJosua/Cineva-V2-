@@ -70,7 +70,7 @@ const ProductCatalogPage = () => {
 
   useEffect(() => {
     setData(flavours)
-  }, []);
+  }, [flavours]);
 
 
 
@@ -141,6 +141,8 @@ const ProductCatalogPage = () => {
   function formatNumberWithDots(number) {
     return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
+
+  console.log("flavour", data)
 
   const printData = () => {
     return data

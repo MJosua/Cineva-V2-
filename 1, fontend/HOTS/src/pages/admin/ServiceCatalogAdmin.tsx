@@ -129,7 +129,7 @@ const ServiceCatalogAdmin = () => {
         {},
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+            Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
           }
         }
       );
@@ -213,7 +213,7 @@ const ServiceCatalogAdmin = () => {
         { widget_ids: assignment.widget_ids },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+            Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
           }
         }
       );

@@ -1,7 +1,7 @@
-const {
+﻿const {
   dbTMQuery,
   dbTM
-} = require("../config/db");
+} = require("../../config/db");
 
 
 let magenta = "\x1b[35m"

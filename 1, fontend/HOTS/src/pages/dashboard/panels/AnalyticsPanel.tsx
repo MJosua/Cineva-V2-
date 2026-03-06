@@ -48,7 +48,7 @@ const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ config, serviceId }) =>
     const fetchAnalytics = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             const res = await axios.get(`${API_URL}/hotsdashboard/service_summary/${serviceId}?range=${defaultDateRange}`, {
                 headers: { Authorization: `Bearer ${token}` }

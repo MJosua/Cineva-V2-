@@ -244,6 +244,13 @@ export default function CouponFormBlock({
                                     rows={3}
                                 />
                             )}
+                            {field.type === 'date' && (
+                                <Input
+                                    type="date"
+                                    value={formData[fieldKey] || ""}
+                                    onChange={(e) => handleChange(fieldKey, e.target.value)}
+                                />
+                            )}
                             {field.type === 'select' && (
                                 <Select
                                     value={formData[fieldKey] || ""}

@@ -30,13 +30,13 @@ export const fetchTodaysweek = createAsyncThunk<
   "srf_todaysweek/fetchTodaysweek",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("tokek");
+      const token = localStorage.getItem("hots_tokek");
       const response = await axios.get(`${API_URL}/hots_settings/get_srf/todaysweek`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       // Adjust field names based on your backend response
-      if (response.data.status !== "success") {
+      if (!response.data.success) {
         return rejectWithValue(response.data.message || "Failed to fetch today's week");
       }
 

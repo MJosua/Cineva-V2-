@@ -45,7 +45,7 @@ function CreateAccount() {
 
     const handleButtonCreate = async () => {
         // console.log("jalan")
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
 
         if (
             !userID

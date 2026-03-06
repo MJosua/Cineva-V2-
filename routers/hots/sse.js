@@ -15,7 +15,7 @@
 const express = require('express');
 const router = express.Router();
 const sseManager = require('../../core/sse-manager');
-const { decodeTokenHT } = require('../../config/encrypts');
+const { verifyTokenHT, verifyTokenEO, decodeTokenHT } = require('../../config/encrypts');
 
 /**
  * Custom middleware for SSE that supports both:
@@ -27,8 +27,26 @@ const sseAuthMiddleware = (req, res, next) => {
     if (req.query.token) {
         req.token = req.query.token;
     }
-    // Then use standard decodeTokenHT
-    decodeTokenHT(req, res, next);
+
+    if (!req.token) {
+        return res.status(401).json({ error: 'Authentication required: Token missing' });
+    }
+
+    // Try HOTS first
+    try {
+        req.dataToken = verifyTokenHT(req.token);
+        return next();
+    } catch (errHT) {
+        // Try Online Order if HOTS fails
+        try {
+            req.dataToken = verifyTokenEO(req.token);
+            return next();
+        } catch (errEO) {
+            // Both failed
+            console.error("SSE Multi-Auth Failed. HT Error:", errHT.message, "EO Error:", errEO.message);
+            return res.status(401).json({ error: 'Authentication required: Invalid token' });
+        }
+    }
 };
 
 /**
@@ -89,15 +107,8 @@ router.get('/stream', sseAuthMiddleware, (req, res) => {
  */
 router.get('/logs', sseAuthMiddleware, (req, res) => {
     // 🛡️ Security: Check if user is admin (type_id 9 based on DashboardAdmin.jsx)
-    // Note: req.dataToken is populated by decodeTokenHT
-    const user = req.dataToken;
-
-    // Strict Admin Check
-    // Assuming type_id 9 is Admin based on frontend code
-    // if (user?.type_id !== 9) {
-    //     return res.status(403).json({ error: 'Access denied: Admins only' });
-    // }
-    // For now, allowing authenticated users but we SHOULD uncomment the above in production
+    // Note: req.dataToken is populated by sseAuthMiddleware
+    // const user = req.dataToken;
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -105,7 +116,9 @@ router.get('/logs', sseAuthMiddleware, (req, res) => {
     res.setHeader('X-Accel-Buffering', 'no');
     req.setTimeout(0);
 
-    sseManager.addAdminConnection(res);
+    // Support module-specific logs (e.g., /sse/logs?token=...&module=eorder)
+    const filterModule = req.query.module || null;
+    sseManager.addAdminConnection(res, filterModule);
 
     res.write(`event: connected\n`);
     res.write(`data: ${JSON.stringify({ message: 'Connected to Log Stream' })}\n\n`);

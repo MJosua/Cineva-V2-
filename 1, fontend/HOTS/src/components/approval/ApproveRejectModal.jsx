@@ -16,7 +16,7 @@ import {
     const [comment, setComment] = useState("");
   
     if (!action) return null;
-    const token = localStorage.getItem("tokek");
+    const token = localStorage.getItem("hots_tokek");
   
     const submit = async () => {
       try {

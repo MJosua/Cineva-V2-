@@ -1,7 +1,7 @@
-// routers/engine/triggerRouters.js
+﻿// routers/engine/triggerRouters.js
 const express = require("express");
 const router = express.Router();
-const ctrl = require("../../controller/engine/triggerController");
+const ctrl = require("../../controller/hots_controller/engine/triggerController");
 
 // List all triggers for a service
 router.get("/:service_id", ctrl.list);

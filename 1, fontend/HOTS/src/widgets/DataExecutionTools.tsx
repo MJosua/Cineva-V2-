@@ -89,7 +89,7 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
     const fetchFactories = async () => {
         try {
             setFactoryLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(
                 `${API_URL}/hots_settings/factories`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -104,7 +104,7 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
 
     const fetchCurrentFactory = async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(
                 `${API_URL}/engine/ticket/${ticketId}/work-data/factory_id`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -122,7 +122,7 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
 
         try {
             setFactorySaving(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             await axios.post(
                 `${API_URL}/engine/ticket/${ticketId}/work-data`,
                 { field_name: 'factory_id', field_value: selectedFactoryId.toString() },
@@ -145,7 +145,7 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
     const fetchSRFWorkData = async () => {
         if (!ticketId) return;
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             // Fetch invoice number
             const invResponse = await axios.get(
                 `${API_URL}/engine/ticket/${ticketId}/work-data/invoice_number`,
@@ -179,7 +179,7 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
     const fetchSRFPreviewNumber = async (factoryId: number, category: string) => {
         try {
             setPreviewNumberLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(
                 `${API_URL}/hots_settings/custom_functions/srf/preview_number`,
                 {
@@ -202,7 +202,7 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
         if (!ticketId) return;
         try {
             setInvoiceSaving(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             await axios.post(
                 `${API_URL}/engine/ticket/${ticketId}/work-data`,
                 { field_name: 'invoice_number', field_value: invoiceNumber },
@@ -221,7 +221,7 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
         setProductCategory(newCategory);
         if (!ticketId) return;
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             await axios.post(
                 `${API_URL}/engine/ticket/${ticketId}/work-data`,
                 { field_name: 'product_category', field_value: newCategory },
@@ -241,7 +241,7 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
         if (!ticketId || !srfDocumentNumber) return;
         try {
             setDocNumberSaving(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             await axios.post(
                 `${API_URL}/engine/ticket/${ticketId}/work-data`,
                 { field_name: 'srf_document_number', field_value: srfDocumentNumber },
@@ -264,7 +264,7 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
 
     const fetchDataRows = async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(
                 `${API_URL}/engine/assignment/${assignmentId}/data-rows`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -286,7 +286,7 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
 
         setSaving(true);
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             await axios.post(
                 `${API_URL}/engine/assignment/${assignmentId}/data-row`,
                 { label: newLabel, value: newValue, field_type: newType },
@@ -313,7 +313,7 @@ const DataExecutionTools: React.FC<WidgetProps> = ({ ticketData, widgetData }) =
     const handleSaveEdit = async (rowId: number) => {
         setSaving(true);
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             await axios.put(
                 `${API_URL}/engine/assignment/${assignmentId}/data-row/${rowId}`,
                 { value: editValue },

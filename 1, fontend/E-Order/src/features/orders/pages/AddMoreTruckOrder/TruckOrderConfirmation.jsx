@@ -31,7 +31,11 @@ import PdfViewer from "../../../../components/media/PDFViewer/PdfViewer";
 
 function TruckOrderConfirmation() {
 
-  const { flavours, flavoursTrucking, ports, shipToParties } = useData();
+  const { flavours, ports, shipToParties } = useData();
+
+  const flavoursTrucking = flavours.filter(p =>
+    Array.isArray(p.shipment_type) && p.shipment_type.includes(1)
+  );
 
 
   const TruckOrderDetail = React.useMemo(() => JSON.parse(sessionStorage.getItem("truckOrders")), []);

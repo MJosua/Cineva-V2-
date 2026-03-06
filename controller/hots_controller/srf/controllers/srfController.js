@@ -174,27 +174,33 @@ module.exports = {
                 message: `Unauthorized`
             });
         }
-        // `       Jadi BOM`
+
+        const category = req.query.category || req.query.filter;
+        let whereClause = "";
+        let params = [];
+
+        if (category) {
+            whereClause = ` WHERE mbt.type_name = ? `;
+            params = [category];
+        }
+
         const queryRM = `
-         SELECT DISTINCT
-    UPPER(
-        CONCAT(
-            COALESCE(mb.rm_matcode, ''),
-            ' | ',
-            COALESCE(mb.rm_desc, ''),
-            ' | ',
-            COALESCE(mp.product_sku, '')
-        )
-    ) AS product_name_complete,
-    mb.rm_type
-        FROM iod.mst_bom mb
-        LEFT JOIN iod.mst_product mp
-            ON mb.fg_matcode = mp.product_code
-        LEFT JOIN iod.mst_bom_type mbt
-            ON mbt.id = mb.rm_type;
-
+          SELECT DISTINCT
+            UPPER(
+                CONCAT(
+                    COALESCE(mb.rm_matcode, ''),
+                    ' | ',
+                    COALESCE(mb.rm_desc, ''),
+                    ' | ',
+                    COALESCE(mp.product_sku, '')
+                )
+            ) AS product_name_complete,
+            mb.rm_type
+          FROM iod.mst_bom mb
+          LEFT JOIN iod.mst_product mp ON mb.fg_matcode = mp.product_code
+          LEFT JOIN iod.mst_bom_type mbt ON mbt.id = mb.rm_type
+          ${whereClause}
         `;
-
 
         const querySKU = `
             SELECT DISTINCT 
@@ -204,31 +210,36 @@ module.exports = {
                     mp.product_sku
                 )) AS product_name_complete,
                 0 AS rm_type
-            FROM map_item_for_dist mi
-            LEFT JOIN mst_company mc ON mi.distributor_id = mc.company_id
-            INNER JOIN mst_product mp ON mi.product_id = mp.product_id AND mp.company_id = 100 AND mp.active = 1
-            LEFT JOIN mst_country c ON mc.country_id = c.country_id
-            LEFT JOIN sys_text tc ON c.country_name_id = tc.text_id AND tc.lang_id = 1
-            LEFT JOIN m_product_link link ON mp.product_code = link.product_code AND flag = 1
-            -- LEFT JOIN mst_rm rm -- unused, remove to prevent syntax error
-            LEFT JOIN mst_brand mb ON mp.brand_id = mb.brand_id AND mp.company_id = mb.company_id
-            LEFT JOIN mst_product_type mpc ON mp.product_type_id = mpc.product_type_id AND mp.division_id = mpc.division_id
-            LEFT JOIN mst_flavour mf ON mf.flavour_id = mp.flavour_id
+            FROM iod.map_item_for_dist mi
+            LEFT JOIN iod.mst_company mc ON mi.distributor_id = mc.company_id
+            INNER JOIN iod.mst_product mp ON mi.product_id = mp.product_id AND mp.company_id = 100 AND mp.active = 1
+            LEFT JOIN iod.mst_country c ON mc.country_id = c.country_id
+            LEFT JOIN iod.sys_text tc ON c.country_name_id = tc.text_id AND tc.lang_id = 1
+            LEFT JOIN iod.m_product_link link ON mp.product_code = link.product_code AND flag = 1
+            LEFT JOIN iod.mst_brand mb ON mp.brand_id = mb.brand_id AND mp.company_id = mb.company_id
+            LEFT JOIN iod.mst_product_type mpc ON mp.product_type_id = mpc.product_type_id AND mp.division_id = mpc.division_id
+            LEFT JOIN iod.mst_flavour mf ON mf.flavour_id = mp.flavour_id
             WHERE NOW() BETWEEN mi.creation_date AND COALESCE(mi.finish_date, '9999-12-31')
             AND mf.company_id = 100
             AND mp.tolling_id NOT IN (1, 6)
             AND COALESCE(mi.moq, 0) > 0
-            ORDER BY mpc.product_type_name
+            ${category ? " AND (mpc.product_type_name = ? OR 'SKU' = ?) " : ""}
+            ORDER BY product_name_complete
         `;
 
         try {
-            const [rmResults] = await dbConf.promise().execute(queryRM);
-            const [skuResults] = await dbConf.promise().execute(querySKU);
+            const [rmResults] = await dbConf.promise().execute(queryRM, params);
 
-            const combinedResults = [...rmResults, ...skuResults];
+            let skuParams = [];
+            if (category) skuParams = [category, category];
+            const [skuResults] = await dbConf.promise().execute(querySKU, skuParams);
 
-            console.log(timestamp, "Successfully fetched RM and SKU data!");
-            ConsoleInfo.info("KETARIK COK")
+            const combinedResults = [
+                ...rmResults.map(r => ({ ...r, filter: r.rm_type })),
+                ...skuResults.map(s => ({ ...s, filter: s.rm_type }))
+            ];
+
+            console.log(timestamp, `Successfully fetched RM and SKU data (Filter: ${category || 'None'})`);
             res.status(200).send({
                 success: true,
                 message: "Combined RM and SKU results",

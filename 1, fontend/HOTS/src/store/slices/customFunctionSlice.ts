@@ -20,7 +20,7 @@ export const fetchCustomFunctions = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/hots_customfunction/list`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
       
       if (!response.data.success) {
@@ -39,7 +39,7 @@ export const fetchServiceFunctions = createAsyncThunk(
   async (serviceId: number, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/hots_customfunction/service/${serviceId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
       
       if (!response.data.success) {
@@ -58,7 +58,7 @@ export const createCustomFunction = createAsyncThunk(
   async (functionData: Partial<CustomFunction>, { rejectWithValue }) => {
     try {
       const response = await axios.post(`${API_URL}/hots_customfunction/create`, functionData, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
       
       if (!response.data.success) {
@@ -77,7 +77,7 @@ export const updateCustomFunction = createAsyncThunk(
   async ({ id, functionData }: { id: number, functionData: Partial<CustomFunction> }, { rejectWithValue }) => {
     try {
       const response = await axios.put(`${API_URL}/hots_customfunction/update/${id}`, functionData, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
       
       if (!response.data.success) {
@@ -96,7 +96,7 @@ export const deleteCustomFunction = createAsyncThunk(
   async (id: number, { rejectWithValue }) => {
     try {
       const response = await axios.delete(`${API_URL}/hots_customfunction/delete/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
       
       if (!response.data.success) {
@@ -118,7 +118,7 @@ export const executeCustomFunction = createAsyncThunk(
         ticket_id: ticketId,
         params
       }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
       
       if (!response.data.success) {
@@ -142,7 +142,7 @@ export const uploadExcelFile = createAsyncThunk(
       
       const response = await axios.post(`${API_URL}/hots_customfunction/upload_excel`, formData, {
         headers: { 
-          Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+          Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
           'Content-Type': 'multipart/form-data'
         }
       });
@@ -163,7 +163,7 @@ export const fetchFunctionLogs = createAsyncThunk(
   async (ticketId: number, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/hots_customfunction/logs/${ticketId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
       
       
@@ -184,7 +184,7 @@ export const fetchGeneratedDocuments = createAsyncThunk(
   async (ticketId: number, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/hots_customfunction/documents/${ticketId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
       
       
@@ -205,7 +205,7 @@ export const fetchFunctionTemplates = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/hots_customfunction/templates`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
       
       if (!response.data.success) {
@@ -231,7 +231,7 @@ export const assignFunctionToService = createAsyncThunk(
   }, { rejectWithValue }) => {
     try {
       const response = await axios.post(`${API_URL}/hots_customfunction/assign_service`, assignmentData, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
       
       if (!response.data.success) {
@@ -258,7 +258,7 @@ export const updateServiceFunctionAssignment = createAsyncThunk(
   }, { rejectWithValue }) => {
     try {
       const response = await axios.put(`${API_URL}/hots_customfunction/update_service_assignment/${assignmentData.id}`, assignmentData, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
       
       if (!response.data.success) {
@@ -277,7 +277,7 @@ export const deleteServiceFunctionAssignment = createAsyncThunk(
   async (assignmentId: number, { rejectWithValue }) => {
     try {
       const response = await axios.delete(`${API_URL}/hots_customfunction/remove_service_assignment/${assignmentId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
       });
       
       if (!response.data.success) {

@@ -74,7 +74,7 @@ function Itemconfig() {
     const [treatmentCondition, setTreatementCondition] = useState([]);
     const [treatmentConditionList, setTreatementConditionList] = useState([]);
     const getCompanyList = async () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
 
         await Axios.get(API_URL + `/admin/config-company`, {
             headers: {
@@ -91,7 +91,7 @@ function Itemconfig() {
             });
     };
     const getTermOfPayment = async () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         await Axios.get(API_URL + `/admin/config-top`, {
             headers: {
                 Authorization: `Bearer ${userToken}`,
@@ -107,7 +107,7 @@ function Itemconfig() {
             });
     };
     const getTreatementCondition = async () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         await Axios.get(API_URL + `/admin/config`, {
             headers: {
                 Authorization: `Bearer ${userToken}`,
@@ -124,7 +124,7 @@ function Itemconfig() {
     };
 
     const getTreatementConditionList = async () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         await Axios.get(API_URL + `/admin/config-condition`, {
             headers: {
                 Authorization: `Bearer ${userToken}`,
@@ -145,7 +145,7 @@ function Itemconfig() {
     // console.log("treatmentCondition", treatmentCondition)
 
     const getItemData = async () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         await Axios.get(API_URL + `/admin/config`, {
             headers: {
                 Authorization: `Bearer ${userToken}`,
@@ -165,7 +165,7 @@ function Itemconfig() {
 
 
     const get_blocking_date_sys_text = async () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         await Axios.get(API_URL + `/admin/get_blocking_date_sys_text`, {
             headers: {
                 Authorization: `Bearer ${userToken}`,
@@ -185,7 +185,7 @@ function Itemconfig() {
     const [listNtp, setlistntp] = useState([])
 
     const get_ntp = async (company_id) => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         await Axios.get(API_URL + `/user/ntp/${company_id}`, {
             headers: {
                 Authorization: `Bearer ${userToken}`,
@@ -202,7 +202,7 @@ function Itemconfig() {
     };
 
     const sys_textEditBlockingDate = async () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         try {
             const res = await Axios.post(`${API_URL}/admin/edit_blocking_date_sys_text`, {
                 config_id: config_id,
@@ -251,7 +251,7 @@ function Itemconfig() {
 
 
     const postItemData = async () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         await Axios.post(API_URL + `/admin/config`,
             {
                 company_id: distributor,
@@ -298,7 +298,7 @@ function Itemconfig() {
     };
 
     const deleteItemData = async () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         await Axios.delete(API_URL + `/admin/config/${config_id}`,
             {
                 headers: {
@@ -340,7 +340,7 @@ function Itemconfig() {
     };
 
     const editItemData = async () => {
-        let userToken = localStorage.getItem("tokek");
+        let userToken = localStorage.getItem("hots_tokek");
         await Axios.put(API_URL + `/admin/config`,
             {
                 config_id: config_id,

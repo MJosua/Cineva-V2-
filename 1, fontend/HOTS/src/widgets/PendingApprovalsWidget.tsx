@@ -25,7 +25,7 @@ const PendingApprovalsWidget: React.FC<WidgetProps> = ({ data }) => {
     useEffect(() => {
         const fetchApprovals = async () => {
             try {
-                const token = localStorage.getItem('tokek');
+                const token = localStorage.getItem('hots_tokek');
                 const response = await axios.get(`${API_URL}/hots_ticket/pending-approvals?limit=${limit}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });

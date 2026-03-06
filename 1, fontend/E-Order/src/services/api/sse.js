@@ -5,9 +5,12 @@ function normalizePath(path) {
   return path.startsWith("/") ? path : `/${path}`;
 }
 
-export function createEventSource(path) {
-  // Keep behavior aligned with existing usage: no credentials/options changed.
-  return new EventSource(API_URL + normalizePath(path));
+export function createEventSource(path, token = null) {
+  let url = API_URL + normalizePath(path);
+  if (token) {
+    url += (url.includes("?") ? "&" : "?") + `token=${encodeURIComponent(token)}`;
+  }
+  return new EventSource(url);
 }
 
 

@@ -39,7 +39,7 @@ export const SharedReportTimeline: React.FC<SharedReportTimelineProps> = ({ assi
         if (!assignmentId || !task?.entity_id) return;
         setIsLoadingReports(true);
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const res = await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks/${task.entity_id}/reports`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -77,7 +77,7 @@ export const SharedReportTimeline: React.FC<SharedReportTimelineProps> = ({ assi
 
         setIsSavingReport(true);
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const res = await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks/${task.entity_id}/reports`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -104,7 +104,7 @@ export const SharedReportTimeline: React.FC<SharedReportTimelineProps> = ({ assi
         const trimmed = editingContent.replace(/<[^>]*>/g, '').trim();
         if (!trimmed) return;
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const res = await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks/${task.entity_id}/reports/${entryId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -127,7 +127,7 @@ export const SharedReportTimeline: React.FC<SharedReportTimelineProps> = ({ assi
     const handleDeleteReport = async (entryId: number) => {
         if (!confirm('Are you sure you want to delete this report entry?')) return;
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const res = await fetch(`${API_URL}/engine/assignment/${assignmentId}/tasks/${task.entity_id}/reports/${entryId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -252,7 +252,7 @@ export const SharedReportTimeline: React.FC<SharedReportTimelineProps> = ({ assi
                                                 ) : (
                                                     <>
                                                         <div
-                                                            className="text-sm prose prose-sm max-w-none text-slate-700"
+                                                            className="text-sm prose prose-sm max-w-none text-slate-700 break-words overflow-wrap-anywhere [&_img]:max-w-full [&_img]:h-auto"
                                                             dangerouslySetInnerHTML={{ __html: entry.content }}
                                                         />
                                                         <div className="flex items-center justify-between mt-3 pt-3 border-t">

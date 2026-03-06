@@ -59,7 +59,7 @@ export function useTriggerFunction<T = any>(
             const response = await fetch(`${API_BASE}/trigger-functions/${functionKey}/execute`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('tokek')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('hots_tokek')}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ params: params || options.params || {} })
@@ -119,10 +119,10 @@ export function useTriggerFunctionList(filter?: { category?: string; type?: stri
 
                 const [funcRes, catRes] = await Promise.all([
                     fetch(`${API_BASE}/trigger-functions?${params}`, {
-                        headers: { 'Authorization': `Bearer ${localStorage.getItem('tokek')}` }
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('hots_tokek')}` }
                     }),
                     fetch(`${API_BASE}/trigger-functions/categories`, {
-                        headers: { 'Authorization': `Bearer ${localStorage.getItem('tokek')}` }
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('hots_tokek')}` }
                     })
                 ]);
 
@@ -159,7 +159,7 @@ export function useTriggerFunctionDetails(functionKey: string | null) {
             setLoading(true);
             try {
                 const response = await fetch(`${API_BASE}/trigger-functions/${functionKey}`, {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('tokek')}` }
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('hots_tokek')}` }
                 });
                 const data = await response.json();
                 if (data.success) {

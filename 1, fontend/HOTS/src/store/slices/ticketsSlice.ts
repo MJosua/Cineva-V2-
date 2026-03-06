@@ -60,7 +60,7 @@ export const fetchMyTickets = createAsyncThunk(
   async (page: number = 1, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/hots_ticket/my_ticket?page=${page}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` },
       });
 
       if (!response.data.success) {
@@ -79,7 +79,7 @@ export const fetchAllTickets = createAsyncThunk(
   async (page: number = 1, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/hots_ticket/all_ticket?page=${page}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` },
       });
 
       if (!response.data.success) {
@@ -98,7 +98,7 @@ export const fetchTaskList = createAsyncThunk(
   async (page: number = 1, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/hots_ticket/task_list?page=${page}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` },
       });
 
       if (!response.data.success) {
@@ -117,7 +117,7 @@ export const fetchInvolvedTaskList = createAsyncThunk(
   async (page: number = 1, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/hots_ticket/task_list_involved?page=${page}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` },
       });
 
       if (!response.data.success) {
@@ -136,7 +136,7 @@ export const fetchTicketDetail = createAsyncThunk(
   async (ticketId: string, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/hots_ticket/detail/${ticketId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` },
       });
 
       if (!response.data.success) {
@@ -160,7 +160,7 @@ export const createTicket = createAsyncThunk(
     try {
       const response = await axios.post(`${API_URL}/hots_ticket/create/ticket/${serviceId}`, ticketData, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+          Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
           'Content-Type': 'application/json',
         },
       });
@@ -182,7 +182,7 @@ export const uploadFiles = createAsyncThunk(
     try {
       const response = await axios.post(`${API_URL}/hots_ticket/upload/files/`, formData, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+          Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
           'Content-Type': 'multipart/form-data',
         },
       });
@@ -203,7 +203,7 @@ export const fetchTaskCount = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/hots_ticket/task_count`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` },
       });
 
       if (!response.data.success) {
@@ -258,7 +258,7 @@ export const approveTicketEngine = createAsyncThunk(
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+            Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
             'Content-Type': 'application/json',
           },
         }
@@ -295,7 +295,7 @@ export const rejectTicketEngine = createAsyncThunk(
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+            Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
             'Content-Type': 'application/json',
           },
         }

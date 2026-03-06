@@ -172,7 +172,7 @@ export function DataTableReportPro<T extends Record<string, any>>({
     color?: string
   ) => {
     try {
-      const token = localStorage.getItem("tokek");
+      const token = localStorage.getItem("hots_tokek");
       const url = updateUrl || `${API_URL}/hotsdashboard/report_detail/upsert`;
 
       const payload = updateUrl

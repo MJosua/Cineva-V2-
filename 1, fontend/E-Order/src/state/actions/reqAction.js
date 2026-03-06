@@ -24,36 +24,15 @@ export const getFlavours = async (userToken) => {
 };
 
 
-export const getFlavoursTrucking = async (userToken) => {
-    // console.time("getFlavoursTrucking Execution Time");
-
-    try {
-        const response = await apiGet("/product/order?trucking=1", userToken);
-
-        // console.timeEnd("getFlavoursTrucking Execution Time");
-        return response;
-    } catch (error) {
-        console.timeEnd("getFlavoursTrucking Execution Time");
-        console.error("Error in getFlavoursTrucking:", error.message);
-        throw error;
-    }
-
-};
 
 export const getTOP = async (userToken) => {
-    // console.time("getFlavoursTrucking Execution Time");
-
     try {
         const response = await apiGet("/user/top", userToken);
-
-        // console.timeEnd("getFlavoursTrucking Execution Time");
         return response;
     } catch (error) {
-        console.timeEnd("getFlavoursTrucking Execution Time");
-        console.error("Error in getFlavoursTrucking:", error.message);
+        console.error("Error in getTOP:", error.message);
         throw error;
     }
-
 };
 
 export const getPorts = async (userToken) => {

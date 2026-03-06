@@ -1,18 +1,17 @@
 const authController = require('./OnlineOrder/auth');
 // const authTmController = require('./authTM'); // Decommissioned
 const cartController = require('./OnlineOrder/cart');
-const userController = require('./user');
+const userController = require('./hots_controller/user');
 const orderController = require('./OnlineOrder/order');
 const debug_controller = require('./debug_controller');
 const eventController = require('./OnlineOrder/event');
 const productController = require('./OnlineOrder/product');
-const adminController = require('./admin');
+const adminController = require('./OnlineOrder/admin');
 const spectatorController = require('./OnlineOrder/spectator');
 // const trademarkController = require('./trademark'); // Decommissioned
-const authControllerTest = require('./auth_test');
 const productControllerTest = require('./debug_controller')
 
-const cardGenerator = require('./cardGenerator')
+const cardGenerator = require('./hots_controller/cardGenerator')
 
 //hots 
 
@@ -48,7 +47,7 @@ const projectmngr_dashboard = require('./project_manager_controller/dashboard_co
 const hotsDashboardController = require('./hots_controller/dashboard/controllers/dashboardController'); // 🔧 Phase 5: Moved to module
 
 // Coupon System
-const couponController = require('./couponController');
+const couponController = require('./event/couponController');
 
 
 
@@ -63,7 +62,7 @@ module.exports = {
     adminController,
     spectatorController,
     // trademarkController, // Decommissioned
-    authControllerTest,
+    // authControllerTest, // Removed: _old folder not needed
     productControllerTest,
     cardGenerator,
 

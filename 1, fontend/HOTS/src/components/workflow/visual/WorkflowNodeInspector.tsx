@@ -51,10 +51,10 @@ export const WorkflowNodeInspector: React.FC<WorkflowNodeInspectorProps> = ({
             // ... existing fetch logic ...
             try {
                 const [teamsRes, rolesRes, usersRes, deptsRes] = await Promise.all([
-                    fetch(`${API_URL}/hots_settings/get/team`, { headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` } }).then(r => r.json()).catch(() => ({ data: [] })),
-                    fetch(`${API_URL}/hots_settings/get/role`, { headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` } }).then(r => r.json()).catch(() => ({ data: [] })),
-                    fetch(`${API_URL}/hots_settings/get/user`, { headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` } }).then(r => r.json()).catch(() => ({ data: [] })),
-                    fetch(`${API_URL}/hots_settings/get/departments`, { headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` } }).then(r => r.json()).catch(() => ({ data: [] })),
+                    fetch(`${API_URL}/hots_settings/get/team`, { headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` } }).then(r => r.json()).catch(() => ({ data: [] })),
+                    fetch(`${API_URL}/hots_settings/get/role`, { headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` } }).then(r => r.json()).catch(() => ({ data: [] })),
+                    fetch(`${API_URL}/hots_settings/get/user`, { headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` } }).then(r => r.json()).catch(() => ({ data: [] })),
+                    fetch(`${API_URL}/hots_settings/get/departments`, { headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` } }).then(r => r.json()).catch(() => ({ data: [] })),
                 ]);
                 setTeams(teamsRes.data || []);
                 setRoles(rolesRes.data || []);

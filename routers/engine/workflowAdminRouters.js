@@ -1,6 +1,6 @@
-const express = require("express");
+﻿const express = require("express");
 const router = express.Router();
-const ctrl = require("../../controller/engine/workflowAdminController");
+const ctrl = require("../../controller/hots_controller/engine/workflowAdminController");
 
 // STATIC ROUTES FIRST
 router.post("/add", ctrl.create);

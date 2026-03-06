@@ -4,7 +4,7 @@
 
 const express = require('express');
 const route = express.Router();
-const couponController = require('../controller/couponController');
+const couponController = require('../controller/event/couponController');
 
 // ========================================
 // PUBLIC ROUTES (no auth required)

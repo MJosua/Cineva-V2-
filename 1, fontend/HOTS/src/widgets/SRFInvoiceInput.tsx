@@ -33,7 +33,7 @@ const SRFInvoiceInput: React.FC<WidgetProps> = ({ ticketData, widgetData }) => {
 
     const fetchCurrentInvoice = async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(
                 `${API_URL}/engine/ticket/${ticketId}/work-data/invoice_number`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -57,7 +57,7 @@ const SRFInvoiceInput: React.FC<WidgetProps> = ({ ticketData, widgetData }) => {
 
         try {
             setSaving(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             await axios.post(
                 `${API_URL}/engine/ticket/${ticketId}/work-data`,

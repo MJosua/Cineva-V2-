@@ -20,7 +20,7 @@ interface UserProfile {
 }
 
 const MeetingRoomStandalone: React.FC = () => {
-    const [token, setToken] = useState<string | null>(localStorage.getItem("tokek"));
+    const [token, setToken] = useState<string | null>(localStorage.getItem("hots_tokek"));
     const [globalValues, setGlobalValues] = useState<Record<string, any>>({});
     const [showForm, setShowForm] = useState(false);
     const [purpose, setPurpose] = useState("");
@@ -41,7 +41,7 @@ const MeetingRoomStandalone: React.FC = () => {
 
     // 🔁 Check token on mount + after login + Auto-Refresh
     useEffect(() => {
-        const stored = localStorage.getItem("tokek");
+        const stored = localStorage.getItem("hots_tokek");
         if (stored) setToken(stored);
 
         // Auto-refresh schedule every 5 minutes
@@ -73,6 +73,11 @@ const MeetingRoomStandalone: React.FC = () => {
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const kioskKey = urlParams.get("kiosk_key");
+        const resKey = urlParams.get("resource_key");
+
+        if (resKey) {
+            localStorage.setItem("current_resource_key", resKey);
+        }
 
         // 1. Massive History Buffer for Standalone Kiosk
         const handlePopState = (e: PopStateEvent) => {
@@ -95,35 +100,38 @@ const MeetingRoomStandalone: React.FC = () => {
             }
         }
 
-        // 2. Handle Auto-Login
-        if (kioskKey === "TABLET_IOD_ASIA" && !token) {
-            console.log("Kiosk key detected. Attempting auto-login...");
-            const autoLogin = async () => {
-                try {
-                    await dispatch(
-                        loginUser({
-                            username: "TABLET_IOD_ASIA",
-                            password: "TABLET_IOD_ASIA_PWD_2026",
-                        })
-                    ).unwrap();
-                    localStorage.setItem("isKiosk", "true");
-                    setIsKioskMode(true);
-                    setToken(localStorage.getItem("tokek"));
+        // 2. Handle Auto-Login / Activation
+        if (kioskKey === "TABLET_IOD_ASIA") {
+            console.log("Kiosk key detected. Activating Kiosk Mode...");
+            localStorage.setItem("isKiosk", "true");
+            setIsKioskMode(true);
 
-                    // Cleanup URL safely
-                    const newUrl = window.location.pathname;
-                    window.history.replaceState({ kiosk_activated: true }, "", newUrl);
+            // 💾 Crucial: Store the resource_key for reporting
+            if (resKey) {
+                console.log(`[Kiosk] Tracking Room: ${resKey}`);
+                localStorage.setItem("current_resource_key", resKey);
+            }
 
-                    toast({ title: "Kiosk Mode Activated", description: "Identity: Tablet IOD ASIA" });
+            if (!token) {
+                const autoLogin = async () => {
+                    try {
+                        await dispatch(
+                            loginUser({
+                                username: "TABLET_IOD_ASIA",
+                                password: "TABLET_IOD_ASIA_PWD_2026",
+                            })
+                        ).unwrap();
+                        setToken(localStorage.getItem("hots_tokek"));
+                        toast({ title: "Kiosk Mode Activated", description: `Monitoring Room: ${resKey || 'Unknown'}` });
+                    } catch (err) {
+                        console.error("Kiosk auto-login failed:", err);
+                    }
+                };
+                autoLogin();
+            }
 
-                    // Re-assert protection after activation
-                    window.addEventListener('popstate', handlePopState);
-                    window.history.pushState({ kiosk_trap: 'active' }, "", window.location.href);
-                } catch (err) {
-                    console.error("Kiosk auto-login failed:", err);
-                }
-            };
-            autoLogin();
+            // Cleanup URL but keep resource_key in memory if possible or just log it
+            console.log("Current Room Target:", resKey);
         } else if (isKioskMode && token) {
             // Check if existing token is valid/expired
             try {
@@ -131,7 +139,7 @@ const MeetingRoomStandalone: React.FC = () => {
                 const isExpired = payload.exp * 1000 < Date.now();
                 if (isExpired) {
                     console.log("Kiosk token expired. Forcing re-login...");
-                    localStorage.removeItem("tokek");
+                    localStorage.removeItem("hots_tokek");
                     setToken(null);
                 }
             } catch (e) {
@@ -146,7 +154,7 @@ const MeetingRoomStandalone: React.FC = () => {
     const fetchUserProfile = async () => {
         try {
             const response = await axios.get(`${API_URL}/hots_auth/profile`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem("tokek")}` },
+                headers: { Authorization: `Bearer ${localStorage.getItem("hots_tokek")}` },
             });
 
             if (response.data.success) {
@@ -157,7 +165,7 @@ const MeetingRoomStandalone: React.FC = () => {
             // If profile fetch fails with 401, clear token to trigger auto-login
             if (error.response?.status === 401) {
                 console.log("Token invalid or expired. Clearing...");
-                localStorage.removeItem("tokek");
+                localStorage.removeItem("hots_tokek");
                 setToken(null);
             }
         }
@@ -167,75 +175,12 @@ const MeetingRoomStandalone: React.FC = () => {
         if (token) fetchUserProfile();
     }, [token]);
 
-    // 🔋 Battery API Integration
+    // Monitor changes — reset low-battery ticket flag if battery recovers
     useEffect(() => {
-        // @ts-ignore
-        if (!navigator.getBattery) return;
-
-        // @ts-ignore
-        navigator.getBattery().then((batt) => {
-            setBattery(batt);
-
-            const updateBattery = () => setBattery(batt);
-            batt.addEventListener("levelchange", updateBattery);
-            batt.addEventListener("chargingchange", updateBattery);
-
-            // Initial check
-            checkBatteryStatus(batt);
-        });
-    }, []);
-
-    const checkBatteryStatus = async (batt: any) => {
-        if (!isKioskMode || !token) return;
-
-        console.log(`🔋 Battery Check: ${batt.level * 100}%, Charging: ${batt.charging}`);
-
-        // Threshold: 10% (0.1)
-        if (batt.level <= 0.1 && !batt.charging && !ticketSentRef.current) {
-            console.log("⚠️ Critical Battery Level detected. Launching auto-ticket...");
-
-            try {
-                // Service ID 7: IT Support
-                const payload = {
-                    service_id: 7,
-                    form_data: {
-                        title: "CRITICAL: Kiosk Low Battery",
-                        description: `Tablet Kiosk (User: Table IOD Asia) is at ${Math.round(batt.level * 100)}% and NOT charging. Please check power source immediately.`,
-                        priority: "High",
-                        category: "Hardware",
-                    }
-                };
-
-                const res = await axios.post(`${API_URL}/hots_ticket/create/ticket/7`, payload, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-
-                if (res.data && res.data.success) {
-                    console.log("✅ Battery Ticket Created:", res.data);
-                    ticketSentRef.current = true;
-                    toast({
-                        title: "Battery Alert Sent",
-                        description: "IT Support has been notified.",
-                        variant: "destructive",
-                    });
-                } else {
-                    console.error("❌ Ticket Creation Failed:", res.data);
-                }
-            } catch (error: any) {
-                console.error("❌ Error sending battery ticket:", error.response?.data || error.message);
-            }
-        }
-    };
-
-    // Monitor changes
-    useEffect(() => {
-        if (battery) checkBatteryStatus(battery);
-
-        // Reset the flag if battery recovered or charging
         if (battery && (battery.level > 0.15 || battery.charging)) {
             ticketSentRef.current = false;
         }
-    }, [battery, isKioskMode, token]);
+    }, [battery]);
 
     // 🧠 Handle login
     const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -258,7 +203,7 @@ const MeetingRoomStandalone: React.FC = () => {
                 description: "Welcome"
             });
 
-            setToken(localStorage.getItem("tokek")); // ✅ update immediately to trigger rerender
+            setToken(localStorage.getItem("hots_tokek")); // ✅ update immediately to trigger rerender
         } catch (err: any) {
             console.error("Login error:", err);
             toast({
@@ -272,7 +217,7 @@ const MeetingRoomStandalone: React.FC = () => {
 
     // 🧹 Handle logout
     const handleLogout = () => {
-        localStorage.removeItem("tokek");
+        localStorage.removeItem("hots_tokek");
         localStorage.removeItem("isKiosk");
         setToken(null);
         setIsKioskMode(false);
@@ -285,12 +230,12 @@ const MeetingRoomStandalone: React.FC = () => {
 
     };
 
-    // 🕒 Trigger form after slot selection
+    // 🕒 Trigger form after slot selection (Only in Kiosk Mode)
     useEffect(() => {
-        if (globalValues.start_time && globalValues.end_time && globalValues.date) {
+        if (isKioskMode && globalValues.start_time && globalValues.end_time && globalValues.date) {
             setShowForm(true);
         }
-    }, [globalValues.start_time, globalValues.end_time, globalValues.date]);
+    }, [globalValues.start_time, globalValues.end_time, globalValues.date, isKioskMode]);
 
     // 📤 Submit meeting booking
     const handleSubmitBooking = async () => {
@@ -444,7 +389,7 @@ const MeetingRoomStandalone: React.FC = () => {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <GanttRoomUsage setGlobalValues={setGlobalValues} formData={globalValues} enableBooking={false} />
+                            <GanttRoomUsage setGlobalValues={setGlobalValues} formData={globalValues} enableBooking={true} />
                         </CardContent>
                     </Card>
 
@@ -492,7 +437,7 @@ const MeetingRoomStandalone: React.FC = () => {
                                         if (val.length >= 2) {
                                             try {
                                                 const res = await axios.get(`${API_URL}/hots_settings/search/users?query=${val}`, {
-                                                    headers: { Authorization: `Bearer ${localStorage.getItem('tokek')}` }
+                                                    headers: { Authorization: `Bearer ${localStorage.getItem('hots_tokek')}` }
                                                 });
                                                 if (res.data.success) {
                                                     setSuggestions(res.data.data);

@@ -138,6 +138,38 @@ function App() {
 
 
 
+  // ─── Session Restoration ──────────────────────────────────────────────────
+  useEffect(() => {
+    const restoreSession = async () => {
+      const latestToken = localStorage.getItem("tokek");
+      if (latestToken && !user_id) {
+        try {
+          const res = await Axios.get(`${API_URL}/auth/keep_login`, {
+            headers: { Authorization: `Bearer ${latestToken}` },
+          });
+
+          if (res.data && res.data.length > 0) {
+            const [userData, newToken] = res.data;
+            if (userData?.uid) {
+              if (newToken && newToken !== latestToken) {
+                localStorage.setItem("tokek", newToken);
+              }
+              dispatch(loginAction(userData));
+            }
+          }
+        } catch (err) {
+          console.error("Session restoration failed:", err);
+          // If it fails (e.g., 401), we just leave it for the routes/CheckToken to handle.
+          // Or we could clear it here if we want to be aggressive.
+          if (err.response?.status === 401) {
+            // Let it be, CheckToken will show the modal if the route is protected.
+          }
+        }
+      }
+    };
+
+    restoreSession();
+  }, [dispatch, user_id]);
 
   return (
     <div className="App">

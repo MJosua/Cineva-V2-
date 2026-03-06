@@ -22,7 +22,7 @@ export const fetchCountry = createAsyncThunk(
     'settings/country',
     async (_, { rejectWithValue }) => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             const [getdatares] = await Promise.all([
                 axios.get(`${API_URL}/hots_Tps/country`, {

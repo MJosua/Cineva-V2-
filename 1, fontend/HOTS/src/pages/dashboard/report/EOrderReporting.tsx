@@ -66,7 +66,7 @@ const EOrderReporting: React.FC<EOrderReportingProps> = ({ searchValue }) => {
     const [topDistributors, setTopDistributors] = useState<DistributorData[]>([]);
     const [topCountries, setTopCountries] = useState<CountryData[]>([]);
 
-    const token = localStorage.getItem('tokek');
+    const token = localStorage.getItem('hots_tokek');
 
     const fetchAllData = async () => {
         setLoading(true);

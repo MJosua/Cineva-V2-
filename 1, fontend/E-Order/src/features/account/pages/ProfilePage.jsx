@@ -166,7 +166,8 @@ const ProfileAdmin = ({ }) => {
   };
 
   const onLogOut = () => {
-    return logoutAction(), navigate("/e-order");
+    dispatch(logoutAction());
+    navigate("/e-order");
   };
   // let userData = localStorage.getItem('tokek');
   // let user = JSON.parse(userData);
@@ -221,7 +222,8 @@ const ProfileAdmin = ({ }) => {
               isClosable: true,
             });
             navigate("/");
-            logoutAction();
+            dispatch(logoutAction());
+
             setTimeout(() => {
               seasonOut();
             }, 1500);

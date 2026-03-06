@@ -37,9 +37,8 @@ const BannerComponent = () => {
 
     React.useEffect(() => {
         setItemData(bannerList);
-        if (bannerList.length > 0) {
-            setLoading(false);
-        }
+        setLoading(false);
+
     }, [bannerList]);
 
     return (

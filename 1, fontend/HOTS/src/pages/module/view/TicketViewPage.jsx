@@ -38,7 +38,7 @@ export default function TicketViewPage() {
     try {
       const res = await fetch(`${API_URL}/engine/status/${ticket_id}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("tokek")}`,
+          Authorization: `Bearer ${localStorage.getItem("hots_tokek")}`,
           "Content-Type": "application/json",
         },
       });
@@ -59,7 +59,7 @@ export default function TicketViewPage() {
     try {
       const res = await fetch(`${API_URL}/engine/ticket/revisions/${ticket_id}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("tokek")}`,
+          Authorization: `Bearer ${localStorage.getItem("hots_tokek")}`,
         },
       });
       const json = await res.json();
@@ -108,7 +108,7 @@ export default function TicketViewPage() {
       const res = await fetch(`${API_URL}/engine/ticket/approve`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("tokek")}`,
+          Authorization: `Bearer ${localStorage.getItem("hots_tokek")}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -136,7 +136,7 @@ export default function TicketViewPage() {
       const res = await fetch(`${API_URL}/engine/ticket/return`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("tokek")}`,
+          Authorization: `Bearer ${localStorage.getItem("hots_tokek")}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -165,7 +165,7 @@ export default function TicketViewPage() {
       const res = await fetch(`${API_URL}/engine/ticket/cancel`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("tokek")}`,
+          Authorization: `Bearer ${localStorage.getItem("hots_tokek")}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -192,7 +192,7 @@ export default function TicketViewPage() {
       const res = await fetch(`${API_URL}/engine/ticket/resubmit/${ticket.ticket_id}`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("tokek")}`,
+          Authorization: `Bearer ${localStorage.getItem("hots_tokek")}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

@@ -18,7 +18,7 @@ export default function UniversalReportPage() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem("tokek");
+            const token = localStorage.getItem("hots_tokek");
 
             // Pass through query params like ?status_id=2
             const queryString = searchParams.toString();

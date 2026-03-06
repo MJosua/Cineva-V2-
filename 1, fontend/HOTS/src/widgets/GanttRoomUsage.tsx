@@ -16,7 +16,10 @@ import {
   User,
   Users,
   Eye,
-  EyeOff
+  EyeOff,
+  Battery,
+  BatteryLow,
+  Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, subDays, startOfDay } from "date-fns";
@@ -67,9 +70,131 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
 
 
   useEffect(() => {
-    dispatch(fetchMeetingRooms());
-    dispatch(fetchMeetingBookings());
+    const fetchData = () => {
+      dispatch(fetchMeetingRooms());
+      dispatch(fetchMeetingBookings());
+    };
+
+    fetchData();
+    // 🔄 Auto-refresh every 30 seconds for live battery/booking updates
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, [dispatch]);
+
+  // 🔋 Battery Reporting — runs only in kiosk mode
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const resourceKey = urlParams.get("resource_key") || localStorage.getItem("current_resource_key");
+    const isKiosk = urlParams.get("kiosk_key") === "TABLET_IOD_ASIA" || localStorage.getItem("isKiosk") === "true";
+
+    if (!isKiosk || !resourceKey) {
+      console.log("[BATT] Not kiosk mode or no resource_key — skipping battery reporting.");
+      return;
+    }
+
+    // @ts-ignore
+    if (!navigator.getBattery) {
+      // Firefox and some other browsers don't support Battery API by default, keep it silent
+      return;
+    }
+
+    // Store resource_key for session
+    localStorage.setItem("current_resource_key", resourceKey);
+    console.log(`🔋 [BATT] Kiosk mode active. Reporting battery for: ${resourceKey}`);
+
+    const sendBattery = async (level: number, charging: boolean) => {
+      const token = localStorage.getItem("hots_tokek");
+      if (!token) {
+        console.warn("[BATT] No auth token — skipping report.");
+        return;
+      }
+      try {
+        const url = `${API_URL}/api/rooms/battery-status`;
+        console.log(`📤 [BATT] Sending → ${resourceKey}: ${level}% (charging=${charging})`);
+        await axios.post(url, {
+          resource_key: resourceKey,
+          battery_level: level,
+          is_charging: charging,
+        }, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log(`✅ [BATT] Reported ${level}% for ${resourceKey}`);
+        localStorage.setItem("last_battery_report", String(Date.now()));
+        localStorage.setItem("last_battery_level", String(level));
+      } catch (err) {
+        console.error("❌ [BATT] Failed to send battery status:", err);
+      }
+    };
+
+    let lastReportedLevel: number | null = null;
+
+    // @ts-ignore
+    navigator.getBattery().then((batt: any) => {
+      const getLevel = () => Math.round(batt.level * 100);
+
+      const shouldReport = (level: number) => {
+        const lastLevel = Number(localStorage.getItem("last_battery_level") ?? "-1");
+        const lastTime = Number(localStorage.getItem("last_battery_report") ?? "0");
+        const tenMins = 10 * 60 * 1000;
+        const timePassed = Date.now() - lastTime > tenMins;
+        const multipleOfFive = level % 5 === 0 && level !== lastLevel;
+        return timePassed || multipleOfFive;
+      };
+
+      // 📤 Report immediately on load
+      const initialLevel = getLevel();
+      sendBattery(initialLevel, batt.charging);
+      lastReportedLevel = initialLevel;
+
+      // � Low battery alert on load (< 20% and not charging)
+      const triggerAlertIfLow = async (level: number, charging: boolean) => {
+        if (level < 20 && !charging) {
+          const alertKey = `batt_alert_${resourceKey}`;
+          if (!sessionStorage.getItem(alertKey)) {
+            sessionStorage.setItem(alertKey, '1');
+            const token = localStorage.getItem('hots_tokek');
+            try {
+              console.log(`🚨 [BATT] Battery < 20% — triggering IT alert for ${resourceKey}`);
+              await axios.post(`${API_URL}/api/rooms/battery-alert`, {
+                resource_key: resourceKey,
+                battery_level: level,
+                is_charging: charging,
+              }, { headers: { Authorization: `Bearer ${token}` } });
+              console.log('✅ [BATT] Alert sent to IT team.');
+            } catch (err) {
+              console.error('❌ [BATT] Alert failed:', err);
+              // Reset flag so it can retry next load
+              sessionStorage.removeItem(alertKey);
+            }
+          }
+        }
+      };
+
+      triggerAlertIfLow(initialLevel, batt.charging);
+
+      // �📡 Listen for changes
+      const onLevelChange = () => {
+        const level = getLevel();
+        if (shouldReport(level)) {
+          sendBattery(level, batt.charging);
+          lastReportedLevel = level;
+        }
+      };
+
+      batt.addEventListener("levelchange", onLevelChange);
+      batt.addEventListener("chargingchange", () => sendBattery(getLevel(), batt.charging));
+
+      // ⏱ Also send every 10 minutes as a heartbeat
+      const heartbeat = setInterval(() => sendBattery(getLevel(), batt.charging), 10 * 60 * 1000);
+
+      return () => {
+        clearInterval(heartbeat);
+        batt.removeEventListener("levelchange", onLevelChange);
+      };
+    }).catch((err: any) => {
+      console.error("❌ [BATT] Error accessing battery manager:", err);
+    });
+  }, []); // run once on mount
 
   const [selectedRoom, setSelectedRoom] = useState<string>(formData["room"] || formData["room_name"] || "");
   const [userSelection, setUserSelection] = useState<{ date?: string; start?: string; end?: string }>({
@@ -170,6 +295,12 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
 
   // 🧩 Initial Sync (Push defaults to form if form is empty)
   useEffect(() => {
+    // 1. If no room selected, auto-select the first one
+    if (!selectedRoom && rooms.length > 0) {
+      setSelectedRoom(rooms[0].room_name);
+      return;
+    }
+
     const formRoom = formData["room"] || formData["room_name"];
     if (selectedRoom && !formRoom) {
       const roomObj = rooms.find(r => r.room_name === selectedRoom);
@@ -255,8 +386,8 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
     setClickPending(null);
     setModalOpen(false);
 
-    // If internal booking is enabled, open the booking modal
-    if (enableBooking) {
+    // If internal booking is enabled, open the booking modal (Skip if in Kiosk View as it's handled by Standalone Parent)
+    if (enableBooking && !isKioskView) {
       setPurpose("");
       setPIC("");
       setShowBookingModal(true);
@@ -264,7 +395,7 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
   };
 
   const handleMouseDown = (dateStr: string, idx: number) => {
-    if (mode !== "drag" || warnIfNoRoom()) return;
+    if (!enableBooking || mode !== "drag" || warnIfNoRoom()) return;
     setDragState({ date: dateStr, startIdx: idx, endIdx: idx });
   };
   const handleMouseEnter = (dateStr: string, idx: number) => {
@@ -277,7 +408,7 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
   };
 
   const handleSlotClick = (dateStr: string, idx: number) => {
-    if (mode !== "click-range" || warnIfNoRoom()) return;
+    if (!enableBooking || mode !== "click-range" || warnIfNoRoom()) return;
     if (!clickPending) {
       setClickPending({ date: dateStr, idx });
       return;
@@ -291,7 +422,7 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
   };
 
   const openModalFor = (dateStr: string, idx: number) => {
-    if (mode !== "modal" || warnIfNoRoom()) return;
+    if (!enableBooking || mode !== "modal" || warnIfNoRoom()) return;
     setModalDate(dateStr);
     setModalStartIdx(idx);
     setModalEndIdx(Math.min(idx + 1, timeSlots.length - 1));
@@ -345,6 +476,10 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
           <div className="flex items-center flex-grow sm:flex-none min-w-[180px] space-x-2">
             <Calendar className="w-5 h-5 text-blue-600 shrink-0" />
             <CardTitle className="text-lg font-medium truncate">Meeting Schedule</CardTitle>
+            {loading && <div className="animate-pulse flex items-center gap-1 text-[10px] text-blue-500 font-bold ml-2">
+              <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+              Refreshing...
+            </div>}
           </div>
 
           <div className="flex justify-end flex-grow sm:flex-1 gap-2 items-center">
@@ -378,9 +513,9 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
                 <SelectValue placeholder="Select room" />
               </SelectTrigger>
               <SelectContent>
-                {roomList.map((r, i) => (
-                  <SelectItem key={i} value={r}>
-                    {r}
+                {rooms.map((r, i) => (
+                  <SelectItem key={i} value={r.room_name}>
+                    {r.room_name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -681,7 +816,7 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
                       };
 
                       await axios.post(`${API_URL}/hots_ticket/create/ticket/13`, payload, {
-                        headers: { Authorization: `Bearer ${localStorage.getItem("tokek")}` },
+                        headers: { Authorization: `Bearer ${localStorage.getItem("hots_tokek")}` },
                       });
 
                       dispatch(fetchMeetingBookings());
@@ -892,8 +1027,8 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
                           setActionType("edit");
                           setNewEndTime(viewBooking.end_time || "");
                           try {
-                            const tokek = localStorage.getItem("tokek");
-                            const headers = tokek ? { Authorization: `Bearer ${tokek}` } : {};
+                            const hots_tokek = localStorage.getItem("hots_tokek");
+                            const headers = hots_tokek ? { Authorization: `Bearer ${hots_tokek}` } : {};
                             const res = await axios.get(`${API_URL}/hots_settings/get/meetingroom/boundary`, {
                               params: {
                                 date: viewBooking.date,
@@ -1027,8 +1162,8 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
                       kiosk_password: isKioskView ? password : "",
                       end_time: actionType === "edit" ? newEndTime : undefined
                     };
-                    const tokek = localStorage.getItem("tokek");
-                    const headers = tokek ? { Authorization: `Bearer ${tokek}` } : {};
+                    const hots_tokek = localStorage.getItem("hots_tokek");
+                    const headers = hots_tokek ? { Authorization: `Bearer ${hots_tokek}` } : {};
                     const res = await axios.post(`${API_URL}/hots_ticket/meetingroom/action`, payload, { headers });
 
                     if (res.data?.ok) {

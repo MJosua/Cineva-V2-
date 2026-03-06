@@ -79,7 +79,7 @@ const TicketDiscussion: React.FC<TicketDiscussionProps> = ({ ticketId, assignmen
         if (!ticketId) return;
         axios.get(`${API_URL}/hots_ticket/comment/${ticketId}`, {
             headers: {
-                Authorization: `Bearer ${localStorage.getItem("tokek")}`,
+                Authorization: `Bearer ${localStorage.getItem("hots_tokek")}`,
             },
         })
             .then((res) => {
@@ -117,7 +117,7 @@ const TicketDiscussion: React.FC<TicketDiscussionProps> = ({ ticketId, assignmen
             formData,
             {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem("tokek")}`,
+                    Authorization: `Bearer ${localStorage.getItem("hots_tokek")}`,
                     'Content-Type': 'multipart/form-data',
                 },
             }
@@ -145,7 +145,7 @@ const TicketDiscussion: React.FC<TicketDiscussionProps> = ({ ticketId, assignmen
 
         const fetchUsers = async () => {
             try {
-                const token = localStorage.getItem('tokek');
+                const token = localStorage.getItem('hots_tokek');
                 const response = await axios.get(
                     `${API_URL}/engine/assignment/${assignmentId}/active-users`,
                     { headers: { Authorization: `Bearer ${token}` } }

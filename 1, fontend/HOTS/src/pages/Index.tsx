@@ -30,7 +30,7 @@ const Index = () => {
 
   const fetchDashboardStats = async () => {
     try {
-      const token = localStorage.getItem('tokek');
+      const token = localStorage.getItem('hots_tokek');
       const headers = { Authorization: `Bearer ${token}` };
 
       // Get dashboard statistics

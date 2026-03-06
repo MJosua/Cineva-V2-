@@ -50,7 +50,7 @@ const SummaryCardsPanel: React.FC<SummaryCardsPanelProps> = ({ config, serviceId
     const fetchData = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             // Use provided endpoint or default service summary
             const endpoint = config.apiEndpoint?.replace('{service_id}', String(serviceId))

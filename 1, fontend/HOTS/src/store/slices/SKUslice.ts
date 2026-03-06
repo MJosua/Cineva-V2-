@@ -22,7 +22,7 @@ export const fetchsku = createAsyncThunk(
     const maxRetries = 3;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const token = localStorage.getItem('tokek');
+        const token = localStorage.getItem('hots_tokek');
 
         const [getskures] = await Promise.all([
           axios.get(`${API_URL}/hots_settings/get_srf_sku`, {

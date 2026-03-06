@@ -32,15 +32,25 @@ module.exports = {
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
         let user_id = req.dataToken.user_id;
         const { firstname, lastname, uid, email, role_id, department_id, jobtitle_id, superior_id } = req.body;
+
+        const connection = await dbHots.promise().getConnection();
         try {
-            const [result] = await dbHots.promise().query(`
-                INSERT INTO hots.user (firstname, lastname, uid, email, role_id, department_id, jobtitle_id, superior_id, registration_date, pswd)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), "Indofood01")
+            await connection.beginTransaction();
+
+            const [result] = await connection.query(`
+                INSERT INTO hots.user (firstname, lastname, uid, email, role_id, department_id, jobtitle_id, superior_id, registration_date, pswd, active)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), "Indofood01", 1)
             `, [firstname, lastname, uid, email, role_id, department_id, jobtitle_id, superior_id]);
+
+            await connection.commit();
             console.log(`User created successfully by ${user_id} at ${timestamp}`);
             res.status(200).json({ success: true, message: "User created successfully", data: { user_id: result.insertId } });
         } catch (err) {
+            await connection.rollback();
+            console.error(`❌ User creation failed by ${user_id} at ${timestamp}:`, err.message);
             res.status(500).json({ success: false, message: err.message });
+        } finally {
+            connection.release();
         }
     },
 
@@ -50,17 +60,31 @@ module.exports = {
         let user_id = req.dataToken.user_id;
         const { id } = req.params;
         const { firstname, lastname, uid, email, role_id, department_id, jobtitle_id, superior_id } = req.body;
+
+        const connection = await dbHots.promise().getConnection();
         try {
-            await dbHots.promise().query(`
+            await connection.beginTransaction();
+
+            const [result] = await connection.query(`
                 UPDATE hots.user 
                 SET firstname = ?, lastname = ?, uid = ?, email = ?, role_id = ?, 
                     department_id = ?, jobtitle_id = ?, superior_id = ?
                 WHERE user_id = ? AND finished_date IS NULL
             `, [firstname, lastname, uid, email, role_id, department_id, jobtitle_id, superior_id, id]);
+
+            if (result.affectedRows === 0) {
+                throw new Error("User not found or already deleted");
+            }
+
+            await connection.commit();
             console.log(`User updated successfully by ${user_id} at ${timestamp}`);
             res.status(200).json({ success: true, message: "User updated successfully" });
         } catch (err) {
+            await connection.rollback();
+            console.error(`❌ User update failed for ID ${id} by ${user_id} at ${timestamp}:`, err.message);
             res.status(500).json({ success: false, message: err.message });
+        } finally {
+            connection.release();
         }
     },
 
@@ -69,14 +93,28 @@ module.exports = {
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
         let user_id = req.dataToken.user_id;
         const { id } = req.params;
+
+        const connection = await dbHots.promise().getConnection();
         try {
-            await dbHots.promise().query(`
+            await connection.beginTransaction();
+
+            const [result] = await connection.query(`
                 UPDATE hots.user SET finished_date = NOW() WHERE user_id = ? AND finished_date IS NULL
             `, [id]);
+
+            if (result.affectedRows === 0) {
+                throw new Error("User not found or already deleted");
+            }
+
+            await connection.commit();
             console.log(`User deleted successfully by ${user_id} at ${timestamp}`);
             res.status(200).json({ success: true, message: "User deleted successfully" });
         } catch (err) {
+            await connection.rollback();
+            console.error(`❌ User deletion failed for ID ${id} by ${user_id} at ${timestamp}:`, err.message);
             res.status(500).json({ success: false, message: err.message });
+        } finally {
+            connection.release();
         }
     },
 

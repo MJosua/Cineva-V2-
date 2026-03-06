@@ -12,7 +12,7 @@
         }, []);
 
         async function load() {
-            const token = localStorage.getItem("tokek");  // adjust to your token name
+            const token = localStorage.getItem("hots_tokek");  // adjust to your token name
 
             const res = await fetch(`${API_URL}/engine/tickets`, {
                 headers: {

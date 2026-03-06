@@ -105,7 +105,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
       setLoadingPreview(true);
       fetch(fullUrl, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('tokek')}`
+          'Authorization': `Bearer ${localStorage.getItem('hots_tokek')}`
         }
       })
         .then(res => {

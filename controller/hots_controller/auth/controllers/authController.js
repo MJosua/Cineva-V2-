@@ -4,8 +4,9 @@ const {
     dbQuery,
 } = require("../../../../config/db");
 const { generateTokenHT, hashPasswordHT, createTokenHT, verifyTokenHT } = require("../../../../config/encrypts");
+const log = require('../../../../core/logger');
 const { hotsForgotPasswordMailer, hotsVerifyEmailMailer, hotsMailer, hotsSubmitMailer } = require('../../../../service/mailer/hots/hots_mailer');
-const ticketController = require('../../../engine/engineTicket'); // Using Engine Controller
+const ticketController = require('../../engine/engineTicket'); // Using Engine Controller
 // const cookieParser = require('cookie-parser');
 const { compare } = require('bcrypt');
 const bcrypt = require('bcrypt'); // For password comparison
@@ -25,10 +26,10 @@ module.exports = {
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let { uid, asin } = req.body
-        console.log("------- DEBUG LOGIN -------")
-        console.log("Payload Received:", req.body)
-        console.log("UID:", uid, "ASIN (Password):", asin)
-        console.log("---------------------------")
+        log.hots.info("------- DEBUG LOGIN -------")
+        log.hots.info("Payload Received:", req.body)
+        log.hots.info("UID:", uid, "ASIN (Password):", asin)
+        log.hots.info("---------------------------")
 
 
 
@@ -60,7 +61,7 @@ module.exports = {
                     success: false,
                     message: err1
                 })
-                console.log(timestamp, "HOTS Auth Login : " + uid + " error message : ", err1)
+                log.hots.info("HOTS Auth Login : " + uid + " error message : ", err1)
             } else {
 
                 if (!results1[0]) {
@@ -140,23 +141,23 @@ module.exports = {
                                     success: false,
                                     message: 'Username and Password Combination is not correct!',
                                     userData: {},
-                                    tokek: ''
+                                    hots_tokek: ''
                                 })
 
-                                console.log(timestamp, "HOTS Auth Login : " + uid + " error message : ", err2)
+                                log.hots.info("HOTS Auth Login : " + uid + " error message : ", err2)
 
                             } else if (results2[0]) {
 
-                                let tokek = generateTokenHT(results2[0]);
+                                let hots_tokek = generateTokenHT(results2[0]);
 
                                 res.status(200).send({
                                     success: true,
                                     message: `Login success! Welcome ${uid}`,
                                     userData: results2[0],
-                                    tokek,
+                                    hots_tokek,
                                     current_delv_week
                                 })
-                                // res.status(200).cookie('tokek', tokek, {
+                                // res.status(200).cookie('hots_tokek', hots_tokek, {
                                 //     httpOnly: true,
                                 //     secure: true, // Gunakan ini hanya jika menggunakan HTTPS
                                 //     maxAge: 3600000 // Cookie berlaku selama 1 jam 
@@ -164,7 +165,7 @@ module.exports = {
                                 //     success: true,
                                 //     message: `Login success! Welcome ${uid}`,
                                 //     userdata: results2[0],
-                                //     tokek
+                                //     hots_tokek
                                 // })
 
                                 //update token dan terakhir kali login
@@ -172,9 +173,9 @@ module.exports = {
                                             SET registration_nr = ?,
                                             last_login_date = now(),
                                             login_attempt = 0
-                                            WHERE uid =  ?`, [tokek, uid])
+                                            WHERE uid =  ?`, [hots_tokek, uid])
 
-                                console.log(timestamp, "HOTS Auth Login : " + uid + " success")
+                                log.hots.info("HOTS Auth Login : " + uid + " success")
 
                             } else {
 
@@ -195,7 +196,7 @@ module.exports = {
                                     message: ` incorrect Password! ${process.env.SECURITY_TRIAL_LOGIN_HT - dataLogin.login_attempt} attempt left!`
                                 })
 
-                                console.log(timestamp, "HOTS Auth Login : " + uid + " incorrect password")
+                                log.hots.info("HOTS Auth Login : " + uid + " incorrect password")
 
                             }
 
@@ -226,7 +227,7 @@ module.exports = {
             const weekRow = await dbQuery(`SELECT day2week(NOW()) AS wikwik;`);
             current_delv_week = weekRow?.[0]?.wikwik || null;
         } catch (e) {
-            console.error("❌ ERROR fetching week:", e);
+            log.hots.error("? ERROR fetching week:", e);
             return res.status(500).send({ success: false, message: "weekQuery error", details: e });
         }
 
@@ -234,7 +235,7 @@ module.exports = {
         // Token validation
         // ============================
         if (!req.dataToken?.user_id) {
-            console.warn("❌ Missing dataToken.user_id");
+            log.hots.warn("? Missing dataToken.user_id");
             return res.status(401).send({
                 success: false,
                 message: `Unauthorized`
@@ -254,7 +255,7 @@ module.exports = {
 
 
             if (err1) {
-                console.error("❌ SQL ERROR validateToken:", err1);
+                log.hots.error("? SQL ERROR validateToken:", err1);
                 return res.status(500).send({
                     success: false,
                     message: `error at validate token`,
@@ -326,7 +327,7 @@ module.exports = {
 
 
                 if (err2) {
-                    console.error("❌ SQL ERROR getUserData:", err2);
+                    log.hots.error("? SQL ERROR getUserData:", err2);
                     return res.status(500).send({
                         success: false,
                         message: "error at keeplogin",
@@ -336,7 +337,7 @@ module.exports = {
 
 
                 if (!results2[0]) {
-                    console.warn("⚠ No user data found");
+                    log.hots.warn("? No user data found");
                     return res.status(200).send({
                         success: false,
                         message: `no data`
@@ -345,11 +346,11 @@ module.exports = {
 
                 const userData = results2[0];
 
-                let tokek;
+                let hots_tokek;
                 try {
-                    tokek = generateTokenHT(userData);
+                    hots_tokek = generateTokenHT(userData);
                 } catch (tokenErr) {
-                    console.error("❌ Token generation ERROR:", tokenErr);
+                    log.hots.error("? Token generation ERROR:", tokenErr);
                     return res.status(500).send({
                         success: false,
                         message: "Token generation failed",
@@ -363,7 +364,7 @@ module.exports = {
                 res.status(200).send({
                     success: true,
                     userData,
-                    tokek,
+                    hots_tokek,
                     current_delv_week
                 });
 
@@ -375,18 +376,18 @@ module.exports = {
                     SET registration_nr = ? 
                     WHERE user_id = ?
                 `;
-                const paramUpdateToken = [tokek, req.dataToken.user_id];
+                const paramUpdateToken = [hots_tokek, req.dataToken.user_id];
 
 
                 dbHots.execute(queryUpdateToken, paramUpdateToken, (err3) => {
                     if (err3) {
-                        console.error("❌ SQL ERROR updateToken:", err3);
+                        log.hots.error("? SQL ERROR updateToken:", err3);
                     } else {
-                        console.log("🟢 Token updated successfully");
+                        log.hots.info("?? Token updated successfully");
                     }
                 });
 
-                console.log(timestamp, `Hots_auth KeepLogin ${req.dataToken.uid} success`);
+                log.hots.info(`Hots_auth KeepLogin ${req.dataToken.uid} success`);
             });
 
         });
@@ -439,7 +440,7 @@ module.exports = {
                             dbHots.execute(queryUpdateToken, paramUpdateToken, (err2) => {
 
                                 if (err2) {
-                                    console.log(timestamp, "forgotPassword", err2)
+                                    log.hots.info("forgotPassword", err2)
                                     res.status(500).send({
                                         success: false,
                                         message: "Failed to process your request. Please try again later."
@@ -451,8 +452,8 @@ module.exports = {
                                         message: "Reset Password Link has been sent to your email. Please check your inbox (and spam folder).",
                                         email: address
                                     });
-                                    console.log(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => uid valid send to " + address)
-                                    console.log('TOKEN: ' + token)
+                                    log.hots.info('##### HOTS FORGOT PASSWORD => ' + uid + " => uid valid send to " + address)
+                                    log.hots.info('TOKEN: ' + token)
 
                                 }
                             })
@@ -462,12 +463,12 @@ module.exports = {
                                 success: false,
                                 message: "Your account is not linked to any email address. Please contact IT Department to update your email or reset your password manually."
                             });
-                            console.log(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => Cannot send email! No email Address founded!")
+                            log.hots.info('##### HOTS FORGOT PASSWORD => ' + uid + " => Cannot send email! No email Address founded!")
 
                         }
 
                     } else {
-                        console.log(timestamp + '##### HOTS FORGOT PASSWORD => ' + uid + " => uid invalid")
+                        log.hots.info('##### HOTS FORGOT PASSWORD => ' + uid + " => uid invalid")
 
                         res.status(200).send({
                             success: false,
@@ -495,9 +496,9 @@ module.exports = {
 
         try {
             // Debug: Log the token data received
-            console.log(timestamp + '##### VERIFY TOKEN DEBUG =>');
-            console.log('Token:', req.token ? req.token.substring(0, 50) + '...' : 'undefined');
-            console.log('DataToken:', req.dataToken);
+            log.hots.info('##### VERIFY TOKEN DEBUG =>');
+            log.hots.info('Token:', req.token ? req.token.substring(0, 50) + '...' : 'undefined');
+            log.hots.info('DataToken:', req.dataToken);
 
             let query = `SELECT u.uid FROM user u WHERE u.registration_nr = ?`
             let param = [req.token]
@@ -531,7 +532,7 @@ module.exports = {
                             message: "token is valid, continue =>",
                         });
 
-                        console.log(timestamp + `auth token verification SUCCESS for ${req.dataToken.email}`)
+                        log.hots.info(`auth token verification SUCCESS for ${req.dataToken.email}`)
 
                     } else {
 
@@ -540,7 +541,7 @@ module.exports = {
                             message: "The RESET Password link has already EXPIRED. Please try to input email again",
                         });
 
-                        console.log(timestamp + `auth token verification Failed. dataToken:`, req.dataToken)
+                        log.hots.info(`auth token verification Failed. dataToken:`, req.dataToken)
 
                     }
 
@@ -552,7 +553,7 @@ module.exports = {
 
 
         } catch (error) {
-            console.log(timestamp, "verifyTokenForgotPassword", error);
+            log.hots.info("verifyTokenForgotPassword", error);
 
             res.status(500).send({
                 success: false,
@@ -622,7 +623,7 @@ module.exports = {
                                     success: true,
                                     message: "Your Password has Changed!",
                                 });
-                                console.log(timestamp + "Auth forgot password change for email:", req.dataToken.email);
+                                log.hots.info("Auth forgot password change for email:", req.dataToken.email);
 
 
 
@@ -640,14 +641,14 @@ module.exports = {
                     success: false,
                     message: "unauthorized",
                 });
-                console.log(timestamp + "Auth forgot password change for email UNANUNUNUN bodo ah");
+                log.hots.info("Auth forgot password change for email UNANUNUNUN bodo ah");
 
             }
 
 
         } catch (error) {
 
-            console.log(timestamp, "changePasswordForgotPassword", error);
+            log.hots.info("changePasswordForgotPassword", error);
 
             res.status(500).send({
                 success: false,
@@ -702,7 +703,7 @@ module.exports = {
 
         dbHots.execute(queryGetProfile, [user_id], (err, results) => {
             if (err) {
-                console.log(timestamp, "GET PROFILE ERROR: ", err);
+                log.hots.info("GET PROFILE ERROR: ", err);
                 return res.status(502).send({
                     success: false,
                     message: err
@@ -716,7 +717,7 @@ module.exports = {
                 });
             }
 
-            console.log(timestamp, "GET PROFILE SUCCESS");
+            log.hots.info("GET PROFILE SUCCESS");
             return res.status(200).send({
                 success: true,
                 message: "GET PROFILE SUCCESS",
@@ -727,14 +728,14 @@ module.exports = {
 
     register: async (req, res) => {
         const { uid, firstname, lastname, email, password, department_id } = req.body;
-        console.log("start debug register hots auth");
-        // ✅ 1. Basic Validation
+        log.hots.info("start debug register hots auth");
+        // ? 1. Basic Validation
         if (!uid || !firstname || !lastname || !email || !password || !department_id) {
             return res.status(400).json({ success: false, message: "All fields are required." });
         }
 
         try {
-            // ✅ 2. Check if email/username already exists in user or user_draft
+            // ? 2. Check if email/username already exists in user or user_draft
             const [existingUser] = await dbHots.promise().query(
                 "SELECT user_id FROM user WHERE email = ? OR uid = ? LIMIT 1",
                 [email, uid]
@@ -749,11 +750,11 @@ module.exports = {
                 return res.status(409).json({ success: false, message: "Email or username already registered." });
             }
 
-            // ✅ 3. Hash password (SKIPPED FOR NOW - Testing Phase)
+            // ? 3. Hash password (SKIPPED FOR NOW - Testing Phase)
             // const hashedPassword = await bcrypt.hash(password, 10);
             const hashedPassword = password; // Using plain text as per user request for testing
 
-            // ✅ 4. Find department leader
+            // ? 4. Find department leader
             const [leader] = await dbHots.promise().query(`
             SELECT u.user_id AS leader_id, u.firstname, u.lastname
             FROM m_department d
@@ -764,7 +765,7 @@ module.exports = {
 
             const leader_id = leader?.[0]?.leader_id || null;
 
-            // ✅ 5. Insert new draft user
+            // ? 5. Insert new draft user
             const [result] = await dbHots.promise().query(`
             INSERT INTO user_draft 
             (uid, firstname, lastname, email, password_hash, department_id, leader_id, approval_status)
@@ -773,16 +774,16 @@ module.exports = {
 
             const draftId = result.insertId;
 
-            // ✅ 6. Create a verification token (valid 30 minutes)
+            // ? 6. Create a verification token (valid 30 minutes)
             const token = createTokenHT({ draft_id: draftId, email }, "30m");
 
-            // ✅ 7. Save token in registration_token column
+            // ? 7. Save token in registration_token column
             await dbHots.promise().query(
                 `UPDATE user_draft SET registration_token = ? WHERE draft_id = ?`,
                 [token, draftId]
             );
 
-            // ✅ 8. Send email verification link
+            // ? 8. Send email verification link
             await hotsVerifyEmailMailer(email, token, firstname, lastname);
 
             return res.status(201).json({
@@ -791,7 +792,7 @@ module.exports = {
             });
 
         } catch (err) {
-            console.error("registerUser error:", err);
+            log.hots.error("registerUser error:", err);
             res.status(500).json({ success: false, message: err.message });
         }
     },
@@ -800,14 +801,14 @@ module.exports = {
     verifyByEmail: async (req, res) => {
         const { token } = req.params;
         const date = new Date();
-        console.log("verifyEmail token:", token);
+        log.hots.info("verifyEmail token:", token);
 
         try {
-            // 🔹 Verify the JWT token
+            // ?? Verify the JWT token
             const data = verifyTokenHT(token);
             const { draft_id, email } = data;
 
-            // 🔹 Find the draft record
+            // ?? Find the draft record
             const [drafts] = await dbHots.promise().query(
                 "SELECT * FROM user_draft WHERE draft_id = ? AND email = ? LIMIT 1",
                 [draft_id, email]
@@ -829,7 +830,7 @@ module.exports = {
                 });
             }
 
-            // ✅ Step 1: Mark user_draft as verified
+            // ? Step 1: Mark user_draft as verified
             await dbHots.promise().query(
                 `UPDATE user_draft 
              SET approval_status = 'verified', approval_date = NOW()
@@ -837,13 +838,13 @@ module.exports = {
                 [draft_id]
             );
 
-            // ✅ Step 2: Generate employee_id (incremental based on max employee_id)
+            // ? Step 2: Generate employee_id (incremental based on max employee_id)
             const [maxEmpResult] = await dbHots.promise().query(
                 `SELECT MAX(CAST(employee_id AS UNSIGNED)) as max_emp FROM user WHERE employee_id IS NOT NULL`
             );
             const nextEmployeeId = (maxEmpResult[0]?.max_emp || 0) + 1;
 
-            // ✅ Step 3: Copy data into the user table with all required fields
+            // ? Step 3: Copy data into the user table with all required fields
             const [insertResult] = await dbHots.promise().query(
                 `INSERT INTO user (
                     role_id, firstname, lastname, uid, pswd, email, 
@@ -860,7 +861,7 @@ module.exports = {
                 ]
             );
 
-            // ✅ Step 3: Trigger Approval Ticket (New)
+            // ? Step 3: Trigger Approval Ticket (New)
             const newUserId = insertResult.insertId;
             const departmentId = draft.department_id; // From user_draft
 
@@ -871,7 +872,7 @@ module.exports = {
                 email: draft.email
             });
 
-            // ✅ Step 4: Link user_draft → user
+            // ? Step 4: Link user_draft ? user
             await dbHots.promise().query(
                 `UPDATE user_draft SET user_id = ? WHERE draft_id = ?`,
                 [newUserId, draft_id]
@@ -879,8 +880,8 @@ module.exports = {
 
             // Note: Notification to Department Leader is now handled via addTicketUserApproval
 
-            console.log(
-                `${date.toLocaleString("id")} ✅ Verified user created (Pending Approval). ID: ${newUserId}`
+            log.hots.info(
+                `${date.toLocaleString("id")} ? Verified user created (Pending Approval). ID: ${newUserId}`
             );
 
             return res.status(200).json({
@@ -890,9 +891,9 @@ module.exports = {
                 user_id: newUserId,
             });
         } catch (err) {
-            console.error("verifyEmail error:", err.message);
+            log.hots.error("verifyEmail error:", err.message);
 
-            // 🧩 Handle expired token by regenerating and resending
+            // ?? Handle expired token by regenerating and resending
             try {
                 const jwt = require("jsonwebtoken");
                 const decoded = jwt.decode(token);
@@ -923,7 +924,7 @@ module.exports = {
                             draft.lastname
                         );
 
-                        console.log(`🟡 Resent new verification email to ${draft.email}`);
+                        log.hots.info(`?? Resent new verification email to ${draft.email}`);
 
                         return res.status(200).json({
                             success: false,
@@ -933,7 +934,7 @@ module.exports = {
                     }
                 }
             } catch (e) {
-                console.error("verifyEmail recovery error:", e.message);
+                log.hots.error("verifyEmail recovery error:", e.message);
             }
 
             return res.status(400).json({
@@ -949,14 +950,14 @@ module.exports = {
         const timestamp = date.toLocaleString("id");
 
         try {
-            // 🔹 1️⃣ Find the draft by username (uid)
+            // ?? 1?? Find the draft by username (uid)
             const [drafts] = await dbHots.promise().query(
                 "SELECT * FROM user_draft WHERE uid = ? LIMIT 1",
                 [uid]
             );
 
             if (!drafts.length) {
-                console.log(`❌ No user_draft found for username '${uid}'`);
+                log.hots.info(`? No user_draft found for username '${uid}'`);
                 return;
             }
 
@@ -964,14 +965,14 @@ module.exports = {
 
             // Check if already verified
             if (draft.approval_status === "verified") {
-                console.log(`⚠️ User '${uid}' is already verified.`);
+                log.hots.info(`?? User '${uid}' is already verified.`);
                 return;
             }
 
-            // 🔹 2️⃣ Mark verified
+            // ?? 2?? Mark verified
 
 
-            // 🔹 3️⃣ Copy to user table
+            // ?? 3?? Copy to user table
             const [result] = await dbHots.promise().query(
                 `INSERT INTO user (
                 role_id, firstname, lastname, uid, pswd, email, 
@@ -989,7 +990,7 @@ module.exports = {
 
             const newUserId = result.insertId;
 
-            // 🔹 4️⃣ Link user_draft → user
+            // ?? 4?? Link user_draft ? user
             await dbHots.promise().query(
                 `UPDATE user_draft SET user_id = ? WHERE uid = ?`,
                 [newUserId, uid]
@@ -1002,18 +1003,18 @@ module.exports = {
                 [uid]
             );
 
-            console.log(`✅ [${timestamp}] Manual verify complete`);
-            console.log(`   → Username: ${uid}`);
-            console.log(`   → Draft ID: ${draft.draft_id}`);
-            console.log(`   → User created: ${newUserId} (${draft.email})`);
+            log.hots.info(`? [${timestamp}] Manual verify complete`);
+            log.hots.info(`   ? Username: ${uid}`);
+            log.hots.info(`   ? Draft ID: ${draft.draft_id}`);
+            log.hots.info(`   ? User created: ${newUserId} (${draft.email})`);
 
-            // 🔹 5️⃣ Optional: Return token for testing login
+            // ?? 5?? Optional: Return token for testing login
             const token = createTokenHT(
                 { user_id: newUserId, firstname: draft.firstname, email: draft.email },
                 "4h"
             );
 
-            console.log(`   → Token: ${token}`);
+            log.hots.info(`   ? Token: ${token}`);
 
             return {
                 success: true,
@@ -1021,7 +1022,7 @@ module.exports = {
                 token,
             };
         } catch (err) {
-            console.error(`❌ manualVerifyAndPromoteUserByUID error:`, err);
+            log.hots.error(`? manualVerifyAndPromoteUserByUID error:`, err);
             return { success: false, error: err.message };
         }
     },
@@ -1048,7 +1049,7 @@ module.exports = {
                 return res.json({ success: true, message: "Draft rejected successfully." });
             }
 
-            // 1️⃣ Update existing user table (Department Assignment)
+            // 1?? Update existing user table (Department Assignment)
             await dbHots.promise().query(`
             UPDATE user SET 
                 department_id = ?, 
@@ -1067,14 +1068,14 @@ module.exports = {
             const [users] = await dbHots.promise().query("SELECT user_id, firstname FROM user WHERE email = ?", [draft.email]);
             const newUserId = users[0].user_id;
 
-            // 2️⃣ Link back to user_draft
+            // 2?? Link back to user_draft
             await dbHots.promise().query(`
             UPDATE user_draft 
             SET approval_status = 'approved', approval_date = NOW(), user_id = ?
             WHERE draft_id = ?
           `, [newUserId, draft_id]);
 
-            // 3️⃣ Send Welcome Email
+            // 3?? Send Welcome Email
             const { hotsWelcomeMailer } = require("../../../../../service/mailer/hots/hots_mailer");
             await hotsWelcomeMailer(draft.email, draft.firstname);
 
@@ -1084,7 +1085,7 @@ module.exports = {
                 user_id: newUserId
             });
         } catch (err) {
-            console.error("approveDraft error:", err);
+            log.hots.error("approveDraft error:", err);
             res.status(500).json({ success: false, message: err.message });
         }
     },
@@ -1127,7 +1128,7 @@ module.exports = {
                     success: false,
                     message: err1
                 })
-                console.log(timestamp, "HOTS Auth Login : " + uid + " error message : ", err1)
+                log.hots.info("HOTS Auth Login : " + uid + " error message : ", err1)
             } else {
 
                 if (!results1[0]) {
@@ -1206,22 +1207,22 @@ module.exports = {
                                     success: false,
                                     message: 'Username and Password Combination is not correct!',
                                     userData: {},
-                                    tokek: ''
+                                    hots_tokek: ''
                                 })
 
-                                console.log(timestamp, "HOTS Auth Login : " + uid + " error message : ", err2)
+                                log.hots.info("HOTS Auth Login : " + uid + " error message : ", err2)
 
                             } else if (results2[0]) {
 
-                                let tokek = generateTokenHT(results2[0]);
+                                let hots_tokek = generateTokenHT(results2[0]);
 
                                 res.status(200).send({
                                     success: true,
                                     message: `Login success! Welcome ${uid}`,
                                     userData: results2[0],
-                                    tokek
+                                    hots_tokek
                                 })
-                                // res.status(200).cookie('tokek', tokek, {
+                                // res.status(200).cookie('hots_tokek', hots_tokek, {
                                 //     httpOnly: true,
                                 //     secure: true, // Gunakan ini hanya jika menggunakan HTTPS
                                 //     maxAge: 3600000 // Cookie berlaku selama 1 jam 
@@ -1229,7 +1230,7 @@ module.exports = {
                                 //     success: true,
                                 //     message: `Login success! Welcome ${uid}`,
                                 //     userdata: results2[0],
-                                //     tokek
+                                //     hots_tokek
                                 // })
 
                                 //update token dan terakhir kali login
@@ -1237,9 +1238,9 @@ module.exports = {
                                             SET registration_nr = ?,
                                             last_login_date = now(),
                                             login_attempt = 0
-                                            WHERE uid =  ?`, [tokek, uid])
+                                            WHERE uid =  ?`, [hots_tokek, uid])
 
-                                console.log(timestamp, "HOTS Auth Login : " + uid + " success")
+                                log.hots.info("HOTS Auth Login : " + uid + " success")
 
                             } else {
 
@@ -1260,7 +1261,7 @@ module.exports = {
                                     message: ` incorrect Password! ${process.env.SECURITY_TRIAL_LOGIN_HT - dataLogin.login_attempt} attempt left!`
                                 })
 
-                                console.log(timestamp, "HOTS Auth Login : " + uid + " incorrect password")
+                                log.hots.info("HOTS Auth Login : " + uid + " incorrect password")
 
                             }
 
@@ -1278,7 +1279,7 @@ module.exports = {
         let user_id = req.dataToken.user_id;
 
         try {
-            console.log(timestamp, `Logout for user: ${user_id}`);
+            log.hots.info(`Logout for user: ${user_id}`);
 
             res.status(200).json({
                 success: true,
@@ -1315,7 +1316,7 @@ module.exports = {
             }
 
             const user = users[0];
-            console.log(timestamp, `Keep login successful for user: ${user_id}`);
+            log.hots.info(`Keep login successful for user: ${user_id}`);
 
             res.status(200).json({
                 success: true,
@@ -1353,7 +1354,7 @@ module.exports = {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
             `, [firstname, lastname, uid, email, hashedPassword, role_id, department_id, team_id, jobtitle_id]);
 
-            console.log(`${timestamp}User registration success for ${email}`);
+            log.hots.info(`${timestamp}User registration success for ${email}`);
 
             res.status(201).json({
                 success: true,
@@ -1384,7 +1385,7 @@ module.exports = {
                 WHERE u.user_id = ? AND u.is_deleted = 0
             `, [user_id]);
 
-            console.log(`${timestamp}Profile fetch success for user ${user_id}`);
+            log.hots.info(`${timestamp}Profile fetch success for user ${user_id}`);
 
             res.status(200).json({
                 success: true,
@@ -1412,7 +1413,7 @@ module.exports = {
                 WHERE user_id = ?
             `, [firstname, lastname, email, phone, profile_picture, user_id]);
 
-            console.log(`${timestamp}Profile update success for user ${user_id}`);
+            log.hots.info(`${timestamp}Profile update success for user ${user_id}`);
 
             res.status(200).json({
                 success: true,
@@ -1452,7 +1453,7 @@ module.exports = {
                 UPDATE pm_users SET reset_token = ?, reset_token_expiry = ? WHERE user_id = ?
             `, [resetToken, resetExpiry, user[0].user_id]);
 
-            console.log(`${timestamp}Password reset token generated for ${email}`);
+            log.hots.info(`${timestamp}Password reset token generated for ${email}`);
 
             res.status(200).json({
                 success: true,
@@ -1494,7 +1495,7 @@ module.exports = {
                 WHERE user_id = ?
             `, [hashedPassword, user[0].user_id]);
 
-            console.log(`${timestamp}Password reset success for user ${user[0].user_id}`);
+            log.hots.info(`${timestamp}Password reset success for user ${user[0].user_id}`);
 
             res.status(200).json({
                 success: true,

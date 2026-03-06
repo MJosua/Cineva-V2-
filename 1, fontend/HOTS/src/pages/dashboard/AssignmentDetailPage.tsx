@@ -53,6 +53,7 @@ const AssignmentDetailPage: React.FC = () => {
     const [workData, setWorkData] = useState<any>({});
     const [widgets, setWidgets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('work');
     const [taskCounts, setTaskCounts] = useState({ todo: 0, in_progress: 0, done: 0, total: 0, progress: 0 });
 
     useEffect(() => {
@@ -64,7 +65,7 @@ const AssignmentDetailPage: React.FC = () => {
 
     const fetchAssignment = async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(
                 `${API_URL}/engine/my-assignments`,
                 {
@@ -92,6 +93,10 @@ const AssignmentDetailPage: React.FC = () => {
             const serviceWidgets = getWidgetsByContext('assignment_detail', matchingAssignment.service_id);
             setWidgets(serviceWidgets);
 
+            if (serviceWidgets.length === 0) {
+                setActiveTab('tasks');
+            }
+
         } catch (error: any) {
             toast({
                 title: 'Error',
@@ -105,7 +110,7 @@ const AssignmentDetailPage: React.FC = () => {
 
     const fetchWorkData = async () => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const assignmentsResponse = await axios.get(
                 `${API_URL}/engine/my-assignments`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -134,7 +139,7 @@ const AssignmentDetailPage: React.FC = () => {
         if (assignment?.assignment_id) {
             const fetchTaskSummary = async () => {
                 try {
-                    const token = localStorage.getItem('tokek');
+                    const token = localStorage.getItem('hots_tokek');
                     const response = await axios.get(
                         `${API_URL}/engine/assignment/${assignment.assignment_id}/tasks`,
                         { headers: { Authorization: `Bearer ${token}` } }
@@ -194,7 +199,7 @@ const AssignmentDetailPage: React.FC = () => {
         if (!assignment) return;
 
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             await axios.post(
                 `${API_URL}/engine/assignment/${assignment.assignment_id}/complete`,
                 {
@@ -274,9 +279,9 @@ const AssignmentDetailPage: React.FC = () => {
 
                 {/* Center Column: Main Content (Work, Tasks, Activity) */}
                 <div className="lg:col-span-2 space-y-6">
-                    <Tabs defaultValue="work" className="w-full">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <TabsList className="mb-4 w-full justify-start h-auto flex-wrap">
-                            <TabsTrigger value="work" className="flex-1 min-w-[100px]">Work</TabsTrigger>
+                            {widgets.length > 0 && <TabsTrigger value="work" className="flex-1 min-w-[100px]">Work</TabsTrigger>}
                             <TabsTrigger value="tasks" className="flex-1 min-w-[100px]">Tasks</TabsTrigger>
                             <TabsTrigger value="activity" className="flex-1 min-w-[100px]">Activity</TabsTrigger>
                         </TabsList>

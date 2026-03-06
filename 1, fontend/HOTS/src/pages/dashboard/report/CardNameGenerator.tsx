@@ -75,7 +75,7 @@ const CardNameGenerator: React.FC = () => {
 
         try {
             setSearching(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(
                 `${API_URL}/hots_settings/card_generator/search_users?q=${encodeURIComponent(query)}`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -124,7 +124,7 @@ const CardNameGenerator: React.FC = () => {
             setFocusedIndex(-1);
             setSearchQuery('');
 
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(
                 `${API_URL}/hots_settings/card_generator/user/${userId}`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -158,7 +158,7 @@ const CardNameGenerator: React.FC = () => {
     const loadPreview = async (userId: number) => {
         try {
             setLoadingPreview(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             // Fetch HTML directly
             const response = await axios.get(
                 `${API_URL}/hots_settings/card_generator/preview/${userId}`,
@@ -197,7 +197,7 @@ const CardNameGenerator: React.FC = () => {
 
         try {
             setGenerating(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             const response = await axios.post(
                 `${API_URL}/hots_settings/card_generator/generate`,
@@ -258,7 +258,7 @@ const CardNameGenerator: React.FC = () => {
         }
 
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             await axios.post(
                 `${API_URL}/hots_settings/card_generator/delete_card`,
                 { target_user_id: selectedUser.user_id },

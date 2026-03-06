@@ -17,7 +17,11 @@ import { useData } from '../../../auth/components/CheckToken/FetchData/DataConte
 
 function AddMoreTruck({ mode }) {
 
-    const { flavours, flavoursTrucking, ports, shipToParties } = useData();
+    const { flavours, ports, shipToParties } = useData();
+
+    const flavoursTrucking = flavours.filter(p =>
+        Array.isArray(p.shipment_type) && p.shipment_type.includes(1)
+    );
 
 
     const dispatch = useDispatch();

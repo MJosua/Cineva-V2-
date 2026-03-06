@@ -24,7 +24,7 @@ const productRouter = require('./OnlineOrder/product')
 const adminRouter = require('./OnlineOrder/admin')
 const spectatorRouter = require('./OnlineOrder/spectator')
 // const trademarkRouter = require('./trademark') // Decommissioned
-const authRouterTest = require('./auth_test')
+// const authRouterTest = require('./auth_test') // Decommissioned
 const debugRouter = require('./debug')
 const cardGenerator = require('./cardGenerator')
 
@@ -78,6 +78,7 @@ const triggerRouter = require('./engine/triggerRouters')
 const engineWorkDataRouter = require('./engine/engineWorkData')
 const engineAssignmentRouter = require('./engine/engineAssignment')
 const engineReportRouter = require('./engine/engineReport')
+const engineProjectDashboardRouter = require('./engine/engineProjectDashboard')
 const cmsRouter = require('./cms/cmsRouter')
 const couponRouter = require('./coupon')
 const sseRouter = require('./hots/sse')
@@ -94,7 +95,7 @@ module.exports = {
     adminRouter,
     spectatorRouter,
     // trademarkRouter, // Decommissioned
-    authRouterTest,
+    // authRouterTest, // Decommissioned
 
     cardGenerator,
     eventRouter,
@@ -151,6 +152,7 @@ module.exports = {
     engineWorkDataRouter,
     engineAssignmentRouter,
     engineReportRouter, // 🆕 Reporting Router
+    engineProjectDashboardRouter,
     cmsRouter,
 
     // Coupon System

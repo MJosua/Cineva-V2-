@@ -252,7 +252,7 @@ export const DetailTableWidget: React.FC<DetailTableWidgetProps> = ({
             try {
                 const apiPath = `${config.api_source}/${triggerValue}`;
                 const url = apiPath.startsWith('http') ? apiPath : `${API_URL}${apiPath}`;
-                const token = localStorage.getItem('tokek');
+                const token = localStorage.getItem('hots_tokek');
 
                 const res = await axios.get(url, {
                     headers: { Authorization: `Bearer ${token}` }
@@ -313,7 +313,7 @@ export const DetailTableWidget: React.FC<DetailTableWidgetProps> = ({
             const url = apiPath.startsWith('http')
                 ? `${apiPath}?limit=500`
                 : `${API_URL}${apiPath}?limit=500`;
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             console.log('📦 DetailTableWidget: Fetching products from', url);
 

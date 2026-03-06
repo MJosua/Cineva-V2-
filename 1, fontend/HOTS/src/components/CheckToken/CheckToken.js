@@ -33,10 +33,10 @@ const CheckToken = () => {
     const toast = useToast();
 
     // Get token from local storage
-    const [userToken, setUserToken] = useState(localStorage.getItem("tokek") || "");
+    const [userToken, setUserToken] = useState(localStorage.getItem("hots_tokek") || "");
 
     useEffect(() => {
-        localStorage.setItem("tokek", userToken);
+        localStorage.setItem("hots_tokek", userToken);
     }, [userToken]);
 
     const [pswd, setPswd] = useState("");
@@ -57,7 +57,7 @@ const CheckToken = () => {
         let isMounted = true; // Prevent state updates on unmounted components
 
         const fetchToken = async () => {
-            const latestToken = localStorage.getItem("tokek"); // Ensure latest token
+            const latestToken = localStorage.getItem("hots_tokek"); // Ensure latest token
 
             if (!latestToken) {
                 console.log("No token found, prompting login...");
@@ -85,7 +85,7 @@ const CheckToken = () => {
                 }
 
                 if (newToken && newToken !== latestToken) {
-                    localStorage.setItem("tokek", newToken);
+                    localStorage.setItem("hots_tokek", newToken);
                     if (isMounted) setUserToken(newToken);
                     // console.log("perubahantoken")
                 }
@@ -113,7 +113,7 @@ const CheckToken = () => {
     }, [dispatch, navigate]); // No `userToken` dependency to prevent infinite loop
 
     const handleLogout = () => {
-        localStorage.removeItem("tokek");
+        localStorage.removeItem("hots_tokek");
         dispatch(logoutAction());
         dispatch(seasonOut());
         navigate("/e-order/");

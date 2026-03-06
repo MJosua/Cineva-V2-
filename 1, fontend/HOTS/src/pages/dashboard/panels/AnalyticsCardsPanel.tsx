@@ -132,7 +132,7 @@ const AnalyticsCardsPanel: React.FC<AnalyticsCardsPanelProps> = ({ config, servi
     const fetchData = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             const res = await axios.get(`${API_URL}/hotsdashboard/service_summary/${serviceId}`, {
                 headers: { Authorization: `Bearer ${token}` }

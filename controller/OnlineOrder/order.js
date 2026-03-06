@@ -1,4 +1,4 @@
-const { dbConf, dbQuery, addSqlLogger } = require("../../config/db");
+﻿const { dbConf, dbQuery, addSqlLogger } = require("../../config/db");
 const fs = require('fs')
 const { orderRecievedMailSender } = require('../../service/mailer/eorder/eorder_mailer');
 const ejs = require('ejs');
@@ -17,11 +17,6 @@ module.exports = {
 
 
     getOrderAllIn: async (req, res) => {
-
-
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        // timestamp + 
 
         // add feature on 20240105
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
@@ -150,33 +145,6 @@ module.exports = {
             offset
             ;
 
-        // console.log(timestamp, "getOrderAllIn",
-        //     {
-        //         page, limit, order_by_week, desc, status, stuffingstart, stuffingend, range, find
-        //     }, "query: ", query)
-
-        /*
-        let query = ` SELECT distinct 
-                    mo.order_id, mco.company_name, mo.delv_week, mo.delv_week_desc, mpfd.final_dest, mo.delv_year,
-                    mo.po_buyer, concat(mh.harbour_name, ", " ,st.txt ) port_shipment, mo.ship_to, stp.company_name ,mo.po_buyer, stp.company_name ship_to, 
-                    mo.po_url, concat(su.firstname, ' ', su.lastname ) created_by, mso.status_order status_name, mso.notes status_detail, mso.id is_status,
-                    mct.container_name, md.cont_qty, DATE_FORMAT(mo.po_date,'%d-%b-%Y %T ') created_date, mo.tolling_id, md.cont_size
-                    FROM 
-                    m_order mo
-                    JOIN mst_company mco ON mo.company_id = mco.company_id  
-                    LEFT JOIN map_port_for_dist mpfd ON mo.port_shipment = mpfd.harbour_id 
-                    AND mo.company_id  = mpfd.distributor_id  
-                    LEFT JOIN mst_company stp ON stp.company_id = mo.ship_to 
-                    LEFT JOIN sys_user su ON su.user_id = mo.created_by 
-                    LEFT JOIN m_order_status mso ON mo.status = mso.id
-                    LEFT JOIN m_order_dtl md on md.order_id = mo.order_id 
-                    LEFT JOIN mst_container mct on md.cont_size = mct.container_id 
-                    LEFT JOIN mst_harbour mh on mo.port_shipment = mh.harbour_id 
-                    LEFT JOIN mst_country mc on mh.country_id = mc.country_name_id          
-                    LEFT JOIN sys_text st on mc.country_name_id = st.text_id AND st.lang_id =1
-                    WHERE mo.company_id =  ${req.dataToken.company_id} ` + status + find + range + order_by_week + desc;
-*/
-
         try {
 
 
@@ -187,7 +155,7 @@ module.exports = {
                 dbConf.query(queryCount, (err, countResults) => {
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + " Error counting total orders!", err);
+                        log.eorder.error("Error counting total orders: " + err);
                         return;
                     }
                     let totalDataLength = countResults[0]?.total_orders || 0;
@@ -198,14 +166,14 @@ module.exports = {
 
                             if (err) {
                                 res.status(500).send(err);
-                                console.log(timestamp + "Error get getOrderAllIn !", err)
+                                log.eorder.error("Error get getOrderAllIn: " + err);
                             } else {
                                 if (results[0]) {
                                     let packet = results
 
                                     // res.status(200).send(results);
                                     res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                                    console.log(timestamp + `get getOrderAllIn Success`);
+                                    log.eorder.info(`get getOrderAllIn Success`);
                                 } else {
 
                                     let packet = []
@@ -213,7 +181,7 @@ module.exports = {
                                     let totalPage = 0
 
                                     res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                                    console.log(timestamp + `get getOrderAllIn EMPTY data`);
+                                    log.eorder.info(`get getOrderAllIn EMPTY data`);
                                     addSqlLogger(req.dataToken.user_id, query, ' -- data getOrderAllIn', 'getOrderAllIn')
                                 }
 
@@ -237,19 +205,14 @@ module.exports = {
 
 
         } catch (error) {
-            console.log(timestamp + error);
+            log.eorder.error("Exception in getOrderAllIn: " + error);
             res.status(500).send(error);
         }
 
 
 
-    }
-    , getRealizationAllIn: async (req, res) => {
-
-
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        // timestamp + 
+    },
+    getRealizationAllIn: async (req, res) => {
 
         // add feature on 20240105
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
@@ -406,32 +369,6 @@ module.exports = {
             offset
             ;
 
-        // console.log(timestamp, "getRealizationAllIn",
-        //     {
-        //         page, limit, order_by_week, desc, status, stuffingstart, stuffingend, range, find
-        //     }, "query: ", query)
-        /*
-        let query = ` SELECT distinct 
-                    mo.order_id, mco.company_name, mo.delv_week, mo.delv_week_desc, mpfd.final_dest, mo.delv_year,
-                    mo.po_buyer, concat(mh.harbour_name, ", " ,st.txt ) port_shipment, mo.ship_to, stp.company_name ,mo.po_buyer, stp.company_name ship_to, 
-                    mo.po_url, concat(su.firstname, ' ', su.lastname ) created_by, mso.status_order status_name, mso.notes status_detail, mso.id is_status,
-                    mct.container_name, md.cont_qty, DATE_FORMAT(mo.po_date,'%d-%b-%Y %T ') created_date, mo.tolling_id, md.cont_size
-                    FROM 
-                    m_order mo
-                    JOIN mst_company mco ON mo.company_id = mco.company_id  
-                    LEFT JOIN map_port_for_dist mpfd ON mo.port_shipment = mpfd.harbour_id 
-                    AND mo.company_id  = mpfd.distributor_id  
-                    LEFT JOIN mst_company stp ON stp.company_id = mo.ship_to 
-                    LEFT JOIN sys_user su ON su.user_id = mo.created_by 
-                    LEFT JOIN m_order_status mso ON mo.status = mso.id
-                    LEFT JOIN m_order_dtl md on md.order_id = mo.order_id 
-                    LEFT JOIN mst_container mct on md.cont_size = mct.container_id 
-                    LEFT JOIN mst_harbour mh on mo.port_shipment = mh.harbour_id 
-                    LEFT JOIN mst_country mc on mh.country_id = mc.country_name_id          
-                    LEFT JOIN sys_text st on mc.country_name_id = st.text_id AND st.lang_id =1
-                    WHERE mo.company_id =  ${req.dataToken.company_id} ` + status + find + range + order_by_week + desc;
-*/
-
         try {
 
             if (req.dataToken.user_id) {
@@ -462,7 +399,7 @@ module.exports = {
                 dbConf.query(queryCount, (err, countResults) => {
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + " Error counting total orders!", err);
+                        log.eorder.error("Error counting total orders: " + err);
                         return;
                     }
                     let totalDataLength = countResults[0]?.total_orders || 0;
@@ -474,7 +411,7 @@ module.exports = {
 
                         if (err) {
                             res.status(500).send(err);
-                            console.log(timestamp + "Error getRealizationAllIn !", err)
+                            log.eorder.error("Error getRealizationAllIn: " + err);
                         } else {
 
                             if (results[0]) {
@@ -485,7 +422,7 @@ module.exports = {
                                     totalDataLength, page
                                 });
 
-                                console.log(timestamp + `get getRealizationAllIn success data`);
+                                log.eorder.info(`get getRealizationAllIn success data`);
                             } else {
 
                                 let packet = []
@@ -493,7 +430,7 @@ module.exports = {
                                 let totalPage = 0
 
                                 res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                                console.log(timestamp + `get getRealizationAllIn EMPTY data`);
+                                log.eorder.info(`get getRealizationAllIn EMPTY data`);
                                 addSqlLogger(req.dataToken.user_id, (query), `-- data getRealizationAllIn-${req.dataToken.uid}`, `getRealizationAllIn-${req.dataToken.uid}`)
                             }
 
@@ -517,19 +454,14 @@ module.exports = {
 
 
         } catch (error) {
-            console.log(timestamp + error);
+            log.eorder.error("Exception in getRealizationAllIn: " + error);
             res.status(500).send(error);
         }
 
 
 
-    }
-    , getOrderHeaderWithID: async (req, res) => {
-
-
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        // timestamp + 
+    },
+    getOrderHeaderWithID: async (req, res) => {
         let order_id = req.params.order_id
         // add feature on 20240105
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
@@ -663,7 +595,7 @@ module.exports = {
 
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + "Error getOrderHeader with ID !", err)
+                        log.eorder.error("Error getOrderHeader with ID: " + err)
                     } else {
 
                         if (results[0]) {
@@ -674,7 +606,7 @@ module.exports = {
 
                             // res.status(200).send(results);
                             res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                            console.log(timestamp + `get getOrderHeader data`);
+                            log.eorder.info(`get getOrderHeader data success`);
                         } else {
 
                             let packet = []
@@ -682,7 +614,7 @@ module.exports = {
                             let totalPage = 0
 
                             res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                            console.log(timestamp + `get getOrderHeader EMPTY data`);
+                            log.eorder.info(`get getOrderHeader EMPTY data`);
                             addSqlLogger(req.dataToken.user_id, query, '--data getOrderHeader', 'getOrderHeader')
                         }
 
@@ -698,19 +630,14 @@ module.exports = {
 
 
         } catch (error) {
-            console.log(timestamp + error);
+            log.eorder.error("Exception in getOrderHeaderWithID: " + error);
             res.status(500).send(error);
         }
 
 
 
-    }
-    , getOrderHeader: async (req, res) => {
-
-
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        // timestamp + 
+    },
+    getOrderHeader: async (req, res) => {
 
         // add feature on 20240105
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) : 9999;
@@ -722,7 +649,7 @@ module.exports = {
         let status = ' ';
         if (req.query.status !== 0 && req.query.status !== undefined && req.query.status !== "0") {
             const statusList = req.query.status.split(',').map(s => parseInt(s.trim())).filter(s => !isNaN(s));
-            console.log("statusList", statusList)
+            log.eorder.info("statusList: " + JSON.stringify(statusList));
 
             if (statusList.length >= 1) {
                 status = ` AND mo.status IN (${statusList.join(',')}) `;
@@ -853,7 +780,7 @@ module.exports = {
             offset
             ;
 
-        // console.log(timestamp, "getOrderHeader",
+        // log.eorder.info("getOrderHeader",
         //     {
         //         page, limit, order_by_week, desc, status, stuffingstart, stuffingend, range, find
         //     }, "query: ", query)
@@ -865,7 +792,7 @@ module.exports = {
                 dbConf.query(queryCount, (err, countResults) => {
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + " Error counting total orders!", err);
+                        log.eorder.error("Error counting total orders: " + err);
                         return;
                     }
                     let totalDataLength = countResults[0]?.total_orders || 0;
@@ -876,7 +803,7 @@ module.exports = {
                     dbConf.query(query, (err, results) => {
                         if (err) {
                             res.status(500).send(err);
-                            console.log(timestamp + "Error getOrderHeader !", err)
+                            log.eorder.error("Error getOrderHeader: " + err);
                         } else {
 
                             if (results[0]) {
@@ -885,14 +812,14 @@ module.exports = {
 
                                 // res.status(200).send(results);
                                 res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                                console.log(timestamp + `get getOrderHeader data`);
+                                log.eorder.info(`get getOrderHeader data success`);
                             } else {
 
                                 let packet = []
 
 
                                 res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                                console.log(timestamp + `get getOrderHeader EMPTY data`);
+                                log.eorder.info(`get getOrderHeader EMPTY data`);
                                 // addSqlLogger(req.dataToken.user_id, query, '--data getOrderHeader', 'getOrderHeader')
                             }
 
@@ -915,18 +842,14 @@ module.exports = {
 
 
         } catch (error) {
-            console.log(timestamp + error);
+            log.eorder.info(error);
             res.status(500).send(error);
         }
 
 
 
-    }
-    , getOrderDetail: async (req, res) => {
-
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        // timestamp + 
+    },
+    getOrderDetail: async (req, res) => {
 
         try {
 
@@ -991,10 +914,10 @@ module.exports = {
 
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + "Error getOrderDetail 1!", err)
+                        log.eorder.error("Error getOrderDetail 1: " + err);
                     } else {
                         res.status(200).send(results);
-                        console.log(timestamp + `get getOrderDetail for: ${req.dataToken.company_id} success `)
+                        log.eorder.info(`get getOrderDetail for: ${req.dataToken.company_id} success `)
                         addSqlLogger(req.dataToken.user_id, (query), '--data getOrderDetail', `getOrderDetail`)
                     }
                 })
@@ -1006,17 +929,13 @@ module.exports = {
             }
 
         } catch (error) {
-            console.log(timestamp + error);
+            log.eorder.info(error);
             res.status(500).send(error);
         }
 
 
-    }
-    , getOrderDetail2: async (req, res) => {
-
-
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+    },
+    getOrderDetail2: async (req, res) => {
 
         let page = parseInt(req.query.page) ? parseInt(req.query.page) : 1;
         let limit = parseInt(req.query.limit) ? parseInt(req.query.limit) * 20 : 9999;
@@ -1024,7 +943,7 @@ module.exports = {
         let desc = req.query.desc === "1" ? `DESC ` : `ASC`;
 
         let status = '';
-        console.log("status", req.query)
+        log.eorder.info("status: " + JSON.stringify(req.query));
         if (req.query.status !== 0 && req.query.status !== undefined && req.query.status !== "0") {
 
             const statusList = req.query.status.split(',').map(s => parseInt(s.trim())).filter(s => !isNaN(s));
@@ -1149,7 +1068,7 @@ module.exports = {
 
                 ;
 
-                // console.log(timestamp, "getOrderDetail2",
+                // log.eorder.info("getOrderDetail2",
                 //     {
                 //         page, limit, order_by_week, desc, status, stuffingstart, stuffingend, range, find
                 //     }, "query: ", query)
@@ -1173,7 +1092,7 @@ module.exports = {
                 dbConf.query(queryCount, (err, countResults) => {
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + " Error counting total orders!", err);
+                        log.eorder.info(" Error counting total orders!", err);
                         return;
                     }
                     let totalDataLength = countResults[0]?.total_orders || 0;
@@ -1183,7 +1102,7 @@ module.exports = {
 
                         if (err) {
                             res.status(500).send(err);
-                            console.log(timestamp + "Error getOrderDetail 2!", err)
+                            log.eorder.error("Error getOrderDetail 2: " + err);
                         } else {
 
                             if (results) {
@@ -1191,7 +1110,7 @@ module.exports = {
                                 let packet = results
 
                                 res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                                console.log(timestamp + `get getOrderDetail2 data`);
+                                log.eorder.info(`get getOrderDetail2 data success`);
 
                             } else {
 
@@ -1200,7 +1119,7 @@ module.exports = {
                                 let totalPage = 0
 
                                 res.status(200).send({ packet, available_week, totalPage, totalDataLength, page });
-                                console.log(timestamp + `get getOrderDetail2 EMPTY data`);
+                                log.eorder.info(`get getOrderDetail2 EMPTY data`);
                                 // addSqlLogger(req.dataToken.user_id, (query), '--data getOrderDetail2', 'getOrderDetail2')
                             }
                         }
@@ -1222,19 +1141,15 @@ module.exports = {
             }
 
         } catch (error) {
-            console.log(timestamp + error);
+            log.eorder.error("Exception in getOrderDetail2: " + error);
             res.status(500).send(error);
         }
 
 
 
-    }
-    , getOneOrderDetail: async (req, res) => {
+    },
+    getOneOrderDetail: async (req, res) => {
 
-
-
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let order_id = req.params.order_id
         //untuk menghilangkan week tertentu.
@@ -1339,7 +1254,6 @@ LEFT JOIN ApprovedSO approved_so ON
     mo.order_id = approved_so.e_order
 WHERE
     det.order_id = ${order_id} ;
-
                         `
 
                 let parameter = [order_id]
@@ -1348,10 +1262,10 @@ WHERE
 
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + "Error getOneOrderDetail!", err)
+                        log.eorder.error("Error getOneOrderDetail: " + err);
                     } else {
                         res.status(200).send(results);
-
+                        log.eorder.info("getOneOrderDetail success");
                     }
                 })
             } else {
@@ -1362,17 +1276,15 @@ WHERE
             }
 
         } catch (error) {
-            console.log(timestamp + error);
+            log.eorder.error("Exception in getOneOrderDetail: " + error);
             res.status(500).send(error);
         }
 
 
 
-    }
-    , getOneOrderDetailRealization: async (req, res) => {
+    },
+    getOneOrderDetailRealization: async (req, res) => {
 
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let order_id = req.params.order_id
         //untuk menghilangkan week tertentu.
@@ -1435,10 +1347,10 @@ WHERE
 
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + "Error getOneOrderDetail!", err)
+                        log.eorder.error("Error getOneOrderDetailRealization: " + err);
                     } else {
                         res.status(200).send(results);
-
+                        log.eorder.info("getOneOrderDetailRealization success");
                     }
                 })
             } else {
@@ -1449,21 +1361,18 @@ WHERE
             }
 
         } catch (error) {
-            console.log(timestamp + error);
+            log.eorder.error("Exception in getOneOrderDetailRealization: " + error);
             res.status(500).send(error);
         }
 
 
 
-    }
-    , getOneOrderAllNoToken: async (req, res) => {
-
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+    },
+    getOneOrderAllNoToken: async (req, res) => {
 
         let order_id = req.params.order_id
 
-        console.log("order_id", order_id)
+        log.eorder.info("order_id: " + order_id)
         //untuk menghilangkan week tertentu.
         let getBlockingCompany = (await dbQuery(`select company_id from special_t_condition mcn where conditions = 12;`))[0];
 
@@ -1681,18 +1590,15 @@ WHERE
 
 
         } catch (error) {
-            console.log(timestamp + error);
+            log.eorder.info(error);
             res.status(500).send(error);
         }
 
 
 
-    }
-    , addOrderHeader: async (req, res) => {
+    },
+    addOrderHeader: async (req, res) => {
 
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        // timestamp + 
 
         if (req.dataToken.active === 1) {
 
@@ -1756,7 +1662,7 @@ WHERE
                     res.status(500).send({ message: ` failed insert order ${po_buyer});` });
 
 
-                    console.log(timestamp + "Error Push order header ", err)
+                    log.eorder.error("Error Push order header: " + err);
                 } else {
                     res.status(200).send(results);
 
@@ -1767,13 +1673,13 @@ WHERE
                     //         'Authorization': `Bearer ` + req.token
                     //     }
                     // }).then((res) => {
-                    //     console.log(timestamp, "Axios mailer success")
+                    //     log.eorder.info("Axios mailer success")
 
                     // }).catch((err) => {
-                    //     console.log(timestamp, "error Axios send mail",)
+                    //     log.eorder.info("error Axios send mail",)
                     // })
 
-                    console.log(timestamp + `add Order Header ${order_id} for ${user_id} success`)
+                    log.eorder.info(`add Order Header ${order_id} for ${user_id} success`)
                     addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), `addOrderHeader-${po_buyer}`)
                 }
 
@@ -1781,14 +1687,12 @@ WHERE
 
         } else {
             res.status(401).send(results);
-            console.log(timestamp + `GABOLEH add Order Header ${order_id} for ${user_id} UNAUTHORIZED`)
+            log.eorder.warn(`GABOLEH add Order Header ${order_id} for ${user_id} UNAUTHORIZED`)
         }
 
-    }
-    , addOrderDetail: async (req, res) => {
+    },
+    addOrderDetail: async (req, res) => {
 
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         // DAPATKAN email dari user_id
         // let getEmail = (await dbQuery(`SELECT me.email, me.employee_id FROM mst_employee me WHERE me.email = ${dbConf.escape(req.body.email)};`))[0];
@@ -1845,13 +1749,13 @@ WHERE
                     }, 3000)
 
                     res.status(500).send(err);
-                    console.log(timestamp + "Error Push order detail Data", err)
+                    log.eorder.error("Error Push order detail Data: " + err);
 
                 } else {
 
                     //END CONNECTION
                     res.status(200).send(results);
-                    console.log(timestamp + `add Order Detail no. ${order_id} by ${user_id} success`);
+                    log.eorder.info(`add Order Detail no. ${order_id} by ${user_id} success`);
                     addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), `addOrderDetail-${order_id}-${detail_id}`)
                 }
             })
@@ -1860,11 +1764,9 @@ WHERE
             res.status(200).send(results);
         }
 
-    }
-    , addOrderSummary: async (req, res) => {
+    },
+    addOrderSummary: async (req, res) => {
 
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         if (req.dataToken.active === 1) {
 
@@ -1896,20 +1798,20 @@ WHERE
                     }, 3000)
 
                     res.status(500).send(err);
-                    console.log(timestamp + "Error Push addOrderSummary", err)
+                    log.eorder.error("Error Push addOrderSummary: " + err);
                 } else {
 
 
                     //END CONNECTION
                     res.status(200).send(results);
-                    console.log(timestamp + `add Order Summary ${order_id} success`);
+                    log.eorder.info(`add Order Summary ${order_id} success`);
                     addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), `addOrderSummary-${order_id}-${detail_id}`)
                 }
             })
 
         } else {
             res.status(200).send(results);
-            console.log(timestamp + `add Order Summary by ${user_id} UNAUTHORIZE`);
+            log.eorder.warn(`add Order Summary by ${user_id} UNAUTHORIZE`);
         }
 
     },
@@ -2017,10 +1919,10 @@ WHERE
             // ===============================
             let startWeek = currentWeek + DeliveryWeek;
             if (startWeek > 52) startWeek -= 52;
-            console.log("currentWeek", currentWeek);
-            console.log("DeliveryWeek", DeliveryWeek);
-            console.log("startWeek", startWeek);
-            console.log("todayOpcal", todayOpcal)
+            log.eorder.info("currentWeek: " + currentWeek);
+            log.eorder.info("DeliveryWeek: " + DeliveryWeek);
+            log.eorder.info("startWeek: " + startWeek);
+            log.eorder.info("todayOpcal: " + JSON.stringify(todayOpcal));
             // ===============================
             // SORT & ROTATE WEEKS
             // ===============================
@@ -2084,18 +1986,15 @@ WHERE
             });
 
         } catch (err) {
-            console.error(err);
+            log.eorder.error("Exception in stuffingWeek: " + err);
             return res.status(500).send({
                 success: false,
                 message: err.message,
             });
         }
-    }
-    , addOrder: async (req, res, next) => {
+    },
+    addOrder: async (req, res, next) => {
 
-
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
 
         let { user_id, company_id, active } = req.dataToken;
         let order = req.body.order || (Array.isArray(req.body) ? req.body : null);
@@ -2107,7 +2006,7 @@ WHERE
             });
         }
 
-        console.log(timestamp, "Received Orders:", order);
+        log.eorder.info("Received Orders: " + JSON.stringify(order));
 
         let orderList = []
 
@@ -2132,7 +2031,7 @@ WHERE
 
         async function emergencyDeleteOrder(order, last_order_id) {
             const queryEmergencyDeleteOrder = 'CALL delete_order(?);';
-            console.log(timestamp, "order_id delete list", orderList);
+            log.eorder.info("order_id delete list: " + JSON.stringify(orderList));
 
             await Promise.all(orderList.map(order_id =>
                 new Promise((resolve) => {
@@ -2141,10 +2040,10 @@ WHERE
 
                         dbConf.query(queryEmergencyDeleteOrder, parameterEmergencyDeleteOrder, async (err, results) => {
                             if (err) {
-                                console.log(timestamp + " Cannot delete order for order_id " + order_id);
+                                log.eorder.error("Cannot delete order for order_id " + order_id);
                             } else {
                                 addSqlLogger(req.dataToken.user_id, `${queryEmergencyDeleteOrder} + ${order_id}`, results, `DELETE error order_id-${order_id}`);
-                                console.log(timestamp + " just ran emergency delete order for order_id " + order_id);
+                                log.eorder.info("just ran emergency delete order for order_id " + order_id);
                             }
                             resolve();
                         });
@@ -2170,7 +2069,7 @@ WHERE
 
             // if ((orderIndex === order.length) && (order_data.detail.length === detail.detail_id) && (order_data.summary.length === summary.detail_id)) {
             // if ((orderIndex === order.length) && (detailIndex === detailLength) && (summaryIndex === summaryLenth)) {
-            console.log(timestamp + `==========> add Order is success`)
+            log.eorder.info(`==========> add Order is success`)
 
             // orderRecievedMailSender(user_id, req.dataToken.employee_id, order_id)
             res.status(200).send({
@@ -2202,10 +2101,10 @@ WHERE
                     // let order_id = await generate_order_id()
                     let order_id = order_id_raw + orderIndex;
                     orderList.push(order_id);
-                    console.log(white + "==================NEW=ORDER======================")
+                    log.eorder.info("==================NEW ORDER======================")
 
-                    console.log(timestamp, "orderIndex ke ", orderIndex)
-                    console.log(timestamp, "order_id ", order_id)
+                    log.eorder.info("orderIndex: " + orderIndex)
+                    log.eorder.info("order_id: " + order_id)
 
                     //object destructuring karena akan dideclare secara global
                     let {
@@ -2219,9 +2118,10 @@ WHERE
 
                     } = order_data;
 
-                    console.log(timestamp, "Po_Buyer ", po_buyer)
+                    log.eorder.info("Po_Buyer: " + po_buyer)
 
 
+                    const date = new Date();
                     const year = date.getFullYear();
                     const month = String(date.getMonth() + 1).padStart(2, '0');
                     const day = String(date.getDate()).padStart(2, '0');
@@ -2244,7 +2144,7 @@ WHERE
                     let number = await dbQuery(`SELECT company_number  FROM mst_company mc WHERE company_id = ${company_id}`);
                     // let selectWeek = order_data.stuffing_date ? await (dbQuery(`CALL day2week(${order_data.stuffing_date}, @wikwik);`)) : delv_week;
 
-                    console.log(timestamp, "final_dest", final_dest)
+                    log.eorder.info("final_dest: " + final_dest)
 
                     let checkCondition = specialCondition[0] ? specialCondition[0].container : '';
                     let checkNumber = number[0] ? number[0].company_number : '';
@@ -2278,19 +2178,9 @@ WHERE
 
                     await dbQuery(query, parameter);
 
-                    // console.log(timestamp, "order_data.detail ", order_data.detail)
+                    // log.eorder.info("order_data.detail ", order_data.detail)
                     for (const detail of (order_data.detail)) {
-                        console.log(`Detail",
-                           SKU : ${(detail.Flavour[0] ? (detail.Flavour[0].sku > 1 ? detail.Flavour[0].sku : 0) : 0)}, 
-                           Qty : ${(detail.Flavour[0] ? (detail.Flavour[0].qty > 1 ? detail.Flavour[0].qty : 0) : 0)},
-
-                           SKU : ${(detail.Flavour[1] ? (detail.Flavour[1].sku > 1 ? detail.Flavour[1].sku : 0) : 0)}, 
-                           Qty :  ${(detail.Flavour[1] ? (detail.Flavour[1].qty > 1 ? detail.Flavour[1].qty : 0) : 0)},
-
-                           SKU :  ${(detail.Flavour[2] ? (detail.Flavour[2].qty > 1 ? detail.Flavour[2].qty : 0) : 0)},
-                           Qty : ${(detail.Flavour[2] ? (detail.Flavour[2].sku > 1 ? detail.Flavour[2].sku : 0) : 0)},
-                             
-                        `)
+                        log.eorder.info(`Detail - SKU1: ${(detail.Flavour[0]?.sku > 1 ? detail.Flavour[0].sku : 0)}, Qty1: ${(detail.Flavour[0]?.qty > 1 ? detail.Flavour[0].qty : 0)}, SKU2: ${(detail.Flavour[1]?.sku > 1 ? detail.Flavour[1].sku : 0)}, Qty2: ${(detail.Flavour[1]?.qty > 1 ? detail.Flavour[1].qty : 0)}, SKU3: ${(detail.Flavour[2]?.sku > 1 ? detail.Flavour[2].sku : 0)}, Qty3: ${(detail.Flavour[2]?.qty > 1 ? detail.Flavour[2].qty : 0)}`);
                         let queryDetail = `
                                             INSERT INTO m_order_dtl
                                             (order_id, company_id, created_by, detail_id, 
@@ -2335,7 +2225,7 @@ WHERE
                     }
                     // //melakukan loop sesuai dengan jumlah data dalam summary
                     for (const summary of (order_data.summary)) {
-                        console.log("summary", summary)
+                        log.eorder.info("summary: " + JSON.stringify(summary));
                         let querySummary = `
                                 INSERT INTO m_summary
                                 (order_id, company_id, po_buyer, detail_id,
@@ -2357,7 +2247,7 @@ WHERE
 
                 };
 
-                console.log(timestamp + `==========> add Order is success`)
+                log.eorder.info(`==========> add Order is success`)
 
                 orderList.forEach((order_id) => {
                     orderRecievedMailSender(user_id, req.dataToken.employee_id, order_id, company_id);
@@ -2370,7 +2260,7 @@ WHERE
             }
             catch (error) {
                 emergencyDeleteOrder(order);
-                console.log(timestamp + " error at add order, " + error)
+                log.eorder.error("Exception in addOrder: " + error);
                 // addSqlLogger(user_id, `no query`, `insert query results`, `FAILED addOrderDetail-${order}`)
                 res.status(500).send({
                     success: false,
@@ -2379,7 +2269,7 @@ WHERE
                 next(error);
 
             } finally {
-                console.log(white + "================================================")
+                log.eorder.info("================================================")
 
             }
 
@@ -2389,21 +2279,14 @@ WHERE
                 success: false,
                 message: "user is not active or data is not available. cannot insert order"
             });
-            console.log(timestamp + `add Order is inactive. Order is not inserted`);
-
+            log.eorder.warn(`add Order is inactive. Order is not inserted`);
         }
+    },
 
 
 
-    }
+    getOrder_id: async (req, res) => {
 
-
-
-    , getOrder_id: async (req, res) => {
-
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        // timestamp + 
 
         try {
 
@@ -2424,10 +2307,10 @@ WHERE
 
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + "Error get order id", err)
+                        log.eorder.info("Error get order id", err)
                     } else {
                         res.status(200).send(results);
-                        console.log(timestamp + `get order_id for ${req.dataToken.user_id} & ${year}: ${results[0].LATEST}`);
+                        log.eorder.info(`get order_id for ${req.dataToken.user_id} & ${year}: ${results[0].LATEST}`);
                         addSqlLogger(req.dataToken.user_id, (query), (JSON.stringify(results)), 'getOrder_id')
                     }
                 }
@@ -2441,17 +2324,12 @@ WHERE
 
 
         } catch (error) {
-            console.log(timestamp + error);
+            log.eorder.error("Exception in getOrder_id: " + error);
             res.status(500).send(error);
         }
+    },
+    getExistPo: async (req, res) => {
 
-
-    }
-    , getExistPo: async (req, res) => {
-
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
-        // timestamp + 
 
         try {
             if (req.dataToken.company_id) {
@@ -2461,10 +2339,10 @@ WHERE
 
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + "Error get order id", err)
+                        log.eorder.info("Error get order id", err)
                     } else {
                         res.status(200).send(results);
-                        console.log(timestamp + `get exsiting_po ${req.dataToken.user_id}`);
+                        log.eorder.info(`get exsiting_po for ${req.dataToken.user_id}`);
                         addSqlLogger(req.dataToken.user_id, (query), `--data getExistPo`, 'getExistPo')
                     }
                 }
@@ -2477,16 +2355,12 @@ WHERE
                 })
             }
         } catch (error) {
-            console.log(timestamp + error);
+            log.eorder.error("Exception in getExistPo: " + error);
             res.status(500).send(error);
         }
+    },
+    getContainer: async (req, res) => {
 
-    }
-    , getContainer: async (req, res) => {
-
-        // TIMESTAMP GENERATOR
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
         try {
 
             if (req.dataToken.company_id) {
@@ -2499,10 +2373,10 @@ WHERE
 
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + "Error get Order container limiter", err)
+                        log.eorder.error("Error get Order container limiter: " + err);
                     } else {
                         res.status(200).send(results);
-                        console.log(timestamp + `get Order container limiter ${req.dataToken.user_id}`);
+                        log.eorder.info(`get Order container limiter for ${req.dataToken.user_id}`);
                         //addSqlLogger(req.dataToken.user_id, (query), '--data getContainer', 'getContainer')
                     }
                 }
@@ -2514,16 +2388,13 @@ WHERE
                 })
             }
         } catch (error) {
-            console.log(timestamp + 'ERROR ' + error);
+            log.eorder.error("Exception in getContainer: " + error);
             res.status(500).send(error);
         }
-
-    }
-    , getOrderContainerDetail: async (req, res) => {
+    },
+    getOrderContainerDetail: async (req, res) => {
 
         // TIMESTAMP GENERATOR
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
 
 
@@ -2584,10 +2455,10 @@ WHERE
                 if (err) {
                     res.status(500).send(err);
 
-                    console.log(timestamp + "Error get Order Container Detail", err)
+                    log.eorder.info("Error get Order Container Detail", err)
                 } else {
                     res.status(200).send(results);
-                    console.log(timestamp + `get Order Container Detail ${req.dataToken.uid}`);
+                    log.eorder.info(`get Order Container Detail ${req.dataToken.uid}`);
                     addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), '-- data getOrderContainerDetail', 'getOrderContainerDetail')
                 }
             }
@@ -2604,8 +2475,6 @@ WHERE
     , cancelOrder: async (req, res) => {
         const redcolor = "\x1b[31m";
 
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         if (req.dataToken.user_id) {
 
@@ -2639,9 +2508,9 @@ WHERE
                             success: false,
                             message: 'Failed when cancel order'
                         });
-                        console.log(timestamp + `cancel order  ${req.body.order_id} error ${err}`);
+                        log.eorder.info(`cancel order  ${req.body.order_id} error ${err}`);
                     } else {
-                        console.log(redcolor + timestamp + `cancel order  ${req.body.order_id} success`);
+                        log.eorder.info(`cancel order  ${req.body.order_id} success`);
 
                         res.status(200).send(
                             {
@@ -2667,11 +2536,8 @@ WHERE
 
 
         //depereced
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         if (req.dataToken.user_id) {
-            // timestamp + 
 
             // try {
 
@@ -2701,10 +2567,10 @@ WHERE
                 (err, results) => {
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + "Error while deleteing order:", err);
+                        log.eorder.info("Error while deleteing order:", err);
                     }
                     res.status(200).send(results);
-                    console.log(timestamp + " delete order success for : " + company_id + " week " + delv_week)
+                    log.eorder.info(" delete order success for : " + company_id + " week " + delv_week)
                 }
             )
 
@@ -2717,8 +2583,6 @@ WHERE
     }
     , uploadFile: async (req, res) => {
 
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         if (req.dataToken.user_id) {
             try {
@@ -2739,7 +2603,7 @@ WHERE
                         message: 'something error while upload files :('
                     }
                 );
-                console.log(timestamp + "Error upload files:", error);
+                log.eorder.info("Error upload files:", error);
                 fs.unlinkSync(`.public/files/PoFile/${req.files[0].filename}`)
             }
         } else {
@@ -2754,8 +2618,6 @@ WHERE
     , deleteFile: async (req, res) => {
 
         //depereced
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         if (req.dataToken.user_id) {
             try {
@@ -2765,14 +2627,14 @@ WHERE
                 res.status(200).send({
                     message: 'Delete po file success!'
                 });
-                console.log(timestamp + "Order Delete upload files Success:", error);
+                log.eorder.info("Order Delete upload files Success:", error);
             } catch (error) {
 
                 res.status(500).send({
                     message: 'Delete failed :('
                 });
 
-                console.log(timestamp + "Order Error delete files:", error);
+                log.eorder.info("Order Error delete files:", error);
             }
         } else {
             res.status(200).send({
@@ -2782,8 +2644,6 @@ WHERE
         }
     }
     , getPI: async (req, res) => {
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
         let order_id = req.params.id;
 
         const templatePath = './config/layout.html';
@@ -2925,12 +2785,12 @@ WHERE
                 res.contentType('application/pdf');
                 res.status(200).send(pdf);
 
-                console.log(`${timestamp}get PDF for order_id: ${order_id} success`)
+                log.eorder.info(`get PDF for order_id: ${order_id} success`)
 
                 addSqlLogger(req.dataToken.user_id, '-- query get PI', '-- data PI', 'getPI')
             } catch (err) {
 
-                console.log(`${timestamp} Error generating PDF report for order_id: ${order_id} message: ${err}`)
+                log.eorder.error(`Error generating PDF report for order_id: ${order_id} message: ${err}`)
                 res.status(400).send('Error generating PDF report');
 
             } finally {
@@ -2949,8 +2809,6 @@ WHERE
 
     }
     , getOrderDetailTolling: async (req, res) => {
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let query = await dbQuery(`
     SELECT	 
@@ -2999,12 +2857,12 @@ WHERE
 
                     if (err) {
                         res.status(500).send(err);
-                        console.log(timestamp + `getOrderDetailTolling  ${req.body.company_id} error ${err}`);
+                        log.eorder.info(`getOrderDetailTolling  ${req.body.company_id} error ${err}`);
                     } else {
                         res.status(200).send(
                             results
                         );
-                        console.log(timestamp + `getOrderDetailTolling  ${req.body.company_id} success`);
+                        log.eorder.info(`getOrderDetailTolling  ${req.body.company_id} success`);
                         addSqlLogger(req.dataToken.user_id, 'query getOrderDetailTolling', '--data getOrderDetailTolling', `getOrderDetailTolling-${req.dataToken.uid}`)
                     }
                 }
@@ -3022,8 +2880,6 @@ WHERE
     }
     , addOrderDetailTolling: async (req, res) => {
 
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         if (req.dataToken.active === 1) {
 
@@ -3063,12 +2919,12 @@ WHERE
                     }, 3000)
 
                     res.status(500).send(err);
-                    console.log(timestamp + "Error Push addOrderDetailTolling", err)
+                    log.eorder.info("Error Push addOrderDetailTolling", err)
                 } else {
 
                     //END CONNECTION
                     res.status(200).send(results);
-                    console.log(timestamp + `add Order addOrderDetailTolling ${order_id} success`);
+                    log.eorder.info(`add Order addOrderDetailTolling ${order_id} success`);
                     addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), (JSON.stringify(results)), `addOrderDetailTolling-${detail_id}-${req.dataToken.uid}`)
                 }
 
@@ -3079,14 +2935,12 @@ WHERE
                 success: false,
                 message: 'unauthorized'
             });
-            console.log(timestamp + `add Order addOrderDetailTolling   UNAUTHORIZE`);
+            log.eorder.info(`add Order addOrderDetailTolling   UNAUTHORIZE`);
         }
     }
     , getStuffingDateTrucking: async (req, res) => {
 
-        let date = new Date();
 
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let limit = req.params.limit ? req.params.limit : 5
 
@@ -3111,11 +2965,11 @@ WHERE
 
                 if (err) {
                     res.status(500).send(err);
-                    console.log(timestamp + "Error Push getStuffingDateTrucking", err)
+                    log.eorder.info("Error Push getStuffingDateTrucking", err)
                 } else {
                     //END CONNECTION
                     res.status(200).send(results);
-                    console.log(timestamp + `add Order getStuffingDateTrucking  success`);
+                    log.eorder.info(`add Order getStuffingDateTrucking  success`);
                     addSqlLogger(req.dataToken.user_id, (query.concat(parameter)), '--data stuffingdate trucking', `getStuffingDateTrucking-${req.dataToken.uid}`)
                 }
 
@@ -3123,13 +2977,11 @@ WHERE
 
         } else {
             res.status(401).send("Unauthorized");
-            console.log(timestamp + `add Order addOrderDetailTolling   UNAUTHORIZE`);
+            log.eorder.info(`add Order addOrderDetailTolling   UNAUTHORIZE`);
         }
     }
     , containerTracking: async (req, res) => {
 
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let container_id = req.query.container_id
 
@@ -3605,9 +3457,9 @@ WHERE
                        ]
                        let facility = []
                        let number = [];
-
+ 
                        // =============================================================
-
+ 
                        {
   "location": [
     {
@@ -4147,7 +3999,7 @@ WHERE
 
                     //     let data = results.data.data
 
-                    //     console.log(timestamp, "results.data at container tracking", results.data)
+                    //     log.eorder.info("results.data at container tracking", results.data)
 
                     //     res.status(200).send({
                     //         // data
@@ -4164,7 +4016,7 @@ WHERE
                     //         container_events
                     //     })
                     //     addSqlLogger(req.dataToken.user_id, 'container tracking', container_id, `containerTracking-${req.dataToken.uid}`)
-                    //     console.log(timestamp + 'successfully send container track for ' + container_id)
+                    //     log.eorder.info('successfully send container track for ' + container_id)
 
 
                     //     // // Production
@@ -4688,7 +4540,7 @@ WHERE
                         ]
                     })
                 } catch (error) {
-                    console.log(error)
+                    log.eorder.error("Exception: " + error);
                     res.status(500).send(error)
                 }
             } else {
@@ -4701,31 +4553,28 @@ WHERE
 
 
         } catch (error) {
-            console.log(error)
+            log.eorder.error("Exception: " + error);
             res.status(500).send(error)
         }
-    }
+    },
+    mailerAPI: async (req, res) => {
 
-    , mailerAPI: async (req, res) => {
-
-        let date = new Date();
-        let timestamp = green + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
 
         let { order_id, user_id, employee_id } = req.params
-        console.log({ order_id, user_id, employee_id, company_id })
+        log.eorder.info(JSON.stringify({ order_id, user_id, employee_id, company_id }))
         if (order_id) {
             orderRecievedMailSender(user_id, employee_id, order_id, company_id);
             res.status(400).send({
                 success: true,
                 message: 'email has been sent'
             })
-            console.log(timestamp, " mailerAPI: Executing mailer function ")
+            log.eorder.info(" mailerAPI: Executing mailer function ")
         } else {
             res.status(500).send({
                 success: false,
                 message: 'order_id is empty'
             })
-            console.log(timestamp, " FAILED at mailerAPI: order_id is not provided ")
+            log.eorder.info(" FAILED at mailerAPI: order_id is not provided ")
         }
 
     },

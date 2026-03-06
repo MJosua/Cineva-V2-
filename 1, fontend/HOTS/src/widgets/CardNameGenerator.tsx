@@ -63,7 +63,7 @@ const CardNameGenerator: React.FC = () => {
 
         try {
             setSearching(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(
                 `${API_URL}/hots_settings/card_generator/search_users?q=${encodeURIComponent(query)}`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -88,7 +88,7 @@ const CardNameGenerator: React.FC = () => {
             setShowDropdown(false);
             setSearchQuery('');
 
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(
                 `${API_URL}/hots_settings/card_generator/user/${userId}`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -123,7 +123,7 @@ const CardNameGenerator: React.FC = () => {
 
         try {
             setGenerating(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             const response = await axios.post(
                 `${API_URL}/hots_settings/card_generator/generate`,

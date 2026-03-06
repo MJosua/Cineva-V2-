@@ -25,8 +25,11 @@ const profileController = require('../../profile/controllers/profileController')
 const encrypts = require('../../../../config/encrypts');
 
 // Base URL for static files (signatures, images, etc.)
-// Priority: BE_URL_HOTS (HOTS dev) > BE_URL (production) > fallback
-const API_URL = process.env.BE_URL_HOTS || process.env.BE_URL;
+// Priority: DEV/PROD prefixed variables based on NODE_ENV
+const isProd = process.env.NODE_ENV === 'production';
+const API_URL = isProd
+    ? (process.env.PROD_BE_URL_HOTS || process.env.PROD_BE_URL)
+    : (process.env.DEV_BE_URL_HOTS || process.env.DEV_BE_URL || 'http://localhost:9999');
 
 /**
  * Custom Function Controller
@@ -39,21 +42,32 @@ const API_URL = process.env.BE_URL_HOTS || process.env.BE_URL;
 const imageToDataURL = (filePath) => {
     try {
         if (!filePath) return null;
-        // Remove leading slash if present
-        const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
-        // Resolve absolute path (assuming running from root)
-        let absolutePath = path.resolve(cleanPath);
+        // controller/hots_controller/customfunction/controllers/customfunctionController.js -> root is 4 levels up
+        const rootDir = path.resolve(__dirname, '../../../../');
 
-        if (!fs.existsSync(absolutePath)) {
-            // Fallback: check if it's inside 'public' folder
-            const publicPath = path.resolve('public', cleanPath);
-            if (fs.existsSync(publicPath)) {
-                absolutePath = publicPath;
-            } else {
-                console.warn(`[imageToDataURL] File not found: ${absolutePath} or ${publicPath}`);
-                return null;
+        // Remove leading slash for relative resolution
+        const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
+
+        // Try multiple possible physical locations
+        const possiblePaths = [
+            path.isAbsolute(filePath) ? filePath : null, // 1. Raw absolute path
+            path.join(rootDir, cleanPath),              // 2. Relative to root
+            path.join(rootDir, 'public', cleanPath)     // 3. Relative to public folder (common for URL paths)
+        ].filter(Boolean);
+
+        let absolutePath = null;
+        for (const p of possiblePaths) {
+            if (fs.existsSync(p)) {
+                absolutePath = p;
+                break;
             }
         }
+
+        if (!absolutePath) {
+            console.warn(`[imageToDataURL] File not found: ${filePath}`);
+            return null;
+        }
+
         const fileBuffer = fs.readFileSync(absolutePath);
         const ext = path.extname(absolutePath).toLowerCase().replace('.', '');
         const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png';
@@ -832,6 +846,11 @@ module.exports = {
 
             await connection.commit();
             console.log(`${timestamp}Generated & Saved SRF doc number for ticket ${ticket_id}: ${finalDocNo}`);
+
+            // Broadcast standard ticket update SSE so other users' UI updates
+            if (global.sseManager) {
+                global.sseManager.broadcastTicketUpdate(ticket_id);
+            }
 
             res.status(200).json({
                 success: true,

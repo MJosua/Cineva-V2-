@@ -24,7 +24,7 @@ function ReportingDashboard() {
         return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
     const navigate = useNavigate();
-    let userToken = localStorage.getItem("tokek");
+    let userToken = localStorage.getItem("hots_tokek");
     const [optionWeek, setOptionWeek] = useState(6);
     const [optiontype, setOptiontype] = useState("pack");
     const [week, setWeek] = useState("");

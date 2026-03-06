@@ -127,7 +127,7 @@ const UserManagement = () => {
     try {
       const response = await axios.delete(`${API_URL}/hots_settings/delete/user/${userId}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('tokek')}`,
+          Authorization: `Bearer ${localStorage.getItem('hots_tokek')}`,
         }
       });
 

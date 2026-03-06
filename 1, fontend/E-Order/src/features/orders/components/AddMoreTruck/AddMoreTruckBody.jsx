@@ -67,8 +67,9 @@ function AddMoreTruckBody({
     });
     setTruckOrders(newOrders);
   };
+  const spc_condition_details = useSelector((state) => state.userReducer.spc_condition_details);
 
-
+  console.log("spc_condition_details", spc_condition_details)
   const { company_id, max_flavour_truck } = useSelector((state) => {
     return {
       company_id: state.userReducer.company_id,
@@ -84,9 +85,18 @@ function AddMoreTruckBody({
 
   const handleFlavorQtyChange = (orderIndex, flavorIndex, value) => {
     const newOrders = [...truckOrders];
-    const qty = parseInt(value);
+    let qty = parseInt(value);
+
     if (!isNaN(qty) && qty >= 0) {
       if (newOrders[orderIndex]?.flavors && newOrders[orderIndex].flavors[flavorIndex]) {
+        const flavor = newOrders[orderIndex].flavors[flavorIndex];
+        const isContainer = spc_condition_details?.some(item => item.id === 22 && item.value.toLowerCase().includes("container"));
+        const maxQty = isContainer ? flavor.ctn_load : flavor.truck_load;
+
+        if (maxQty && maxQty > 0 && qty > maxQty) {
+          qty = maxQty;
+        }
+
         newOrders[orderIndex].flavors[flavorIndex].qty = qty.toString();
         setTruckOrders(newOrders);
         sessionStorage.setItem('truckOrders', JSON.stringify(newOrders));
@@ -116,13 +126,13 @@ function AddMoreTruckBody({
   const handleFlavorIdChange = (orderIndex, flavorIndex, value) => {
     const newOrders = [...truckOrders];
     const selectedFlavor = flavorLookup[value];
-    console.log("flavourData", selectedFlavor)
 
     newOrders[orderIndex].flavors[flavorIndex] = {
       sku: value,
       qty: 0,
       moq: selectedFlavor.truck_moq,
       ctn_load: selectedFlavor.cont40hc,
+      truck_load: selectedFlavor.truck_load
     };
     console.log("selectedFlavor", selectedFlavor)
     setTruckOrders(newOrders);
@@ -356,14 +366,20 @@ function AddMoreTruckBody({
                           `* ` : ""
                       }
 
-                      {
-                        flavor.ctn_load && (company_id === 147 || company_id === 381) ?
-                          `Container Loads : ${flavor.ctn_load} ctns | ` : ""
-                      }
+
                       {
                         flavor.moq.toLocaleString() !== "0" &&
                         `MOQ : ${flavor.moq.toLocaleString()} ctns`
 
+                      }
+
+
+
+                      {
+                        spc_condition_details?.some(item => item.id === 22 && item.value.toLowerCase().includes("container")) ?
+                          `${flavor.moq.toLocaleString() !== "0" ? `  |` : ""} Container Loads : ${flavor.ctn_load} ctns`
+                          :
+                          `${flavor.truck_load && flavor.truck_load.toLocaleString() !== "0" ? `${flavor.moq.toLocaleString() !== "0" ? `  |` : ""} Truck Load : ${flavor.truck_load.toLocaleString()} ctns` : ""}`
                       }
                     </div>
                   </div>

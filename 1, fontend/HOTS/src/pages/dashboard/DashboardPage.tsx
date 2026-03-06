@@ -37,7 +37,7 @@ const DashboardPage: React.FC = () => {
         const fetchSummaries = async () => {
             if (!data || data.length === 0) return;
 
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             if (!token) return;
 
             setSummaryLoading(true);

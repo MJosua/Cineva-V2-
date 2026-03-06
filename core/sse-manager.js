@@ -231,10 +231,14 @@ class SSEManager {
     /**
      * Register a new Admin Log SSE connection
      * @param {Response} res 
+     * @param {string|null} filterModule - Optional module name to filter logs (e.g., 'eorder')
      */
-    addAdminConnection(res) {
+    addAdminConnection(res, filterModule = null) {
+        if (filterModule) {
+            res.filterModule = filterModule.toLowerCase();
+        }
         this.adminConnections.add(res);
-        console.log(`🔌 SSE (Admin): New log listener connected. Total admins: ${this.adminConnections.size}`);
+        console.log(`🔌 SSE (Admin): New log listener connected (Filter: ${filterModule || 'ALL'}). Total admins: ${this.adminConnections.size}`);
     }
 
     /**
@@ -251,14 +255,22 @@ class SSEManager {
     /**
      * Broadcast a log message ONLY to connected admins
      * @param {string} logMsg 
+     * @param {string|null} moduleName - The module that produced this log
      */
-    broadcastLog(logMsg) {
+    broadcastLog(logMsg, moduleName = null) {
         if (this.adminConnections.size === 0) return;
 
-        // Strip ANSI codes if needed, but for now send raw
         const payload = JSON.stringify({ type: 'log', data: logMsg, timestamp: Date.now() });
 
         this.adminConnections.forEach(res => {
+            // Apply filtering logic: 
+            // If the connection has a filterModule, only send if it matches the log's moduleName.
+            if (res.filterModule && moduleName) {
+                if (res.filterModule !== moduleName.toLowerCase()) {
+                    return; // Skip this connection
+                }
+            }
+
             try {
                 res.write(`event: new_log\n`);
                 res.write(`data: ${payload}\n\n`);

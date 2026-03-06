@@ -37,9 +37,19 @@ const DashboardAdmin = () => {
     const dispatch = useDispatch();
 
     const [logs, setLogs] = useState([]);
+    const logsContainerRef = React.useRef(null);
+
+    // Auto-scroll to bottom on new logs
+    useEffect(() => {
+        if (logsContainerRef.current) {
+            logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+        }
+    }, [logs]);
 
     useEffect(() => {
-        const eventSource = createEventSource("/sse/logs");
+        const token = localStorage.getItem("tokek");
+        // Pass module=eorder to filter logs on server side
+        const eventSource = createEventSource("/sse/logs?module=eorder", token);
 
         eventSource.addEventListener("logs", (event) => {
             setLogs(JSON.parse(event.data)); // initial logs
@@ -60,34 +70,9 @@ const DashboardAdmin = () => {
     }, []);
 
 
-
-    // **1ï¸âƒ£ Extract Date, Time, and Message**
-    const parsedLogs = logs.map(log => {
-        // Remove ANSI color codes
-        const cleanLog = log.replace(/\u001b\[\d+m/g, "");
-
-        // Extract date, time, and message
-        const match = cleanLog.match(/^(\d{1,2}\/\d{1,2}\/\d{4}) (\d{2}\.\d{2}\.\d{2}) : (.+)$/);
-        if (!match) return null; // Skip if format is incorrect
-
-        const [_, date, time, message] = match;
-        return { date, time, message };
-    }).filter(log => log !== null); // Remove null values
-
-    // **2ï¸âƒ£ Group Logs by Date**
-    const groupedLogs = parsedLogs.reduce((acc, log) => {
-        if (!acc[log.date]) acc[log.date] = [];
-        acc[log.date].push(log);
-        return acc;
-    }, {});
-
-    // **3ï¸âƒ£ Convert to an Array for Mapping**
-    const formattedLogs = Object.entries(groupedLogs).map(([date, logs]) => ({
-        date,
-        logs: logs.sort((a, b) => a.time.localeCompare(b.time))
-    }));
-
-    console.log(formattedLogs);
+    // User requested to keep it simple and just show the raw value as it is.
+    // We will just map directly over the `logs` state in the render block
+    // to avoid regex match failures causing missing logs.
 
 
     const { active, type_id } = useSelector((state) => {
@@ -126,11 +111,16 @@ const DashboardAdmin = () => {
     }
 
     const [selectDate, setSelectDate] = useState("*");
-    const [selectTime, setSelectTime] = useState();
-    const [search, setSearch] = useState();
+    const [selectLevel, setSelectLevel] = useState("*");
+    const [search, setSearch] = useState("");
 
-    const [listDate, setListDate] = useState();
-    const [listTime, setListTime] = useState();
+    // Dynamically get unique dates from logs for the dropdown
+    const uniqueDates = Array.from(new Set(logs.map(logObj => {
+        const logStr = typeof logObj === 'string' ? logObj : (logObj.data || "");
+        // Extract DD-MM-YYYY from [MODULE][LEVEL][DD-MM-YYYY | HH:mm:ss]
+        const match = logStr.match(/\[(\d{2}-\d{2}-\d{4})/);
+        return match ? match[1] : null;
+    }).filter(d => d !== null))).sort((a, b) => b.localeCompare(a)); // Newest first
 
     const highlightText = (text, query) => {
         if (!query) return text; // If no search query, return text as-is.
@@ -177,32 +167,27 @@ const DashboardAdmin = () => {
                                                     <div className="row g-2 ">
                                                         <div className="col d-flex align-items-center">
                                                             <Select
-                                                                onChange={(e) => {
-                                                                    setSelectDate(e.target.value);
-                                                                }}
+                                                                onChange={(e) => setSelectDate(e.target.value)}
                                                                 value={selectDate}
                                                             >
-                                                                <option value="*">
-
-                                                                    Select Date
-                                                                </option>
-
-                                                                {formattedLogs.map((group, index) => (
-                                                                    <option key={index} value={group.date}>
-                                                                        {group.date}
-                                                                    </option>
-                                                                )
-                                                                )
-                                                                }
+                                                                <option value="*">All Dates</option>
+                                                                {uniqueDates.map((date, i) => (
+                                                                    <option key={i} value={date}>{date}</option>
+                                                                ))}
                                                             </Select>
                                                         </div>
-                                                        {/* <div className="col d-flex align-items-center">
-                                                            <Select>
-                                                                <option>
-                                                                    Select Max Filter Time
-                                                                </option>
+                                                        <div className="col d-flex align-items-center">
+                                                            <Select
+                                                                onChange={(e) => setSelectLevel(e.target.value)}
+                                                                value={selectLevel}
+                                                            >
+                                                                <option value="*">All Levels</option>
+                                                                <option value="INFO">INFO</option>
+                                                                <option value="WARN">WARN</option>
+                                                                <option value="ERROR">ERROR</option>
+                                                                <option value="TABLE">TABLE</option>
                                                             </Select>
-                                                        </div> */}
+                                                        </div>
                                                         <div className="col d-flex align-items-end">
                                                             <InputGroup>
                                                                 <Input
@@ -226,28 +211,39 @@ const DashboardAdmin = () => {
 
                                         </div>
 
-                                        <div className="col-12 bg-dark w-100 vh-25 position-relative" style={{ maxHeight: "50vh", overflow: " auto" }}>
+                                        <div className="col-12 bg-dark w-100 vh-25 position-relative" style={{ maxHeight: "65vh", overflow: " auto" }} ref={logsContainerRef}>
                                             <div className="row">
-                                                <div className="col-12 bg-dark text-start  text-success fw-bold  ">
-                                                    Admin Log
+                                                <div className="col-12 bg-dark text-start text-success fw-bold p-2 sticky-top border-bottom border-success">
+                                                    Admin Network Log [LIVE]
                                                 </div>
-                                                <div className="col-12 ">
-                                                    {formattedLogs
-                                                        .filter(group => selectDate === "*" || group.date === selectDate) // Corrected filtering logic
-                                                        .map((group, index) => (
-                                                            <div key={index}>
-                                                                <div className="text-white text-start">{group.date}</div> {/* Display Date */}
-                                                                {group.logs.map((log, idx) => (
-                                                                    <div key={idx} className="text-start text-white d-flex align-items-center">
-                                                                        <span className="me-2">{log.time}</span> {/* Display Time */}
-                                                                        <span>{highlightText(log.message, search)}</span>
-                                                                    </div>
-                                                                ))}
+                                                <div className="col-12 font-monospace fs-6 pb-3">
+                                                    {logs.map((logObj, idx) => {
+                                                        const logStr = typeof logObj === 'string' ? logObj : (logObj.data || "");
+                                                        // Remove ANSI colors
+                                                        const cleanLog = logStr.replace(/\u001b\[\d+m/g, "");
+
+                                                        // Filter logic based on the raw string
+                                                        if (selectDate !== "*" && !cleanLog.includes(selectDate)) return null;
+                                                        if (selectLevel !== "*" && !cleanLog.includes(`[${selectLevel}]`)) return null;
+                                                        if (search && !cleanLog.toLowerCase().includes(search.toLowerCase())) return null;
+
+                                                        let bgColor = "transparent";
+                                                        let textColor = "#00ff00"; // default info
+                                                        if (cleanLog.includes("[ERROR]")) {
+                                                            bgColor = "#3d0000";
+                                                            textColor = "#ff7272";
+                                                        } else if (cleanLog.includes("[WARN]")) {
+                                                            bgColor = "#3d3200";
+                                                            textColor = "#ffdb4d";
+                                                        }
+
+                                                        return (
+                                                            <div key={idx} className="text-start d-flex align-items-start px-2 py-1 pt-2 border-bottom border-secondary" style={{ backgroundColor: bgColor, color: textColor }}>
+                                                                <span style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{highlightText(cleanLog, search)}</span>
                                                             </div>
-                                                        ))}
-
+                                                        );
+                                                    })}
                                                 </div>
-
                                             </div>
                                         </div>
                                     </div>

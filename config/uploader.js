@@ -228,140 +228,97 @@ module.exports = {
 
         return multer({ storage: storageUploader, fileFilter })
     },
-    hotsFileUploaderITSupport: (req, directory, filePrefix) => {
-
+    hotsFileUploaderITSupport: (directory, filePrefix) => {
         // Define lokasi default directory
         let defaultDir = './public/files/hots/';
 
-        let userData = jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY, (err, decode) => {
-            if (err) {
-                console.log("ERROR IN AUTH at upload")
-            }
-            return decode
-        })
-
-        let fileIsExist = req.files[0]
-
-        console.log("fileIsExist", fileIsExist)
         // Konfigurasi untuk multer
         const storageUploader = multer.diskStorage({
-
-            destination: (cb) => {
-
+            destination: (req, file, cb) => {
                 const pathDir = directory ? defaultDir + directory : defaultDir;
-
-
                 if (fs.existsSync(pathDir)) {
-                    // console.log(`Directory ${pathDir} exist ✅`);
                     cb(null, pathDir);
-
                 } else {
                     fs.mkdir(pathDir, { recursive: true }, (err) => {
                         if (err) {
-                            // console.log('Error make directory:', err);
-                            cb(err); // Call cb with error
+                            cb(err);
                         } else {
-                            // console.log(`Success created ${pathDir}`);
-                            cb(null, pathDir); // Call cb on success
+                            cb(null, pathDir);
                         }
                     });
                 }
-
-
             },
-            filename: (file, cb) => {
-
+            filename: (req, file, cb) => {
+                let userData = jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY_HT, (err, decode) => {
+                    if (err) {
+                        return cb(new Error('Authentication failed'));
+                    }
+                    return decode;
+                });
                 let ext = file.originalname.split('.');
-
-
                 let time = new Date;
                 let timestamp = time.toLocaleDateString('sv-SE') + '-' + Date.now()
-
-                let user_id = userData.user_id + '-'
-
-
-                let newName = filePrefix + user_id + timestamp + '.' + ext[ext.length - 1];
+                let user_id = userData ? `${userData.user_id}-` : 'anon-';
+                let prefix = filePrefix || '';
+                let newName = prefix + user_id + timestamp + '.' + ext[ext.length - 1];
 
                 cb(null, newName);
-
-
+                req.newName = newName;
             }
         })
 
-        const fileFilter = (file, cb) => {
-            const extFilter = /\.(pdf|xls|xlsx|doc|docx|jpg|jpeg|png|)$/i;
-
-
-            if (file.originalname.toLowerCase().match(extFilter)) {
-                cb(null, true)
+        const fileFilter = (req, file, cb) => {
+            const extFilter = /\.(pdf|xls|xlsx|doc|docx|jpg|jpeg|png)$/i;
+            if (file.originalname && typeof file.originalname === 'string') {
+                if (file.originalname.toLowerCase().match(extFilter)) {
+                    cb(null, true);
+                } else {
+                    cb(new Error('Your file extension is denied ❌'), false);
+                }
             } else {
-                cb(new Error('Your file ext are denied ❌', false));
+                cb(new Error('Invalid file name ❌'), false);
             }
-        }
+        };
 
         return multer({ storage: storageUploader, fileFilter })
     },
-    hotsITSupport: (req, directory, filePrefix) => {
-
+    hotsITSupport: (directory, filePrefix) => {
         // Define lokasi default directory
         let defaultDir = './public/files/hots/';
 
-
         // Konfigurasi untuk multer
         const storageUploader = multer.diskStorage({
-
             destination: (req, file, cb) => {
-
-
-                let fileIsExist = req.files[0]
-                console.log("fileIsExist", fileIsExist)
-
                 const pathDir = directory ? defaultDir + directory : defaultDir;
 
-
                 if (fs.existsSync(pathDir)) {
-                    // console.log(`Directory ${pathDir} exist ✅`);
                     cb(null, pathDir);
-
                 } else {
                     fs.mkdir(pathDir, { recursive: true }, (err) => {
                         if (err) {
-                            // console.log('Error make directory:', err);
-                            cb(err); // Call cb with error
+                            cb(err);
                         } else {
-                            // console.log(`Success created ${pathDir}`);
-                            cb(null, pathDir); // Call cb on success
+                            cb(null, pathDir);
                         }
                     });
                 }
-
-
             },
             filename: (req, file, cb) => {
-
                 let userData = jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY_HT, (err, decode) => {
                     if (err) {
                         console.log("ERROR IN AUTH at upload")
                     }
                     return decode
                 })
-                console.log("userData", userData)
                 let ext = file.originalname.split('.');
-
-
                 let time = new Date;
                 let timestamp = time.toLocaleDateString('sv-SE') + '-' + Date.now()
-
-                let user_id = `${userData.user_id}-`
-
-
-                let newName = user_id + timestamp + '.' + ext[ext.length - 1];
+                let user_id = userData ? `${userData.user_id}-` : 'anon-';
+                let prefix = filePrefix || '';
+                let newName = prefix + user_id + timestamp + '.' + ext[ext.length - 1];
 
                 cb(null, newName);
-
-                req.newName = newName
-
-
+                req.newName = newName;
             }
         })
 
@@ -370,103 +327,131 @@ module.exports = {
 
             if (file.originalname && typeof file.originalname === 'string') {
                 if (file.originalname.toLowerCase().match(extFilter)) {
-                    console.log(`File passed: ${file.originalname}`); // Log the file name
-                    cb(null, true);  // Accept the file
+                    cb(null, true);
                 } else {
-                    console.log(`File rejected: ${file.originalname}`); // Log the rejected file name
-                    cb(new Error('Your file extension is denied ❌'), false);  // Reject the file
+                    cb(new Error('Your file extension is denied ❌'), false);
                 }
             } else {
-                cb(new Error('File originalname is invalid'), false);  // Handle missing or invalid file name
+                cb(new Error('File originalname is invalid'), false);
             }
         };
 
         return multer({ storage: storageUploader, fileFilter })
     },
-    hotsITComment: (req, directory, filePrefix) => {
-
+    hotsITComment: (directory, filePrefix) => {
         // Define the default directory
         let defaultDir = './public/files/hots/';
 
         // Multer storage configuration
         const storageUploader = multer.diskStorage({
-
-            // Define destination for uploaded files
             destination: (req, file, cb) => {
-                // Check if the first file exists in req.files
-                let fileIsExist = req.files && req.files[0];
-                console.log("fileIsExist:", fileIsExist);
-
-                // Define the path where the files will be stored
                 const pathDir = directory ? defaultDir + directory : defaultDir;
-
-                // Check if the directory exists, if not create it
                 if (fs.existsSync(pathDir)) {
-                    cb(null, pathDir);  // Directory exists, proceed to store the file
+                    cb(null, pathDir);
                 } else {
                     fs.mkdir(pathDir, { recursive: true }, (err) => {
                         if (err) {
-                            console.log('Error creating directory:', err);
-                            cb(err);  // Call cb with the error
+                            cb(err);
                         } else {
-                            console.log(`Directory created: ${pathDir}`);
-                            cb(null, pathDir);  // Directory created successfully
+                            cb(null, pathDir);
                         }
                     });
                 }
             },
-
-            // Define the filename for uploaded files
             filename: (req, file, cb) => {
-                // Verify the user token to extract user data
                 let userData = jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY_HT, (err, decode) => {
                     if (err) {
-                        console.log("Error in authentication during file upload");
                         return cb(new Error('Authentication failed'));
                     }
                     return decode;
                 });
-
-                console.log("userData:", userData);
-
-                // Split the original filename to get the extension
                 let ext = file.originalname.split('.');
-
-                // Generate a timestamp for the file name
                 let time = new Date();
                 let timestamp = time.toLocaleDateString('sv-SE') + '-' + Date.now();
+                let user_id = userData ? `${userData.user_id}-` : 'anon-';
+                let prefix = filePrefix || '';
+                let newName = prefix + user_id + timestamp + '.' + ext[ext.length - 1];
 
-                // Generate the new filename with the user ID and timestamp
-                let user_id = `${userData.user_id}-`;
-                let newName = user_id + timestamp + '.' + ext[ext.length - 1];
-
-                cb(null, newName);  // Pass the new filename to multer
-
-                // Save the new filename to req for later use
+                cb(null, newName);
                 req.newName = newName;
             }
         });
 
-        // File filter to accept only specific file types
         const fileFilter = (req, file, cb) => {
-            // Allowed file extensions
             const extFilter = /\.(pdf|xls|xlsx|doc|docx|jpg|jpeg|png)$/i;
-
             if (file.originalname && typeof file.originalname === 'string') {
                 if (file.originalname.toLowerCase().match(extFilter)) {
-                    console.log(`File passed: ${file.originalname}`);  // Log accepted file
-                    cb(null, true);  // Accept the file
+                    cb(null, true);
                 } else {
-                    console.log(`File rejected: ${file.originalname}`);  // Log rejected file
-                    cb(new Error('Your file extension is denied ❌'), false);  // Reject the file
+                    cb(new Error('Your file extension is denied ❌'), false);
                 }
             } else {
-                cb(new Error('Invalid file name ❌'), false);  // Handle missing or invalid file name
+                cb(new Error('Invalid file name ❌'), false);
             }
         };
 
-        // Return multer configuration with storage and file filter
         return multer({ storage: storageUploader, fileFilter });
+    },
+    hotsTempUploader: (directory, filePrefix) => {
+        // Define lokasi default directory for temp uploads
+        let defaultDir = './public/files/hots/temp/';
+
+        // Konfigurasi untuk multer
+        const storageUploader = multer.diskStorage({
+            destination: (req, file, cb) => {
+                const pathDir = directory ? defaultDir + directory : defaultDir;
+
+                if (fs.existsSync(pathDir)) {
+                    cb(null, pathDir);
+                } else {
+                    fs.mkdir(pathDir, { recursive: true }, (err) => {
+                        if (err) {
+                            cb(err);
+                        } else {
+                            cb(null, pathDir);
+                        }
+                    });
+                }
+            },
+            filename: (req, file, cb) => {
+                let userData = jwt.verify(req.token, process.env.SECURITY_TOKEN_KEY_HT, (err, decode) => {
+                    if (err) {
+                        // console.log("ERROR IN AUTH at temp upload")
+                    }
+                    return decode;
+                });
+                let ext = file.originalname.split('.');
+                let time = new Date;
+                let timestamp = time.toLocaleDateString('sv-SE') + '-' + Date.now();
+                let user_id = userData ? `${userData.user_id}-` : 'anon-';
+                let prefix = filePrefix || 'temp-';
+                let newName = prefix + user_id + timestamp + '.' + ext[ext.length - 1];
+
+                cb(null, newName);
+                req.newName = newName;
+            }
+        });
+
+        const fileFilter = (req, file, cb) => {
+            // Allow images, documents, and archives for temp upload
+            const extFilter = /\.(pdf|xls|xlsx|doc|docx|jpg|jpeg|png|zip|rar|7z)$/i;
+
+            if (file.originalname && typeof file.originalname === 'string') {
+                if (file.originalname.toLowerCase().match(extFilter)) {
+                    cb(null, true);
+                } else {
+                    cb(new Error('Your file extension is denied ❌'), false);
+                }
+            } else {
+                cb(new Error('File originalname is invalid'), false);
+            }
+        };
+
+        return multer({
+            storage: storageUploader,
+            fileFilter,
+            limits: { fileSize: 3.6 * 1024 * 1024 } // 3.6MB Limit
+        });
     },
     eventDoorPrize: (req, directory, filePrefix) => {
 

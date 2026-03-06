@@ -1,10 +1,17 @@
-// routes/engine.js
+﻿// routes/engine.js
 const express = require('express');
 const router = express.Router();
-const engineTicket = require('../../controller/engine/engineTicket');
-const engineAssignment = require('../../controller/engine/engineAssignment');
-const engineTimeline = require('../../controller/engine/engineTimeline');
+const engineTicket = require('../../controller/hots_controller/engine/engineTicket');
+const engineAssignment = require('../../controller/hots_controller/engine/engineAssignment');
+const engineTimeline = require('../../controller/hots_controller/engine/engineTimeline');
+const uploadController = require('../../controller/hots_controller/engine/uploadController');
+const { hotsTempUploader } = require('../../config/uploader');
 const { decodeTokenHT } = require('../../config/encrypts');
+
+const uploadTempMiddleware = hotsTempUploader('', 'temp').array('file', 10);
+
+// public/temp upload endpoint
+router.post('/upload-temp', decodeTokenHT, uploadTempMiddleware, uploadController.uploadTemp);
 
 // protected endpoints
 router.post('/create', decodeTokenHT, engineTicket.create);

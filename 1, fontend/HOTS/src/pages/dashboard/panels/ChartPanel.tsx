@@ -58,7 +58,7 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ config, serviceId }) => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             const endpoint = apiEndpoint?.replace('{service_id}', String(serviceId))
                 || `/hotsdashboard/service_summary/${serviceId}`;

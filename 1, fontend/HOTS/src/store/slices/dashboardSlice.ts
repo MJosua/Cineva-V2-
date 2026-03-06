@@ -20,7 +20,7 @@ export const fetchDashboardFunctions = createAsyncThunk(
   "dashboard/fetchFunctions",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("tokek");
+      const token = localStorage.getItem("hots_tokek");
 
       // ✅ EARLY RETURN — no API call if token is missing or invalid
       if (!token || token === "null" || token === "undefined") {

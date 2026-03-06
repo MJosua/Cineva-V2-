@@ -127,7 +127,7 @@ const ServiceAnalyticsView: React.FC = () => {
     // Fetch summary data
     const fetchSummary = async () => {
         try {
-            const token = localStorage.getItem("tokek");
+            const token = localStorage.getItem("hots_tokek");
             const res = await axios.get(
                 `${API_URL}/hotsdashboard/service_summary/${serviceId}?range=${dateRange}`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -148,7 +148,7 @@ const ServiceAnalyticsView: React.FC = () => {
     // Fetch tickets data for table
     const fetchTickets = async () => {
         try {
-            const token = localStorage.getItem("tokek");
+            const token = localStorage.getItem("hots_tokek");
             const res = await axios.get(
                 `${API_URL}/hotsdashboard/service_tickets/${serviceId}?range=${dateRange}&limit=1000`,
                 { headers: { Authorization: `Bearer ${token}` } }

@@ -24,7 +24,7 @@ export const loginMiddleware = (userID, pswd) => {
     if (res.data.success) {
 
       // localStorage.setItem('userLogStore', JSON.stringify(res.data.userData));
-      localStorage.setItem("tokek", res.data.token);
+      localStorage.setItem("hots_tokek", res.data.token);
       delete res.data.token;
       dispatch({
         type: "LOGIN_SUCCESS",
@@ -74,7 +74,7 @@ export const logoutAction = () => {
 
   //delete all stored data on localstore
   localStorage.removeItem("userLogStore");
-  localStorage.removeItem("tokek");
+  localStorage.removeItem("hots_tokek");
   localStorage.removeItem("temporaryCart");
   localStorage.removeItem("RadioButtonValue");
   localStorage.removeItem("");

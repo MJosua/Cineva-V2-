@@ -18,7 +18,7 @@ export const fetchAssignmentCount = createAsyncThunk(
     'assignment/fetchCount',
     async (_, { rejectWithValue }) => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             if (!token) return rejectWithValue('No token');
 
             const response = await axios.get(

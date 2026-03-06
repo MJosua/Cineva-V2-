@@ -51,6 +51,10 @@ const CheckToken = () => {
             const latestToken = localStorage.getItem("tokek"); // Ensure latest token
 
             if (!latestToken) {
+                const publicPaths = ["/e-order/login", "/e-order", "/"];
+                if (publicPaths.includes(window.location.pathname)) {
+                    return;
+                }
                 console.log("No token found, prompting login...");
                 onOpenModalToken();
                 return;
@@ -89,7 +93,9 @@ const CheckToken = () => {
                     onOpenModalToken();
                 } else {
                     console.error("Unexpected error:", err);
-                    handleLogout();
+                    // Instead of full logout, try to show modal first
+                    // or if it's a network error, maybe just toast.
+                    onOpenModalToken();
                 }
             }
         };
@@ -104,10 +110,12 @@ const CheckToken = () => {
     }, [dispatch, navigate]); // No `userToken` dependency to prevent infinite loop
 
     const handleLogout = () => {
+        // Clear local credentials
         localStorage.removeItem("tokek");
         dispatch(logoutAction());
-        dispatch(seasonOut());
-        navigate("/e-order/");
+        // sessionOut is a utility, not an action
+        seasonOut();
+        navigate("/e-order/login"); // Navigate to login instead of root
     };
 
     const onLogin = async (event) => {

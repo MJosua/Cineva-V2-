@@ -203,7 +203,7 @@ export const fetchServiceCatalog = createAsyncThunk(
   'catalog/fetchServiceCatalog',
   async () => {
     try {
-      const userToken = localStorage.getItem("tokek");
+      const userToken = localStorage.getItem("hots_tokek");
       const response = await axios.get(`${API_URL}/hots_settings/get_service`, {
         headers: {
           Authorization: `Bearer ${userToken}`,
@@ -226,7 +226,7 @@ export const fetchCategoryList = createAsyncThunk(
   'catalog/fetchCategoryList',
   async () => {
     try {
-      const userToken = localStorage.getItem("tokek");
+      const userToken = localStorage.getItem("hots_tokek");
       const response = await axios.get(`${API_URL}/hots_settings/get_serviceCategory`, {
         headers: {
           Authorization: `Bearer ${userToken}`,

@@ -23,7 +23,7 @@ export const fetchSRF = createAsyncThunk(
   'settings/fetchSRF',
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('tokek');
+      const token = localStorage.getItem('hots_tokek');
 
       const [plantRes, categoryRes, deliverToRes] = await Promise.all([
         axios.get(`${API_URL}/hots_settings/get_srf_plant`, {

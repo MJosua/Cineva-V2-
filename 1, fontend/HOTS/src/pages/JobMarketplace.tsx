@@ -33,7 +33,7 @@ export const JobMarketplace: React.FC = () => {
     const fetchJobs = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
             const url = `${API_URL}/engine/tickets?service_id=19&status_id=5,6`;
 
             console.log('🔍 [MARKETPLACE] Fetching jobs from:', url);
@@ -73,7 +73,7 @@ export const JobMarketplace: React.FC = () => {
 
     const handleApply = async (jobId: string) => {
         try {
-            const token = localStorage.getItem('tokek');
+            const token = localStorage.getItem('hots_tokek');
 
             // Use the new consolidated apply endpoint
             const response = await fetch(`${API_URL}/engine/tickets/${jobId}/apply`, {

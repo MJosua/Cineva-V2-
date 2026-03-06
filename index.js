@@ -11,6 +11,10 @@ dotenv.config();
 
 const express = require("express");
 const App = express();
+
+// Inject Unified Logger
+global.log = require('./core/logger');
+
 // const { Server } = require("socket.io");
 const jwt = require('jsonwebtoken'); // Added for Early Auth Check
 const authController = require("./controller/OnlineOrder/auth"); // Direct import to avoid circular dependency
@@ -138,6 +142,27 @@ App.use(cookieParser());
 
 // 🚀 PERFORMANCE BUMP: High-Speed Ping 
 // Must be after CORS but BEFORE Session (Database lookup)
+App.use((req, res, next) => {
+  if (req.url.includes('battery-status')) {
+    console.log(`🔍 [TRAFFIC] Battery sync hitting: ${req.method} ${req.url}`);
+    if (req.url === '/api/rooms/battery-status' && req.method === 'POST') {
+      console.log('🎯 [TRAFFIC-DEBUG] Direct hit on target path detected at root level.');
+    }
+  }
+  next();
+});
+
+// Diagnostic Health Check
+App.get("/api/health-check", (req, res) => {
+  res.json({ success: true, message: "API is reachable", time: new Date().toISOString() });
+});
+
+// Meeting Room Generic System (MOVED HIGHER to prevent shadowing)
+const mbrooms = require('./routers/meetingbook/rooms');
+const mbbookings = require('./routers/meetingbook/bookings');
+App.use("/api/rooms", mbrooms);
+App.use("/api/bookings", mbbookings);
+
 App.get("/auth/ping", authController.isOpenLoginPage);
 
 // 🚀 PERFORMANCE BUMP: Early Auth Check (Prevent Ghost Delay)
@@ -251,9 +276,7 @@ const {
   notificationmngr,
   projecttemplatemngr,
   projectcommentmngr,
-  mbbookings,
   mbdayColors,
-  mbrooms,
   mbsettings,
   mbtimeslots,
   mbusers,
@@ -269,6 +292,7 @@ const {
   engineWorkDataRouter,
   engineAssignmentRouter,
   engineReportRouter,
+  engineProjectDashboardRouter,
   workflowadminRouter,
   triggerRouter,
   couponRouter,
@@ -349,6 +373,7 @@ App.use("/engine", engineRouter);
 App.use("/engine", engineWorkDataRouter);
 App.use("/engine", engineAssignmentRouter);
 App.use("/engine", engineReportRouter);  // 🆕 Report endpoints (suggest, card-reports)
+App.use("/engine/project", engineProjectDashboardRouter);  // 🆕 Project Dashboard
 App.use("/workflow-engine", workflowadminRouter);
 App.use("/triggers", triggerRouter);
 /* -------------------------------------------------------------------
@@ -401,14 +426,6 @@ App.use("/shortener", shortener);
 
 // Debug Router
 App.use("/debugRouter", debugRouter);
-
-
-// Coupon System API
-App.use("/api", couponRouter);
-
-// Meeting Room Generic System
-App.use("/api/rooms", mbrooms);
-App.use("/api/bookings", mbbookings);
 
 // SSE (Server-Sent Events) for real-time updates
 App.use("/sse", sseRouter);

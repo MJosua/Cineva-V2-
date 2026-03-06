@@ -1,5 +1,5 @@
 ﻿import { createContext, useContext, useEffect, useState } from "react";
-import { getBannerData, getContainers, getFlavours, getFlavoursTrucking, getOtherParties, getPorts, getShipToParties, getStuffingDate, getStuffingWeek, getTOP } from "../../../../../action/reqAction";
+import { getBannerData, getContainers, getFlavours, getOtherParties, getPorts, getShipToParties, getStuffingDate, getStuffingWeek, getTOP } from "../../../../../action/reqAction";
 import { useToast } from "@chakra-ui/react";
 
 const DataContext = createContext();
@@ -10,7 +10,6 @@ export const DataProvider = ({
     updateSession,
 }) => {
     const [flavours, setFlavours] = useState([]);
-    const [flavoursTrucking, setFlavoursTrucking] = useState([])
     const [ports, setPorts] = useState([]);
     const [shipToParties, setShipToParties] = useState([]);
     const [container, setContainer] = useState([])
@@ -39,7 +38,6 @@ export const DataProvider = ({
             try {
                 const results = await Promise.allSettled([
                     getFlavours(latestToken),
-                    getFlavoursTrucking(latestToken),
                     getPorts(latestToken),
                     getShipToParties(latestToken),
                     getContainers(latestToken),
@@ -51,8 +49,7 @@ export const DataProvider = ({
                 ]);
 
                 const [
-                    flavoursRes,
-                    flavourResTrukcing,
+                    catalogRes,
                     portsRes,
                     shipToPartiesRes,
                     containerRes,
@@ -63,16 +60,14 @@ export const DataProvider = ({
                     topRes,
                 ] = results;
 
-                // Flavours
-                if (flavoursRes.status === "fulfilled") {
-                    setFlavours(flavoursRes.value.data);
+                // Unified Catalog processing
+                if (catalogRes.status === "fulfilled") {
+                    const allProducts = catalogRes.value.data;
+                    setFlavours(allProducts);
 
-                    console.log("Flavours data fetched:", flavoursRes.value.data);
-                }
-
-                // Flavours trucking
-                if (flavourResTrukcing.status === "fulfilled") {
-                    setFlavoursTrucking(flavourResTrukcing.value.data);
+                    console.log("Unified Catalog fetched", {
+                        total: allProducts.length,
+                    });
                 }
 
                 // Ports
@@ -155,7 +150,6 @@ export const DataProvider = ({
             flavours,
             ports,
             shipToParties,
-            flavoursTrucking,
             container,
             ostp,
             stuffingWeeksList,

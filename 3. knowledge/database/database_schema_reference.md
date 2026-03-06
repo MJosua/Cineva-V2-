@@ -6,20 +6,23 @@ Quick reference for commonly used tables and their correct column names.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `user_id` | INT | Primary key |
+| `user_id` | INT | Primary key (Auto Increment) |
 | `employee_id` | INT | Employee number |
-| `firstname` | VARCHAR | First name |
-| `lastname` | VARCHAR | Last name |
-| `uid` | VARCHAR | Username/Login ID |
-| `email` | VARCHAR | Email address |
-| `nik` | VARCHAR | NIK (employee ID) |
+| `firstname` | VARCHAR(64) | First name |
+| `lastname` | VARCHAR(64) | Last name |
+| `uid` | VARCHAR(30) | Username/Login ID |
+| `pswd` | VARCHAR(64) | Password hash |
+| `email` | VARCHAR(100) | Email address |
+| `nik` | VARCHAR(10) | NIK (employee ID) |
 | `active` | INT | 1 = active, 0 = inactive (**NOT** `is_active`) |
 | `role_id` | INT | FK to m_role |
 | `jobtitle_id` | INT | FK to m_job_title.jobtitle_id |
 | `department_id` | INT | FK to m_department |
 | `superior_id` | INT | FK to user (manager) |
-| `phone` | VARCHAR | Extension phone |
+| `phone` | VARCHAR(100) | Extension phone |
 | `plant_id` | INT | Factory/Plant ID |
+| `grade_id` | INT | Grade ID |
+| `status` | VARCHAR(100) | Employment status |
 
 ---
 
@@ -79,10 +82,14 @@ LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `work_data_id` | INT | Primary Key |
-| `ticket_id` | VARCHAR | FK to t_ticket |
-| `data_key` | VARCHAR | Key for the dynamic form field (e.g., `brand_name`) |
-| `data_value` | TEXT | Value entered by the user |
+| `id` | BIGINT | Primary Key (Auto Increment) |
+| `ticket_id` | VARCHAR(20) | FK to t_ticket |
+| `assignment_id` | INT | FK to t_ticket_assignment |
+| `data_type` | VARCHAR(50) | Type of data (e.g., 'form_data') |
+| `field_name` | VARCHAR(100) | Key for the dynamic form field (e.g., `brand_name`) |
+| `field_value` | TEXT | Value entered by the user |
+| `field_type` | ENUM | text, number, date, json, file, report, admin |
+| `is_latest` | TINYINT | 1 = current version |
 | `updated_at` | DATETIME | Last update timestamp |
 
 ---

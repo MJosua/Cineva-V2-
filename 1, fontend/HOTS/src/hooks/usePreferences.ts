@@ -38,7 +38,7 @@ const notifyListeners = () => {
 
 export const usePreferences = () => {
     const [, forceUpdate] = useState(0);
-    const token = localStorage.getItem('tokek');
+    const token = localStorage.getItem('hots_tokek');
     const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
     // Subscribe to shared state changes
