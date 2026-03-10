@@ -1,38 +1,35 @@
-# Knowledge base and database scripts
-3. knowledge/database/sql/*.sql
-3. knowledge/action/*.js
-3. knowledge/database/json/*.json
-!3. knowledge/**/*.md
-!3. knowledge/architecture/*.md
-!3. knowledge/action/*.sql
-
-# Scripts and temporary files
-*.sql
-*.zip
-*.log
-tmp/
-.continue/
-*.lnk
-check_step_fix.js
-columns.txt
-debug_ticket_list.js
-diag_kiosk.js
-find_user.js
-fix_noodle.js
-inspect_schema.js
-live_api_test.js
-migrate_env.js
-migrate_task_report.js
-schema_output.txt
-simulate_searates.js
-tables_list.txt
-test-complete-route.js
-test-crypto.js
-views_def.txt
-views_def_utf8.txt
-workflow_schema.txt
+# dependencies
 node_modules/
+
+# build
 dist/
+build/
+
+# environment
+.env
 .env*
-!1, fontend/HOTS/.env
-!1, fontend/HOTS/.env.production
+
+# vscode
+.vscode/
+
+# logs
+*.log
+
+# temp
+tmp/
+temp/
+
+# system
+.DS_Store
+Thumbs.db
+
+# archives
+*.zip
+
+# database dumps
+*.sql
+
+# debug files
+debug_*.js
+test-*.js
+inspect_*.js

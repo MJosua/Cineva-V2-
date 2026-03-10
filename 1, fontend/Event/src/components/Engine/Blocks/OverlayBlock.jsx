@@ -20,7 +20,8 @@ export default function OverlayBlock({
     opacity = "1",
     customCss = "",
     isEditor = false,
-    onPropsChange
+    onPropsChange,
+    parentRef
 }) {
     const containerRef = useRef(null);
     const [isResizing, setIsResizing] = useState(false);
@@ -36,27 +37,45 @@ export default function OverlayBlock({
         console.warn("Invalid CSS JSON in OverlayBlock:", customCss);
     }
 
+    // Stability: If in editor, force a coordinate if it's 'auto' so drag math works immediately
+    // Instead of snapping to 0,0, we calculate where it is CURRENTLY relative to parent
+    useEffect(() => {
+        if (isEditor && onPropsChange && parentRef?.current && containerRef.current) {
+            if (top === 'auto' || left === 'auto') {
+                const childRect = containerRef.current.getBoundingClientRect();
+                const parentRect = parentRef.current.getBoundingClientRect();
+
+                const relativeTop = childRect.top - parentRect.top;
+                const relativeLeft = childRect.left - parentRect.left;
+
+                onPropsChange({
+                    top: top === 'auto' ? `${Math.round(relativeTop)}px` : top,
+                    left: left === 'auto' ? `${Math.round(relativeLeft)}px` : left,
+                    right: "auto",
+                    bottom: "auto"
+                });
+            }
+        }
+    }, [isEditor, top, left, onPropsChange, parentRef]);
+
     if (!imageUrl) return null;
 
     const handleDragEnd = (event, info) => {
-        if (!isEditor || !onPropsChange) return;
+        if (!isEditor || !onPropsChange || !parentRef?.current) return;
 
-        // info.point is absolute, but for absolute positioning we usually want to update based on the offset
-        // or recalculate relative to parent. Since 'top' and 'left' are props, we can add the delta.
+        // Get the bounding box of the child element (using the ref)
+        const childRect = containerRef.current.getBoundingClientRect();
+        // Get the bounding box of the parent container
+        const parentRect = parentRef.current.getBoundingClientRect();
 
-        // Helper: parse value (e.g. "100px" -> 100)
-        const parseValue = (v) => {
-            if (typeof v === 'number') return v;
-            if (v === 'auto') return 0;
-            return parseInt(v) || 0;
-        };
+        // Calculate the relative position from the top-left of the parent
+        const relativeTop = childRect.top - parentRect.top;
+        const relativeLeft = childRect.left - parentRect.left;
 
-        const currentTop = parseValue(top);
-        const currentLeft = parseValue(left);
-
+        // Update the source props with the final calculated pixel values
         onPropsChange({
-            top: `${currentTop + info.offset.y}px`,
-            left: `${currentLeft + info.offset.x}px`,
+            top: `${Math.round(relativeTop)}px`,
+            left: `${Math.round(relativeLeft)}px`,
             right: "auto",
             bottom: "auto"
         });
@@ -70,8 +89,7 @@ export default function OverlayBlock({
         const startWidth = containerRef.current.offsetWidth;
 
         const onMouseMove = (moveEvent) => {
-            const newWidth = startWidth + (moveEvent.clientX - startX);
-            // Don't call onPropsChange too rapidly, but for drag-resize we usually do
+            const newWidth = Math.max(20, startWidth + (moveEvent.clientX - startX));
             onPropsChange({ width: `${newWidth}px`, maxWidth: "none" });
         };
 
@@ -91,7 +109,9 @@ export default function OverlayBlock({
             as={isEditor ? motion.div : "div"}
             ref={containerRef}
             drag={isEditor && !isResizing}
+            dragConstraints={parentRef}
             dragMomentum={false}
+            dragElastic={0}
             onDragEnd={handleDragEnd}
             position="absolute"
             top={top}

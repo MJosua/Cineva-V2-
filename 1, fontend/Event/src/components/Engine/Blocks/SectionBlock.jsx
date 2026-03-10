@@ -1,6 +1,7 @@
 import { Box } from "@chakra-ui/react";
 import { resolveComponent } from "../Registry";
 import { resolveMediaUrl } from "../../../utils/mediaHelper";
+import { useRef } from "react";
 
 export default function SectionBlock({
     background = "transparent",
@@ -15,6 +16,8 @@ export default function SectionBlock({
     eventSlug,
     eventId
 }) {
+    const containerRef = useRef(null);
+
     let customStyles = {};
     try {
         if (customCss && typeof customCss === 'string') {
@@ -38,6 +41,7 @@ export default function SectionBlock({
 
     return (
         <Box
+            ref={containerRef}
             position="relative"
             minH="100vh"
             w="100%"
@@ -53,6 +57,7 @@ export default function SectionBlock({
             alignItems="center"
             scrollSnapAlign="start"
             sx={customStyles}
+            overflow="hidden"
         >
             {children && children.map((child, index) => {
                 const Component = resolveComponent(child.type);
@@ -66,6 +71,7 @@ export default function SectionBlock({
                         eventSlug={eventSlug}
                         eventId={eventId}
                         onPropsChange={(updatedProps) => handleChildPropsChange(index, updatedProps)}
+                        parentRef={containerRef}
                     />
                 );
             })}
