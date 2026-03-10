@@ -6,7 +6,7 @@ import {
     Progress, Input, FormControl, FormLabel
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
-import { getPoolItems, addPoolItems, importPoolItems } from "../../../services/eventEngineApi";
+import { getPoolItems, addPoolItems, importPoolItems, getPoolDrawStats } from "../../../services/eventEngineApi";
 import { MdCheckCircle, MdCancel, MdDownload } from "react-icons/md";
 import { Divider } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
@@ -38,11 +38,13 @@ export default function ManageItemsModal({ isOpen, onClose, pool }) {
         setIsLoading(true);
         try {
             const data = await getPoolItems(pool.pool_id);
+            const poolStats = await getPoolDrawStats(pool.pool_id);
+
             setItems(data.items || []);
             setStats({
-                total: data.total,
-                used: (data.items || []).filter(i => i.is_used).length, // Note: Pagination might hide true count, but API returns stats usually
-                unused: data.total - ((data.items || []).filter(i => i.is_used).length) // Rough estimate if paginated
+                total: poolStats.total_items || data.total || 0,
+                used: poolStats.used_items || 0,
+                unused: poolStats.available_items || 0
             });
         } catch (e) {
             toast({ title: "Failed to load items", status: "error" });
@@ -72,9 +74,9 @@ export default function ManageItemsModal({ isOpen, onClose, pool }) {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Size check (max 5MB explicitly)
-        if (file.size > 5 * 1024 * 1024) {
-            toast({ title: "File too large", description: "Max 5MB", status: "error" });
+        // Size check (max 25MB)
+        if (file.size > 25 * 1024 * 1024) {
+            toast({ title: "File too large", description: "Max 25MB", status: "error" });
             return;
         }
 
@@ -204,8 +206,8 @@ export default function ManageItemsModal({ isOpen, onClose, pool }) {
                                     <VStack align="stretch" spacing={4}>
                                         <Flex justify="space-between" align="center">
                                             <HStack spacing={4}>
-                                                <Badge colorScheme="purple">Total: {items.length}</Badge>
-                                                <Badge colorScheme="green">Used: {items.filter(i => i.is_used).length}</Badge>
+                                                <Badge colorScheme="purple">Total: {stats.total.toLocaleString()}</Badge>
+                                                <Badge colorScheme="green">Used: {stats.used.toLocaleString()}</Badge>
                                             </HStack>
                                             <Button size="sm" leftIcon={<MdDownload />} colorScheme="green" onClick={handleExportCSV} isDisabled={items.length === 0}>
                                                 Export CSV

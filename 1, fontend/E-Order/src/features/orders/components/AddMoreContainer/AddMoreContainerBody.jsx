@@ -143,7 +143,6 @@ function AddMoreContainerBody({
 
     const duplicateOrder = (data) => {
 
-        console.log("data", data)
 
         let newPoBuyer = ""
 

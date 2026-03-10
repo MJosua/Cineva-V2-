@@ -17,7 +17,7 @@ module.exports = {
                 // Get unused files older than 24 hours
                 const [files] = await dbHots.promise().query(`
                     SELECT upload_id, file_path 
-                    FROM t_temp_upload 
+                    FROM t_ticket_file_temp 
                     WHERE is_used = FALSE 
                     AND upload_date < DATE_SUB(NOW(), INTERVAL 7 DAY)
                     `);
@@ -34,7 +34,7 @@ module.exports = {
                         await fs.unlink(file.file_path); // Delete file
                         deletedCount++;
 
-                        await dbHots.promise().query(`DELETE FROM t_temp_upload WHERE upload_id = ?`, [file.upload_id]); // Delete DB record
+                        await dbHots.promise().query(`DELETE FROM t_ticket_file_temp WHERE upload_id = ?`, [file.upload_id]); // Delete DB record
                     } catch (err) {
                         console.error(timestamp, `Error deleting file or DB record for upload_id ${file.upload_id}:`, err.message);
                     }

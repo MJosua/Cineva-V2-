@@ -2505,7 +2505,7 @@
     "foreign_keys": [],
     "raw": "`id` int NOT NULL AUTO_INCREMENT,\n  `ticket_id` bigint NOT NULL,\n  `service_id` int DEFAULT NULL,\n  `function_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `trigger_event` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `status` enum('success','failed','pending') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `result_data` json DEFAULT NULL,\n  `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,\n  `execution_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `created_by` int DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_ticket` (`ticket_id`),\n  KEY `idx_service` (`service_id`),\n  KEY `idx_status` (`status`),\n  KEY `idx_execution_time` (`execution_time`),\n  KEY `idx_function_name` (`function_name`)"
   },
-  "t_file_upload": {
+  "t_ticket_file": {
     "file": "dump-hots-202512041039.sql",
     "columns": [
       {
@@ -2703,7 +2703,7 @@
     "foreign_keys": [],
     "raw": "`id` int NOT NULL AUTO_INCREMENT,\n  `service_id` int NOT NULL,\n  `function_id` int NOT NULL,\n  `trigger_event` enum('on_created','on_approved','on_step_approved','on_rejected','on_final_approved','on_trigger') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `execution_order` int DEFAULT '1',\n  `is_active` tinyint(1) DEFAULT '1',\n  `config` json DEFAULT NULL,\n  `created_by` int DEFAULT NULL,\n  `created_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `unique_service_function_order` (`service_id`,`function_id`,`execution_order`),\n  KEY `idx_service` (`service_id`),\n  KEY `idx_function` (`function_id`),\n  KEY `idx_trigger` (`trigger_event`),\n  KEY `idx_order` (`execution_order`),\n  KEY `idx_active` (`is_active`)"
   },
-  "t_temp_upload": {
+  "t_ticket_file_temp": {
     "file": "dump-hots-202512041039.sql",
     "columns": [
       {

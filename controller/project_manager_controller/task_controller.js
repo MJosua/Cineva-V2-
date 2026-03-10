@@ -341,7 +341,6 @@ module.exports = {
           groupId = defaultGroup[0].group_id;
         }
       }
-      console.log("data",data)
       const [result] = await dbPMS.promise().execute(`
         INSERT INTO PM.t_tasks 
         (name, description, status, priority, project_id, 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Box, Image } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
+import { resolveMediaUrl } from "../../../utils/mediaHelper";
 
 export default function FlipBlock({ images = [], interval = 3000, direction = "horizontal" }) {
     const [index, setIndex] = useState(0);
@@ -57,7 +58,7 @@ export default function FlipBlock({ images = [], interval = 3000, direction = "h
                     }}
                 >
                     <Image
-                        src={images[index]}
+                        src={resolveMediaUrl(images[index])}
                         alt={`Slide ${index}`}
                         objectFit="contain"
                         w="100%"

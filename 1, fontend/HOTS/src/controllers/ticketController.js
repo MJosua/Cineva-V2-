@@ -9,7 +9,7 @@ const ticketController = {
     getMyTickets: async (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-        
+
         let user_id = req.dataToken.user_id;
         let page = parseInt(req.query.page) || 1;
         let limit = 10;
@@ -79,7 +79,7 @@ const ticketController = {
     getAllTickets: async (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-        
+
         let page = parseInt(req.query.page) || 1;
         let limit = 10;
         let offset = (page - 1) * limit;
@@ -149,7 +149,7 @@ const ticketController = {
     getTaskList: async (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-        
+
         let user_id = req.dataToken.user_id;
         let page = parseInt(req.query.page) || 1;
         let limit = 10;
@@ -258,7 +258,7 @@ const ticketController = {
     getTaskCount: (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-        
+
         let user_id = req.dataToken.user_id;
 
         let countQuery = `
@@ -291,7 +291,7 @@ const ticketController = {
     uploadFiles: (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-        
+
         let user_id = req.dataToken.user_id;
 
         if (!req.files || req.files.length === 0) {
@@ -304,10 +304,10 @@ const ticketController = {
         let insertPromises = req.files.map(file => {
             return new Promise((resolve, reject) => {
                 let insertQuery = `
-                    INSERT INTO t_temp_upload (uploaded_by, file_path, filename, upload_date, is_used)
+                    INSERT INTO t_ticket_file_temp (uploaded_by, file_path, filename, upload_date, is_used)
                     VALUES (?, ?, ?, NOW(), FALSE)
                 `;
-                
+
                 dbHots.execute(insertQuery, [user_id, file.path, file.originalname], (err, result) => {
                     if (err) {
                         reject(err);
@@ -345,7 +345,7 @@ const ticketController = {
     createTicket: async (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-        
+
         let user_id = req.dataToken.user_id;
         let service_id = req.params.service_id;
         let { reason, upload_ids, ...formData } = req.body;
@@ -417,16 +417,16 @@ const ticketController = {
     getTicketDetail: (req, res) => {
         let date = new Date();
         let timestamp = magenta + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('id') + ' : ';
-    
+
         let ticket_id = req.params.ticket_id;
-    
+
         if (!ticket_id) {
             return res.status(400).send({
                 success: false,
                 message: "ticket_id must be provided"
             });
         }
-    
+
         const queryGetTicketDetail = `
             SELECT 
                 t.ticket_id,
@@ -498,7 +498,7 @@ const ticketController = {
                             'size', f.file_size
                         )
                     )
-                    FROM t_file_upload f 
+                    FROM t_ticket_file f 
                     WHERE f.ticket_id = t.ticket_id
                 ) as files,
     
@@ -536,7 +536,7 @@ const ticketController = {
             LEFT JOIN m_department dpt ON dpt.department_id = u.department_id
             WHERE t.ticket_id = ?
         `;
-    
+
         dbHots.execute(queryGetTicketDetail, [ticket_id], (err, results) => {
             if (err) {
                 console.log(timestamp, "GET TICKET DETAIL ERROR: ", err);
@@ -545,14 +545,14 @@ const ticketController = {
                     message: err
                 });
             }
-    
+
             if (!results.length) {
                 return res.status(404).send({
                     success: false,
                     message: 'Ticket not found!'
                 });
             }
-    
+
             console.log(timestamp, "GET TICKET DETAIL SUCCESS");
             return res.status(200).send({
                 success: true,
@@ -561,13 +561,13 @@ const ticketController = {
             });
         });
     },
-    
+
 
     // Get Ticket Attachments
     getTicketAttachments: (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-        
+
         let ticket_id = req.params.ticket_id;
 
         if (!ticket_id) {
@@ -579,7 +579,7 @@ const ticketController = {
 
         let queryGetAttachments = `
             SELECT upload_id, filename, file_path, upload_date
-            FROM t_temp_upload
+            FROM t_ticket_file_temp
             WHERE ticket_id = ? AND is_used = TRUE
             ORDER BY upload_date DESC
         `;
@@ -606,7 +606,7 @@ const ticketController = {
     approveTicket: async (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-        
+
         let user_id = req.dataToken.user_id;
         let ticket_id = req.params.ticket_id;
         let { approval_order, comment } = req.body;
@@ -648,7 +648,7 @@ const ticketController = {
     rejectTicket: async (req, res) => {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
-        
+
         let user_id = req.dataToken.user_id;
         let ticket_id = req.params.ticket_id;
         let { approval_order, rejection_remark } = req.body;

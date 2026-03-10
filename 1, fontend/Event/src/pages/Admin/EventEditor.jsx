@@ -1,12 +1,14 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { Box, Heading, Flex, Button, useToast, useDisclosure, VStack, Text, IconButton, HStack, Tabs, TabList, Tab, TabPanels, TabPanel, FormControl, FormLabel, Input, Select, Badge, Tooltip } from "@chakra-ui/react";
+import { Box, Heading, Flex, Button, useToast, useDisclosure, VStack, Text, IconButton, HStack, Tabs, TabList, Tab, TabPanels, TabPanel, FormControl, FormLabel, Input, Select, Badge, Tooltip, Image, Switch } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { getCampaignBySlug, updateCampaign } from "../../services/eventEngineApi";
 import EngineRenderer from "../../components/Engine/EngineRenderer";
 import BlockList from "./EditorComponents/BlockList";
 import BlockEditor from "./EditorComponents/BlockEditor";
 import AddBlockModal from "./EditorComponents/AddBlockModal";
-import { MdAdd, MdSave, MdArrowBack, MdLayers, MdOpenInNew } from "react-icons/md";
+import { MdAdd, MdSave, MdArrowBack, MdLayers, MdOpenInNew, MdDelete } from "react-icons/md";
+import MediaPickerModal from "./EditorComponents/MediaPickerModal";
+import { resolveMediaUrl } from "../../utils/mediaHelper";
 
 export default function EventEditor() {
     const { slug, pageKey } = useParams();
@@ -152,7 +154,19 @@ export default function EventEditor() {
                     shadow="lg"
                     mx="auto"
                 >
-                    <EngineRenderer eventData={{ ...eventData, theme_config: themeConfig }} blocksOverride={currentBlocks} isEditor={true} />
+                    <EngineRenderer
+                        eventData={{ ...eventData, theme_config: themeConfig }}
+                        blocksOverride={currentBlocks}
+                        isEditor={true}
+                        onBlockChange={(index, updatedProps) => {
+                            const newBlocks = [...currentBlocks];
+                            newBlocks[index] = {
+                                ...newBlocks[index],
+                                props: { ...newBlocks[index].props, ...updatedProps }
+                            };
+                            setEventData(prev => ({ ...prev, pages: { ...prev.pages, [currentPage]: newBlocks } }));
+                        }}
+                    />
                 </Box>
             </Box>
 
@@ -218,6 +232,44 @@ export default function EventEditor() {
                                     </FormControl>
 
                                     <FormControl>
+                                        <FormLabel fontSize="sm">Background Image</FormLabel>
+                                        <VStack align="stretch" spacing={2}>
+                                            {themeConfig?.backgroundImage ? (
+                                                <Box position="relative" borderRadius="md" overflow="hidden" border="1px solid" borderColor="gray.200">
+                                                    <Image
+                                                        src={resolveMediaUrl(themeConfig.backgroundImage)}
+                                                        alt="Background"
+                                                        w="100%" h="120px" objectFit="cover"
+                                                    />
+                                                    <IconButton
+                                                        icon={<MdDelete />}
+                                                        size="xs" colorScheme="red"
+                                                        position="absolute" top={1} right={1}
+                                                        onClick={() => setThemeConfig(prev => ({ ...prev, backgroundImage: "" }))}
+                                                        aria-label="Clear Background"
+                                                    />
+                                                </Box>
+                                            ) : (
+                                                <Box
+                                                    h="80px" border="2px dashed" borderColor="gray.200" borderRadius="md"
+                                                    display="flex" alignItems="center" justifyContent="center" bg="gray.50"
+                                                >
+                                                    <Text fontSize="xs" color="gray.400">No background image</Text>
+                                                </Box>
+                                            )}
+                                            <HStack>
+                                                <Input
+                                                    size="sm"
+                                                    placeholder="URL or select..."
+                                                    value={themeConfig?.backgroundImage || ''}
+                                                    onChange={(e) => setThemeConfig(prev => ({ ...prev, backgroundImage: e.target.value }))}
+                                                />
+                                                <MediaPickerModal onSelect={(url) => setThemeConfig(prev => ({ ...prev, backgroundImage: url }))} />
+                                            </HStack>
+                                        </VStack>
+                                    </FormControl>
+
+                                    <FormControl>
                                         <FormLabel fontSize="sm">Font Family</FormLabel>
                                         <Select
                                             size="sm"
@@ -245,6 +297,14 @@ export default function EventEditor() {
                                                 onChange={(e) => setThemeConfig(prev => ({ ...prev, color: e.target.value }))}
                                             />
                                         </HStack>
+                                    </FormControl>
+
+                                    <FormControl display="flex" alignItems="center">
+                                        <FormLabel fontSize="sm" mb="0">Enable Scroll Snapping</FormLabel>
+                                        <Switch
+                                            isChecked={themeConfig?.snappingEnabled === "true" || themeConfig?.snappingEnabled === true}
+                                            onChange={(e) => setThemeConfig(prev => ({ ...prev, snappingEnabled: e.target.checked }))}
+                                        />
                                     </FormControl>
                                 </VStack>
                             </TabPanel>

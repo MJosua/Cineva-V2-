@@ -81,7 +81,7 @@ const ASSIGNMENT_TYPES = {
 };
 
 // ============================================================
-// 6️⃣ ENTITY TYPES - Used in t_file_upload for polymorphic relations
+// 6️⃣ ENTITY TYPES - Used in t_ticket_file for polymorphic relations
 // ============================================================
 const ENTITY_TYPES = {
     TICKET: 'ticket',

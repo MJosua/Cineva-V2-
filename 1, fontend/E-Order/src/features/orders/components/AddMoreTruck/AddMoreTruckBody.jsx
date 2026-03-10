@@ -69,7 +69,6 @@ function AddMoreTruckBody({
   };
   const spc_condition_details = useSelector((state) => state.userReducer.spc_condition_details);
 
-  console.log("spc_condition_details", spc_condition_details)
   const { company_id, max_flavour_truck } = useSelector((state) => {
     return {
       company_id: state.userReducer.company_id,

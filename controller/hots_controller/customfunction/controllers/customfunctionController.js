@@ -518,7 +518,7 @@ module.exports = {
         const { ticketId } = req.params;
 
         try {
-            // Fetch physical files from t_file_upload
+            // Fetch physical files from t_ticket_file
             const [physicalDocs] = await dbHots.promise().query(`
                 SELECT 
                     upload_id as id,
@@ -530,7 +530,7 @@ module.exports = {
                     'physical' as document_type,
                     NULL as view_url,
                     NULL as download_url
-                FROM hots.t_file_upload 
+                FROM hots.t_ticket_file 
                 WHERE entity_id = ? AND entity_type = 'generated_document'
             `, [ticketId]);
 
@@ -961,7 +961,7 @@ module.exports = {
 
                     // Save generated document info (standardized format)
                     await dbHots.promise().query(`
-                        INSERT INTO hots.t_file_upload 
+                        INSERT INTO hots.t_ticket_file 
                         (entity_type, entity_id, ticket_id, field_name, file_path, filename, original_name, mime_type, upload_date, is_active, uploaded_by, created_at, updated_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 1, ?, NOW(), NOW())
                     `, [
@@ -1202,12 +1202,12 @@ module.exports = {
                 upload_id as id,
                 filename as file_name,
                 file_path
-            FROM hots.t_file_upload 
+            FROM hots.t_ticket_file 
             WHERE upload_id = ?
                 `, [documentId]);
 
             if (documents.length === 0) {
-                // If not found in t_file_upload, check if it's a virtual document
+                // If not found in t_ticket_file, check if it's a virtual document
                 const virtualDoc = await documentEngine.getDocument(documentId);
                 if (virtualDoc) {
                     // Redirect to render endpoint with format=pdf
@@ -1492,9 +1492,9 @@ module.exports = {
             }
 
             // Save generated document info
-            // Save generated document info to t_file_upload (use 'generated_document' entity_type to match getGeneratedDocuments query)
+            // Save generated document info to t_ticket_file (use 'generated_document' entity_type to match getGeneratedDocuments query)
             await dbHots.promise().query(`
-                INSERT INTO hots.t_file_upload
+                INSERT INTO hots.t_ticket_file
                 (entity_type, entity_id, ticket_id, field_name, filename, original_name, file_path, upload_date, is_active, created_at, updated_at, uploaded_by)
                 VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 1, NOW(), NOW(), ?)
                 `, [

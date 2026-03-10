@@ -38,7 +38,8 @@ import {
     MdVisibility,
     MdPublic,
     MdPublish,
-    MdCollections
+    MdCollections,
+    MdPermMedia
 } from "react-icons/md";
 
 const SIDEBAR_ITEMS = [
@@ -49,6 +50,7 @@ const SIDEBAR_ITEMS = [
     { label: "Reports", path: "reports", icon: MdBarChart },
     { label: "Account List", path: "admins", icon: MdGroup },
     { label: "Pages", path: "pages", icon: MdCollections },
+    { label: "Media Library", path: "media", icon: MdPermMedia },
     { label: "Settings", path: "settings", icon: MdSettings },
 ];
 

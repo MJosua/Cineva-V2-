@@ -162,7 +162,7 @@ module.exports = {
                 // let token = createToken({ ...results[0] });
 
                 //new token
-                let token = createToken(dataToken);
+                let token = createToken(dataToken, '2h');
 
                 //log.eorder.info("userData[0] @login", userData[0])
                 //log.eorder.info("dataToken @login", dataToken)
@@ -440,7 +440,7 @@ module.exports = {
 
 
           //pisahkan data yang diencrypt dan dikirim 
-          let token = createToken(dataToken, '30m');
+          let token = createToken(dataToken, '2h');
 
           //old token
           // let token = createToken(...userID);

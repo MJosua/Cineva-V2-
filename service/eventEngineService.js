@@ -5,11 +5,11 @@
  * All queries map 1:1 to EVENT_* schema columns.
  * 
  * Tables:
- * - EVENT_t_campaign
- * - EVENT_t_submission
+ * - event_t_campaign
+ * - event_t_submission
  * - EVENT_m_pool
  * - EVENT_m_pool_item
- * - EVENT_t_winner
+ * - event_t_winner
  */
 
 const { dbQueryHots, dbHots } = require('../config/db');
@@ -18,13 +18,74 @@ const sseManager = require('../core/sse-manager'); // Phase 5: Live Updates
 const { encryptUrlSafe, decryptUrlSafe } = require('../core/cryptoUtil');
 
 /**
- * Log administrative action to EVENT_t_log
+ * Get media assets for a campaign
+ * @param {string} slug 
+ */
+async function getCampaignMedia(slug) {
+    const campaignId = await getCampaignIdBySlug(slug);
+    if (!campaignId) return [];
+
+    const sql = `
+        SELECT 
+            upload_id as id,
+            filename,
+            original_name,
+            file_path,
+            file_size,
+            mime_type,
+            upload_date
+        FROM file_t_upload
+        WHERE entity_type = 'campaign' AND entity_id = ?
+        ORDER BY upload_date DESC
+    `;
+    return dbQueryHots(sql, [campaignId]);
+}
+
+/**
+ * Persist uploaded media for a campaign
+ * @param {string} slug 
+ * @param {Array} files 
+ * @param {number} userId 
+ */
+async function uploadCampaignMedia(slug, files, userId) {
+    const campaignId = await getCampaignIdBySlug(slug);
+    if (!campaignId) throw new Error("Campaign not found");
+
+    const results = [];
+    for (const file of files) {
+        const relativePath = file.path.replace(/\\/g, '/');
+
+        const sql = `
+            INSERT INTO file_t_upload (
+                entity_type, entity_id, ticket_id, uploaded_by, 
+                filename, original_name, file_path, file_size, mime_type
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const result = await dbQueryHots(sql, [
+            'campaign', campaignId, `CAM-${campaignId}`, userId,
+            file.filename, file.originalname, relativePath, file.size, file.mimetype
+        ]);
+
+        results.push({
+            id: result.insertId,
+            filename: file.filename,
+            original_name: file.originalname,
+            url: relativePath
+        });
+    }
+
+    return results;
+}
+
+/**
+ * Log administrative action to event_t_log
  * @param {Object} logData 
  */
 async function logEventAction({ campaignId, userId, actionType, details, ipAddress }) {
     try {
         const sql = `
-            INSERT INTO EVENT_t_log (campaign_id, user_id, action_type, details, created_at)
+            INSERT INTO event_t_log (campaign_id, user_id, action_type, details, created_at)
             VALUES (?, ?, ?, ?, NOW())
         `;
         await dbQueryHots(sql, [
@@ -79,7 +140,7 @@ async function getCampaigns(filters = {}, adminUser = null) {
             created_by,
             created_at,
             updated_at
-        FROM EVENT_t_campaign
+        FROM event_t_campaign
         WHERE 1=1
     `;
     const params = [];
@@ -152,7 +213,7 @@ async function getCampaignBySlug(slug) {
             created_by,
             created_at,
             updated_at
-        FROM EVENT_t_campaign
+        FROM event_t_campaign
         WHERE slug = ?
     `;
     const rows = await dbQueryHots(sql, [slug]);
@@ -175,7 +236,7 @@ async function getCampaignBySlug(slug) {
  * @returns {Promise<number|null>} Campaign ID
  */
 async function getCampaignIdBySlug(slug) {
-    const sql = `SELECT campaign_id FROM EVENT_t_campaign WHERE slug = ?`;
+    const sql = `SELECT campaign_id FROM event_t_campaign WHERE slug = ?`;
     const rows = await dbQueryHots(sql, [slug]);
     return rows.length > 0 ? rows[0].campaign_id : null;
 }
@@ -187,7 +248,7 @@ async function getCampaignIdBySlug(slug) {
  */
 async function createCampaign(campaignData) {
     const sql = `
-        INSERT INTO EVENT_t_campaign (
+        INSERT INTO event_t_campaign (
             ticket_id,
             slug,
             name,
@@ -283,7 +344,7 @@ async function updateCampaign(slug, updates) {
 
     if (fields.length === 0) return getCampaignBySlug(slug);
 
-    let sql = `UPDATE EVENT_t_campaign SET ${fields.join(", ")} WHERE slug = ?`;
+    let sql = `UPDATE event_t_campaign SET ${fields.join(", ")} WHERE slug = ?`;
 
     // params already pushed slug? No, let's check.
     // The previous code had `params.push(slug)` BEFORE `sql +=`.
@@ -338,8 +399,8 @@ async function updateCampaign(slug, updates) {
 async function publishCampaign(slug, shouldPublish, userId = 0) {
     const status = shouldPublish ? 'active' : 'draft';
     const sql = shouldPublish
-        ? `UPDATE EVENT_t_campaign SET status = ?, published_at = NOW() WHERE slug = ?`
-        : `UPDATE EVENT_t_campaign SET status = ?, published_at = NULL WHERE slug = ?`;
+        ? `UPDATE event_t_campaign SET status = ?, published_at = NOW() WHERE slug = ?`
+        : `UPDATE event_t_campaign SET status = ?, published_at = NULL WHERE slug = ?`;
 
     await dbQueryHots(sql, [status, slug]);
 
@@ -361,8 +422,19 @@ async function publishCampaign(slug, shouldPublish, userId = 0) {
  * @returns {Promise<boolean>} Success (true if deleted, false if not found)
  */
 async function deleteCampaign(slug) {
-    const sql = `DELETE FROM EVENT_t_campaign WHERE slug = ?`;
-    const result = await dbQueryHots(sql, [slug]);
+    const campaignId = await getCampaignIdBySlug(slug);
+    if (!campaignId) return false;
+
+    // Delete associated items first to satisfy foreign keys
+    await dbQueryHots(`DELETE FROM EVENT_r_campaign_admin WHERE campaign_id = ?`, [campaignId]);
+    await dbQueryHots(`DELETE FROM EVENT_m_pool_item WHERE pool_id IN (SELECT pool_id FROM EVENT_m_pool WHERE campaign_id = ?)`, [campaignId]);
+    await dbQueryHots(`DELETE FROM event_t_winner WHERE campaign_id = ?`, [campaignId]);
+    await dbQueryHots(`DELETE FROM EVENT_m_pool WHERE campaign_id = ?`, [campaignId]);
+    await dbQueryHots(`DELETE FROM event_t_submission WHERE campaign_id = ?`, [campaignId]);
+    await dbQueryHots(`DELETE FROM event_t_log WHERE campaign_id = ?`, [campaignId]);
+
+    const sql = `DELETE FROM event_t_campaign WHERE campaign_id = ?`;
+    const result = await dbQueryHots(sql, [campaignId]);
     return result.affectedRows > 0;
 }
 
@@ -376,7 +448,7 @@ async function getPublicCampaign(slug) {
             slug, name, description, 
             theme_config, block_schema, 
             published_at 
-        FROM EVENT_t_campaign 
+        FROM event_t_campaign 
         WHERE slug = ? AND status = 'active' AND published_at IS NOT NULL
     `;
 
@@ -407,7 +479,7 @@ async function getSubmissionsByCampaign(slug, filters = {}) {
     if (!campaignId) return { submissions: [], total: 0 };
 
     // Count total
-    let countSql = `SELECT COUNT(*) as total FROM EVENT_t_submission WHERE campaign_id = ?`;
+    let countSql = `SELECT COUNT(*) as total FROM event_t_submission WHERE campaign_id = ?`;
     const countParams = [campaignId];
 
     if (filters.status) {
@@ -440,7 +512,7 @@ async function getSubmissionsByCampaign(slug, filters = {}) {
             submitted_at,
             updated_by,
             updated_at
-        FROM EVENT_t_submission
+        FROM event_t_submission
         WHERE campaign_id = ?
     `;
     const params = [campaignId];
@@ -492,7 +564,7 @@ async function getSubmissionStats(slug) {
             SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
             SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
             SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected
-        FROM EVENT_t_submission
+        FROM event_t_submission
         WHERE campaign_id = ?
     `;
     const result = await dbQueryHots(sql, [campaignId]);
@@ -525,7 +597,7 @@ async function getSubmissionsForExport(slug) {
             rejection_reason,
             ip_address,
             submitted_at
-        FROM EVENT_t_submission
+        FROM event_t_submission
         WHERE campaign_id = ?
         ORDER BY submitted_at DESC
     `;
@@ -571,7 +643,7 @@ async function getPoolsByCampaign(slug) {
             p.type,
             p.config,
             (SELECT COUNT(*) FROM EVENT_m_pool_item WHERE pool_id = p.pool_id) as total_items,
-            (SELECT COUNT(*) FROM EVENT_t_winner WHERE pool_id = p.pool_id) as used_items,
+            (SELECT COUNT(*) FROM event_t_winner WHERE pool_id = p.pool_id) as used_items,
             (SELECT COUNT(*) FROM EVENT_m_pool_item WHERE pool_id = p.pool_id AND is_used = 0) as available_items
         FROM EVENT_m_pool p
         WHERE p.campaign_id = ?
@@ -946,18 +1018,30 @@ async function addPoolItems(poolId, items) {
         return { count: 0 };
     }
 
-    // Bulk insert
-    const values = items.map(val => [poolId, val, 0]); // is_used = 0
+    // Chunk size: 2000 items per query (balance between speed and safety)
+    const chunkSize = 2000;
+    let totalAdded = 0;
 
-    await dbQueryHots(
-        `INSERT INTO EVENT_m_pool_item (pool_id, value, is_used) VALUES ?`,
-        [values]
-    );
+    console.log(`[EventEngineService] Starting bulk import for pool ${poolId}: ${items.length} items`);
+
+    for (let i = 0; i < items.length; i += chunkSize) {
+        const chunk = items.slice(i, i + chunkSize);
+        const values = chunk.map(val => [poolId, val, 0]); // is_used = 0
+
+        // Increase timeout to 60s for bulk inserts
+        await dbQueryHots(
+            `INSERT INTO EVENT_m_pool_item (pool_id, value, is_used) VALUES ?`,
+            [values],
+            60000
+        );
+        totalAdded += chunk.length;
+        if (i % 10000 === 0 && i > 0) console.log(`[EventEngineService] Progress: ${i}/${items.length} items...`);
+    }
 
     // Broadcast refresh
     const pool = await getPoolById(poolId);
     if (pool) {
-        const slugRes = await dbQueryHots(`SELECT slug FROM EVENT_t_campaign WHERE campaign_id = ?`, [pool.campaign_id]);
+        const slugRes = await dbQueryHots(`SELECT slug FROM event_t_campaign WHERE campaign_id = ?`, [pool.campaign_id], 5000);
         const slug = slugRes[0]?.slug;
         if (slug) sseManager.broadcast('pools_changed', { slug });
     }
@@ -980,7 +1064,7 @@ async function importPoolItems(poolId, csvContent) {
     // Check Header (Optional, but good for validation)
     // If first line is "code" or "value", skip it.
     let startIndex = 0;
-    if (lines.length > 0 && /^(code|value|item|serial)/i.test(lines[0].trim())) {
+    if (lines.length > 0 && /^(code|value|item|serial|coupon)/i.test(lines[0].trim())) {
         startIndex = 1;
     }
 
@@ -1026,7 +1110,7 @@ async function getDailySubmissionStats(slug, days = 30) {
         SELECT 
             DATE_FORMAT(submitted_at, '%Y-%m-%d') as date,
             COUNT(*) as count
-        FROM EVENT_t_submission
+        FROM event_t_submission
         WHERE campaign_id = ? 
           AND submitted_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
         GROUP BY DATE_FORMAT(submitted_at, '%Y-%m-%d')
@@ -1056,7 +1140,7 @@ async function getWinnersByCampaign(slug) {
             w.draw_strategy,
             w.submission_id 
             -- (Join with submission if needed, but for now we just show IDs or raw values)
-        FROM EVENT_t_winner w
+        FROM event_t_winner w
         JOIN EVENT_m_pool p ON w.pool_id = p.pool_id
         JOIN EVENT_m_pool_item pi ON w.item_id = pi.item_id
         WHERE w.campaign_id = ?
@@ -1091,10 +1175,10 @@ async function getWinnersForExport(slug) {
             s.receipt_codes,
             s.ip_address,
             s.submitted_at
-        FROM EVENT_t_winner w
+        FROM event_t_winner w
         JOIN EVENT_m_pool p ON w.pool_id = p.pool_id
         JOIN EVENT_m_pool_item pi ON w.item_id = pi.item_id
-        LEFT JOIN EVENT_t_submission s ON w.submission_id = s.submission_id
+        LEFT JOIN event_t_submission s ON w.submission_id = s.submission_id
         WHERE w.campaign_id = ?
         ORDER BY w.drawn_at DESC
     `;
@@ -1129,7 +1213,7 @@ async function updateSubmissionStatus(submissionId, status, rejectionReason = nu
 
     // 2. Update DB
     const sql = `
-        UPDATE EVENT_t_submission
+        UPDATE event_t_submission
         SET 
             status = ?,
             rejection_reason = ?,
@@ -1161,7 +1245,7 @@ async function updateSubmissionStatus(submissionId, status, rejectionReason = nu
 
     // Audit Log
     // Get campaign_id first
-    const [subRows] = await dbHots.promise().query("SELECT campaign_id FROM EVENT_t_submission WHERE submission_id = ?", [submissionId]);
+    const [subRows] = await dbHots.promise().query("SELECT campaign_id FROM event_t_submission WHERE submission_id = ?", [submissionId]);
     if (subRows.length > 0) {
         await logEventAction({
             campaignId: subRows[0].campaign_id,
@@ -1256,7 +1340,7 @@ async function drawWinners(poolId, count, strategy = 'RANDOM', drawnByUserId = 0
         ]);
 
         await connection.query(
-            `INSERT INTO EVENT_t_winner (campaign_id, pool_id, item_id, submission_id, draw_strategy, claimed) 
+            `INSERT INTO event_t_winner (campaign_id, pool_id, item_id, submission_id, draw_strategy, claimed) 
              VALUES ?`,
             [winnerValues]
         );
@@ -1311,7 +1395,7 @@ async function getAuditLogs(slug, filters = {}) {
             u.firstname,
             u.lastname,
             u.email
-        FROM EVENT_t_log l
+        FROM event_t_log l
         LEFT JOIN user u ON l.user_id = u.user_id
         WHERE l.campaign_id = ?
     `;
@@ -1361,7 +1445,7 @@ async function submitEntry(slug, { participant_name, participant_contact, receip
 
     // 3. Insert
     const sql = `
-        INSERT INTO EVENT_t_submission 
+        INSERT INTO event_t_submission 
         (campaign_id, participant_name, participant_contact, receipt_codes, extra_data, status, submitted_at)
         VALUES (?, ?, ?, ?, ?, 'pending', NOW())
     `;
@@ -1438,12 +1522,12 @@ async function submitEntry(slug, { participant_name, participant_contact, receip
             ]);
 
             await dbQueryHots(
-                `INSERT INTO EVENT_t_winner (campaign_id, pool_id, item_id, submission_id, draw_strategy, claimed) VALUES ?`,
+                `INSERT INTO event_t_winner (campaign_id, pool_id, item_id, submission_id, draw_strategy, claimed) VALUES ?`,
                 [winnerValues]
             );
 
             // C. Auto-Approve Submission
-            await dbQueryHots(`UPDATE EVENT_t_submission SET status = 'approved' WHERE submission_id = ?`, [newSubmissionId]);
+            await dbQueryHots(`UPDATE event_t_submission SET status = 'approved' WHERE submission_id = ?`, [newSubmissionId]);
 
             // Broadcast Pool Stats Update
             sseManager.broadcast('pools_changed', { slug: slug });
@@ -1465,7 +1549,7 @@ async function deletePool(poolId) {
     if (!pool) return false;
 
     // Fetch slug for broadcast BEFORE deleting
-    const slugRes = await dbQueryHots(`SELECT slug FROM EVENT_t_campaign WHERE campaign_id = ?`, [pool.campaign_id]);
+    const slugRes = await dbQueryHots(`SELECT slug FROM event_t_campaign WHERE campaign_id = ?`, [pool.campaign_id]);
     const slug = slugRes[0]?.slug;
 
     await dbQueryHots(`DELETE FROM EVENT_m_pool WHERE pool_id = ?`, [poolId]);
@@ -1503,6 +1587,8 @@ module.exports = {
     updateSubmissionStatus,
     getDailySubmissionStats,
     getPublicCampaign,
+    getCampaignMedia,
+    uploadCampaignMedia,
     publishCampaign,
     submitEntry,
 
@@ -1543,7 +1629,7 @@ async function checkCoupon(slug, poolId, rawCode, isEncrypted = false) {
 
     // 1. Resolve campaign_id from slug
     const [campaign] = await dbQueryHots(
-        `SELECT campaign_id FROM EVENT_t_campaign WHERE slug = ? LIMIT 1`,
+        `SELECT campaign_id FROM event_t_campaign WHERE slug = ? LIMIT 1`,
         [slug]
     );
     if (!campaign) {

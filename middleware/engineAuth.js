@@ -24,8 +24,6 @@ const engineAuth = {
         }
 
         if (!token) {
-            // No token provided. req.user remains undefined.
-            // DO NOT error here. Let requireUser handle the error.
             return next();
         }
 
@@ -42,8 +40,6 @@ const engineAuth = {
                 decoded = jwt.verify(token, process.env.SECURITY_TOKEN_KEY_HT);
                 source = 'HOTS';
             } catch (e2) {
-                // Invalid token for both sources
-                // Ensure we don't set req.user
                 return next();
             }
         }

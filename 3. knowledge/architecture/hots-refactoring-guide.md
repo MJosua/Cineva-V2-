@@ -44,7 +44,7 @@ const STATUS_IDS = {
 };
 ```
 
-### Entity Types (For `t_file_upload`)
+### Entity Types (For `t_ticket_file`)
 ```javascript
 const ENTITY_TYPES = {
     TICKET: 'ticket',

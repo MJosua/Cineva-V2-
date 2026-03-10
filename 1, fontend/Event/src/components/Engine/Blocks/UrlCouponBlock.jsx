@@ -1,13 +1,14 @@
 import {
     Box, VStack, HStack, Heading, Text, Spinner, Button, Icon,
     useToast, useDisclosure, FormControl, FormLabel, Input, Textarea, Select,
-    Image, IconButton, Progress, Badge,
+    Image, IconButton, Progress, Badge, Checkbox,
     Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton
 } from "@chakra-ui/react";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MdCheckCircle, MdCancel, MdWarning, MdArrowForward, MdCloudUpload, MdDelete } from "react-icons/md";
 import { submitEntry } from "../../../services/eventEngineApi";
+import { resolveMediaUrl } from "../../../utils/mediaHelper";
 
 // ── Status UI configs ───────────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -32,12 +33,12 @@ const STATUS_CONFIG = {
 };
 
 // ── API: check coupon status ────────────────────────────────────────────────
-async function checkCouponStatus(eventSlug, couponCode, poolId) {
+async function checkCouponStatus(eventSlug, couponCode, poolId, useEncryption = false) {
     try {
         const { getApiBase } = await import("../../../services/eventEngineApi");
         const base = getApiBase ? getApiBase() : "/api";
         // Append ?pool=poolId when a pool is configured
-        const poolQuery = poolId ? `?pool=${poolId}&encrypted=true` : '?encrypted=true';
+        const poolQuery = poolId ? `?pool=${poolId}&encrypted=${useEncryption}` : `?encrypted=${useEncryption}`;
         const res = await fetch(`${base}/event-engine/public/campaigns/${eventSlug}/check-coupon/${encodeURIComponent(couponCode)}${poolQuery}`, {
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -73,10 +74,25 @@ export default function UrlCouponBlock({
     onUsedAction = "",
     onInvalidAction = "",
     poolId = null,
+    useEncryption = true,
+    buttonImageUrl = "",
     theme,
     eventSlug: propEventSlug,
     eventId,
-    isEditor = false,   // true when rendered inside the admin visual editor
+    isEditor = false,
+    // Styling props
+    bgColor = "transparent",
+    containerBgColor = "transparent",
+    backgroundImage = null,
+    padding = "8",
+    margin = "0",
+    titleColor = null,
+    textColor = null,
+    labelColor = null,
+    labelFontFamily = "inherit",
+    inputBgColor = "white",
+    inputTextColor = "inherit",
+    customCss = ""
 }) {
     const { slug: routeSlug, "*": wildcard } = useParams();
     const navigate = useNavigate();
@@ -137,7 +153,7 @@ export default function UrlCouponBlock({
                 return;
             }
             setPhase("loading");
-            const result = await checkCouponStatus(eventSlug, couponCode, poolId);
+            const result = await checkCouponStatus(eventSlug, couponCode, poolId, useEncryption);
             if (!mounted) return;
 
             const s = (result?.status || "INVALID").toUpperCase();
@@ -181,7 +197,7 @@ export default function UrlCouponBlock({
             participant_name: formData.name || "",
             participant_contact: formData.email || formData.phone || "",
             receipt_codes: [couponCode],
-            is_encrypted: true,
+            is_encrypted: useEncryption,
             extra_data: { ...formData, images: uploadedImages.map(i => i.name) }
         };
         try {
@@ -212,20 +228,21 @@ export default function UrlCouponBlock({
         else navigate(`/${eventSlug}`);
     };
 
-    const textColor = theme?.color || "#1a1a1a";
+    const finalLabelColor = labelColor || theme?.color || "#1a1a1a";
+    const finalTitleColor = titleColor || theme?.color || "#1a1a1a";
+    const finalSubColor = textColor || theme?.color || "gray.600";
+    const finalFontFamily = labelFontFamily === "inter" ? "inherit" : labelFontFamily;
 
-    // ── Editor action badge: replaces buttons in editor mode ─────────────────
-    const ActionBadge = ({ label, action, colorScheme = "gray" }) => (
-        <Badge
-            colorScheme={colorScheme}
-            px={3} py={1} borderRadius="full" fontSize="xs"
-            display="inline-flex" alignItems="center" gap={1}
-        >
-            <Icon as={MdArrowForward} />
-            {label}{action ? `: ${action}` : ""}
-        </Badge>
-    );
-
+    let customStyles = {};
+    try {
+        if (customCss && typeof customCss === 'string') {
+            customStyles = JSON.parse(customCss);
+        } else if (typeof customCss === 'object' && customCss !== null) {
+            customStyles = customCss;
+        }
+    } catch (e) {
+        console.warn("Invalid CSS JSON in UrlCouponBlock:", customCss);
+    }
 
     if (phase === "loading") {
         return (
@@ -240,144 +257,224 @@ export default function UrlCouponBlock({
         return (
             <Box textAlign="center" py={16} px={8}>
                 <Icon as={MdCheckCircle} boxSize={16} color="green.400" mb={4} />
-                <Heading size="lg" mb={2} color={textColor}>{successMessage}</Heading>
-                <Text color={textColor} opacity={0.7}>You will be redirected shortly.</Text>
+                <Heading size="lg" mb={2} color={finalTitleColor}>{successMessage}</Heading>
+                <Text color={finalSubColor} opacity={0.7}>You will be redirected shortly.</Text>
             </Box>
         );
     }
 
-    if (phase === "used") {
-        const cfg = STATUS_CONFIG.ALREADY_USED;
-        return (
-            <Box mx="auto" maxW="480px" my={8} px={6} py={10} borderRadius="2xl" border="1.5px solid" borderColor={cfg.border} bg={cfg.bg} textAlign="center">
-                <Icon as={cfg.icon} boxSize={14} color={cfg.color} mb={4} />
-                <Heading size="md" mb={2} color={cfg.color}>{usedTitle}</Heading>
-                <Text color="gray.600" mb={6}>{couponInfo?.message || usedMessage}</Text>
-                <Button
-                    size="lg"
-                    colorScheme="orange"
-                    rightIcon={<Icon as={MdArrowForward} />}
-                    onClick={() => isEditor
-                        ? showEditorAction("Navigate To", `This button will navigate to: ${onUsedAction || "(no redirect configured)"}`)
-                        : handleNav(onUsedAction)
-                    }
-                >
-                    {usedNavLabel}
-                </Button>
-            </Box>
-        );
-    }
-
-    if (phase === "invalid") {
-        const cfg = STATUS_CONFIG.INVALID;
-        return (
-            <Box mx="auto" maxW="480px" my={8} px={6} py={10} borderRadius="2xl" border="1.5px solid" borderColor={cfg.border} bg={cfg.bg} textAlign="center">
-                <Icon as={cfg.icon} boxSize={14} color={cfg.color} mb={4} />
-                <Heading size="md" mb={2} color={cfg.color}>{invalidTitle}</Heading>
-                <Text color="gray.600" mb={6}>{couponInfo?.message || invalidMessage}</Text>
-                <Button
-                    colorScheme="red"
-                    variant="outline"
-                    onClick={() => isEditor
-                        ? showEditorAction("Navigate To", `Go Back button will navigate to: ${onInvalidAction || "(no redirect configured)"}`)
-                        : handleNav(onInvalidAction)
-                    }
-                >
-                    Go Back
-                </Button>
-            </Box>
-        );
-    }
-
-    // ── AVAILABLE: show credential form ──────────────────────────────────────
-    return (
-        <Box bg="white" p={{ base: 6, md: 10 }} borderRadius="2xl" shadow="xl" maxW="500px" mx="auto" my={8}>
-            {/* Code confirmation badge */}
-            <HStack mb={4} justify="center">
-                <Icon as={MdCheckCircle} color="green.400" />
-                <Badge colorScheme="green" px={3} py={1} borderRadius="full" fontSize="sm" fontFamily="mono">
-                    {isEditor ? "● PREVIEW" : (couponInfo?.item?.value || couponCode)}
-                </Badge>
-                {isEditor && (
-                    <Badge colorScheme="purple" px={2} py={1} borderRadius="full" fontSize="xs">editor mode</Badge>
-                )}
-            </HStack>
-
-            <VStack spacing={5} align="stretch">
-                <Box textAlign="center">
-                    <Heading size="md" mb={1}>{title}</Heading>
-                    {subtitle && <Text color="gray.500" fontSize="sm">{subtitle}</Text>}
+    const renderContent = () => {
+        if (phase === "used") {
+            const cfg = STATUS_CONFIG.ALREADY_USED;
+            return (
+                <Box bg={cfg.bg} p={10} borderRadius="2xl" border="1.5px solid" borderColor={cfg.border} textAlign="center" maxW="480px" mx="auto">
+                    <Icon as={cfg.icon} boxSize={14} color={cfg.color} mb={4} />
+                    <Heading size="md" mb={2} color={cfg.color}>{usedTitle}</Heading>
+                    <Text color="gray.600" mb={6}>{couponInfo?.message || usedMessage}</Text>
+                    <Button
+                        size="lg"
+                        colorScheme="orange"
+                        rightIcon={<Icon as={MdArrowForward} />}
+                        onClick={() => isEditor
+                            ? showEditorAction("Navigate To", `This button will navigate to: ${onUsedAction || "(no redirect configured)"}`)
+                            : handleNav(onUsedAction)
+                        }
+                    >
+                        {usedNavLabel}
+                    </Button>
                 </Box>
+            );
+        }
 
-                {fields.map((field, i) => (
-                    <FormControl key={i}>
-                        <FormLabel fontSize="sm">{field.label}</FormLabel>
-                        {(field.type === "text" || !field.type) && (
-                            <Input value={formData[field.name] || ""} onChange={e => handleChange(field.name, e.target.value)} placeholder={field.placeholder || ""} />
-                        )}
-                        {field.type === "email" && (
-                            <Input type="email" value={formData[field.name] || ""} onChange={e => handleChange(field.name, e.target.value)} placeholder="your@email.com" />
-                        )}
-                        {field.type === "phone" && (
-                            <Input type="tel" value={formData[field.name] || ""} onChange={e => handleChange(field.name, e.target.value)} placeholder="0812-345-6789" />
-                        )}
-                        {field.type === "textarea" && (
-                            <Textarea value={formData[field.name] || ""} onChange={e => handleChange(field.name, e.target.value)} rows={3} />
-                        )}
-                        {field.type === 'date' && (
-                            <Input
-                                type="date"
-                                value={formData[field.name] || ""}
-                                onChange={(e) => handleChange(field.name, e.target.value)}
-                            />
-                        )}
-                        {field.type === "select" && (
-                            <Select value={formData[field.name] || ""} onChange={e => handleChange(field.name, e.target.value)}>
-                                <option value="">Select…</option>
-                                {(field.options || []).map((opt, j) => <option key={j} value={opt}>{opt}</option>)}
-                            </Select>
-                        )}
-                        {field.type === "image" && (
-                            <Box>
-                                <input type="file" accept="image/jpeg,image/png,image/webp" multiple ref={fileInputRef} style={{ display: "none" }} onChange={handleImageUpload} />
-                                <Button leftIcon={<MdCloudUpload />} variant="outline" w="100%" h="70px" borderStyle="dashed" onClick={() => fileInputRef.current?.click()}>
-                                    Upload Image
-                                </Button>
-                                {uploadProgress > 0 && <Progress value={uploadProgress} size="xs" colorScheme="green" mt={1} />}
-                                {uploadedImages.length > 0 && (
-                                    <HStack mt={2} flexWrap="wrap" spacing={2}>
-                                        {uploadedImages.map(img => (
-                                            <Box key={img.id} position="relative">
-                                                <Image src={img.preview} w="72px" h="72px" objectFit="cover" borderRadius="md" />
-                                                <IconButton icon={<MdDelete />} size="xs" colorScheme="red" position="absolute" top={-1} right={-1} borderRadius="full" onClick={() => removeImage(img.id)} aria-label="Remove" />
-                                            </Box>
-                                        ))}
-                                    </HStack>
-                                )}
-                            </Box>
-                        )}
-                    </FormControl>
-                ))}
+        if (phase === "invalid") {
+            const cfg = STATUS_CONFIG.INVALID;
+            return (
+                <Box bg={cfg.bg} p={10} borderRadius="2xl" border="1.5px solid" borderColor={cfg.border} textAlign="center" maxW="480px" mx="auto">
+                    <Icon as={cfg.icon} boxSize={14} color={cfg.color} mb={4} />
+                    <Heading size="md" mb={2} color={cfg.color}>{invalidTitle}</Heading>
+                    <Text color="gray.600" mb={6}>{couponInfo?.message || invalidMessage}</Text>
+                    <Button
+                        colorScheme="red"
+                        variant="outline"
+                        onClick={() => isEditor
+                            ? showEditorAction("Navigate To", `Go Back button will navigate to: ${onInvalidAction || "(no redirect configured)"}`)
+                            : handleNav(onInvalidAction)
+                        }
+                    >
+                        Go Back
+                    </Button>
+                </Box>
+            );
+        }
 
-                {fields.length === 0 && (
-                    <Text color="gray.400" textAlign="center" fontSize="sm">No fields configured in the builder yet.</Text>
-                )}
+        // AVAILABLE
+        return (
+            <Box bg={bgColor === "transparent" ? "white" : bgColor} p={{ base: 6, md: 10 }} borderRadius="2xl" shadow="xl" maxW="500px" mx="auto">
+                <HStack mb={4} justify="center">
+                    <Icon as={MdCheckCircle} color="green.400" />
+                    <Badge colorScheme="green" px={3} py={1} borderRadius="full" fontSize="sm" fontFamily="mono">
+                        {isEditor ? "● PREVIEW" : (couponInfo?.item?.value || couponCode)}
+                    </Badge>
+                    {isEditor && (
+                        <Badge colorScheme="purple" px={2} py={1} borderRadius="full" fontSize="xs">editor mode</Badge>
+                    )}
+                </HStack>
 
-                <Button
-                    size="lg"
-                    bg={buttonColor}
-                    color={buttonTextColor}
-                    onClick={() => isEditor
-                        ? showEditorAction("Submit Form", `Submits all credential fields, then navigates to: ${onSuccessAction || "(no redirect configured)"}`)
-                        : handleSubmit()
-                    }
-                    isLoading={!isEditor && isSubmitting}
-                    _hover={{ opacity: 0.88 }}
-                    borderRadius="xl"
-                >
-                    {buttonText}
-                </Button>
-            </VStack>
+                <VStack spacing={5} align="stretch">
+                    <Box textAlign="center">
+                        <Heading size="md" mb={1} color={finalTitleColor}>{title}</Heading>
+                        {subtitle && <Text color={finalSubColor} fontSize="sm">{subtitle}</Text>}
+                    </Box>
+
+                    {fields.map((field, i) => (
+                        <FormControl key={i}>
+
+                            {(field.type === "text" || !field.type) && (
+                                <>
+                                    <FormLabel color={finalLabelColor} fontFamily={finalFontFamily}>{field.label}</FormLabel>
+                                    <Input value={formData[field.name] || ""} onChange={e => handleChange(field.name, e.target.value)} placeholder={field.placeholder || ""} bg={inputBgColor} color={inputTextColor} />
+                                </>
+
+                            )}
+                            {field.type === "email" && (
+
+                                <>
+                                    <FormLabel color={finalLabelColor} fontFamily={finalFontFamily}>{field.label}</FormLabel>
+                                    <Input type="email" value={formData[field.name] || ""} onChange={e => handleChange(field.name, e.target.value)} placeholder={field.placeholder || "your@email.com"} bg={inputBgColor} color={inputTextColor} />
+
+                                </>
+                            )}
+                            {field.type === "phone" && (
+
+                                <>
+                                    <FormLabel color={finalLabelColor} fontFamily={finalFontFamily}>{field.label}</FormLabel>
+                                    <Input type="tel" value={formData[field.name] || ""} onChange={e => handleChange(field.name, e.target.value)} placeholder={field.placeholder || "0812-345-6789"} bg={inputBgColor} color={inputTextColor} />
+
+                                </>
+
+                            )}
+                            {field.type === "textarea" && (
+
+                                <>
+                                    <FormLabel color={finalLabelColor} fontFamily={finalFontFamily}>{field.label}</FormLabel>
+                                    <Textarea value={formData[field.name] || ""} onChange={e => handleChange(field.name, e.target.value)} placeholder={field.placeholder || ""} rows={3} bg={inputBgColor} color={inputTextColor} />
+
+                                </>
+
+                            )}
+                            {field.type === 'date' && (
+
+                                <>
+                                    <FormLabel color={finalLabelColor} fontFamily={finalFontFamily}>{field.label}</FormLabel>
+                                    <Input type="date" value={formData[field.name] || ""} onChange={(e) => handleChange(field.name, e.target.value)} bg={inputBgColor} color={inputTextColor} />
+
+                                </>
+
+                            )}
+                            {field.type === 'checkbox' && (
+                                <HStack align="flex-start" spacing={3}>
+                                    <Checkbox isChecked={!!formData[field.name]} onChange={(e) => handleChange(field.name, e.target.checked)} mt={1} colorScheme="brand" />
+                                    <FormLabel
+                                        fontSize="sm"
+                                        fontFamily={finalFontFamily}
+                                        cursor="pointer"
+                                        onClick={() => handleChange(field.name, !formData[field.name])}
+                                        m={0}
+                                    >
+                                        <Box
+                                            as="span"
+                                            className="wysiwyg-label"
+                                            display="inline-block"
+                                            sx={{
+                                                'p': { m: 0 },
+                                                'span[style*="color"]': { color: 'inherit' },
+                                            }}
+                                            dangerouslySetInnerHTML={{ __html: field.checkboxText }}
+                                        />
+                                    </FormLabel>
+                                </HStack>
+                            )}
+                            {field.type === "select" && (
+
+                                <>
+                                    <FormLabel color={finalLabelColor} fontFamily={finalFontFamily}>{field.label}</FormLabel>
+                                    <Select value={formData[field.name] || ""} onChange={e => handleChange(field.name, e.target.value)} bg={inputBgColor} color={inputTextColor}>
+                                        <option value="">{field.placeholder || "Select..."}</option>
+                                        {(field.options || []).map((opt, j) => <option key={j} value={opt}>{opt}</option>)}
+                                    </Select>
+                                </>
+
+
+
+                            )}
+                            {field.type === "image" && (
+                                <Box>
+                                    <FormLabel color={finalLabelColor} fontFamily={finalFontFamily}>{field.label}</FormLabel>
+
+                                    <input type="file" accept="image/jpeg,image/png,image/webp" multiple ref={fileInputRef} style={{ display: "none" }} onChange={handleImageUpload} />
+                                    <Button leftIcon={<MdCloudUpload />} variant="outline" w="100%" h="70px" borderStyle="dashed" onClick={() => fileInputRef.current?.click()} bg={inputBgColor} color={inputTextColor}>Upload Image</Button>
+                                    {uploadProgress > 0 && <Progress value={uploadProgress} size="xs" colorScheme="green" mt={1} />}
+                                    {uploadedImages.length > 0 && (
+                                        <HStack mt={2} flexWrap="wrap" spacing={2}>
+                                            {uploadedImages.map(img => (
+                                                <Box key={img.id} position="relative">
+                                                    <Image src={img.preview} w="72px" h="72px" objectFit="cover" borderRadius="md" />
+                                                    <IconButton icon={<MdDelete />} size="xs" colorScheme="red" position="absolute" top={-1} right={-1} borderRadius="full" onClick={() => removeImage(img.id)} aria-label="Remove" />
+                                                </Box>
+                                            ))}
+                                        </HStack>
+                                    )}
+                                </Box>
+                            )}
+                        </FormControl>
+                    ))}
+
+                    {fields.length === 0 && (
+                        <Text color="gray.400" textAlign="center" fontSize="sm">No fields configured in the builder yet.</Text>
+                    )}
+
+                    {buttonImageUrl ? (
+                        <Box
+                            as="button"
+                            onClick={() => isEditor
+                                ? showEditorAction("Submit Form", `Submits all credential fields, then navigates to: ${onSuccessAction || "(no redirect configured)"}`)
+                                : handleSubmit()
+                            }
+                            disabled={!isEditor && isSubmitting}
+                            _hover={{ transform: "scale(1.02)" }}
+                            _active={{ transform: "scale(0.98)" }}
+                            transition="all 0.2s" mx="auto" display="block"
+                        >
+                            <Image src={resolveMediaUrl(buttonImageUrl)} alt={buttonText} maxH="80px" />
+                        </Box>
+                    ) : (
+                        <Button
+                            size="lg" bg={buttonColor} color={buttonTextColor}
+                            onClick={() => isEditor
+                                ? showEditorAction("Submit Form", `Submits all credential fields, then navigates to: ${onSuccessAction || "(no redirect configured)"}`)
+                                : handleSubmit()
+                            }
+                            isLoading={!isEditor && isSubmitting}
+                            _hover={{ opacity: 0.88 }} borderRadius="xl"
+                        >
+                            {buttonText}
+                        </Button>
+                    )}
+                </VStack>
+            </Box>
+        );
+    };
+
+    return (
+        <Box
+            minH="100vh" w="100%" bg={containerBgColor}
+            backgroundImage={backgroundImage ? `url(${resolveMediaUrl(backgroundImage)})` : "none"}
+            backgroundSize="cover" backgroundPosition="center"
+            display="flex" flexDirection="column" justifyContent="center" alignItems="center"
+            scrollSnapAlign="start" m={margin} p={padding} sx={customStyles}
+        >
+            {renderContent()}
+
             {/* Editor action info modal */}
             <Modal isOpen={isActionModalOpen} onClose={closeActionModal} size="sm" isCentered>
                 <ModalOverlay />

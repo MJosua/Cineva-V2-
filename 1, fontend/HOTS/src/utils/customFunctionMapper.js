@@ -110,10 +110,10 @@ const customFunctionMapper = {
                     }
                 });
 
-                // If document was generated successfully, save to t_file_upload
+                // If document was generated successfully, save to t_ticket_file
                 if (executionResult?.success && executionResult?.file_path && functionData.type === 'document_generation') {
                     const docQuery = `
-                        INSERT INTO t_file_upload (
+                        INSERT INTO t_ticket_file (
                             ticket_id, entity_type, entity_id, file_name, file_path,
                             file_type, upload_date, uploaded_by
                         ) VALUES (?, 'generated_document', ?, ?, ?, 'document', NOW(), ?)

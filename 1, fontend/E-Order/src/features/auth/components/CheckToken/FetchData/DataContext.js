@@ -1,5 +1,5 @@
 ﻿import { createContext, useContext, useEffect, useState } from "react";
-import { getBannerData, getContainers, getFlavours, getOtherParties, getPorts, getShipToParties, getStuffingDate, getStuffingWeek, getTOP } from "../../../../../action/reqAction";
+import { getBannerData, getFlavours, getOtherParties, getPorts, getShipToParties, getStuffingDate, getStuffingWeek, getTOP } from "../../../../../action/reqAction";
 import { useToast } from "@chakra-ui/react";
 
 const DataContext = createContext();
@@ -40,7 +40,6 @@ export const DataProvider = ({
                     getFlavours(latestToken),
                     getPorts(latestToken),
                     getShipToParties(latestToken),
-                    getContainers(latestToken),
                     getOtherParties(latestToken),
                     getStuffingWeek(latestToken),
                     getStuffingDate(latestToken),
@@ -52,7 +51,6 @@ export const DataProvider = ({
                     catalogRes,
                     portsRes,
                     shipToPartiesRes,
-                    containerRes,
                     ostpRes,
                     stuffingWeeksRes,
                     stuffingDateRes,
@@ -60,13 +58,15 @@ export const DataProvider = ({
                     topRes,
                 ] = results;
 
-                // Unified Catalog processing
+                // Unified Catalog processing (Products + Containers)
                 if (catalogRes.status === "fulfilled") {
-                    const allProducts = catalogRes.value.data;
-                    setFlavours(allProducts);
+                    const { products, containers } = catalogRes.value.data;
+                    setFlavours(products || []);
+                    setContainer(containers || []);
 
                     console.log("Unified Catalog fetched", {
-                        total: allProducts.length,
+                        products: (products || []).length,
+                        containers: (containers || []).length
                     });
                 }
 
@@ -78,11 +78,6 @@ export const DataProvider = ({
                 // Ship to parties
                 if (shipToPartiesRes.status === "fulfilled") {
                     setShipToParties(shipToPartiesRes.value.data);
-                }
-
-                // Containers
-                if (containerRes.status === "fulfilled") {
-                    setContainer(containerRes.value.data);
                 }
 
                 // OSTP

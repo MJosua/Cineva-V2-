@@ -4,7 +4,7 @@ import {
     Textarea, useToast
 } from '@chakra-ui/react';
 
- 
+
 import { useLocation } from "react-router-dom"
 
 import { useNavigate } from 'react-router-dom';
@@ -26,12 +26,12 @@ const ContactUsPage = () => {
         description: `Page of ${location.pathname} from Indofood`,
         canonical: `https://www.indofoodinternational.com/e-order${location.pathname}`,
         meta: {
-          charset: 'utf-8',
-          name: {
-            keywords: 'react,meta,document,html,tags'
-          }
+            charset: 'utf-8',
+            name: {
+                keywords: 'react,meta,document,html,tags'
+            }
         }
-      };
+    };
     let userToken = localStorage.getItem('tokek')
 
     const [image, setImage] = React.useState(null);
@@ -65,7 +65,6 @@ const ContactUsPage = () => {
             data.append('data', JSON.stringify({ title, feedback }));
 
 
-            // console.log("data", data)
 
             Axios.post(
                 API_URL + "/user/feedback/", data, {
@@ -117,7 +116,7 @@ const ContactUsPage = () => {
                     <div className="row">
                         <div className="col-6 col-sm-12"></div>
                         <div className="col-6 col-sm-12">
-                              <Sidebar />
+                            <Sidebar />
                         </div>
                     </div>
                 </div>
@@ -167,7 +166,7 @@ const ContactUsPage = () => {
 
                                         <div className="row px-5 mt-4">
 
-                                        <div className="col-12 col-md-2 text-md-end text-start ps-2 fw-bold">
+                                            <div className="col-12 col-md-2 text-md-end text-start ps-2 fw-bold">
                                                 Feedback
                                             </div>
 
@@ -186,10 +185,10 @@ const ContactUsPage = () => {
                                         </div>
 
                                         <div className="row px-5 mt-4 pb-2">
-                                        <div className="col-12 col-md-2 text-md-end text-start ps-2 fw-bold">
+                                            <div className="col-12 col-md-2 text-md-end text-start ps-2 fw-bold">
                                                 Image
                                                 <br></br>
-                                                <div style={{fontSize:"10px"}}>
+                                                <div style={{ fontSize: "10px" }}>
                                                     JPG / PNG only
                                                 </div>
                                             </div>
@@ -214,14 +213,14 @@ const ContactUsPage = () => {
                                                 <btn
                                                     className="btn btn-danger rounded-35 px-5 fw-bold pb-2"
                                                     onClick={onSubmit}>
-                                                    Send 
+                                                    Send
                                                 </btn>
                                             </div>
                                         </div>
 
                                     </div>
                                 </div>
-                                
+
                             </div>
 
                         </div>

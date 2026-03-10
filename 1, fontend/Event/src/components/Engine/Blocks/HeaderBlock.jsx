@@ -1,4 +1,5 @@
 import { Box, Flex, Image, HStack, Link as ChakraLink, Spacer } from "@chakra-ui/react";
+import { resolveMediaUrl } from "../../../utils/mediaHelper";
 
 export default function HeaderBlock({ logo, links = [], bgColor = "rgba(255,255,255,1)", textColor, fontSize = "16px", fontWeight = "500", customCss, theme }) {
     let customStyles = {};
@@ -25,7 +26,7 @@ export default function HeaderBlock({ logo, links = [], bgColor = "rgba(255,255,
             sx={customStyles}
         >
             <Flex align="center" maxW="1200px" mx="auto">
-                {logo && <Image src={logo} h="40px" alt="Logo" />}
+                {logo && <Image src={resolveMediaUrl(logo)} h="40px" alt="Logo" />}
                 <Spacer />
                 <HStack spacing={6}>
                     {links.map((link, i) => (

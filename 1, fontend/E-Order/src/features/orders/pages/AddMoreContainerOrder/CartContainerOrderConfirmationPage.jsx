@@ -305,7 +305,6 @@ const CartContainerOrderConfirmationPage = () => {
   const handleOrder = () => {
     setButtonLoading(true);
     let userToken = localStorage.getItem("tokek");
-    console.log("data", backendData)
     Axios.post(`${API_URL}/order/add_order`, backendData, {
       headers: {
         Authorization: `Bearer ${userToken}`,

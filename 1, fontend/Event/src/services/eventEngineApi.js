@@ -89,14 +89,19 @@ async function apiFetch(endpoint, options = {}) {
     }
 
     try {
+        const isFormData = options.body instanceof FormData;
+        const headers = {
+            ...authHeader,
+            ...options.headers
+        };
+        if (!isFormData && !headers['Content-Type']) {
+            headers['Content-Type'] = 'application/json';
+        }
+
         const response = await fetch(url, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...authHeader,
-                ...options.headers
-            },
-            credentials: 'include',
-            ...options
+            ...options,
+            headers,
+            credentials: 'include'
         });
 
         // ── 401 interception ─────────────────────────────────────────────────
@@ -155,6 +160,26 @@ export function getCampaigns() {
     }
 
     return apiFetch('/admin/campaigns').then(data => data.campaigns);
+}
+
+/**
+ * Get media assets for a campaign
+ * @param {string} slug 
+ */
+export function getCampaignMedia(slug) {
+    return apiFetch(`/admin/campaigns/${slug}/media`);
+}
+
+/**
+ * Upload media for a campaign
+ * @param {string} slug 
+ * @param {FormData} formData 
+ */
+export function uploadCampaignMedia(slug, formData) {
+    return apiFetch(`/admin/campaigns/${slug}/media/upload`, {
+        method: 'POST',
+        body: formData
+    });
 }
 
 /**

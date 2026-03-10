@@ -31,7 +31,7 @@ async function cleanup() {
         // We look for is_used = 0 and upload_date < 7 days ago
         const [rows] = await connection.execute(
             `SELECT upload_id, file_path, filename 
-             FROM t_temp_upload 
+             FROM t_ticket_file_temp 
              WHERE is_used = 0 
                AND upload_date < DATE_SUB(NOW(), INTERVAL 7 DAY)`
         );
@@ -54,7 +54,7 @@ async function cleanup() {
             }
 
             // Delete from database
-            await connection.execute('DELETE FROM t_temp_upload WHERE upload_id = ?', [row.upload_id]);
+            await connection.execute('DELETE FROM t_ticket_file_temp WHERE upload_id = ?', [row.upload_id]);
             console.log(`Deleted record from DB: ${row.upload_id}`);
         }
 

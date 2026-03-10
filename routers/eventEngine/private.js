@@ -64,6 +64,10 @@ router.post('/campaigns/:slug/publish', eventEngineController.setPublishStatus);
  */
 router.get('/campaigns/:slug/logs', eventEngineController.getAuditLogs);
 
+const { hotsTempUploader } = require('../../config/uploader');
+router.get('/campaigns/:slug/media', eventEngineController.getCampaignMedia);
+router.post('/campaigns/:slug/media/upload', hotsTempUploader().array('files'), eventEngineController.uploadCampaignMedia);
+
 // ============================================================================
 // SUBMISSIONS
 // ============================================================================
@@ -149,7 +153,7 @@ router.post('/pools/:id/items', eventEngineController.addPoolItems);
  * POST /pools/:id/items/import
  * Import items from CSV
  */
-router.post('/pools/:id/items/import', express.text({ type: ['text/csv', 'text/plain'], limit: '5mb' }), eventEngineController.importPoolItems);
+router.post('/pools/:id/items/import', express.text({ type: ['text/csv', 'text/plain'], limit: '25mb' }), eventEngineController.importPoolItems);
 
 // ============================================================================
 // DRAWING / WINNERS (Future/Phase 3 but included in original router)

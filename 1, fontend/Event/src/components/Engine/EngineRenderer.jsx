@@ -1,14 +1,17 @@
 import { Box } from "@chakra-ui/react";
 import { resolveComponent } from "../../components/Engine/Registry";
+import { resolveMediaUrl } from "../../utils/mediaHelper";
 
-export default function EngineRenderer({ eventData, blocksOverride, isEditor = false }) {
+export default function EngineRenderer({ eventData, blocksOverride, isEditor = false, onBlockChange }) {
     if (!eventData) return null;
 
     const config = eventData.theme_config || eventData.theme || {};
     const theme = {
         background: config.background || "#fff",
+        backgroundImage: config.backgroundImage ? `url(${resolveMediaUrl(config.backgroundImage)})` : "none",
         fontFamily: config.fontFamily || "Arial, sans-serif",
-        color: config.color || "white"
+        color: config.color || "white",
+        snappingEnabled: config.snappingEnabled === "true" || config.snappingEnabled === true
     };
 
     // Fallback to old blocks if pages architecture isn't present
@@ -22,7 +25,18 @@ export default function EngineRenderer({ eventData, blocksOverride, isEditor = f
     }
 
     return (
-        <Box minH="100vh" bg={theme.background} p={4} fontFamily={theme.fontFamily}>
+        <Box
+            h={theme.snappingEnabled ? "100vh" : "auto"}
+            minH="100vh"
+            overflowY={theme.snappingEnabled ? "scroll" : "auto"}
+            scrollSnapType={theme.snappingEnabled ? "y mandatory" : "none"}
+            bg={theme.background}
+            backgroundImage={theme.backgroundImage}
+            backgroundSize="cover"
+            backgroundPosition="center"
+            backgroundAttachment="fixed"
+            fontFamily={theme.fontFamily}
+        >
             {/* Dynamic Rendering Loop */}
             {blocks.map((block, index) => {
                 const Component = resolveComponent(block.type);
@@ -34,6 +48,7 @@ export default function EngineRenderer({ eventData, blocksOverride, isEditor = f
                         eventSlug={eventData.slug}
                         eventId={eventData.campaign_id}
                         isEditor={isEditor}
+                        onPropsChange={(updatedProps) => onBlockChange && onBlockChange(index, updatedProps)}
                     />
                 ) : null;
             })}

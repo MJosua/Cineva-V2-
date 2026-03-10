@@ -609,7 +609,25 @@ const setPublishStatus = asyncHandler(async (req, res) => {
     const userId = req.user?.id || 0;
     const campaign = await eventEngineService.publishCampaign(slug, publish, userId);
     res.json(createResponse(true, campaign));
-    res.json(createResponse(true, campaign));
+});
+
+const getCampaignMedia = asyncHandler(async (req, res) => {
+    const { slug } = req.params;
+    const media = await eventEngineService.getCampaignMedia(slug);
+    res.json(createResponse(true, media));
+});
+
+const uploadCampaignMedia = asyncHandler(async (req, res) => {
+    const { slug } = req.params;
+    const files = req.files || [];
+    const userId = req.user?.id || 0;
+
+    if (files.length === 0) {
+        return res.status(400).json(createResponse(false, null, { message: "No files uploaded" }));
+    }
+
+    const media = await eventEngineService.uploadCampaignMedia(slug, files, userId);
+    res.json(createResponse(true, media));
 });
 
 const getAuditLogs = asyncHandler(async (req, res) => {
@@ -668,6 +686,8 @@ module.exports = {
     deleteCampaign,
     getPublicCampaign,
     setPublishStatus,
+    getCampaignMedia,
+    uploadCampaignMedia,
     getAuditLogs,
 
     // Submissions

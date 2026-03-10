@@ -126,9 +126,6 @@ export const getStuffingDate = async (userToken) => {
 
 }
 
-export const getContainers = (userToken) => {
-    return apiGet("/order/container", userToken);
-}
 
 export const getBannerData = (userToken) => {
     return apiGet("/user/banner", userToken);

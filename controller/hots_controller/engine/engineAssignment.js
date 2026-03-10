@@ -579,7 +579,7 @@ module.exports = {
                 const placeholders = entityIds.map(() => '?').join(',');
                 const [files] = await dbHots.promise().query(
                     `SELECT upload_id as id, entity_id, original_name as name, file_path as url 
-                     FROM t_file_upload 
+                     FROM t_ticket_file 
                      WHERE entity_type = 'timeline_update' AND entity_id IN (${placeholders})`,
                     entityIds
                 );
@@ -625,9 +625,9 @@ module.exports = {
                 // Ensure proper path separator matching uploader.js
                 const filePath = `/files/hots/timeline/${file.filename}`;
 
-                // Insert into t_temp_upload
+                // Insert into t_ticket_file_temp
                 const [result] = await dbHots.promise().query(
-                    `INSERT INTO t_temp_upload (file_path, original_filename, uploaded_by, filename)
+                    `INSERT INTO t_ticket_file_temp (file_path, original_filename, uploaded_by, filename)
                      VALUES (?, ?, ?, ?)`,
                     [filePath, file.originalname, user_id, file.filename]
                 );
@@ -718,28 +718,29 @@ module.exports = {
 
                 await Promise.all(insertPromises);
 
-                // Handle file attachments from t_temp_upload
+                // Handle file attachments from t_ticket_file_temp
                 let attachedFiles = [];
                 if (temp_file_ids && Array.isArray(temp_file_ids) && temp_file_ids.length > 0) {
                     const placeholders = temp_file_ids.map(() => '?').join(',');
                     const [tempFiles] = await conn.query(
-                        `SELECT * FROM t_temp_upload WHERE upload_id IN (${placeholders}) AND uploaded_by = ? AND is_used = 0`,
+                        `SELECT * FROM t_ticket_file_temp WHERE upload_id IN (${placeholders}) AND uploaded_by = ? AND is_used = 0`,
                         [...temp_file_ids, user_id]
                     );
 
                     for (const tempFile of tempFiles) {
                         // Mark temp upload as used
-                        await conn.query(`UPDATE t_temp_upload SET is_used = 1 WHERE upload_id = ?`, [tempFile.upload_id]);
+                        // Mark temp upload as used
+                        await conn.query(`UPDATE t_ticket_file_temp SET is_used = 1 WHERE upload_id = ?`, [tempFile.upload_id]);
 
                         // Check if this is an image (already embedded inline in HTML)
                         const imageExts = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico'];
                         const fileExt = (tempFile.filename || '').toLowerCase().match(/\.[^.]+$/)?.[0] || '';
                         const isImageFile = imageExts.includes(fileExt);
 
-                        // Only create t_file_upload for non-image files (images are shown inline)
+                        // Only create t_ticket_file for non-image files (images are shown inline)
                         if (!isImageFile) {
                             await conn.query(
-                                `INSERT INTO t_file_upload (entity_type, entity_id, ticket_id, uploaded_by, filename, original_name, file_path)
+                                `INSERT INTO t_ticket_file (entity_type, entity_id, ticket_id, uploaded_by, filename, original_name, file_path)
                                  VALUES ('timeline_update', ?, ?, ?, ?, ?, ?)`,
                                 [entityId, ticket_id || fallback_ticket_id, user_id, tempFile.filename, tempFile.original_filename, tempFile.file_path]
                             );

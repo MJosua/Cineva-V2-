@@ -9,8 +9,6 @@ import { resolveApiBase } from "./utils/apiResolver";
 // See: 3. knowledge/architecture/infrastructure_analysis_dns_timeout.md
 resolveApiBase().then(() => {
   ReactDOM.createRoot(document.getElementById("root")).render(
-    <React.StrictMode>
-      <AppRouter />
-    </React.StrictMode>
+    <AppRouter />
   );
 });

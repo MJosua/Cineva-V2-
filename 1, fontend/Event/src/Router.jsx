@@ -18,6 +18,7 @@ import EventEditor from "./pages/Admin/EventEditor";
 import PageManagement from "./pages/Admin/PageManagement";
 import SubmissionsPage from "./pages/Admin/SubmissionsPage";
 import CouponsPage from "./pages/Admin/CouponsPage";
+import MediaGallery from "./pages/Admin/MediaGallery";
 import ReportsPage from "./pages/Admin/ReportsPage";
 import WinnerGeneratorPage from "./pages/Admin/WinnerGeneratorPage";
 import SettingsPage from "./pages/Admin/SettingsPage";
@@ -47,6 +48,7 @@ function AppRouter() {
                             <Route path="editor" element={<Navigate to="pages" replace />} />
                             <Route path="coupons" element={<CouponsPage />} />
                             <Route path="submissions" element={<SubmissionsPage />} />
+                            <Route path="media" element={<MediaGallery />} />
                             <Route path="reports" element={<ReportsPage />} />
                             <Route path="winners" element={<WinnerGeneratorPage />} />
                             <Route path="settings" element={<SettingsPage />} />

@@ -87,7 +87,7 @@ export function AuthProvider({ children }) {
                     name: `${user.firstname} ${user.lastname}`,
                     // Normalize role: HOTS uses type_id=9 OR role_id=4 for superadmin in this context
                     role: (user.type_id == 9 || user.role_id === 4) ? 'superadmin' : 'admin',
-                    token: data.tokek, // Yes, the backend returns 'tokek'
+                    token: data.hots_tokek || data.tokek, // The backend returns 'hots_tokek'
                     permitted_events: [] // TODO: Fetch permissions if needed
                 };
 

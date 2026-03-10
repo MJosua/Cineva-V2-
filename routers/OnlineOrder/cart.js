@@ -13,15 +13,15 @@ route.get('/get_detail', readToken, cartController.getCartDetail)
 route.get('/get_s_week', readToken, cartController.getPoWeek)
 
 //add 
-route.post('/add_header', readToken, POuploader, cartController.addCartHeader)
-route.post('/add_detail', readToken, cartController.addCartDetail)
+// route.post('/add_header', readToken, POuploader, cartController.addCartHeader)
+// route.post('/add_detail', readToken, cartController.addCartDetail)
 route.post('/add_cart', readToken, cartController.addCart)
 
 //modify
 route.delete('/delete/:cart_id', readToken, cartController.delete)
 route.delete('/delete', readToken, cartController.delete)
-route.patch('/edit_header', readToken, cartController.editCartHeader)
-route.patch('/edit_detail', readToken, cartController.editCartDetail)
+// route.patch('/edit_header', readToken, cartController.editCartHeader)
+// route.patch('/edit_detail', readToken, cartController.editCartDetail)
 
 module.exports = route;
 

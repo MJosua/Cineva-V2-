@@ -602,7 +602,7 @@ const EngineController = {
             // Let's skip inserting 'submit' event into t_ticket_event to avoid pollution.
 
             // 🆕 [TEMP UPLOAD MIGRATION]
-            // Move files from t_temp_upload to t_file_upload
+            // Move files from t_ticket_file_temp to t_ticket_file
             const foundUploadIds = new Set();
             if (form_data.upload_ids && Array.isArray(form_data.upload_ids)) {
               form_data.upload_ids.forEach(id => foundUploadIds.add(id));
@@ -624,7 +624,7 @@ const EngineController = {
             if (foundUploadIds.size > 0) {
               console.log(`📂 [CREATE] Processing ${foundUploadIds.size} potential temp uploads for ticket ${ticket_id}`);
               for (let item of foundUploadIds) {
-                let query = 'SELECT * FROM t_temp_upload WHERE is_used = 0 AND ';
+                let query = 'SELECT * FROM t_ticket_file_temp WHERE is_used = 0 AND ';
                 let queryParams = [];
                 if (typeof item === 'object' && item.filename) {
                   query += 'filename = ?';
@@ -638,20 +638,20 @@ const EngineController = {
                 if (tempRows.length > 0) {
                   const tempFile = tempRows[0];
                   // 1. Mark as used
-                  await p.query('UPDATE t_temp_upload SET is_used = 1, ticket_id = ? WHERE upload_id = ?', [ticket_id, tempFile.upload_id]);
+                  await p.query('UPDATE t_ticket_file_temp SET is_used = 1, ticket_id = ? WHERE upload_id = ?', [ticket_id, tempFile.upload_id]);
 
                   // 2. Check if this is an image file (already embedded in HTML content)
                   const imageExts = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico'];
                   const fileExt = (tempFile.filename || '').toLowerCase().match(/\.[^.]+$/)?.[0] || '';
                   const isImageFile = imageExts.includes(fileExt);
 
-                  // Only create t_file_upload for NON-image files (images are shown inline in editor)
+                  // Only create t_ticket_file for NON-image files (images are shown inline in editor)
                   if (!isImageFile) {
                     const entityType = initialTimelineEntityId ? 'timeline_update' : 'ticket';
                     const entityId = initialTimelineEntityId || ticket_id;
 
                     await p.query(
-                      `INSERT INTO t_file_upload 
+                      `INSERT INTO t_ticket_file 
                               (entity_type, entity_id, ticket_id, filename, original_name, file_path, uploaded_by, upload_date)
                               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                       [
@@ -1087,7 +1087,7 @@ const EngineController = {
       // 2. Handle File Uploads (if any)
       if (req.files && req.files.length > 0) {
         const insertFileQuery = `
-            INSERT INTO t_file_upload 
+            INSERT INTO t_ticket_file 
             (entity_type, entity_id, filename, original_name, file_path, file_size, mime_type, uploaded_by) 
             VALUES ?
           `;
@@ -1784,7 +1784,7 @@ const EngineController = {
                         'size', f.file_size
                     )
                 )
-                FROM t_file_upload f
+                FROM t_ticket_file f
                 WHERE f.entity_type = 'ticket' AND f.entity_id = t.ticket_id
             ) AS files,
 

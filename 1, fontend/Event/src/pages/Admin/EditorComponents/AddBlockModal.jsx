@@ -5,7 +5,7 @@ import {
 import {
     MdTextFields, MdList, MdViewCarousel, MdViewDay, MdGridView,
     MdReceipt, MdWeb, MdCode, MdQrCode, MdPhotoSizeSelectActual,
-    MdAutoAwesome
+    MdAutoAwesome, MdAdd
 } from "react-icons/md";
 
 // ── Block catalog with categories ──────────────────────────────────────────
@@ -122,6 +122,14 @@ const BLOCK_CATALOG = {
             icon: MdCode,
             color: "gray",
             defaultProps: { html: "<div style='padding:20px;text-align:center;'>Custom HTML here</div>", customCss: "" }
+        },
+        {
+            type: "overlay",
+            label: "Overlay Asset",
+            description: "Absolute floating image asset",
+            icon: MdAdd,
+            color: "indigo",
+            defaultProps: { imageUrl: "", top: "auto", left: "auto", right: "auto", bottom: "auto", width: "auto", maxWidth: "200px", zIndex: 10, opacity: 1 }
         },
     ],
 };

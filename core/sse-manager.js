@@ -53,7 +53,7 @@ class SSEManager {
             this.connections.set(uid, new Set());
         }
         this.connections.get(uid).add(res);
-        console.log(`🔌 SSE: User ${uid} connected. Total connections for user: ${this.connections.get(uid).size}`);
+        console.log(`🔌 SSE: User connected. Total connections for user: ${this.connections.get(uid).size}`);
     }
 
     /**
@@ -65,7 +65,7 @@ class SSEManager {
         const uid = String(userId);
         if (this.connections.has(uid)) {
             this.connections.get(uid).delete(res);
-            console.log(`🔌 SSE: User ${uid} disconnected. Remaining: ${this.connections.get(uid).size}`);
+            console.log(`🔌 SSE: User disconnected. Remaining: ${this.connections.get(uid).size}`);
             if (this.connections.get(uid).size === 0) {
                 this.connections.delete(uid);
             }

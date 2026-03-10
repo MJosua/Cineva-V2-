@@ -1,6 +1,6 @@
 ﻿import React from 'react';
 
- 
+
 import { useLocation } from "react-router-dom"
 
 import { useNavigate } from 'react-router-dom';
@@ -50,7 +50,6 @@ const ContactUsPage = () => {
             data.append('data', JSON.stringify({ namaewa, message, email }));
 
 
-            // console.log("data", data)
 
             Axios.post(
                 API_URL + "/user/contact-us/", { namaewa, message, email }, {
@@ -96,7 +95,7 @@ const ContactUsPage = () => {
                     <div className="row">
                         <div className="col-6 col-sm-12"></div>
                         <div className="col-6 col-sm-12">
-                              <Sidebar />
+                            <Sidebar />
                         </div>
                     </div>
                 </div>

@@ -9,10 +9,9 @@ module.exports = {
     getProductCatalog: async (req, res) => {
         try {
             if (req.dataToken.user_id) {
-                let date = new Date();
-                let timestamp = gray + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
+                const companyId = req.dataToken.company_id;
 
-                let query = `
+                const productQuery = `
                 SELECT DISTINCT
                     UPPER(CONCAT(COALESCE(mp.product_name_no, mp.product_name), ' - ', mp.product_sku)) AS product_name_complete,
                     tc.txt AS country_name,
@@ -41,7 +40,7 @@ module.exports = {
                     mp.per_carton,
                     mf.flavour_desc AS flavour_name,
                     mp.tolling_id,
-                    mp.truck as truck_load,
+                    mi.truck_load,
                     mi.qty_per_pallet,
                     mi.shipment_type
                 FROM map_item_for_dist mi
@@ -56,27 +55,38 @@ module.exports = {
                 LEFT JOIN mst_flavour mf ON mf.flavour_id = mp.flavour_id
                 WHERE
                     NOW() BETWEEN mi.creation_date AND COALESCE(mi.finish_date, '9999-12-31')
-                    AND mi.distributor_id = ${req.dataToken.company_id}
+                    AND mi.distributor_id = ?
                     AND mf.company_id = 100
                     AND JSON_CONTAINS(mffd.tolling_id, CAST(mp.tolling_id AS JSON))
                 ORDER BY
                     mpc.product_type_id DESC;
                 `;
 
-                dbConf.query(query, (err, results) => {
-                    if (err) {
-                        res.status(500).send(err);
-                        log.eorder.info(`get product catalog for ${req.dataToken.company_id} error! ${err}`);
-                    } else {
-                        res.status(200).send(results);
-                        log.eorder.info(`get product catalog for ${req.dataToken.company_id} success`);
-                    }
-                })
+                const containerQuery = `
+                    SELECT mc.container_id, mc.container_name 
+                    FROM map_cont_for_dist mcfd 
+                    LEFT JOIN mst_container mc ON mcfd.cont_type & mc.container_id 
+                    WHERE mcfd.company_id = 100 AND mcfd.dist_id = ?;
+                `;
+
+                const [products, containers] = await Promise.all([
+                    dbQuery(productQuery, [companyId]),
+                    dbQuery(containerQuery, [companyId])
+                ]);
+
+                res.status(200).send({
+                    products,
+                    containers
+                });
+
+                log.eorder.info(`get consolidated catalog for ${companyId} success`);
+
             } else {
                 res.status(401).send({ success: false, message: 'unauthorized' })
             }
         } catch (error) {
-            res.status(500).send(error);
+            log.eorder.error(`get product catalog error: ${error.message}`);
+            res.status(500).send({ success: false, error: error.message });
         }
     },
     // Simplified and unified product fetching end
@@ -494,7 +504,3 @@ ORDER BY
 
     },
 }
-
-
-
-

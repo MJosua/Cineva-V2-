@@ -298,9 +298,9 @@ module.exports = {
                     await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                 }
 
-                // File attachment - using unified t_file_upload
+                // File attachment - using unified t_ticket_file
                 if (req.files && req.files.length > 0) {
-                    let queryInsertFiles = `INSERT INTO t_file_upload 
+                    let queryInsertFiles = `INSERT INTO t_ticket_file 
                         (entity_type, entity_id, filename, original_name, file_path, file_size, mime_type, uploaded_by) 
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
                     for (let file of req.files) {
@@ -698,9 +698,9 @@ module.exports = {
 
 
 
-                        // File Attachments - using unified t_file_upload
+                        // File Attachments - using unified t_ticket_file
                         if (req.files && req.files.length > 0) {
-                            let queryInsertFiles = `INSERT INTO t_file_upload 
+                            let queryInsertFiles = `INSERT INTO t_ticket_file 
                                 (entity_type, entity_id, filename, original_name, file_path, file_size, mime_type, uploaded_by) 
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
                             for (let file of req.files) {
@@ -924,9 +924,9 @@ module.exports = {
 
 
 
-                        // File Attachments - using unified t_file_upload
+                        // File Attachments - using unified t_ticket_file
                         if (req.files && req.files.length > 0) {
-                            let queryInsertFiles = `INSERT INTO t_file_upload 
+                            let queryInsertFiles = `INSERT INTO t_ticket_file 
                                 (entity_type, entity_id, filename, original_name, file_path, file_size, mime_type, uploaded_by) 
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
                             for (let file of req.files) {
@@ -1004,9 +1004,9 @@ module.exports = {
 
 
 
-                        // File Attachments - using unified t_file_upload
+                        // File Attachments - using unified t_ticket_file
                         if (req.files && req.files.length > 0) {
-                            let queryInsertFiles = `INSERT INTO t_file_upload 
+                            let queryInsertFiles = `INSERT INTO t_ticket_file 
                                 (entity_type, entity_id, filename, original_name, file_path, file_size, mime_type, uploaded_by) 
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
                             for (let file of req.files) {
@@ -1068,9 +1068,9 @@ module.exports = {
                             await dbHots.promise().query(queryInsertApproval, [paramInsertApproval]);
                         }
 
-                        // File Attachments - using unified t_file_upload
+                        // File Attachments - using unified t_ticket_file
                         if (req.files && req.files.length > 0) {
-                            let queryInsertFiles = `INSERT INTO t_file_upload 
+                            let queryInsertFiles = `INSERT INTO t_ticket_file 
                                 (entity_type, entity_id, filename, original_name, file_path, file_size, mime_type, uploaded_by) 
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
                             for (let file of req.files) {
@@ -2630,7 +2630,7 @@ module.exports = {
                     from
                         t_comment c
                     left join 
-                        t_file_upload f on
+                        t_ticket_file f on
                         f.entity_type = 'comment'
                     and
                         c.comment_id = f.entity_id
@@ -2982,7 +2982,7 @@ module.exports = {
 
                                 if (req.files && req.files.length > 0) {
                                     let queryInsertFiles = `
-                                        INSERT INTO t_file_upload 
+                                        INSERT INTO t_ticket_file 
                                         (entity_type, entity_id, field_name, filename, original_name, file_path, file_size, mime_type, uploaded_by) 
                                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                                     `;
@@ -3345,7 +3345,7 @@ module.exports = {
 
         return new Promise((resolve, reject) => {
             const updateFilesQuery = `
-                UPDATE t_temp_upload 
+                UPDATE t_ticket_file_temp 
                 SET is_used = TRUE, ticket_id = ?
                 WHERE upload_id IN (${uploadIds.map(() => '?').join(',')})
             `;
@@ -4045,7 +4045,7 @@ module.exports = {
                 // safe parameterization for IN ()
                 const placeholders = upload_ids.map(() => '?').join(',');
                 await dbHots.promise().execute(
-                    `UPDATE t_temp_upload SET is_used = TRUE, ticket_id = ? WHERE upload_id IN (${placeholders})`,
+                    `UPDATE t_ticket_file_temp SET is_used = TRUE, ticket_id = ? WHERE upload_id IN (${placeholders})`,
                     [ticket_id, ...upload_ids]
                 );
             }
@@ -4104,7 +4104,7 @@ module.exports = {
         let filePromises = req.files.map(file => {
             return new Promise((resolve, reject) => {
                 let insertQuery = `
-                    INSERT INTO t_temp_upload (file_path, original_filename, uploaded_by)
+                    INSERT INTO t_ticket_file_temp (file_path, original_filename, uploaded_by)
                     VALUES (?, ?, ?)
                 `;
 
@@ -4888,7 +4888,7 @@ LIMIT ${limit} OFFSET ${offset};
                             'size', f.file_size
                         )
                     )
-                    FROM t_file_upload f
+                    FROM t_ticket_file f
                     WHERE f.entity_type = 'ticket' AND f.entity_id = t.ticket_id
                 ) AS files,
     
@@ -5261,7 +5261,7 @@ LIMIT ${limit} OFFSET ${offset};
                     file_size,
                     mime_type,
                     upload_date
-                FROM t_file_upload
+                FROM t_ticket_file
                 WHERE entity_type = 'ticket' AND entity_id = ?
                 ORDER BY upload_date DESC
             `;
@@ -5290,7 +5290,7 @@ LIMIT ${limit} OFFSET ${offset};
         // Find files older than 24 hours that are not used
         let cleanupQuery = `
             SELECT upload_id, file_path 
-            FROM t_temp_upload 
+            FROM t_ticket_file_temp 
             WHERE is_used = FALSE 
             AND upload_date < DATE_SUB(NOW(), INTERVAL 24 HOUR)
         `;
@@ -5325,7 +5325,7 @@ LIMIT ${limit} OFFSET ${offset};
                         }
 
                         // Delete database record
-                        let deleteQuery = `DELETE FROM t_temp_upload WHERE upload_id = ?`;
+                        let deleteQuery = `DELETE FROM t_ticket_file_temp WHERE upload_id = ?`;
                         dbHots.execute(deleteQuery, [file.upload_id], (deleteErr) => {
                             if (deleteErr) {
                                 console.log(timestamp, "DB DELETE ERROR: ", deleteErr);

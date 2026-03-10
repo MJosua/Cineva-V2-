@@ -14,6 +14,22 @@ export default defineConfig({
       '/sse': {
         target: 'http://127.0.0.1:9999',
         changeOrigin: true,
+      },
+      '/hots_auth': {
+        target: 'http://127.0.0.1:9999',
+        changeOrigin: true,
+      },
+      '/public': {
+        target: 'http://127.0.0.1:9999',
+        changeOrigin: true,
+      },
+      '/files': {
+        target: 'http://127.0.0.1:9999',
+        changeOrigin: true,
+      },
+      '/image': {
+        target: 'http://127.0.0.1:9999',
+        changeOrigin: true,
       }
     }
   }

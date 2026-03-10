@@ -8,6 +8,7 @@ import SectionBlock from "./Blocks/SectionBlock";
 import CouponFormBlock from "./Blocks/CouponFormBlock";
 import CustomHTMLBlock from "./Blocks/CustomHTMLBlock";
 import UrlCouponBlock from "./Blocks/UrlCouponBlock";
+import OverlayBlock from "./Blocks/OverlayBlock";
 
 export const COMPONENT_REGISTRY = {
     "hero": HeroBlock,
@@ -21,6 +22,7 @@ export const COMPONENT_REGISTRY = {
     "couponForm": CouponFormBlock,
     "customHtml": CustomHTMLBlock,
     "urlCoupon": UrlCouponBlock,
+    "overlay": OverlayBlock,
 };
 
 export const resolveComponent = (type) => {

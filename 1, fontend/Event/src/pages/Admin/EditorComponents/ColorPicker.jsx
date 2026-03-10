@@ -49,6 +49,14 @@ export default function ColorPicker({ label, value, onChange }) {
         onChange(hexToRgba(hex, newOpacity));
     };
 
+    const handleHexInputChange = (e) => {
+        const val = e.target.value;
+        setHex(val);
+        if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+            onChange(hexToRgba(val, opacity));
+        }
+    };
+
     const presetColors = ["#ffffff", "#000000", "#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff", "#f5f5f5", "#333333"];
 
     return (
@@ -83,17 +91,20 @@ export default function ColorPicker({ label, value, onChange }) {
                     </PopoverContent>
                 </Popover>
                 <VStack flex={1} spacing={0} align="stretch">
-                    <HStack>
-                        <Text fontSize="xs" w="60px">Opacity:</Text>
-                        <Text fontSize="xs" fontWeight="bold">{Math.round(opacity * 100)}%</Text>
+                    <HStack justify="space-between">
+                        <Text fontSize="2xs" color="gray.500">HEX</Text>
+                        <Text fontSize="2xs" color="gray.500">Opacity: {Math.round(opacity * 100)}%</Text>
                     </HStack>
-                    <Slider value={opacity} min={0} max={1} step={0.01} onChange={handleOpacityChange}>
-                        <SliderTrack><SliderFilledTrack bg="blue.400" /></SliderTrack>
-                        <SliderThumb />
-                    </Slider>
+                    <HStack spacing={2}>
+                        <Input size="xs" value={hex} onChange={handleHexInputChange} fontFamily="monospace" w="70px" />
+                        <Slider value={opacity} min={0} max={1} step={0.01} onChange={handleOpacityChange} flex={1}>
+                            <SliderTrack><SliderFilledTrack bg="blue.400" /></SliderTrack>
+                            <SliderThumb />
+                        </Slider>
+                    </HStack>
                 </VStack>
             </HStack>
-            <Input size="xs" value={hexToRgba(hex, opacity)} readOnly fontFamily="monospace" />
+            {opacity < 1 && <Input size="xs" value={hexToRgba(hex, opacity)} readOnly fontFamily="monospace" bg="gray.50" />}
         </VStack>
     );
 }
