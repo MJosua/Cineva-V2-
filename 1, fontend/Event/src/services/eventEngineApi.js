@@ -183,6 +183,17 @@ export function uploadCampaignMedia(slug, formData) {
 }
 
 /**
+ * Delete media for a campaign
+ * @param {string} slug 
+ * @param {number} mediaId 
+ */
+export function deleteCampaignMedia(slug, mediaId) {
+    return apiFetch(`/admin/campaigns/${slug}/media/${mediaId}`, {
+        method: 'DELETE'
+    });
+}
+
+/**
  * Create a new campaign
  * 
  * @param {Object} campaignData - { name, slug, description, ... }

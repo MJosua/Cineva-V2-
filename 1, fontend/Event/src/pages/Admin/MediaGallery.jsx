@@ -13,7 +13,7 @@ import {
     MdCollections, MdSearch, MdZoomIn, MdFileDownload,
     MdToday, MdCalendarMonth, MdAccessTime
 } from 'react-icons/md';
-import { getCampaignMedia, uploadCampaignMedia } from '../../services/eventEngineApi';
+import { getCampaignMedia, uploadCampaignMedia, deleteCampaignMedia } from '../../services/eventEngineApi';
 import { resolveMediaUrl } from '../../utils/mediaHelper';
 
 const MediaGallery = ({ isPicker = false, onSelect = null }) => {
@@ -106,6 +106,28 @@ const MediaGallery = ({ isPicker = false, onSelect = null }) => {
         }
     };
 
+    const handleDelete = async (mediaId) => {
+        if (!window.confirm('Are you sure you want to delete this media? This cannot be undone.')) return;
+
+        try {
+            await deleteCampaignMedia(slug, mediaId);
+            toast({
+                title: 'Media deleted',
+                status: 'success',
+                duration: 2000,
+            });
+            onPreviewClose();
+            fetchMedia(); // Refresh list
+        } catch (error) {
+            toast({
+                title: 'Error deleting media',
+                description: error.message,
+                status: 'error',
+                duration: 3000,
+            });
+        }
+    };
+
     // Grouping & Filtering Logic
     const groupedMedia = useMemo(() => {
         const filtered = media.filter(item =>
@@ -183,16 +205,21 @@ const MediaGallery = ({ isPicker = false, onSelect = null }) => {
                     <TabPanel p={0}>
                         {hasMedia && (
                             <Box mb={6}>
-                                <Input
-                                    placeholder="Search by filename..."
-                                    size="md"
-                                    maxW="400px"
-                                    leftIcon={<MdSearch />}
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    bg="white"
-                                    mb={6}
-                                />
+                                <HStack spacing={4} mb={6}>
+                                    <Box position="relative" maxW="400px" flex="1">
+                                        <Flex align="center" position="absolute" left={3} height="100%" zIndex={2}>
+                                            <Icon as={MdSearch} color="gray.400" />
+                                        </Flex>
+                                        <Input
+                                            placeholder="Search by filename..."
+                                            size="md"
+                                            pl={10}
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            bg="white"
+                                        />
+                                    </Box>
+                                </HStack>
 
                                 {Object.entries(groupedMedia).map(([title, items]) => (
                                     items.length > 0 && (
@@ -220,6 +247,7 @@ const MediaGallery = ({ isPicker = false, onSelect = null }) => {
                                                         isPicker={isPicker}
                                                         onSelect={handleImageClick}
                                                         onCopy={copyToClipboard}
+                                                        onDelete={handleDelete}
                                                     />
                                                 ))}
                                             </SimpleGrid>
@@ -297,12 +325,14 @@ const MediaGallery = ({ isPicker = false, onSelect = null }) => {
                         </VStack>
                     </ModalHeader>
                     <ModalCloseButton />
-                    <ModalBody p={0} bg="gray.900" minH="400px" display="flex" alignItems="center" justifyContent="center">
+                    <ModalBody p={4} bg="gray.900" minH="500px" display="flex" alignItems="center" justifyContent="center">
                         {selectedImage && (
                             <Image
                                 src={resolveMediaUrl(selectedImage.file_path)}
-                                maxH="70vh"
+                                maxH="80vh"
+                                w="auto"
                                 objectFit="contain"
+                                shadow="2xl"
                             />
                         )}
                     </ModalBody>
@@ -322,6 +352,15 @@ const MediaGallery = ({ isPicker = false, onSelect = null }) => {
                             <Button variant="ghost" size="sm" leftIcon={<MdContentCopy />} onClick={() => copyToClipboard(selectedImage.file_path)}>
                                 Copy link
                             </Button>
+                            <Button
+                                colorScheme="red"
+                                variant="outline"
+                                size="sm"
+                                leftIcon={<MdDelete />}
+                                onClick={() => handleDelete(selectedImage.id)}
+                            >
+                                Delete
+                            </Button>
                             <Button as="a" href={resolveMediaUrl(selectedImage?.file_path)} download={selectedImage?.original_name} colorScheme="brand" size="sm" leftIcon={<MdFileDownload />}>
                                 Download
                             </Button>
@@ -333,7 +372,7 @@ const MediaGallery = ({ isPicker = false, onSelect = null }) => {
     );
 };
 
-const MediaItem = ({ item, isPicker, onSelect, onCopy }) => {
+const MediaItem = ({ item, isPicker, onSelect, onCopy, onDelete }) => {
     const fullUrl = resolveMediaUrl(item.file_path);
 
     return (
@@ -356,7 +395,8 @@ const MediaItem = ({ item, isPicker, onSelect, onCopy }) => {
                     alt={item.original_name}
                     maxW="100%"
                     maxH="100%"
-                    objectFit="cover" // Cover looks better for grid
+                    objectFit="contain" // Contain ensures full asset is visible (not cut)
+                    p={2}
                     fallback={
                         <Box p={4} textAlign="center">
                             <MdCollections size={32} color="gray.300" />
@@ -370,7 +410,7 @@ const MediaItem = ({ item, isPicker, onSelect, onCopy }) => {
                 <Box
                     position="absolute"
                     inset={0}
-                    bg="rgba(0,0,0,0.3)"
+                    bg="rgba(0,0,0,0.1)"
                     opacity={0}
                     _groupHover={{ opacity: 1 }}
                     transition="opacity 0.2s"
@@ -378,7 +418,7 @@ const MediaItem = ({ item, isPicker, onSelect, onCopy }) => {
                     alignItems="center"
                     justifyContent="center"
                 >
-                    <Icon as={isPicker ? MdInsertLink : MdZoomIn} w={8} h={8} color="white" />
+                    <Icon as={isPicker ? MdInsertLink : MdZoomIn} w={8} h={8} color="brand.500" />
                 </Box>
             </Box>
             <Box p={3}>
@@ -390,6 +430,19 @@ const MediaItem = ({ item, isPicker, onSelect, onCopy }) => {
                         {(item.file_size / 1024).toFixed(1)} KB
                     </Text>
                     <HStack spacing={1}>
+                        <Tooltip label="Delete Media" placement="top">
+                            <IconButton
+                                icon={<MdDelete />}
+                                size="xs"
+                                variant="ghost"
+                                colorScheme="red"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDelete(item.id);
+                                }}
+                                aria-label="Delete Media"
+                            />
+                        </Tooltip>
                         <Tooltip label="Copy URL" placement="top">
                             <IconButton
                                 icon={<MdContentCopy />}

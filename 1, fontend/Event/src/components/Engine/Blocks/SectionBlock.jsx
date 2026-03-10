@@ -2,6 +2,7 @@ import { Box } from "@chakra-ui/react";
 import { resolveComponent } from "../Registry";
 import { resolveMediaUrl } from "../../../utils/mediaHelper";
 import { useRef } from "react";
+import { useDroppable } from '@dnd-kit/core';
 
 export default function SectionBlock({
     background = "transparent",
@@ -14,9 +15,17 @@ export default function SectionBlock({
     isEditor = false,
     onPropsChange,
     eventSlug,
-    eventId
+    eventId,
+    id,
+    blockIndex
 }) {
     const containerRef = useRef(null);
+    const sectionId = id || `section-${blockIndex}`;
+
+    const { isOver, setNodeRef } = useDroppable({
+        id: sectionId,
+        disabled: !isEditor
+    });
 
     let customStyles = {};
     try {
@@ -25,7 +34,7 @@ export default function SectionBlock({
         } else if (typeof customCss === 'object' && customCss !== null) {
             customStyles = customCss;
         }
-    } catch (e) {
+    } catch {
         console.warn("Invalid CSS JSON:", customCss);
     }
 
@@ -41,7 +50,13 @@ export default function SectionBlock({
 
     return (
         <Box
-            ref={containerRef}
+            ref={(node) => {
+                setNodeRef(node);
+                containerRef.current = node;
+            }}
+            className={isEditor ? "droppable-section" : ""}
+            data-section-id={sectionId}
+            data-section-index={blockIndex}
             position="relative"
             minH="100vh"
             w="100%"
@@ -53,6 +68,7 @@ export default function SectionBlock({
             backgroundPosition="center"
             display="flex"
             flexDirection="column"
+            border={isOver && isEditor ? "2px solid #4299E1" : "none"}
             justifyContent="center"
             alignItems="center"
             scrollSnapAlign="start"
@@ -62,10 +78,14 @@ export default function SectionBlock({
             {children && children.map((child, index) => {
                 const Component = resolveComponent(child.type);
                 if (!Component) return null;
+                const childDragId = child._id || `${sectionId}-child-${index}`;
                 return (
                     <Component
-                        key={child._id || index}
+                        key={childDragId}
+                        _id={childDragId}
                         {...child.props}
+                        parentSectionIndex={blockIndex}
+                        childIndex={index}
                         theme={theme}
                         isEditor={isEditor}
                         eventSlug={eventSlug}

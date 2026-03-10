@@ -1,18 +1,20 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { Box, Heading, Flex, Button, useToast, useDisclosure, VStack, Text, IconButton, HStack, Tabs, TabList, Tab, TabPanels, TabPanel, FormControl, FormLabel, Input, Select, Badge, Tooltip, Image, Switch } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { getCampaignBySlug, updateCampaign } from "../../services/eventEngineApi";
 import EngineRenderer from "../../components/Engine/EngineRenderer";
+import { resolveComponent } from "../../components/Engine/Registry";
 import BlockList from "./EditorComponents/BlockList";
 import BlockEditor from "./EditorComponents/BlockEditor";
 import AddBlockModal from "./EditorComponents/AddBlockModal";
 import { MdAdd, MdSave, MdArrowBack, MdLayers, MdOpenInNew, MdDelete } from "react-icons/md";
 import MediaPickerModal from "./EditorComponents/MediaPickerModal";
 import { resolveMediaUrl } from "../../utils/mediaHelper";
+import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
+import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 
 export default function EventEditor() {
     const { slug, pageKey } = useParams();
-    const navigate = useNavigate();
     const toast = useToast();
 
     // Decode pageKey from URL: "__root__" → "/", "success" → "/success"
@@ -21,7 +23,6 @@ export default function EventEditor() {
     const [eventData, setEventData] = useState(null);
     const [selectedBlockIndex, setSelectedBlockIndex] = useState(null);
     const { isOpen: isAddModalOpen, onOpen: openAddModal, onClose: closeAddModal } = useDisclosure();
-    const [isLoading, setIsLoading] = useState(true);
     const [themeConfig, setThemeConfig] = useState(null);
 
     useEffect(() => {
@@ -78,8 +79,6 @@ export default function EventEditor() {
             } catch (error) {
                 console.error("Failed to load event:", error);
                 if (isMounted) toast({ status: "error", title: "Error", description: "Failed to load event data." });
-            } finally {
-                if (isMounted) setIsLoading(false);
             }
         }
         loadEvent();
@@ -107,6 +106,10 @@ export default function EventEditor() {
     };
 
     const currentBlocks = eventData?.pages?.[currentPage] || [];
+    const getSectionId = (block, index) => block?._id || `section-${index}`;
+    const getChildDragId = (child, sectionBlock, sectionIndex, childIndex) => (
+        child?._id || `${getSectionId(sectionBlock, sectionIndex)}-child-${childIndex}`
+    );
 
     const handleReorder = (newBlocks) => {
         setEventData(prev => ({ ...prev, pages: { ...prev.pages, [currentPage]: newBlocks } }));
@@ -129,7 +132,163 @@ export default function EventEditor() {
         setEventData(prev => ({ ...prev, pages: { ...prev.pages, [currentPage]: [...currentBlocks, blockWithId] } }));
     };
 
+    const [activeId, setActiveId] = useState(null);
+    const [activeProps, setActiveProps] = useState(null);
+    const [activeComponentType, setActiveComponentType] = useState(null);
+
+    // Require a 5px drag distance before starting to prevent accidental drags on click
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: { distance: 5 },
+        })
+    );
+
+    const handleDragStart = (event) => {
+        const { active } = event;
+        setActiveId(active.id);
+
+        // Find the block data for the overlay
+        for (const [sectionIndex, block] of currentBlocks.entries()) {
+            const sectionId = getSectionId(block, sectionIndex);
+            if (sectionId === active.id) {
+                setActiveProps(block.props);
+                setActiveComponentType(block.type);
+                return;
+            }
+            if (block.props && block.props.children) {
+                const child = block.props.children.find((c, childIdx) => (
+                    getChildDragId(c, block, sectionIndex, childIdx) === active.id
+                ));
+                if (child) {
+                    setActiveProps(child.props);
+                    setActiveComponentType(child.type);
+                    return;
+                }
+            }
+        }
+    };
+
+    const handleDragEnd = (event) => {
+        const { active, over, delta } = event;
+        setActiveId(null);
+        setActiveProps(null);
+        setActiveComponentType(null);
+
+        if (!over) return;
+
+        const targetSectionId = over.id;
+        const dragId = active.id;
+
+        // Find source & target
+        let sourceSectionIndex = -1;
+        let targetSectionIndex = -1;
+        let childIndex = -1;
+        let childData = null;
+
+        for (let i = 0; i < currentBlocks.length; i++) {
+            const block = currentBlocks[i];
+            const sectionId = getSectionId(block, i);
+            if (sectionId === targetSectionId) {
+                targetSectionIndex = i;
+            }
+            if (block.props && block.props.children) {
+                const cIndex = block.props.children.findIndex((c, childIdx) => (
+                    getChildDragId(c, block, i, childIdx) === dragId
+                ));
+                if (cIndex !== -1) {
+                    sourceSectionIndex = i;
+                    childIndex = cIndex;
+                    childData = block.props.children[cIndex];
+                }
+            }
+        }
+
+        if (sourceSectionIndex !== -1 && targetSectionIndex !== -1 && childData) {
+
+            // Re-calculate the absolute delta applied to the original relative position
+            // Since we use CSS translates for the overlay, the 'delta' from dnd-kit 
+            // is exactly the pixel amount the mouse traveled.
+
+            const currentTop = parseFloat(childData.props.top) || 0;
+            const currentLeft = parseFloat(childData.props.left) || 0;
+
+            let finalTop = currentTop + delta.y;
+            let finalLeft = currentLeft + delta.x;
+
+            if (sourceSectionIndex !== targetSectionIndex) {
+                // Cross section drop: we need to adjust the coordinates based on the physical 
+                // difference in height/position between the two sections in the DOM.
+                // The easiest way is to let the user drop it, then next frame they adjust it slightly if needed,
+                // or we can calculate the bounding rects. Let's do simple naive drop first (relative to drag start).
+                // For true absolute-to-relative cross mapping, we calculate delta + the physical diff.
+
+                const sourceSectionId = getSectionId(currentBlocks[sourceSectionIndex], sourceSectionIndex);
+                const sourceEl = document.querySelector(`[data-section-id="${sourceSectionId}"]`);
+                const targetEl = document.querySelector(`[data-section-id="${targetSectionId}"]`);
+
+                if (sourceEl && targetEl) {
+                    const sourceRect = sourceEl.getBoundingClientRect();
+                    const targetRect = targetEl.getBoundingClientRect();
+
+                    // Add the difference in section positions to the coordinates so the visual drop matches
+                    finalTop += (sourceRect.top - targetRect.top);
+                    finalLeft += (sourceRect.left - targetRect.left);
+                }
+            }
+
+            const updatedChildProps = {
+                ...childData.props,
+                top: `${Math.round(finalTop)}px`,
+                left: `${Math.round(finalLeft)}px`
+            };
+
+            const movedChild = {
+                ...childData,
+                _id: childData._id || dragId,
+                props: updatedChildProps
+            };
+
+            setEventData(prev => {
+                const pages = { ...prev.pages };
+                const blocks = [...pages[currentPage]];
+
+                const sourceSection = { ...blocks[sourceSectionIndex] };
+                const targetSection = { ...blocks[targetSectionIndex] };
+
+                let sourceChildren = [...(sourceSection.props.children || [])];
+                let targetChildren = [...(targetSection.props.children || [])];
+
+                if (sourceSectionIndex === targetSectionIndex) {
+                    // Same section
+                    sourceChildren[childIndex] = movedChild;
+                    sourceSection.props = { ...sourceSection.props, children: sourceChildren };
+                    blocks[sourceSectionIndex] = sourceSection;
+                } else {
+                    // Cross section
+                    sourceChildren.splice(childIndex, 1);
+                    targetChildren.push(movedChild);
+
+                    sourceSection.props = { ...sourceSection.props, children: sourceChildren };
+                    targetSection.props = { ...targetSection.props, children: targetChildren };
+
+                    blocks[sourceSectionIndex] = sourceSection;
+                    blocks[targetSectionIndex] = targetSection;
+                }
+
+                pages[currentPage] = blocks;
+                return { ...prev, pages };
+            });
+        }
+    };
+
     if (!eventData) return <Box p={10}>Loading Editor...</Box>;
+
+    const ActiveComponent = activeComponentType ? resolveComponent(activeComponentType) : null;
+    const dragPreviewTheme = themeConfig || {
+        background: "#fff",
+        fontFamily: "Inter, sans-serif",
+        color: "#ffffff"
+    };
 
     return (
         <Flex flex={1} minH="0" overflow="hidden">
@@ -147,27 +306,43 @@ export default function EventEditor() {
                         Pages
                     </Button>
                 </Box>
-                <Box
-                    // Transform scale logic could go here for "Device Preview" mode
-                    bg="white"
-                    minH="100%"
-                    shadow="lg"
-                    mx="auto"
+                <DndContext
+                    sensors={sensors}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    modifiers={[restrictToWindowEdges]}
                 >
-                    <EngineRenderer
-                        eventData={{ ...eventData, theme_config: themeConfig }}
-                        blocksOverride={currentBlocks}
-                        isEditor={true}
-                        onBlockChange={(index, updatedProps) => {
-                            const newBlocks = [...currentBlocks];
-                            newBlocks[index] = {
-                                ...newBlocks[index],
-                                props: { ...newBlocks[index].props, ...updatedProps }
-                            };
-                            setEventData(prev => ({ ...prev, pages: { ...prev.pages, [currentPage]: newBlocks } }));
-                        }}
-                    />
-                </Box>
+                    <Box
+                        bg="white"
+                        minH="100%"
+                        shadow="lg"
+                        mx="auto"
+                    >
+                        <EngineRenderer
+                            eventData={{ ...eventData, theme_config: themeConfig }}
+                            blocksOverride={currentBlocks}
+                            isEditor={true}
+                            onBlockChange={(index, updatedProps) => {
+                                const newBlocks = [...currentBlocks];
+                                newBlocks[index] = {
+                                    ...newBlocks[index],
+                                    props: { ...newBlocks[index].props, ...updatedProps }
+                                };
+                                setEventData(prev => ({ ...prev, pages: { ...prev.pages, [currentPage]: newBlocks } }));
+                            }}
+                        />
+                    </Box>
+                    <DragOverlay zIndex={999999}>
+                        {activeId && ActiveComponent ? (
+                            <ActiveComponent
+                                {...activeProps}
+                                isEditor={false}
+                                isDragOverlay={true}
+                                theme={dragPreviewTheme}
+                            />
+                        ) : null}
+                    </DragOverlay>
+                </DndContext>
             </Box>
 
             {/* RIGHT: Editor Panel */}

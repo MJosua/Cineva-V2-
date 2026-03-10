@@ -44,6 +44,9 @@ export default function EngineRenderer({ eventData, blocksOverride, isEditor = f
                     <Component
                         key={index}
                         {...block.props}
+                        id={block._id}
+                        _id={block._id}
+                        blockIndex={index}
                         theme={theme}
                         eventSlug={eventData.slug}
                         eventId={eventData.campaign_id}

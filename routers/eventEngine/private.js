@@ -67,6 +67,7 @@ router.get('/campaigns/:slug/logs', eventEngineController.getAuditLogs);
 const { hotsTempUploader } = require('../../config/uploader');
 router.get('/campaigns/:slug/media', eventEngineController.getCampaignMedia);
 router.post('/campaigns/:slug/media/upload', hotsTempUploader().array('files'), eventEngineController.uploadCampaignMedia);
+router.delete('/campaigns/:slug/media/:mediaId', eventEngineController.deleteCampaignMedia);
 
 // ============================================================================
 // SUBMISSIONS

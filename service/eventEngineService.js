@@ -13,6 +13,8 @@
  */
 
 const { dbQueryHots, dbHots } = require('../config/db');
+const fs = require('fs').promises;
+const path = require('path');
 const RuleExecutor = require('./ruleExecutor'); // Phase 4.2
 const sseManager = require('../core/sse-manager'); // Phase 5: Live Updates
 const { encryptUrlSafe, decryptUrlSafe } = require('../core/cryptoUtil');
@@ -76,6 +78,37 @@ async function uploadCampaignMedia(slug, files, userId) {
     }
 
     return results;
+}
+
+/**
+ * Delete media asset for a campaign
+ * @param {string} slug 
+ * @param {number} mediaId 
+ */
+async function deleteCampaignMedia(slug, mediaId) {
+    const campaignId = await getCampaignIdBySlug(slug);
+    if (!campaignId) throw new Error("Campaign not found");
+
+    // 1. Find file info
+    const findSql = `SELECT file_path FROM file_t_upload WHERE upload_id = ? AND entity_id = ? AND entity_type = 'campaign'`;
+    const rows = await dbQueryHots(findSql, [mediaId, campaignId]);
+    if (rows.length === 0) throw new Error("Media not found");
+
+    const filePath = rows[0].file_path;
+
+    // 2. Delete from DB
+    await dbQueryHots(`DELETE FROM file_t_upload WHERE upload_id = ?`, [mediaId]);
+
+    // 3. Delete from FS (soft fail if file missing)
+    try {
+        const fullPath = path.resolve(filePath);
+        await fs.unlink(fullPath);
+        console.log(`[EventEngine] Deleted file: ${fullPath}`);
+    } catch (e) {
+        console.warn(`[EventEngine] Failed to delete file on disk: ${filePath}`, e.message);
+    }
+
+    return true;
 }
 
 /**
@@ -805,46 +838,6 @@ async function getPoolStatsByCampaign(slug) {
 // EXPORTS
 // ============================================================================
 
-module.exports = {
-    // Campaigns
-    getCampaigns,
-    getCampaignBySlug,
-    getCampaignIdBySlug,
-    createCampaign,
-    updateCampaign,
-    deleteCampaign,
-
-    // Submissions
-    getSubmissionsByCampaign,
-    getSubmissionStats,
-    updateSubmissionStatus,
-
-    // Pools
-    getPoolsByCampaign,
-    getPoolById,
-    getPoolItems,
-    getPoolStats,
-    getPoolStatsByCampaign,
-    createPool,
-    updatePool,
-    addPoolItems,
-
-    // Analytics
-    getDailySubmissionStats,
-    getWinnersByCampaign,
-    getWinnersForExport,
-    publishCampaign,
-    getPublicCampaign,
-
-    // Winner Generator
-    drawWinners,
-
-    // Team Management
-    getCampaignTeam,
-    addTeamMember,
-    removeTeamMember,
-    searchUsers
-};
 
 // ============================================================================
 // TEAM MANAGEMENT
@@ -1589,6 +1582,7 @@ module.exports = {
     getPublicCampaign,
     getCampaignMedia,
     uploadCampaignMedia,
+    deleteCampaignMedia,
     publishCampaign,
     submitEntry,
 

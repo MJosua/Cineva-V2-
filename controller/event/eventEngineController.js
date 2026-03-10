@@ -622,12 +622,33 @@ const uploadCampaignMedia = asyncHandler(async (req, res) => {
     const files = req.files || [];
     const userId = req.user?.id || 0;
 
+    console.log(`[EventEngine] Upload request for campaign: ${slug}`);
+    console.log(`[EventEngine] Number of files: ${files.length}`);
+
     if (files.length === 0) {
+        console.warn(`[EventEngine] No files found in request for: ${slug}`);
         return res.status(400).json(createResponse(false, null, { message: "No files uploaded" }));
     }
 
-    const media = await eventEngineService.uploadCampaignMedia(slug, files, userId);
-    res.json(createResponse(true, media));
+    // Log detail for each file
+    files.forEach((file, index) => {
+        console.log(`[EventEngine] File ${index + 1}: ${file.originalname} (${file.size} bytes), Mime: ${file.mimetype}`);
+    });
+
+    try {
+        const media = await eventEngineService.uploadCampaignMedia(slug, files, userId);
+        console.log(`[EventEngine] Successfully persisted ${media.length} media records to DB`);
+        res.json(createResponse(true, media));
+    } catch (error) {
+        console.error(`[EventEngine] Upload failed:`, error);
+        throw error;
+    }
+});
+
+const deleteCampaignMedia = asyncHandler(async (req, res) => {
+    const { slug, mediaId } = req.params;
+    await eventEngineService.deleteCampaignMedia(slug, mediaId);
+    res.json(createResponse(true, { deleted: true }));
 });
 
 const getAuditLogs = asyncHandler(async (req, res) => {
@@ -688,6 +709,7 @@ module.exports = {
     setPublishStatus,
     getCampaignMedia,
     uploadCampaignMedia,
+    deleteCampaignMedia,
     getAuditLogs,
 
     // Submissions

@@ -450,7 +450,7 @@ module.exports = {
         return multer({
             storage: storageUploader,
             fileFilter,
-            limits: { fileSize: 3.6 * 1024 * 1024 } // 3.6MB Limit
+            limits: { fileSize: 50 * 1024 * 1024 } // 50MB Limit (Increased from 3.6MB)
         });
     },
     eventDoorPrize: (req, directory, filePrefix) => {
