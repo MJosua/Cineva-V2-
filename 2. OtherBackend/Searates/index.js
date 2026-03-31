@@ -48,8 +48,6 @@ dotenv.config();
 
 const cors = require("cors");
 
-const session = require("express-session");
-
 const os = require('os');
 
 //for production
@@ -75,8 +73,85 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 const rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
+  terminal: false // Important for PM2/system logs
 });
+
+const question = (query) => new Promise((resolve) => rl.question(query, resolve));
+
+let searatesInstance;
+
+rl.on('line', async (line) => {
+  const command = line.trim().toLowerCase();
+  if (command === '/fetch') {
+    if (searatesInstance) {
+      await searatesInstance.manualTrackLimited();
+    } else {
+      console.log("Searates instance not initialized yet.");
+    }
+  } else if (command === '/limit') {
+    if (searatesInstance) {
+      await searatesInstance.getQuotaStatus();
+    } else {
+      console.log("Searates instance not initialized yet.");
+    }
+  } else if (command === '/range') {
+    if (searatesInstance) {
+      const startDate = await question("📅 Start Date (YYYY-MM-DD): ");
+      const endDate = await question("📅 End Date (YYYY-MM-DD): ");
+      if (startDate && endDate) {
+        console.log(`🚀 Starting tracking for range: ${startDate} to ${endDate}...`);
+        await searatesInstance.datetrack(startDate, endDate);
+      } else {
+        console.log("⚠️ Invalid date range provided.");
+      }
+    } else {
+      console.log("Searates instance not initialized yet.");
+    }
+  } else if (command === '/range-count') {
+    if (searatesInstance) {
+      const startDate = await question("📅 Start Date (YYYY-MM-DD): ");
+      const endDate = await question("📅 End Date (YYYY-MM-DD): ");
+      if (startDate && endDate) {
+        await searatesInstance.datetrackCount(startDate, endDate);
+      } else {
+        console.log("⚠️ Invalid date range provided.");
+      }
+    } else {
+      console.log("Searates instance not initialized yet.");
+    }
+  } else if (command === '/force-range') {
+    if (searatesInstance) {
+      console.log("🛑 WARNING: This command BYPASSES daily API limits.");
+      const confirmCode = await question("🔑 Enter confirmation code to proceed: ");
+      if (confirmCode === 'Indofood01') {
+        const startDate = await question("📅 Start Date (YYYY-MM-DD): ");
+        const endDate = await question("📅 End Date (YYYY-MM-DD): ");
+        if (startDate && endDate) {
+          console.log(`🚀 FORCING tracking for range: ${startDate} to ${endDate} (Quota Bypass ACTIVE)...`);
+          searatesInstance.toggleQuotaBypass(true);
+          searatesInstance.setSilentMode(true);
+          try {
+            await searatesInstance.datetrack(startDate, endDate);
+          } finally {
+            searatesInstance.toggleQuotaBypass(false);
+            searatesInstance.setSilentMode(false);
+          }
+        } else {
+          console.log("⚠️ Invalid date range provided.");
+        }
+      } else {
+        console.log("❌ Incorrect confirmation code. Operation cancelled.");
+      }
+    } else {
+      console.log("Searates instance not initialized yet.");
+    }
+  } else if (command === '/help') {
+    console.log("Available commands: \n - /fetch: Trigger manual SeaRates tracking (limit 2)\n - /limit: Check daily API quota usage\n - /range: Trigger tracking for a specific date range\n - /range-count: Count shipments in a date range without tracking\n - /force-range: Trigger tracking with QUOTA BYPASS (requires code)");
+  }
+});
+
+
 
 const testingUtils = require('./testing-utils');
 
@@ -175,13 +250,6 @@ const io = new Server(
 
 );
 
-App.use(
-  session({
-    resave: false,
-    saveUninitialized: true,
-    secret: "SECRET",
-  })
-);
 
 App.use(cors({
   origin: '*', // Specify Ionic app's origin
@@ -285,9 +353,12 @@ App.get("/", (req, res) => {
   res
     .status(200)
     .send(
-      "<h1>CONNECTION BLOCKED!</h2> <br> <h2> YOU ARE NOT SUPPOSE TO ACCESS THIS SITE WITH PAGE!  </h2>"
+
+      "<h1>CONNECTION BLOCKED!</h2> <br> <h2> YOU ARE NOT SUPPOSE TO ACCESS THIS SITE WITH PAGE! JANGAN LUPA TAMBAHKAN VERSIONING DI SETIAP ROUTER </h2>"
     );
 });
+//
+
 //DB CONNECTION CHECK
 const {
   dbConf,
@@ -313,5 +384,5 @@ const {
 } = require('./automation');
 const { error } = require("console");
 
-Searates.runCheck();
+searatesInstance = Searates.runCheck();
 // notification.callInsertSO();

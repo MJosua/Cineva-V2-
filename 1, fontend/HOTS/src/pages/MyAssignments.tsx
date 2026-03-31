@@ -20,16 +20,18 @@ import {
     AlertCircle,
     ListTodo,
     LayoutGrid,
-    Search,
-    Filter
+    Search
 } from 'lucide-react';
 import { API_URL } from '@/config/sourceConfig';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useHeader } from '@/contexts/HeaderContext';
-import { searchInObject } from '@/utils/searchUtils';
 import { CompactAssignmentCard } from '@/components/assignment/CompactAssignmentCard';
 import { TicketPagination } from '@/components/ui/TicketPagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
+import CompletionModal from '@/components/modals/CompletionModal';
+import axios from 'axios';
 
 interface TaskPreview {
     title: string;
@@ -61,11 +63,17 @@ interface PaginationData {
     pages: number;
 }
 
+interface CategorySummary {
+    folder: string;
+    count: number;
+}
+
 export const MyAssignments: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const { searchValue, setSearchPlaceholder } = useHeader();
+    const { searchValue, setSearchValue, setSearchPlaceholder } = useHeader();
     const [assignments, setAssignments] = useState<Assignment[]>([]);
+    const [categories, setCategories] = useState<CategorySummary[]>([]);
     const [pagination, setPagination] = useState<PaginationData | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -76,6 +84,11 @@ export const MyAssignments: React.FC = () => {
     const [viewMode, setViewMode] = useState<'folder' | 'compact'>(() => {
         return (localStorage.getItem('hots_assignment_view_mode') as 'folder' | 'compact') || 'folder';
     });
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+    const [isBulkCompleting, setIsBulkCompleting] = useState(false);
+    const [processingIds, setProcessingIds] = useState<number[]>([]);
+    const { toast } = useToast();
 
     useEffect(() => {
         localStorage.setItem('hots_assignment_view_mode', viewMode);
@@ -84,6 +97,7 @@ export const MyAssignments: React.FC = () => {
     // 🔗 URL Persistence for Category
     const selectedFolder = searchParams.get('category');
     const setSelectedFolder = (folder: string | null) => {
+        setPage(1); // Reset to page 1 when category changes
         if (folder) {
             setSearchParams({ category: folder });
         } else {
@@ -91,13 +105,12 @@ export const MyAssignments: React.FC = () => {
         }
     };
 
-    const { user } = useAppSelector(state => state.auth);
     const { sseSignals } = useAppSelector(state => state.tickets);
 
     useEffect(() => {
         fetchAssignments();
         setSearchPlaceholder("Search assignments...");
-    }, [setSearchPlaceholder, page, limit, statusFilter, searchValue, sortOrder]);
+    }, [setSearchPlaceholder, page, limit, statusFilter, searchValue, sortOrder, selectedFolder]);
 
     useEffect(() => {
         if (sseSignals?.assignment) {
@@ -118,14 +131,16 @@ export const MyAssignments: React.FC = () => {
             const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
             const searchParam = searchValue ? `&search=${encodeURIComponent(searchValue)}` : '';
             const sortParam = `&sort=${sortOrder}`;
+            const categoryParam = selectedFolder ? `&service=${encodeURIComponent(selectedFolder)}` : '';
 
-            const response = await fetch(`${API_URL}/engine/my-assignments?page=${page}&limit=${limit}${statusParam}${searchParam}${sortParam}`, {
+            const response = await fetch(`${API_URL}/engine/my-assignments?page=${page}&limit=${limit}${statusParam}${searchParam}${sortParam}${categoryParam}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error('Failed to fetch assignments');
             const data = await response.json();
             setAssignments(data.assignments || []);
             setPagination(data.pagination);
+            setCategories(data.categories || []);
         } catch (err: any) {
             console.error('Failed to fetch assignments:', err);
         } finally {
@@ -134,20 +149,73 @@ export const MyAssignments: React.FC = () => {
         }
     };
 
-    // 🧠 Hierarchical Grouping Logic
-    // Grouping logic (now server-side filtered, but UI still groups current page)
-    const groupedData = useMemo(() => {
-        const groups: Record<string, Assignment[]> = {};
-        assignments.forEach(a => {
-            const cat = a.service_name || "Uncategorized";
-            if (!groups[cat]) groups[cat] = [];
-            groups[cat].push(a);
-        });
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
 
-        return groups;
-    }, [assignments]);
+    const toggleSelectAll = () => {
+        const activeIds = assignments
+            .filter(a => a.assignment_status === 'active')
+            .map(a => a.assignment_id);
 
-    const activeFolders = Object.keys(groupedData).sort();
+        if (selectedIds.length === activeIds.length && activeIds.length > 0) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(activeIds);
+        }
+    };
+
+    const handleBulkComplete = async (note: string, tempFileIds: number[]) => {
+        // Optimistic UI: Hide selected tasks immediately
+        const idsToProcess = [...selectedIds];
+        setProcessingIds(prev => [...prev, ...idsToProcess]);
+        const count = idsToProcess.length;
+        
+        setSelectedIds([]);
+        setIsBulkModalOpen(false);
+
+        // Don't set isBulkCompleting to true for the whole page if we want it seamless
+        // setIsBulkCompleting(true); 
+
+        const token = localStorage.getItem('hots_tokek');
+
+        try {
+            await axios.post(
+                `${API_URL}/engine/assignment/bulk-complete`,
+                { 
+                    assignmentIds: idsToProcess, 
+                    completion_note: note, 
+                    temp_file_ids: tempFileIds 
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            toast({
+                title: 'Bulk Completion Started',
+                description: `Processing ${count} tasks in the background. They will disappear from your list shortly.`,
+            });
+
+            // Wait a bit then refresh to sync with server
+            setTimeout(() => {
+                fetchAssignments(false);
+                // Clear processing status after refresh
+                setProcessingIds(prev => prev.filter(id => !idsToProcess.includes(id)));
+            }, 2000);
+
+        } catch (err: any) {
+            console.error(`Bulk completion failed:`, err);
+            // Revert optimistic hide on error
+            setProcessingIds(prev => prev.filter(id => !idsToProcess.includes(id)));
+            
+            toast({
+                title: 'Operation Failed',
+                description: err.response?.data?.error || 'Could not start bulk completion',
+                variant: 'destructive'
+            });
+        }
+    };
 
     const getStatusConfig = (status: string, isOverdueFromAPI: boolean) => {
         const configs: Record<string, { color: string, bgColor: string, icon: React.ReactNode, label: string }> = {
@@ -192,14 +260,26 @@ export const MyAssignments: React.FC = () => {
         );
     }
 
-    const currentAssignments = selectedFolder ? groupedData[selectedFolder] || [] : [];
-    const activeCount = assignments.filter(a => a.assignment_status === 'active').length;
+    const totalActiveCount = categories.reduce((acc, cat) => acc + cat.count, 0);
 
-    const { searchValue: localSearchValue, setSearchValue: setHeaderSearchValue } = useHeader();
+    // Re-render components
+    const renderPagination = () => {
+        if (!pagination || pagination.pages <= 1) return null;
+        return (
+            <div className="py-4 border-t border-slate-100 mt-4">
+                <TicketPagination
+                    currentPage={page}
+                    totalPages={pagination.pages}
+                    onPageChange={setPage}
+                    totalItems={pagination.total}
+                />
+            </div>
+        );
+    };
 
     return (
         <div className="container mx-auto px-4 py-6 max-w-6xl">
-            {/* Hierarchical Navigation / Breadcrumbs */}
+            {/* Hierarchical Navigation */}
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                 <nav className="flex items-center gap-2 text-sm">
                     <button
@@ -216,8 +296,6 @@ export const MyAssignments: React.FC = () => {
                         </>
                     )}
                 </nav>
-
-
             </div>
 
             {/* Filter Bar */}
@@ -227,16 +305,13 @@ export const MyAssignments: React.FC = () => {
                     <Input
                         className="pl-9 bg-slate-50/50 border-slate-200 focus:bg-white transition-all"
                         placeholder="Search assignments or ticket titles then press enter"
-                        value={localSearchValue}
-                        onChange={e => setHeaderSearchValue(e.target.value)}
+                        value={searchValue}
+                        onChange={e => setSearchValue(e.target.value)}
                     />
                 </div>
 
                 <div className="flex items-center gap-3">
-
-
                     <div className="w-px h-6 bg-slate-200 mx-1" />
-
                     <div className="flex items-center gap-2">
                         <ListTodo className="w-4 h-4 text-muted-foreground" />
                         <Select value={sortOrder} onValueChange={(v: any) => { setSortOrder(v); setPage(1); }}>
@@ -261,8 +336,8 @@ export const MyAssignments: React.FC = () => {
                     </h1>
                     <p className="text-sm text-muted-foreground font-medium">
                         {selectedFolder
-                            ? `${currentAssignments.length} items in this category`
-                            : activeCount > 0 ? `You have ${activeCount} active tasks across ${activeFolders.length} categories` : "No pending assignments."
+                            ? `${pagination?.total || 0} items in this category`
+                            : totalActiveCount > 0 ? `You have ${totalActiveCount} tasks across ${categories.length} categories` : "No pending assignments."
                         }
                     </p>
                 </div>
@@ -289,8 +364,7 @@ export const MyAssignments: React.FC = () => {
                             <button
                                 key={s}
                                 onClick={() => { setStatusFilter(s); setPage(1); }}
-                                className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${statusFilter === s ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                                    }`}
+                                className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${statusFilter === s ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                             >
                                 {s.charAt(0).toUpperCase() + s.slice(1)}
                             </button>
@@ -315,193 +389,195 @@ export const MyAssignments: React.FC = () => {
                 </div>
             </div>
 
+            {/* Top Pagination (only for long lists) */}
+            {(viewMode === 'compact' || selectedFolder) && renderPagination()}
+
             {/* Main Content Area */}
-            {viewMode === 'compact' ? (
-                /* COMPACT VIEW GRID - 3 COLUMNS MAX */
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
-                    {assignments.filter(a => {
-                        const statusMatch = statusFilter === 'all' || a.assignment_status === statusFilter;
-                        const searchMatch = !searchValue || searchInObject(a, searchValue);
-                        return statusMatch && searchMatch;
-                    }).length === 0 ? (
-                        <div className="col-span-full py-20 text-center border-2 border-dashed rounded-lg bg-muted/20">
-                            <LayoutGrid className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                            <p className="text-muted-foreground font-medium">No assignments found for the current filters.</p>
-                        </div>
-                    ) : (
-                        assignments.filter(a => {
-                            const statusMatch = statusFilter === 'all' || a.assignment_status === statusFilter;
-                            const searchMatch = !searchValue || searchInObject(a, searchValue);
-                            return statusMatch && searchMatch;
-                        }).map(assignment => (
-                            <div key={assignment.assignment_id} className="w-full flex justify-center h-full">
-                                <CompactAssignmentCard
-                                    assignment={assignment as any}
-                                    onComplete={() => fetchAssignments(false)}
-                                />
+            <div className="mt-6">
+                {viewMode === 'compact' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+                        {assignments.length === 0 ? (
+                            <div className="col-span-full py-20 text-center border-2 border-dashed rounded-lg bg-muted/20">
+                                <LayoutGrid className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                                <p className="text-muted-foreground font-medium">No assignments found for the current filters.</p>
                             </div>
-                        ))
-                    )}
-                </div>
-            ) : !selectedFolder ? (
-                /* FOLDER GRID - CORPORATE STYLE */
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {activeFolders.length === 0 ? (
-                        <div className="col-span-full py-20 text-center border-2 border-dashed rounded-lg bg-muted/20">
-                            <Folder className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                            <p className="text-muted-foreground font-medium">No assignment categories found</p>
-                        </div>
-                    ) : (
-                        activeFolders.map(folder => (
-                            <Card
-                                key={folder}
-                                onClick={() => setSelectedFolder(folder)}
-                                className="group cursor-pointer hover:shadow-md transition-all border-slate-200 bg-white hover:border-blue-400 hover:bg-slate-50/50"
-                            >
-                                <CardContent className="p-6 flex flex-col items-center text-center">
-                                    <div className="relative mb-4">
-                                        <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors duration-200">
-                                            <Folder className="w-6 h-6" />
+                        ) : (
+                             assignments
+                                .filter(a => !processingIds.includes(a.assignment_id))
+                                .map(assignment => (
+                                <div key={assignment.assignment_id} className="w-full flex justify-center h-full">
+                                    <CompactAssignmentCard
+                                        assignment={assignment as any}
+                                        onComplete={() => fetchAssignments(false)}
+                                        isSelected={selectedIds.includes(assignment.assignment_id)}
+                                        onToggleSelect={toggleSelect}
+                                    />
+                                </div>
+                            ))
+                        )}
+                    </div>
+                ) : !selectedFolder ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {categories.length === 0 ? (
+                            <div className="col-span-full py-20 text-center border-2 border-dashed rounded-lg bg-muted/20">
+                                <Folder className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                                <p className="text-muted-foreground font-medium">No assignment categories found</p>
+                            </div>
+                        ) : (
+                            categories.map(cat => (
+                                <Card
+                                    key={cat.folder}
+                                    onClick={() => setSelectedFolder(cat.folder)}
+                                    className="group cursor-pointer hover:shadow-md transition-all border-slate-200 bg-white hover:border-blue-400 hover:bg-slate-50/50"
+                                >
+                                    <CardContent className="p-6 flex flex-col items-center text-center">
+                                        <div className="relative mb-4">
+                                            <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors duration-200">
+                                                <Folder className="w-6 h-6" />
+                                            </div>
+                                            <Badge
+                                                variant="secondary"
+                                                className="absolute -top-2 -right-2 px-1.5 py-0 min-w-[20px] h-5 flex items-center justify-center rounded-full bg-blue-600 text-white border-2 border-white text-[10px] font-bold"
+                                            >
+                                                {cat.count}
+                                            </Badge>
                                         </div>
-                                        <Badge
-                                            variant="secondary"
-                                            className="absolute -top-2 -right-2 px-1.5 py-0 min-w-[20px] h-5 flex items-center justify-center rounded-full bg-blue-600 text-white border-2 border-white text-[10px] font-bold"
-                                        >
-                                            {groupedData[folder].length}
-                                        </Badge>
-                                    </div>
-                                    <h3 className="font-semibold text-sm text-slate-800 mb-1 line-clamp-1 group-hover:text-blue-700 transition-colors">
-                                        {folder}
-                                    </h3>
-                                    <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">View Tasks</p>
-                                </CardContent>
-                            </Card>
-                        ))
-                    )}
-                </div>
-            ) : (
-                /* FILE ROWS LIST - CORPORATE STYLE */
-                <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedFolder(null)}
-                        className="px-0 h-auto gap-2 text-slate-500 hover:text-blue-600 mb-2 hover:bg-transparent"
-                    >
-                        <ChevronLeft className="w-4 h-4" />
-                        Back to Categories
-                    </Button>
-
-                    {currentAssignments.map((assignment) => {
-                        const s = getStatusConfig(assignment.assignment_status, assignment.is_overdue);
-                        const isOverdue = assignment.is_overdue;
-                        const hasPreviewTasks = assignment.task_preview && assignment.task_preview.length > 0;
-
-                        return (
-                            <div
-                                key={assignment.assignment_id}
-                                onClick={() => navigate(`/assignment/${assignment.ticket_id}`)}
-                                className={`group relative flex flex-col md:flex-row p-4 md:p-5 bg-white border rounded-lg hover:shadow-md transition-all cursor-pointer gap-6 ${isOverdue ? 'border-l-4 border-l-orange-500 border-slate-200' : 'border-slate-200 hover:border-blue-300'
-                                    }`}
-                            >
-                                {/* Left Section: Info */}
-                                <div className="flex-1 flex gap-4 min-w-0">
-                                    <div className="w-12 h-12 rounded-lg bg-slate-50 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-50 transition-colors border border-slate-100">
-                                        <ClipboardList className="w-6 h-6 text-slate-400 group-hover:text-blue-600 transition-colors" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-xs font-mono font-bold text-slate-500 tracking-tight">#{assignment.ticket_id}</span>
-                                            {s.icon && (
-                                                <Badge
-                                                    variant="secondary"
-                                                    className={`${s.bgColor} ${s.color} text-[10px] px-2 py-0.5 h-auto gap-1 border-none font-bold uppercase tracking-tight`}
-                                                >
-                                                    {s.icon}
-                                                    {s.label}
-                                                    {isOverdue && assignment.overdue_task_count > 0 && (
-                                                        <span className="ml-1 px-1 bg-white/50 rounded">{assignment.overdue_task_count} tasks</span>
-                                                    )}
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <h3 className="text-base font-bold text-slate-800 mb-1 group-hover:text-blue-700 transition-colors">
-                                            {assignment.ticket_title || "Untitled Assignment"}
+                                        <h3 className="font-semibold text-sm text-slate-800 mb-1 line-clamp-1 group-hover:text-blue-700 transition-colors">
+                                            {cat.folder || "Uncategorized"}
                                         </h3>
-                                        <div className="flex items-center gap-3 text-[12px] text-slate-500 font-medium">
-                                            <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5 opacity-70" /> {getTimeAgo(assignment.assigned_at)}</span>
-                                            {assignment.notes && (
-                                                <span className="flex items-center gap-1 truncate opacity-80">
-                                                    <span className="opacity-30">|</span>
-                                                    <span className="truncate italic">{assignment.notes}</span>
-                                                </span>
-                                            )}
-                                        </div>
+                                        <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">View Tasks</p>
+                                    </CardContent>
+                                </Card>
+                            ))
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedFolder(null)}
+                            className="px-0 h-auto gap-2 text-slate-500 hover:text-blue-600 mb-2 hover:bg-transparent"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            Back to Categories
+                        </Button>
+                        {assignments
+                            .filter(a => !processingIds.includes(a.assignment_id))
+                            .map((assignment) => {
+                            const s = getStatusConfig(assignment.assignment_status, assignment.is_overdue);
+                            const isOverdue = assignment.is_overdue;
+                            const hasPreviewTasks = assignment.task_preview && assignment.task_preview.length > 0;
 
-                                        {/* Mobile Task Preview */}
-                                        {hasPreviewTasks && (
-                                            <div className="block md:hidden mt-3 space-y-1.5 pt-3 border-t border-slate-100">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Next Actions</p>
-                                                {assignment.task_preview.slice(0, 2).map((pt, i) => (
-                                                    <div key={i} className="flex items-center gap-2 text-xs text-slate-600">
-                                                        <div className={`w-1.5 h-1.5 rounded-full ${pt.status === 'in_progress' ? 'bg-blue-500' : 'bg-slate-300'}`} />
-                                                        <span className="truncate">{pt.title}</span>
+                            return (
+                                <div
+                                    key={assignment.assignment_id}
+                                    className={`group relative flex flex-col md:flex-row p-4 md:p-5 bg-white border rounded-lg hover:shadow-md transition-all cursor-pointer gap-6 ${isOverdue ? 'border-l-4 border-l-orange-500 border-slate-200' : 'border-slate-200 hover:border-blue-300'} ${selectedIds.includes(assignment.assignment_id) ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : ''}`}
+                                >
+                                    {assignment.assignment_status === 'active' && (
+                                        <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                                            <Checkbox
+                                                checked={selectedIds.includes(assignment.assignment_id)}
+                                                onCheckedChange={() => toggleSelect(assignment.assignment_id)}
+                                                className="w-5 h-5 border-slate-300"
+                                            />
+                                        </div>
+                                    )}
+                                    <div className="flex-1 flex gap-4 min-w-0" onClick={() => navigate(`/assignment/${assignment.ticket_id}`)}>
+                                        <div className="w-12 h-12 rounded-lg bg-slate-50 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-50 transition-colors border border-slate-100">
+                                            <ClipboardList className="w-6 h-6 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-xs font-mono font-bold text-slate-500 tracking-tight">#{assignment.ticket_id}</span>
+                                                {s.icon && (
+                                                    <Badge variant="secondary" className={`${s.bgColor} ${s.color} text-[10px] px-2 py-0.5 h-auto gap-1 border-none font-bold uppercase tracking-tight`}>
+                                                        {s.icon} {s.label}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            <h3 className="text-base font-bold text-slate-800 mb-1 group-hover:text-blue-700 transition-colors">
+                                                {assignment.ticket_title || "Untitled Assignment"}
+                                            </h3>
+                                            <div className="flex items-center gap-3 text-[12px] text-slate-500 font-medium">
+                                                <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5 opacity-70" /> {getTimeAgo(assignment.assigned_at)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {hasPreviewTasks && (
+                                        <div className="hidden md:flex flex-col justify-center min-w-[240px] max-w-[300px] gap-2 px-6 border-l border-slate-100">
+                                            <div className="space-y-1.5">
+                                                {assignment.task_preview.slice(0, 3).map((pt: any, i: number) => (
+                                                    <div key={i} className="flex items-center justify-between text-[11px] font-medium text-slate-600">
+                                                        <span className="truncate flex-1 pr-2">• {pt.title}</span>
+                                                        <Badge className={`text-[9px] px-1 py-0 h-3.5 ${pt.status === 'completed' ? 'bg-green-100 text-green-700' : (pt.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500')}`}>
+                                                            {pt.status.replace('_', ' ')}
+                                                        </Badge>
                                                     </div>
                                                 ))}
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Desktop Task Preview Area */}
-                                {hasPreviewTasks && (
-                                    <div className="hidden md:flex flex-col justify-center min-w-[240px] max-w-[300px] gap-2 px-6 border-l border-slate-100">
-                                        <div className="flex items-center gap-1.5 mb-0.5">
-                                            <ListTodo className="w-3.5 h-3.5 text-slate-400" />
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Internal Tasks</span>
                                         </div>
-                                        <div className="space-y-1.5">
-                                            {assignment.task_preview.slice(0, 3).map((pt, i) => (
-                                                <div key={i} className="flex items-center justify-between text-[11px] font-medium text-slate-600 group/task">
-                                                    <span className="truncate flex-1 pr-2 group-hover/task:text-blue-600 transition-colors">• {pt.title}</span>
-                                                    <Badge className={`text-[9px] px-1 py-0 h-3.5 ${pt.status === 'in_progress' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-100'}`}>
-                                                        {pt.status.replace('_', ' ')}
-                                                    </Badge>
-                                                </div>
-                                            ))}
-                                            {assignment.task_preview.length > 3 && (
-                                                <p className="text-[10px] text-slate-400 font-medium ml-2">+{assignment.task_preview.length - 3} more tasks</p>
-                                            )}
+                                    )}
+
+                                    <div className="hidden md:flex items-center justify-center pl-4">
+                                        <div className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-50 group-hover:bg-blue-600 group-hover:text-white transition-all duration-200 text-slate-400 shadow-sm border border-slate-100">
+                                            <ArrowRight className="w-5 h-5" />
                                         </div>
                                     </div>
-                                )}
-
-                                {/* Action Button */}
-                                <div className="hidden md:flex items-center justify-center pl-4">
-                                    <div className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-50 group-hover:bg-blue-600 group-hover:text-white transition-all duration-200 text-slate-400 shadow-sm border border-slate-100">
-                                        <ArrowRight className="w-5 h-5" />
-                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
 
-                    {/* Pagination */}
-                    {pagination && pagination.pages > 1 && (
-                        <div className="mt-8 pt-6 border-t">
-                            <TicketPagination
-                                currentPage={page}
-                                totalPages={pagination.pages}
-                                onPageChange={setPage}
-                                totalItems={pagination.total}
-                            />
+            {/* Bottom Pagination */}
+            {(viewMode === 'compact' || selectedFolder) && renderPagination()}
+
+            {/* Bulk Action Bar */}
+            {selectedIds.length > 0 && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-5 duration-300">
+                    <div className="bg-slate-900 text-white px-6 py-4 rounded-full shadow-2xl border border-slate-700 flex items-center gap-6 min-w-[400px]">
+                        <div className="flex items-center gap-2">
+                            <Badge className="bg-blue-600 text-white border-none h-6 min-w-[24px] flex items-center justify-center rounded-full p-0 font-bold">
+                                {selectedIds.length}
+                            </Badge>
+                            <span className="text-sm font-bold tracking-tight">Tasks Selected</span>
                         </div>
-                    )}
+                        <div className="h-6 w-px bg-slate-700" />
+                        <div className="flex items-center gap-2">
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSelectedIds([])}
+                                className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-full px-4"
+                            >
+                                Deselect All
+                            </Button>
+                            <Button
+                                size="sm"
+                                onClick={() => setIsBulkModalOpen(true)}
+                                className="bg-green-600 hover:bg-green-700 text-white rounded-full px-6 font-bold shadow-lg shadow-green-900/20"
+                            >
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Bulk Complete
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             )}
+
+            <CompletionModal
+                isOpen={isBulkModalOpen}
+                onClose={() => setIsBulkModalOpen(false)}
+                onConfirm={handleBulkComplete}
+                title="Bulk Complete Assignments"
+                description={<>Are you sure you want to mark <b>{selectedIds.length} tasks</b> as complete? All selected assignments will be closed with this closing statement.</>}
+                isLoading={isBulkCompleting}
+            />
         </div>
     );
 };
 
 export default MyAssignments;
-

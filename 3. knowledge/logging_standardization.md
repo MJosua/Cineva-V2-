@@ -40,4 +40,8 @@ When refactoring legacy code:
 Standardized logging allows the Admin Dashboard to parse logs via SSE, providing:
 - Real-time monitoring.
 - Module-based filtering.
-- Visual severity indicators (Red for Error, Yellow for Warn).
+- **Visual severity indicators** (Red for Error, Yellow for Warn).
+
+> [!WARNING]
+> **Manual Date Variables**: Do not declare `let date = new Date()` in controllers for logging purposes. Use the global `log` utility which handles timestamping automatically. Manual declarations often lead to `ReferenceError: date is not defined` if used inconsistently across scopes.
+

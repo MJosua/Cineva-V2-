@@ -163,21 +163,26 @@ const JobTitleManagement = () => {
 
     return (
 
-        <div
-            searchValue={searchValue}
-            onSearchChange={setSearchValue}
-            searchPlaceholder="Search job titles..."
-
-            className="space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Job Title Management</h1>
                     <p className="text-gray-600">Manage employee job titles and positions</p>
                 </div>
-                <Button onClick={handleAdd}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Job Title
-                </Button>
+                <div className="flex items-center gap-2">
+                    <div className="relative w-64">
+                        <Input
+                            placeholder="Search job titles..."
+                            value={searchValue}
+                            onChange={(e) => setSearchValue(e.target.value)}
+                            className="pr-10"
+                        />
+                    </div>
+                    <Button onClick={handleAdd}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Job Title
+                    </Button>
+                </div>
             </div>
 
             <Card>

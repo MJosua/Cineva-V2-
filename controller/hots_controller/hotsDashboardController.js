@@ -2,11 +2,17 @@
 const {
     dbHots,
     dbQueryHots,
+    dbQuery,
 } = require("../../config/db");
+const { createShipmentAnalyticsService } = require("../../service/searates/tracking_analytics");
 /**
  * Get dashboard functions filtered by user role & department
  */
 let yellowTerminal = "\x1b[33m";
+const shipmentAnalyticsService = createShipmentAnalyticsService({
+    dbQuery,
+    logger: console,
+});
 
 module.exports = {
 
@@ -53,7 +59,7 @@ module.exports = {
                     AND (
                         (ta.assigned_type = 'user' AND ta.assigned_id = ?)
                         OR (ta.assigned_type = 'team' AND ta.assigned_id IN (
-                            SELECT team_id FROM m_team_member WHERE user_id = ?
+                            SELECT team_id FROM m_company_team_member WHERE user_id = ?
                         ))
                     )
                 `, [user_id, user_id]),
@@ -1019,6 +1025,15 @@ module.exports = {
                     console.warn('E-Order query failed:', err.message);
                     return res.json({ success: true, type: 'eorder', data: null });
                 }
+            }
+
+            if (configType === 'shipment_analytics') {
+                const data = await shipmentAnalyticsService.getCardSummaryData();
+                return res.json({
+                    success: true,
+                    type: 'shipment_analytics',
+                    data
+                });
             }
 
             // Unknown type - return null

@@ -40,7 +40,7 @@ import SearchBarComponent from "../../../../components/inputs/SearchBarComponent
 import Sidebar from "../../../../components/layout/Sidebar.jsx";
 import ContainerTracking from "./ContainerTracking";
 
-function PageContainerTracking() {
+function PageContainerTracking({ admin }) {
 
 
     const navigate = useNavigate();
@@ -98,7 +98,7 @@ function PageContainerTracking() {
                                                 overflow: "hidden",    // Enable scroll if content exceeds height
                                             }}
                                         >
-                                            <ContainerTracking admin={true} />
+                                            <ContainerTracking admin={admin} />
                                         </div>
 
                                     </div>

@@ -110,7 +110,7 @@ module.exports = {
                 FROM hots.t_workflow_instances wi
                 LEFT JOIN hots.m_service_workflow wg ON wi.workflow_group_id = wg.workflow_id
                 LEFT JOIN hots.user u ON wi.created_by_user_id = u.user_id
-                LEFT JOIN hots.m_team mt ON wi.team_id = mt.team_id ORDER BY wi.creation_date DESC
+                LEFT JOIN hots.m_company_team mt ON wi.team_id = mt.team_id ORDER BY wi.creation_date DESC
             `);
             res.status(200).json({ data: result, success: true, message: "Service get workflow instances success" });
         } catch (err) {

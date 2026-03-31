@@ -9,6 +9,10 @@ export default defineConfig(() => {
             react(),
             envCompatible({ prefix: 'REACT_APP' })
         ],
+        define: {
+            'process.env': {}
+        },
+        envPrefix: 'REACT_APP_',
         server: {
             port: 3000,
             open: true,

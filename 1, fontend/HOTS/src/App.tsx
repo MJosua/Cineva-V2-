@@ -64,6 +64,7 @@ import { useSSE } from "./hooks/useSSE";
 import CmsPublicPage from "@/pages/cms/CmsPublicPage";
 import CmsAdminList from "@/pages/cms/CmsAdminList";
 import CmsAdminEditor from "@/pages/cms/CmsAdminEditor";
+import PublicCMSLayout from "./components/layout/PublicCMSLayout";
 
 
 import EngineModulePage from './pages/EngineModulePage';
@@ -85,6 +86,15 @@ import DashboardView from "./pages/dashboard/DashboardView";
 import ProjectDashboard from "./pages/dashboard/report/ProjectDashboard";
 import CardGeneratorPage from "./pages/CardGeneratorPage";
 import CardProfilePage from "./pages/public/CardProfilePage";
+import ShortRedirect from "./pages/tools/ShortRedirect";
+import QRDashboard from "./pages/tools/QRDashboard";
+
+// Inventory
+import ITInventoryPage from "./pages/inventory/ITInventoryPage";
+import POSMInventoryPage from "./pages/inventory/POSMInventoryPage";
+import RequestTrackingPage from "./pages/inventory/RequestTrackingPage";
+import StorageManagementPage from "./pages/inventory/StorageManagementPage";
+import AssetAuditPage from "./pages/inventory/AssetAuditPage";
 
 
 const queryClient = new QueryClient();
@@ -133,6 +143,10 @@ const AppContentInner = () => {
         <Route path="/forgot-password/:token" element={<ResetPasswordPage />} />
         <Route path="/card/card" element={<CardProfilePage />} />
         <Route path="/meetingbook" element={<MeetingRoomStandalone />} />
+        <Route path="/redirect/:code" element={<ShortRedirect />} />
+        <Route path="/inventory/asset/:category/:sn" element={<AssetAuditPage />} />
+        <Route path="/hots/inventory/asset/:category/:sn" element={<AssetAuditPage />} />
+        <Route path="/hots/inventory/:sn" element={<AssetAuditPage />} />
 
 
         {/* Protected Routes */}
@@ -200,14 +214,24 @@ const AppContentInner = () => {
           <Route path="/dashboard/job-list" element={<JobListPage />} />
           <Route path="/project-dashboard/:serviceId" element={<ProjectDashboard />} />
           <Route path="/card-generator" element={<CardGeneratorPage />} />
+          <Route path="/tools/qr" element={<QRDashboard />} />
+
+          {/* Inventory Management */}
+          <Route path="/inventory/it" element={<ITInventoryPage />} />
+          <Route path="/inventory/posm" element={<POSMInventoryPage />} />
+          <Route path="/inventory/requests" element={<RequestTrackingPage />} />
+          <Route path="/inventory/locations" element={<StorageManagementPage />} />
 
           {dynamicDashboardRoutes}
           {dynamicServiceRoutes}
         </Route>
 
-        {/* Public / Semi-Public with Layout */}
-        <Route element={<AppLayout />}>
+        {/* Public Routes with Minimal Branding Layout */}
+        <Route element={<PublicCMSLayout />}>
           <Route path="/page/:slug" element={<CmsPublicPage />} />
+        </Route>
+
+        <Route element={<AppLayout />}>
           <Route path="*" element={<NotFound />} />
         </Route>
 

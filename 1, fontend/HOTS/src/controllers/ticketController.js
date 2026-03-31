@@ -42,14 +42,14 @@ const ticketController = {
                 ) as list_approval,
                 (
                     SELECT tm2.user_id
-                    FROM m_team_member tm2
+                    FROM m_company_team_member tm2
                     WHERE tm2.team_id = t.assigned_team AND tm2.team_leader = 1
                     LIMIT 1
                 ) as team_leader_id
             FROM t_ticket t
             LEFT JOIN m_service s ON s.service_id = t.service_id
             LEFT JOIN m_ticket_status ts ON ts.status_id = t.status_id
-            LEFT JOIN m_team tm ON tm.team_id = t.assigned_team
+            LEFT JOIN m_company_team tm ON tm.team_id = t.assigned_team
             WHERE t.created_by = ?
             ORDER BY t.creation_date DESC
             LIMIT ? OFFSET ?
@@ -112,14 +112,14 @@ const ticketController = {
                 ) as list_approval,
                 (
                     SELECT tm2.user_id
-                    FROM m_team_member tm2
+                    FROM m_company_team_member tm2
                     WHERE tm2.team_id = t.assigned_team AND tm2.team_leader = 1
                     LIMIT 1
                 ) as team_leader_id
             FROM t_ticket t
             LEFT JOIN m_service s ON s.service_id = t.service_id
             LEFT JOIN m_ticket_status ts ON ts.status_id = t.status_id
-            LEFT JOIN m_team tm ON tm.team_id = t.assigned_team
+            LEFT JOIN m_company_team tm ON tm.team_id = t.assigned_team
             LEFT JOIN user u ON u.user_id = t.created_by
             ORDER BY t.creation_date DESC
             LIMIT ? OFFSET ?
@@ -163,7 +163,7 @@ const ticketController = {
             WHERE (
                 t.assigned_to = ? OR 
                 t.assigned_team IN (
-                    SELECT tm.team_id FROM m_team_member tm WHERE tm.user_id = ?
+                    SELECT tm.team_id FROM m_company_team_member tm WHERE tm.user_id = ?
                 ) OR
                 (ae.approver_id = ? AND ae.approval_status = 0 AND ae.approval_order = t.current_step)
             )
@@ -211,21 +211,21 @@ const ticketController = {
                 ) as list_approval,
                 (
                     SELECT tm2.user_id
-                    FROM m_team_member tm2
+                    FROM m_company_team_member tm2
                     WHERE tm2.team_id = t.assigned_team AND tm2.team_leader = 1
                     LIMIT 1
                 ) as team_leader_id
             FROM t_ticket t
             LEFT JOIN m_service s ON s.service_id = t.service_id
             LEFT JOIN m_ticket_status ts ON ts.status_id = t.status_id
-            LEFT JOIN m_team tm ON tm.team_id = t.assigned_team
+            LEFT JOIN m_company_team tm ON tm.team_id = t.assigned_team
             LEFT JOIN user u ON u.user_id = t.created_by
-            LEFT JOIN m_department d ON d.dept_id = u.dept_id
+            LEFT JOIN m_company_department d ON d.dept_id = u.dept_id
             LEFT JOIN t_approval_event ae ON ae.approval_id = t.ticket_id
             WHERE (
                 t.assigned_to = ? OR 
                 t.assigned_team IN (
-                    SELECT tm3.team_id FROM m_team_member tm3 WHERE tm3.user_id = ?
+                    SELECT tm3.team_id FROM m_company_team_member tm3 WHERE tm3.user_id = ?
                 ) OR
                 (ae.approver_id = ? AND ae.approval_status = 0 AND ae.approval_order = t.current_step)
             )
@@ -265,7 +265,7 @@ const ticketController = {
             SELECT COUNT(*) as total_tasks
             FROM t_ticket t
             WHERE (t.assigned_to = ? OR t.assigned_team IN (
-                SELECT tm.team_id FROM m_team_member tm WHERE tm.user_id = ?
+                SELECT tm.team_id FROM m_company_team_member tm WHERE tm.user_id = ?
             )) AND t.status_id NOT IN (5, 6)
         `;
 
@@ -523,7 +523,7 @@ const ticketController = {
     
                 (
                     SELECT tm2.user_id
-                    FROM m_team_member tm2
+                    FROM m_company_team_member tm2
                     WHERE tm2.team_id = t.assigned_team AND tm2.team_leader = 1
                     LIMIT 1
                 ) as team_leader_id
@@ -531,9 +531,9 @@ const ticketController = {
             FROM t_ticket t
             LEFT JOIN m_service s ON s.service_id = t.service_id
             LEFT JOIN m_ticket_status ts ON ts.status_id = t.status_id
-            LEFT JOIN m_team tm ON tm.team_id = t.assigned_team
+            LEFT JOIN m_company_team tm ON tm.team_id = t.assigned_team
             LEFT JOIN user u ON u.user_id = t.created_by
-            LEFT JOIN m_department dpt ON dpt.department_id = u.department_id
+            LEFT JOIN m_company_department dpt ON dpt.department_id = u.department_id
             WHERE t.ticket_id = ?
         `;
 

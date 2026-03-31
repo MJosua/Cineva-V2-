@@ -44,8 +44,8 @@
             ]
         },
         {
-            "table_name": "m_users",
-            "description": "User accounts and profile information",
+            "table_name": "user",
+            "description": "User accounts and profile information (Active Workspace Standard)",
             "columns": [
                 {
                     "name": "user_id",
@@ -164,8 +164,8 @@
             ]
         },
         {
-            "table_name": "t_cms_pages",
-            "description": "Content for CMS pages",
+            "table_name": "cms_m_page",
+            "description": "Content for premium CMS pages",
             "columns": [
                 {
                     "name": "page_id",
@@ -193,7 +193,7 @@
     "relationships": [
         {
             "from": "t_ticket.requester_id",
-            "to": "m_users.user_id",
+            "to": "user.user_id",
             "type": "many-to-one"
         },
         {
@@ -208,7 +208,7 @@
         },
         {
             "from": "t_ticket_event.actor_id",
-            "to": "m_users.user_id",
+            "to": "user.user_id",
             "type": "many-to-one"
         }
     ]

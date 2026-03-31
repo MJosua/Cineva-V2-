@@ -34,9 +34,28 @@ interface CatalogState {
   useFallbackData: boolean;
 }
 
+const CAT_CACHE_KEY = 'hots_catalog_cache';
+
+const loadCachedCatalog = () => {
+  try {
+    const cached = localStorage.getItem(CAT_CACHE_KEY);
+    if (!cached) return { serviceCatalog: [], categoryList: [] };
+    
+    const parsed = JSON.parse(cached);
+    return {
+      serviceCatalog: Array.isArray(parsed.serviceCatalog) ? parsed.serviceCatalog : [],
+      categoryList: Array.isArray(parsed.categoryList) ? parsed.categoryList : []
+    };
+  } catch {
+    return { serviceCatalog: [], categoryList: [] };
+  }
+};
+
+const cachedData = loadCachedCatalog();
+
 const initialState: CatalogState = {
-  serviceCatalog: [],
-  categoryList: [],
+  serviceCatalog: cachedData.serviceCatalog,
+  categoryList: cachedData.categoryList,
   isLoading: false,
   error: null,
   useFallbackData: false,
@@ -297,8 +316,12 @@ const catalogSlice = createSlice({
       })
       .addCase(fetchServiceCatalog.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.serviceCatalog = action.payload;
+        state.serviceCatalog = action.payload || [];
         state.useFallbackData = Array.isArray(action.payload) && action.payload === fallbackServiceCatalog;
+        localStorage.setItem(CAT_CACHE_KEY, JSON.stringify({
+          serviceCatalog: state.serviceCatalog,
+          categoryList: state.categoryList
+        }));
       })
       .addCase(fetchServiceCatalog.rejected, (state, action) => {
         state.isLoading = false;
@@ -314,7 +337,11 @@ const catalogSlice = createSlice({
       })
       .addCase(fetchCategoryList.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.categoryList = action.payload;
+        state.categoryList = action.payload || [];
+        localStorage.setItem(CAT_CACHE_KEY, JSON.stringify({
+          serviceCatalog: state.serviceCatalog,
+          categoryList: state.categoryList
+        }));
       })
       .addCase(fetchCategoryList.rejected, (state, action) => {
         state.isLoading = false;
@@ -351,11 +378,11 @@ export const { setServiceCatalog, setCategoryList, clearError, useFallbackData }
 export default catalogSlice.reducer;
 
 // Selectors
-export const selectServiceCatalog = (state: any) => state.catalog.serviceCatalog;
-export const selectCategoryList = (state: any) => state.catalog.categoryList;
-export const selectCatalogLoading = (state: any) => state.catalog.isLoading;
-export const selectCatalogError = (state: any) => state.catalog.error;
-export const selectUseFallbackData = (state: any) => state.catalog.useFallbackData;
+export const selectServiceCatalog = (state: any) => state.catalog?.serviceCatalog || [];
+export const selectCategoryList = (state: any) => state.catalog?.categoryList || [];
+export const selectCatalogLoading = (state: any) => state.catalog?.isLoading || false;
+export const selectCatalogError = (state: any) => state.catalog?.error || null;
+export const selectUseFallbackData = (state: any) => state.catalog?.useFallbackData || false;
 
 // Helper selectors
 export const selectServicesByCategory = (state: any, categoryId: number) =>
@@ -371,8 +398,8 @@ export const selectCategoryById = (state: any, categoryId: number) =>
 
 // Helper to create grouped menu (like your original logic)
 export const selectGroupedMenu = (state: any, searchKeyword: string = '') => {
-  const categories = state.catalog.categoryList;
-  const services = state.catalog.serviceCatalog;
+  const categories = state.catalog?.categoryList || [];
+  const services = state.catalog?.serviceCatalog || [];
   const keyword = searchKeyword.trim().toLowerCase();
 
   return categories.reduce((acc: any[], category: Category) => {

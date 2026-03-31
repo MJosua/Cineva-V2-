@@ -133,7 +133,6 @@ const ListTransactionPage = () => {
                                         width="100%"
                                         maxWidth="110"
                                         maxHeight="111"
-                                        // fallbacksrc={require("../assets/images/emptyplate.PNG")} />
                                         fallbacksrc='https://www.indofoodinternational.com/e-order/static/media/emptyplate.abe823f0ddff30c4a1fa.PNG' />
                                 </div>
 
@@ -163,7 +162,6 @@ const ListTransactionPage = () => {
                                             width="100%"
                                             maxWidth="110"
                                             maxHeight="111"
-                                            // fallbacksrc={require("../assets/images/emptyplate.PNG")} />
                                             fallbacksrc='https://www.indofoodinternational.com/e-order/static/media/emptyplate.abe823f0ddff30c4a1fa.PNG' />
 
                                     </div>

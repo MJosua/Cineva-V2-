@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, Calendar, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
 import AssignmentTimeline from '@/components/assignment/AssignmentTimeline';
-import ConfirmationModal from '@/components/modals/ConfirmationModal';
+import CompletionModal from '@/components/modals/CompletionModal';
 import { API_URL } from '@/config/sourceConfig';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 import axios from 'axios';
 
 interface Assignment {
@@ -28,9 +29,11 @@ interface Assignment {
 interface CompactAssignmentCardProps {
     assignment: Assignment;
     onComplete?: () => void;
+    isSelected?: boolean;
+    onToggleSelect?: (id: number) => void;
 }
 
-export const CompactAssignmentCard: React.FC<CompactAssignmentCardProps> = ({ assignment, onComplete }) => {
+export const CompactAssignmentCard: React.FC<CompactAssignmentCardProps> = ({ assignment, onComplete, isSelected, onToggleSelect }) => {
     const navigate = useNavigate();
     const { toast } = useToast();
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -73,13 +76,16 @@ export const CompactAssignmentCard: React.FC<CompactAssignmentCardProps> = ({ as
 
     const s = getStatusConfig(assignment.assignment_status, assignment.is_overdue);
 
-    const handleComplete = async () => {
+    const handleComplete = async (note: string, tempFileIds: number[]) => {
         setIsCompleting(true);
         try {
             const token = localStorage.getItem('hots_tokek');
             await axios.post(
                 `${API_URL}/engine/assignment/${assignment.assignment_id}/complete`,
-                { completion_note: 'Assignment completed from compact view' },
+                { 
+                    completion_note: note,
+                    temp_file_ids: tempFileIds
+                },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
@@ -101,8 +107,17 @@ export const CompactAssignmentCard: React.FC<CompactAssignmentCardProps> = ({ as
     };
 
     return (
-        <Card className="flex flex-col border-slate-200 hover:shadow-md transition-all shadow-sm max-h-[600px] max-w-lg w-full">
-            <CardContent className="p-4 flex flex-col h-full overflow-hidden">
+        <Card className={`flex flex-col border-slate-200 hover:shadow-md transition-all shadow-sm max-h-[600px] max-w-lg w-full relative ${isSelected ? 'ring-2 ring-blue-500 border-blue-300' : ''}`}>
+            {onToggleSelect && assignment.assignment_status === 'active' && (
+                <div className="absolute top-3 left-3 z-10">
+                    <Checkbox 
+                        checked={isSelected} 
+                        onCheckedChange={() => onToggleSelect(assignment.assignment_id)}
+                        className="w-5 h-5 border-slate-300 bg-white shadow-sm data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                    />
+                </div>
+            )}
+            <CardContent className={`p-4 flex flex-col h-full overflow-hidden ${onToggleSelect && assignment.assignment_status === 'active' ? 'pl-11' : ''}`}>
                 {/* Header Section */}
                 <div className="flex-none mb-3">
                     <div className="flex justify-between items-start gap-2 mb-2">
@@ -137,7 +152,12 @@ export const CompactAssignmentCard: React.FC<CompactAssignmentCardProps> = ({ as
                     {/* Wrap AssignmentTimeline here */}
                     {/* Setting a specific scale or wrapper to make it fit nicely */}
                     <div className="scale-[0.95] origin-top">
-                        <AssignmentTimeline assignmentId={assignment.assignment_id} ticketId={assignment.ticket_id} readOnly={true} />
+                        <AssignmentTimeline 
+                            assignmentId={assignment.assignment_id} 
+                            ticketId={assignment.ticket_id} 
+                            readOnly={true} 
+                            pageSize={5}
+                        />
                     </div>
                 </div>
 
@@ -162,13 +182,12 @@ export const CompactAssignmentCard: React.FC<CompactAssignmentCardProps> = ({ as
                 </div>
             </CardContent>
 
-            <ConfirmationModal
+            <CompletionModal
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}
                 onConfirm={handleComplete}
-                title="Complete Assignment?"
-                description={<>Are you sure you want to mark <b>{assignment.ticket_title || "this assignment"}</b> as complete?</>}
-                confirmText="Complete"
+                title="Complete Assignment"
+                description={<>Are you sure you want to mark <b>{assignment.ticket_title || "this assignment"}</b> as complete? You can add a final closing statement below.</>}
                 isLoading={isCompleting}
             />
         </Card>

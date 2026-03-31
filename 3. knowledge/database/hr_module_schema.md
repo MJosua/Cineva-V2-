@@ -2,14 +2,14 @@
 
 ## User Table Columns (hots.user)
 Key HR-related columns:
-- `jobtitle_id` - FK to m_job_title.jobtitle_id
+- `jobtitle_id` - FK to m_company_job_title.jobtitle_id
 - `superior_id` - FK to user.user_id (self-reference)
-- `department_id` - FK to m_department.department_id
+- `department_id` - FK to m_company_department.department_id
 - `nik` - Employee ID (NIK)
 - `email` - User email
 - `phone` - Phone number
 
-## Job Title Table (m_job_title)
+## Job Title Table (m_company_job_title)
 Columns:
 - `jobtitle_id` (PK)
 - `job_title` (name)

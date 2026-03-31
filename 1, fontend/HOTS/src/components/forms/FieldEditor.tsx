@@ -152,6 +152,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({ field, fields = [], on
               <SelectItem value="toggle">Toggle</SelectItem>
               <SelectItem value="number">Number</SelectItem>
               <SelectItem value="suggestion-insert">Suggestion Insert</SelectItem>
+              <SelectItem value="textblock">Instruction Text Block</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -171,14 +172,52 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({ field, fields = [], on
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center space-x-2 pt-6">
-          <Switch
-            checked={localField.required || false}
-            onCheckedChange={(checked) => updateField({ required: checked })}
-          />
-          <Label>Required</Label>
-        </div>
+        {localField.type !== 'textblock' && (
+          <div className="flex items-center space-x-2 pt-6">
+            <Switch
+              checked={localField.required || false}
+              onCheckedChange={(checked) => updateField({ required: checked })}
+            />
+            <Label>Required</Label>
+          </div>
+        )}
       </div>
+
+      {/* Text Block Options */}
+      {localField.type === 'textblock' && (
+        <Card className="border-gray-200 bg-gray-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">Instruction Text Configuration</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Text Style</Label>
+              <Select
+                value={localField.textType || 'normal'}
+                onValueChange={(val: any) => updateField({ textType: val })}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="title">Header / Title</SelectItem>
+                  <SelectItem value="normal">Normal Text</SelectItem>
+                  <SelectItem value="subtext">Instruction / Subtext</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Instruction Content</Label>
+              <Textarea
+                value={localField.content || ''}
+                onChange={(e) => updateField({ content: e.target.value })}
+                placeholder="Enter instructional text here..."
+                className="min-h-[100px] bg-white"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Chain Link Configuration Section */}
       {(localField.type === 'select' || localField.type === 'suggestion-insert') && (
@@ -463,33 +502,37 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({ field, fields = [], on
 
 
 
-      <div>
-        <Label>Placeholder</Label>
-        <Input
-          value={localField.placeholder || ''}
-          onChange={(e) => updateField({ placeholder: e.target.value })}
-          placeholder="Placeholder text"
-          className="bg-white"
-        />
-      </div>
-
-      <div>
-        <Label>Default Value</Label>
+      {localField.type !== 'textblock' && (
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <SystemVariableHelper />
-          </div>
-          <p className="text-xs text-gray-500 mt-1">
-            Use system variables like ${'{user}'} for dynamic defaults
-          </p>
+          <Label>Placeholder</Label>
+          <Input
+            value={localField.placeholder || ''}
+            onChange={(e) => updateField({ placeholder: e.target.value })}
+            placeholder="Placeholder text"
+            className="bg-white"
+          />
         </div>
-        <Input
-          value={localField.default || ''}
-          onChange={(e) => updateField({ default: e.target.value })}
-          placeholder="Default value"
-          className="bg-white"
-        />
-      </div>
+      )}
+
+      {localField.type !== 'textblock' && (
+        <div>
+          <Label>Default Value</Label>
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <SystemVariableHelper />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Use system variables like ${'{user}'} for dynamic defaults
+            </p>
+          </div>
+          <Input
+            value={localField.default || ''}
+            onChange={(e) => updateField({ default: e.target.value })}
+            placeholder="Default value"
+            className="bg-white"
+          />
+        </div>
+      )}
 
       {/* Visibility Condition Section */}
       <Card className="border-purple-200 bg-purple-50">

@@ -442,7 +442,7 @@ module.exports = {
         LEFT JOIN hots.user u_created ON t.created_by = u_created.user_id
         LEFT JOIN PM.t_task_groups tg ON t.group_id = tg.group_id
         LEFT JOIN PM.t_task_teams tt ON t.task_id = tt.task_id
-        LEFT JOIN hots.m_team mt ON tt.team_id = mt.team_id
+        LEFT JOIN hots.m_company_team mt ON tt.team_id = mt.team_id
         WHERE t.task_id = ?
         GROUP BY t.task_id
       `, [id]);

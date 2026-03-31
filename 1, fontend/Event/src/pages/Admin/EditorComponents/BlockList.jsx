@@ -1,93 +1,314 @@
-import { Reorder } from "framer-motion";
-import { Box, Text, HStack, IconButton, Badge, Icon, Tooltip } from "@chakra-ui/react";
-import { MdDragIndicator, MdDelete, MdWeb, MdViewDay, MdGridView, MdViewCarousel, MdTextFields, MdList, MdReceipt, MdCode, MdQrCode } from "react-icons/md";
+import { useMemo, useState } from "react";
+import { Box, Text, HStack, IconButton, Icon, Tooltip, Badge, Button, VStack } from "@chakra-ui/react";
+import {
+    MdDelete,
+    MdDragIndicator,
+    MdExpandMore,
+    MdChevronRight,
+    MdUnfoldLess,
+    MdUnfoldMore
+} from "react-icons/md";
+import { DndContext, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, closestCenter } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import { getBlockMeta } from "./blockCatalog";
+import {
+    encodePath,
+    decodePath,
+    getBlockAtPath,
+    canHaveChildren,
+    collectCollapsiblePaths,
+    pathsEqual
+} from "./blockTreeUtils";
 
-// ── Block type metadata ─────────────────────────────────────────────────────
-const BLOCK_META = {
-    hero: { icon: MdViewDay, color: "blue", label: "Hero", preview: (p) => p.title || "Hero Section" },
-    header: { icon: MdWeb, color: "blue", label: "Header", preview: (p) => p.logo ? "Logo + Links" : "Navigation Bar" },
-    navbar: { icon: MdWeb, color: "blue", label: "Navbar", preview: (p) => p.logo ? "Logo + Links" : "Navigation Bar" },
-    card: { icon: MdGridView, color: "cyan", label: "Card", preview: (p) => p.title || "Card Block" },
-    section: { icon: MdViewDay, color: "cyan", label: "Section", preview: (p) => `${(p.children || []).length} block(s) inside` },
-    flip: { icon: MdViewCarousel, color: "pink", label: "Slideshow", preview: (p) => `${(p.images || []).length} image(s)` },
-    text: { icon: MdTextFields, color: "gray", label: "Text", preview: (p) => p.content?.replace(/<[^>]+>/g, "").slice(0, 40) || "Rich Text" },
-    list: { icon: MdList, color: "orange", label: "List", preview: (p) => `${(p.items || []).length} item(s)` },
-    couponForm: { icon: MdReceipt, color: "green", label: "Form", preview: (p) => p.title || "Dynamic Form" },
-    urlCoupon: { icon: MdQrCode, color: "red", label: "Auto Fetch Coupon", preview: (p) => p.title || "URL-Code Verifier" },
-    customHtml: { icon: MdCode, color: "blackAlpha", label: "HTML", preview: () => "Custom HTML Block" },
-};
+function TreeNode({
+    block,
+    path,
+    depth,
+    selectedPath,
+    collapsedMap,
+    onToggleCollapse,
+    onSelectPath,
+    onDeletePath,
+    onContextMenu
+}) {
+    const pathKey = encodePath(path);
+    const meta = getBlockMeta(block?.type);
+    const children = Array.isArray(block?.props?.children) ? block.props.children : [];
+    const layerName = (block?.props?.layerName || "").trim();
+    const isContainer = canHaveChildren(block);
+    const hasChildren = isContainer && children.length > 0;
+    const isCollapsed = !!collapsedMap[pathKey];
+    const isSelected = pathsEqual(selectedPath || [], path);
 
-function getBlockMeta(type) {
-    return BLOCK_META[type] || { icon: MdCode, color: "gray", label: type, preview: () => type };
+    const {
+        attributes,
+        listeners,
+        setNodeRef: setDragRef,
+        transform,
+        transition,
+        isDragging
+    } = useDraggable({
+        id: `drag:${pathKey}`
+    });
+
+    const { setNodeRef: setDropRef, isOver } = useDroppable({
+        id: `drop:${pathKey}`
+    });
+
+    const setRefs = (node) => {
+        setDragRef(node);
+        setDropRef(node);
+    };
+
+    const style = {
+        transform: CSS.Translate.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1
+    };
+
+    return (
+        <>
+            <Box
+                ref={setRefs}
+                style={style}
+                mb={1}
+                borderWidth="1px"
+                borderColor={isOver ? "blue.300" : isSelected ? "brand.400" : "gray.200"}
+                bg={isSelected ? "brand.50" : "white"}
+                borderRadius="md"
+                py={1.5}
+                px={2}
+                pl={`${(depth * 14) + 6}px`}
+                shadow={isSelected ? "sm" : "none"}
+                _hover={{ borderColor: isSelected ? "brand.400" : "gray.300" }}
+                onClick={() => onSelectPath(path)}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (onContextMenu) {
+                        onContextMenu(e, path, block);
+                    }
+                }}
+                cursor="pointer"
+            >
+                <HStack spacing={1}>
+                    <Box minW="20px">
+                        {hasChildren ? (
+                            <IconButton
+                                icon={isCollapsed ? <MdChevronRight /> : <MdExpandMore />}
+                                size="xs"
+                                variant="ghost"
+                                aria-label="Toggle children"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleCollapse(pathKey);
+                                }}
+                            />
+                        ) : null}
+                    </Box>
+
+                    <Box
+                        {...attributes}
+                        {...listeners}
+                        cursor="grab"
+                        color="gray.400"
+                        _hover={{ color: "gray.600" }}
+                        onClick={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        minW="14px"
+                    >
+                        <MdDragIndicator size={16} />
+                    </Box>
+
+                    <Box w="4px" alignSelf="stretch" borderRadius="full" bg={`${meta.color}.400`} />
+
+                    <Icon as={meta.icon} boxSize={3.5} color={`${meta.color}.600`} />
+
+                    <VStack align="start" spacing={0} flex={1} minW={0}>
+                        <HStack spacing={1.5}>
+                            <Text fontWeight="bold" fontSize="2xs" textTransform="uppercase" color={`${meta.color}.700`} noOfLines={1}>
+                                {meta.label}
+                            </Text>
+                            {layerName ? (
+                                <Text fontSize="2xs" fontWeight="medium" color="gray.700" noOfLines={1}>
+                                    • {layerName}
+                                </Text>
+                            ) : null}
+                            {hasChildren ? (
+                                <Badge colorScheme="gray" fontSize="2xs">{children.length}</Badge>
+                            ) : null}
+                        </HStack>
+                        <Text fontSize="2xs" color="gray.500" noOfLines={1}>
+                            {meta.preview ? meta.preview(block.props || {}) : ""}
+                        </Text>
+                    </VStack>
+
+                    <Tooltip label="Delete block" hasArrow placement="left">
+                        <IconButton
+                            icon={<MdDelete />}
+                            size="xs"
+                            colorScheme="red"
+                            variant="ghost"
+                            aria-label="Delete block"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDeletePath(path);
+                            }}
+                        />
+                    </Tooltip>
+                </HStack>
+            </Box>
+
+            {hasChildren && !isCollapsed && children.map((child, childIndex) => (
+                <TreeNode
+                    key={child._id || `${pathKey}.${childIndex}`}
+                    block={child}
+                    path={[...path, childIndex]}
+                    depth={depth + 1}
+                    selectedPath={selectedPath}
+                    collapsedMap={collapsedMap}
+                    onToggleCollapse={onToggleCollapse}
+                    onSelectPath={onSelectPath}
+                    onDeletePath={onDeletePath}
+                    onContextMenu={onContextMenu}
+                />
+            ))}
+        </>
+    );
 }
 
-export default function BlockList({ blocks, onReorder, onSelect, onDelete, selectedIndex }) {
+export default function BlockList({
+    blocks = [],
+    selectedPath,
+    onSelectPath,
+    onDeletePath,
+    onMoveNode,
+    onContextMenu
+}) {
+    const [collapsedMap, setCollapsedMap] = useState({});
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: { distance: 4 }
+        })
+    );
+
+    const collapsiblePaths = useMemo(() => collectCollapsiblePaths(blocks), [blocks]);
+
+    const handleToggleCollapse = (pathKey) => {
+        setCollapsedMap((prev) => ({
+            ...prev,
+            [pathKey]: !prev[pathKey]
+        }));
+    };
+
+    const handleCollapseAll = () => {
+        const next = {};
+        collapsiblePaths.forEach((key) => {
+            next[key] = true;
+        });
+        setCollapsedMap(next);
+    };
+
+    const handleExpandAll = () => {
+        setCollapsedMap({});
+    };
+
+    const handleDragEnd = ({ active, over }) => {
+        if (!active || !over) return;
+
+        const activeId = String(active.id || "");
+        const overId = String(over.id || "");
+        if (!activeId.startsWith("drag:") || !overId.startsWith("drop:")) return;
+
+        const sourcePath = decodePath(activeId.replace("drag:", ""));
+        const targetPath = decodePath(overId.replace("drop:", ""));
+        if (sourcePath.length === 0 || targetPath.length === 0) return;
+        if (pathsEqual(sourcePath, targetPath)) return;
+
+        const targetBlock = getBlockAtPath(blocks, targetPath);
+        const sameParent = pathsEqual(sourcePath.slice(0, -1), targetPath.slice(0, -1));
+        const placement = canHaveChildren(targetBlock) && !sameParent ? "inside" : "before";
+        onMoveNode(sourcePath, targetPath, placement);
+    };
+
     return (
-        <Reorder.Group axis="y" values={blocks} onReorder={onReorder}>
-            {blocks.map((block, index) => {
-                const meta = getBlockMeta(block.type);
-                const isSelected = selectedIndex === index;
+        <Box h="55%" minH={0} display="flex" flexDirection="column" overflow="hidden"
+            position="sticky"
+            top={0}
+            zIndex={10}
 
-                return (
-                    <Reorder.Item key={block._id || index} value={block}>
-                        <Box
-                            mb={2}
-                            bg={isSelected ? "brand.50" : "white"}
-                            borderWidth="1.5px"
-                            borderColor={isSelected ? "brand.400" : "gray.200"}
-                            borderRadius="lg"
-                            shadow={isSelected ? "md" : "sm"}
-                            overflow="hidden"
-                            transition="all 0.15s"
-                            _hover={{ shadow: "md", borderColor: isSelected ? "brand.400" : "gray.300" }}
-                            cursor="pointer"
-                            onClick={() => onSelect(index)}
-                        >
-                            <HStack spacing={0}>
-                                {/* Drag handle column */}
-                                <Box px={2} py={4} cursor="grab" color="gray.300" _hover={{ color: "gray.500" }} flexShrink={0}>
-                                    <MdDragIndicator size={18} />
-                                </Box>
+        >
+            <HStack
+                justify="space-between"
+                mb={3}
+                bg="white"
+                py={2}
+                zIndex={10}
+                borderBottom="1px solid"
+                borderColor="gray.50"
+            >
+                <HStack spacing={1}>
+                    <Button
+                        size="xs"
+                        variant="ghost"
+                        leftIcon={<MdUnfoldLess />}
+                        onClick={handleCollapseAll}
+                        _hover={{ bg: "gray.100" }}
+                    >
+                        Collapse all
+                    </Button>
+                    <Button
+                        size="xs"
+                        variant="ghost"
+                        leftIcon={<MdUnfoldMore />}
+                        onClick={handleExpandAll}
+                        _hover={{ bg: "gray.100" }}
+                    >
+                        Expand all
+                    </Button>
+                </HStack>
+                <Badge colorScheme="gray" variant="subtle" fontSize="2xs" px={2} borderRadius="full">
+                    {blocks.length} ROOT
+                </Badge>
+            </HStack>
 
-                                {/* Block type icon */}
-                                <Box
-                                    w="6px"
-                                    alignSelf="stretch"
-                                    bg={`${meta.color}.400`}
-                                    flexShrink={0}
-                                />
-
-                                {/* Content */}
-                                <Box flex={1} px={3} py={2.5} minW={0}>
-                                    <HStack spacing={2} mb={0.5}>
-                                        <Icon as={meta.icon} boxSize={3.5} color={`${meta.color}.500`} flexShrink={0} />
-                                        <Text fontWeight="bold" fontSize="xs" textTransform="uppercase" color={`${meta.color}.600`} letterSpacing="wide">
-                                            {meta.label}
-                                        </Text>
-                                    </HStack>
-                                    <Text fontSize="xs" color="gray.500" noOfLines={1}>
-                                        {meta.preview(block.props || {})}
-                                    </Text>
-                                </Box>
-
-                                {/* Delete */}
-                                <Box flexShrink={0} pr={2}>
-                                    <Tooltip label="Remove block" hasArrow placement="left">
-                                        <IconButton
-                                            icon={<MdDelete />}
-                                            size="xs"
-                                            colorScheme="red"
-                                            variant="ghost"
-                                            onClick={(e) => { e.stopPropagation(); onDelete(index); }}
-                                            aria-label="Delete block"
-                                        />
-                                    </Tooltip>
-                                </Box>
-                            </HStack>
-                        </Box>
-                    </Reorder.Item>
-                );
-            })}
-        </Reorder.Group>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <Box
+                    h="100%"
+                    flex="1"
+                    overflowY="auto"
+                    minH={0}
+                    overflowX="hidden"
+                    pb={10} // extra space at bottom
+                    sx={{
+                        "&::-webkit-scrollbar": { width: "4px" },
+                        "&::-webkit-scrollbar-track": { background: "transparent" },
+                        "&::-webkit-scrollbar-thumb": { background: "gray.200", borderRadius: "10px" },
+                        "&::-webkit-scrollbar-thumb:hover": { background: "gray.300" }
+                    }}
+                >
+                    {blocks.length === 0 ? (
+                        <Text fontSize="xs" color="gray.400">No blocks yet</Text>
+                    ) : (
+                        blocks.map((block, index) => (
+                            <TreeNode
+                                key={block._id || index}
+                                block={block}
+                                path={[index]}
+                                depth={0}
+                                selectedPath={selectedPath}
+                                collapsedMap={collapsedMap}
+                                onToggleCollapse={handleToggleCollapse}
+                                onSelectPath={onSelectPath}
+                                onDeletePath={onDeletePath}
+                                onContextMenu={onContextMenu}
+                            />
+                        ))
+                    )}
+                </Box>
+            </DndContext>
+        </Box>
     );
 }

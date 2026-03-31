@@ -46,7 +46,7 @@ debugFunctions: {
         { name: "email", type: "text", label: "User Email" }
     ],
     handler: async (data, { dbQuery }) => {
-        const users = await dbQuery("SELECT * FROM m_users WHERE email = ?", [data.email]);
+        const users = await dbQuery("SELECT * FROM user WHERE email = ?", [data.email]);
         return users[0] || { message: "User not found" };
     }
 }

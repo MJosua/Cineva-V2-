@@ -22,6 +22,7 @@ import { SuggestionInsertInput } from "./SuggestionInsertInput";
 import { compareValues } from "@/utils/dependencyResolver";
 import axios from "axios";
 import { API_URL } from "@/config/sourceConfig";
+import QRCodeDesignWidget from "@/widgets/QRCodeDesignWidget";
 
 interface DynamicFieldProps {
   field: FormField;
@@ -247,6 +248,15 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
           />
         );
 
+      case "textblock":
+        return (
+          <div className={cn("py-2 w-full", field.className)}>
+            {field.textType === 'title' && <h3 className="text-lg font-bold text-gray-800">{field.content}</h3>}
+            {field.textType === 'normal' && <p className="text-sm text-gray-700 whitespace-pre-wrap">{field.content}</p>}
+            {field.textType === 'subtext' && <p className="text-xs text-gray-500 italic whitespace-pre-wrap">{field.content}</p>}
+          </div>
+        );
+
       case "checkbox":
         return (
           <div className="flex items-center space-x-2">
@@ -446,7 +456,7 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
           />
         );
 
-      // 🎨 CMS FIELD – renders CMS page content from m_cms_page
+      // 🎨 CMS FIELD – renders CMS page content from cms_m_page
       case "cms":
         // Helper function to render CMS blocks
         const renderCmsBlocks = (blocks: any[]) => {
@@ -499,6 +509,17 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
           </div>
         );
 
+      case "qrcodedesign":
+        return (
+          <QRCodeDesignWidget 
+            value={globalValues[field.name] ?? value}
+            onChange={(val) => handleChange(val)}
+            globalValues={globalValues}
+            setGlobalValues={setGlobalValues}
+            fieldName={field.name}
+          />
+        );
+
       default:
         return (
           <Input
@@ -522,15 +543,17 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
           : ""
         }`}
     >
-      <Label htmlFor={field.name} className="flex items-center gap-2">
-        {field.label}
-        {field.required && <span className="text-red-500">*</span>}
-        {field.dependsOn && (
-          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-            🔗 Linked: {field.dependsOn}
-          </span>
-        )}
-      </Label>
+      {field.type !== "textblock" && (
+        <Label htmlFor={field.name} className="flex items-center gap-2">
+          {field.label}
+          {field.required && <span className="text-red-500">*</span>}
+          {field.dependsOn && (
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+              🔗 Linked: {field.dependsOn}
+            </span>
+          )}
+        </Label>
+      )}
       {renderField()}
       {error && <p className="text-sm text-red-500">{error}</p>}
       {field.note && <p className="text-sm text-gray-500">{field.note}</p>}

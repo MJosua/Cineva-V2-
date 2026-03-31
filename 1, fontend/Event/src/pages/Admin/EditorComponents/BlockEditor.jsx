@@ -1,15 +1,20 @@
 import { Box, FormControl, FormLabel, Input, VStack, Heading, Select, Button, Text, HStack, IconButton, useDisclosure, Textarea, Tag, TagLabel, TagCloseButton, Wrap, Switch, Divider, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Code } from "@chakra-ui/react";
 import { MdAdd, MdDelete, MdEdit, MdArrowUpward, MdArrowDownward, MdSettings, MdDragIndicator } from "react-icons/md";
-import { Reorder } from "framer-motion";
+import { Reorder, useDragControls } from "framer-motion";
 import RichTextEditor from "./RichTextEditor";
 import MediaPickerModal from "./MediaPickerModal";
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { getPoolsByEvent } from "../../../services/eventEngineApi";
-import { resolveMediaUrl } from "../../../utils/mediaHelper";
 import ImageField from "./ImageField";
 import ColorPicker from "./ColorPicker";
 import AddBlockModal from "./AddBlockModal";
+import {
+    applyResponsiveLayoutUpdates,
+    BREAKPOINTS,
+    isLayoutOverrideKey,
+    resolveResponsiveProps
+} from "../../../components/Engine/responsiveLayout";
 
 
 
@@ -24,8 +29,17 @@ const FONT_OPTIONS = [
     { label: "Courier New", value: "Courier New" },
 ];
 
-export default function BlockEditor({ block, onChange }) {
-    const [newImageUrl, setNewImageUrl] = useState("");
+function ReorderFieldItem({ value, children }) {
+    const dragControls = useDragControls();
+
+    return (
+        <Reorder.Item value={value} dragListener={false} dragControls={dragControls}>
+            {children({ startDrag: (event) => dragControls.start(event) })}
+        </Reorder.Item>
+    );
+}
+
+export default function BlockEditor({ block, onChange, activeViewport = BREAKPOINTS.desktop, responsiveBuilderV2 = false }) {
     const [newLinkLabel, setNewLinkLabel] = useState("");
     const [newLinkUrl, setNewLinkUrl] = useState("");
     const [newFieldName, setNewFieldName] = useState("");
@@ -51,23 +65,32 @@ export default function BlockEditor({ block, onChange }) {
                 const normalizedFields = block.props.fields.map(f =>
                     f._id ? f : { ...f, _id: `id_${Math.random().toString(36).substr(2, 9)}_${Date.now()}` }
                 );
-                handleChange("fields", normalizedFields);
+                onChange({ ...block, props: { ...(block.props || {}), fields: normalizedFields } });
             }
         }
-    }, [block?.id, block?.type]);
+    }, [block, onChange]);
 
 
     if (!block) return <Box p={4} textAlign="center" color="gray.500">Select a block to edit</Box>;
+
+    const resolvedProps = resolveResponsiveProps(block.type, block.props || {}, activeViewport);
+    const blockForView = responsiveBuilderV2
+        ? { ...block, props: { ...(block.props || {}), ...resolvedProps } }
+        : block;
 
     const handleChange = (key, value) => {
         let finalValue = value;
         if (key === "fields" && Array.isArray(value)) {
             finalValue = value.map(f => f._id ? f : { ...f, _id: `id_${Math.random().toString(36).substr(2, 9)}_${Date.now()}` });
         }
-        onChange({ ...block, props: { ...block.props, [key]: finalValue } });
+
+        const nextProps = (responsiveBuilderV2 && isLayoutOverrideKey(key))
+            ? applyResponsiveLayoutUpdates(block.props || {}, { [key]: finalValue }, activeViewport)
+            : { ...(block.props || {}), [key]: finalValue };
+
+        onChange({ ...block, props: nextProps });
     };
 
-    const addImage = () => { if (newImageUrl.trim()) { handleChange("images", [...(block.props.images || []), newImageUrl.trim()]); setNewImageUrl(""); } };
     const removeImage = (i) => handleChange("images", (block.props.images || []).filter((_, j) => j !== i));
     const addLink = () => { if (newLinkLabel.trim()) { handleChange("links", [...(block.props.links || []), { label: newLinkLabel, url: newLinkUrl }]); setNewLinkLabel(""); setNewLinkUrl(""); } };
     const removeLink = (i) => handleChange("links", (block.props.links || []).filter((_, j) => j !== i));
@@ -86,7 +109,7 @@ export default function BlockEditor({ block, onChange }) {
             <Heading size="sm" mb={4}>Edit {block.type}</Heading>
             <VStack spacing={4} align="stretch">
                 <BlockSettings
-                    block={block}
+                    block={blockForView}
                     handleChange={handleChange}
                     pools={pools}
                     editingFieldIndex={editingFieldIndex}
@@ -107,6 +130,8 @@ export default function BlockEditor({ block, onChange }) {
                     addLink={addLink}
                     removeLink={removeLink}
                     removeImage={removeImage}
+                    activeViewport={activeViewport}
+                    responsiveBuilderV2={responsiveBuilderV2}
                 />
             </VStack >
         </Box >
@@ -135,7 +160,8 @@ function BlockSettings({
     addLink,
     removeLink,
     removeImage,
-    isNested = false
+    activeViewport = BREAKPOINTS.desktop,
+    responsiveBuilderV2 = false
 }) {
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [editingChildIndex, setEditingChildIndex] = useState(null);
@@ -157,20 +183,77 @@ function BlockSettings({
     };
 
     const currentChild = editingChildIndex !== null ? (block.props.children || [])[editingChildIndex] : null;
+    const hiddenByBreakpoint = block.props.hiddenByBreakpoint || {};
+    const setHiddenInViewport = (breakpoint, shouldHide) => {
+        const next = {
+            ...hiddenByBreakpoint,
+            [breakpoint]: shouldHide
+        };
+        Object.keys(next).forEach((key) => {
+            if (!next[key]) delete next[key];
+        });
+        handleChange("hiddenByBreakpoint", next);
+    };
+    const parseOpacity = (value) => {
+        const parsed = Number.parseFloat(value);
+        if (!Number.isFinite(parsed)) return 1;
+        return Math.min(1, Math.max(0, parsed));
+    };
+    const opacityValue = parseOpacity(block.props.opacity);
+    const handleOpacityChange = (rawValue) => {
+        if (rawValue === "") return;
+        const clamped = Number(parseOpacity(rawValue).toFixed(2));
+        handleChange("opacity", clamped);
+    };
 
     return (
-        <VStack spacing={4} align="stretch">
+        <VStack spacing={4} align="stretch"
+            bg="rgba(185, 181, 181, 0.04)"
+            backdropFilter="blur(18px) saturate(180%)"
+        >
             {/* Layer ID / Administrative Label */}
             <FormControl>
                 <FormLabel fontSize="2xs" color="gray.500" mb={1}>Layer Name (Internal)</FormLabel>
                 <Input size="xs" placeholder="e.g. Hero Text, Bottom Form" value={block.props.layerName || ""} onChange={(e) => handleChange("layerName", e.target.value)} />
             </FormControl>
 
+            <Box border="1px solid" borderColor="gray.200" borderRadius="md" p={2} bg="gray.50">
+                <Text fontSize="2xs" fontWeight="bold" color="gray.600" mb={2}>
+                    Visibility by Viewport
+                </Text>
+                <HStack spacing={4} align="start">
+                    <FormControl display="flex" alignItems="center">
+                        <FormLabel fontSize="2xs" mb={0}>Hide Desktop</FormLabel>
+                        <Switch
+                            size="sm"
+                            isChecked={!!hiddenByBreakpoint.desktop}
+                            onChange={(e) => setHiddenInViewport(BREAKPOINTS.desktop, e.target.checked)}
+                        />
+                    </FormControl>
+                    <FormControl display="flex" alignItems="center">
+                        <FormLabel fontSize="2xs" mb={0}>Hide Tablet</FormLabel>
+                        <Switch
+                            size="sm"
+                            isChecked={!!hiddenByBreakpoint.tablet}
+                            onChange={(e) => setHiddenInViewport(BREAKPOINTS.tablet, e.target.checked)}
+                        />
+                    </FormControl>
+                    <FormControl display="flex" alignItems="center">
+                        <FormLabel fontSize="2xs" mb={0}>Hide Mobile</FormLabel>
+                        <Switch
+                            size="sm"
+                            isChecked={!!hiddenByBreakpoint.mobile}
+                            onChange={(e) => setHiddenInViewport(BREAKPOINTS.mobile, e.target.checked)}
+                        />
+                    </FormControl>
+                </HStack>
+            </Box>
+
             {/* Block Content (Switch by Type) */}
             {/* TEXT BLOCK */}
             {block.type === 'text' && (
                 <>
-                    <RichTextEditor value={block.props.content || ""} onChange={(val) => handleChange("content", val)} />
+                    <RichTextEditor key={block._id || block.props?._id || 'rte-text'} value={block.props.content || ""} onChange={(val) => handleChange("content", val)} />
                     <HStack mt={2}>
                         <FormControl><FormLabel fontSize="xs">Alignment</FormLabel>
                             <Select size="sm" value={block.props.align || "center"} onChange={(e) => handleChange("align", e.target.value)}>
@@ -267,6 +350,19 @@ function BlockSettings({
                                         <Input size="xs" value={block.props.padding || ""} onChange={(e) => handleChange("padding", e.target.value)} />
                                     </VStack>
                                 </HStack>
+                                <FormControl mt={2}>
+                                    <FormLabel fontSize="2xs" color="gray.500">Content Alignment</FormLabel>
+                                    <Select size="xs" value={block.props.justifyContent || "center"} onChange={(e) => handleChange("justifyContent", e.target.value)}>
+                                        <option value="flex-start">Top</option>
+                                        <option value="center">Center</option>
+                                        <option value="flex-end">Bottom</option>
+                                    </Select>
+                                </FormControl>
+                                <FormControl mt={2}>
+                                    <FormLabel fontSize="2xs" color="gray.500">Section Height</FormLabel>
+                                    <Input size="xs" placeholder="100vh (default)" value={block.props.sectionHeight || ""} onChange={(e) => handleChange("sectionHeight", e.target.value)} />
+                                    <Text fontSize="2xs" color="gray.400" mt={1}>e.g. 200vh, 150vh, 300px. With snap scroll, content scrolls inside before snapping to next section.</Text>
+                                </FormControl>
                             </VStack>
                         </AccordionPanel>
                     </AccordionItem></Accordion>
@@ -279,6 +375,8 @@ function BlockSettings({
                         editingIndex={editingChildIndex}
                         handleChildChange={handleChildChange}
                         pools={pools} // pass pools down for nested forms
+                        activeViewport={activeViewport}
+                        responsiveBuilderV2={responsiveBuilderV2}
                     />
                 </>
             )}
@@ -370,82 +468,93 @@ function BlockSettings({
                         <Reorder.Group axis="y" values={block.props.fields || []} onReorder={(newFields) => handleChange("fields", newFields)}>
                             <VStack spacing={2} align="stretch" mb={3}>
                                 {(block.props.fields || []).map((f, i) => (
-                                    <Reorder.Item key={f._id} value={f}>
-                                        <Box bg={editingFieldIndex === i ? "blue.50" : "gray.50"} p={2} borderRadius="sm" border="1px solid" borderColor={editingFieldIndex === i ? "blue.200" : "transparent"}>
-                                            <HStack>
-                                                <Box cursor="grab" color="gray.300" _hover={{ color: "gray.500" }}>
-                                                    <MdDragIndicator size={18} />
-                                                </Box>
-                                                <Text fontSize="xs" fontWeight="bold" flex={1}>{f.label}</Text>
-                                                <Tag size="sm" colorScheme="purple"><TagLabel>{f.type || "text"}</TagLabel></Tag>
-                                                <IconButton
-                                                    icon={<MdEdit />}
-                                                    size="xs"
-                                                    colorScheme={editingFieldIndex === i ? "blue" : "gray"}
-                                                    variant={editingFieldIndex === i ? "solid" : "ghost"}
-                                                    onClick={() => setEditingFieldIndex(editingFieldIndex === i ? null : i)}
-                                                    aria-label="Edit"
-                                                />
-                                                <IconButton icon={<MdDelete />} size="xs" colorScheme="red" variant="ghost" onClick={() => removeField(i)} aria-label="Del" />
-                                            </HStack>
-                                            {editingFieldIndex === i && (
-                                                <VStack mt={2} spacing={2} align="stretch">
-                                                    <HStack>
-                                                        <Box flex={1}>
-                                                            <Text fontSize="xs" color="gray.500" mb={0.5}>Label</Text>
-                                                            <Input size="xs" value={f.label} onChange={e => updateField(i, "label", e.target.value)} />
-                                                        </Box>
-                                                        <Box flex={1}>
-                                                            <Text fontSize="xs" color="gray.500" mb={0.5}>Key</Text>
-                                                            <Input size="xs" value={f.name} onChange={e => updateField(i, "name", e.target.value.replace(/\s/g, "_"))} fontFamily="mono" />
-                                                        </Box>
-                                                    </HStack>
-                                                    <Box>
-                                                        <Text fontSize="xs" color="gray.500" mb={0.5}>Type</Text>
-                                                        <Select size="xs" value={f.type || "text"} onChange={e => updateField(i, "type", e.target.value)}>
-                                                            <option value="text">Text</option>
-                                                            <option value="coupon">🎫 Coupon</option>
-                                                            <option value="email">Email</option>
-                                                            <option value="phone">Phone</option>
-                                                            <option value="textarea">Long text</option>
-                                                            <option value="select">Select</option>
-                                                            <option value="checkbox">✅ Checkbox / Agreement</option>
-                                                        </Select>
+                                    <ReorderFieldItem key={f._id} value={f}>
+                                        {({ startDrag }) => (
+                                            <Box bg={editingFieldIndex === i ? "blue.50" : "gray.50"} p={2} borderRadius="sm" border="1px solid" borderColor={editingFieldIndex === i ? "blue.200" : "transparent"}>
+                                                <HStack>
+                                                    <Box
+                                                        cursor="grab"
+                                                        color="gray.300"
+                                                        _hover={{ color: "gray.500" }}
+                                                        touchAction="none"
+                                                        onPointerDown={(e) => {
+                                                            e.stopPropagation();
+                                                            startDrag(e);
+                                                        }}
+                                                    >
+                                                        <MdDragIndicator size={18} />
                                                     </Box>
-                                                    {f.type === 'checkbox' && (
-                                                        <Box borderTop="1px dashed" borderColor="gray.200" pt={2} mt={1}>
-                                                            <Text fontSize="xs" fontWeight="bold" color="gray.600" mb={1}>Agreement Text (WYSIWYG)</Text>
-                                                            <RichTextEditor value={f.checkboxText || ""} onChange={val => updateField(i, "checkboxText", val)} />
+                                                    <Text fontSize="xs" fontWeight="bold" flex={1}>{f.label}</Text>
+                                                    <Tag size="sm" colorScheme="purple"><TagLabel>{f.type || "text"}</TagLabel></Tag>
+                                                    <IconButton
+                                                        icon={<MdEdit />}
+                                                        size="xs"
+                                                        colorScheme={editingFieldIndex === i ? "blue" : "gray"}
+                                                        variant={editingFieldIndex === i ? "solid" : "ghost"}
+                                                        onClick={() => setEditingFieldIndex(editingFieldIndex === i ? null : i)}
+                                                        aria-label="Edit"
+                                                    />
+                                                    <IconButton icon={<MdDelete />} size="xs" colorScheme="red" variant="ghost" onClick={() => removeField(i)} aria-label="Del" />
+                                                </HStack>
+                                                {editingFieldIndex === i && (
+                                                    <VStack mt={2} spacing={2} align="stretch">
+                                                        <HStack>
+                                                            <Box flex={1}>
+                                                                <Text fontSize="xs" color="gray.500" mb={0.5}>Label</Text>
+                                                                <Input size="xs" value={f.label} onChange={e => updateField(i, "label", e.target.value)} />
+                                                            </Box>
+                                                            <Box flex={1}>
+                                                                <Text fontSize="xs" color="gray.500" mb={0.5}>Key</Text>
+                                                                <Input size="xs" value={f.name} onChange={e => updateField(i, "name", e.target.value.replace(/\s/g, "_"))} fontFamily="mono" />
+                                                            </Box>
+                                                        </HStack>
+                                                        <Box>
+                                                            <Text fontSize="xs" color="gray.500" mb={0.5}>Type</Text>
+                                                            <Select size="xs" value={f.type || "text"} onChange={e => updateField(i, "type", e.target.value)}>
+                                                                <option value="text">Text</option>
+                                                                <option value="coupon">🎫 Coupon</option>
+                                                                <option value="email">Email</option>
+                                                                <option value="phone">Phone</option>
+                                                                <option value="textarea">Long text</option>
+                                                                <option value="select">Select</option>
+                                                                <option value="checkbox">✅ Checkbox / Agreement</option>
+                                                            </Select>
                                                         </Box>
-                                                    )}
-                                                    {f.type === 'select' && (
-                                                        <Box borderTop="1px dashed" borderColor="gray.200" pt={2}>
-                                                            <Text fontSize="xs" fontWeight="bold" color="gray.600" mb={1}>Options</Text>
-                                                            <VStack spacing={1} align="stretch" mb={2}>
-                                                                {(f.options || []).map((opt, optIdx) => (
-                                                                    <HStack key={optIdx}>
-                                                                        <Input size="xs" value={opt} onChange={(e) => {
-                                                                            const newOptions = [...(f.options || [])];
-                                                                            newOptions[optIdx] = e.target.value;
-                                                                            updateField(i, "options", newOptions);
-                                                                        }} />
-                                                                        <IconButton icon={<MdDelete />} size="xs" colorScheme="red" variant="ghost" onClick={() => {
-                                                                            const newOptions = (f.options || []).filter((_, idx) => idx !== optIdx);
-                                                                            updateField(i, "options", newOptions);
-                                                                        }} aria-label="Remove" />
-                                                                    </HStack>
-                                                                ))}
-                                                            </VStack>
-                                                            <Button size="xs" leftIcon={<MdAdd />} onClick={() => {
-                                                                const newOptions = [...(f.options || []), "New Option"];
-                                                                updateField(i, "options", newOptions);
-                                                            }}>Add Option</Button>
-                                                        </Box>
-                                                    )}
-                                                </VStack>
-                                            )}
-                                        </Box>
-                                    </Reorder.Item>
+                                                        {f.type === 'checkbox' && (
+                                                            <Box borderTop="1px dashed" borderColor="gray.200" pt={2} mt={1}>
+                                                                <Text fontSize="xs" fontWeight="bold" color="gray.600" mb={1}>Agreement Text (WYSIWYG)</Text>
+                                                                <RichTextEditor value={f.checkboxText || ""} onChange={val => updateField(i, "checkboxText", val)} />
+                                                            </Box>
+                                                        )}
+                                                        {f.type === 'select' && (
+                                                            <Box borderTop="1px dashed" borderColor="gray.200" pt={2}>
+                                                                <Text fontSize="xs" fontWeight="bold" color="gray.600" mb={1}>Options</Text>
+                                                                <VStack spacing={1} align="stretch" mb={2}>
+                                                                    {(f.options || []).map((opt, optIdx) => (
+                                                                        <HStack key={optIdx}>
+                                                                            <Input size="xs" value={opt} onChange={(e) => {
+                                                                                const newOptions = [...(f.options || [])];
+                                                                                newOptions[optIdx] = e.target.value;
+                                                                                updateField(i, "options", newOptions);
+                                                                            }} />
+                                                                            <IconButton icon={<MdDelete />} size="xs" colorScheme="red" variant="ghost" onClick={() => {
+                                                                                const newOptions = (f.options || []).filter((_, idx) => idx !== optIdx);
+                                                                                updateField(i, "options", newOptions);
+                                                                            }} aria-label="Remove" />
+                                                                        </HStack>
+                                                                    ))}
+                                                                </VStack>
+                                                                <Button size="xs" leftIcon={<MdAdd />} onClick={() => {
+                                                                    const newOptions = [...(f.options || []), "New Option"];
+                                                                    updateField(i, "options", newOptions);
+                                                                }}>Add Option</Button>
+                                                            </Box>
+                                                        )}
+                                                    </VStack>
+                                                )}
+                                            </Box>
+                                        )}
+                                    </ReorderFieldItem>
                                 ))}
                             </VStack>
                         </Reorder.Group>
@@ -551,45 +660,56 @@ function BlockSettings({
                         <Reorder.Group axis="y" values={block.props.fields || []} onReorder={(newFields) => handleChange("fields", newFields)}>
                             <VStack spacing={2} align="stretch" mb={3}>
                                 {(block.props.fields || []).map((f, i) => (
-                                    <Reorder.Item key={f._id} value={f}>
-                                        <Box bg={editingFieldIndex === i ? "blue.50" : "gray.50"} p={2} borderRadius="sm" border="1px solid" borderColor={editingFieldIndex === i ? "blue.200" : "transparent"}>
-                                            <HStack>
-                                                <Box cursor="grab" color="gray.300" _hover={{ color: "gray.500" }}>
-                                                    <MdDragIndicator size={18} />
-                                                </Box>
-                                                <Text fontSize="xs" fontWeight="bold" flex={1}>{f.label}</Text>
-                                                <IconButton
-                                                    icon={<MdEdit />}
-                                                    size="xs"
-                                                    colorScheme={editingFieldIndex === i ? "blue" : "gray"}
-                                                    variant={editingFieldIndex === i ? "solid" : "ghost"}
-                                                    onClick={() => setEditingFieldIndex(editingFieldIndex === i ? null : i)}
-                                                    aria-label="Edit"
-                                                />
-                                                <IconButton icon={<MdDelete />} size="xs" colorScheme="red" variant="ghost" onClick={() => removeField(i)} aria-label="Del" />
-                                            </HStack>
-                                            {editingFieldIndex === i && (
-                                                <VStack mt={2} spacing={2} align="stretch">
-                                                    <HStack>
-                                                        <Box flex={1}>
-                                                            <Text fontSize="xs" color="gray.500" mb={0.5}>Label</Text>
-                                                            <Input size="xs" value={f.label} onChange={e => updateField(i, "label", e.target.value)} />
-                                                        </Box>
-                                                        <Box flex={1}>
-                                                            <Text fontSize="xs" color="gray.500" mb={0.5}>Key</Text>
-                                                            <Input size="xs" value={f.name} onChange={e => updateField(i, "name", e.target.value.replace(/\s/g, "_"))} fontFamily="mono" />
-                                                        </Box>
-                                                    </HStack>
-                                                    {f.type === 'checkbox' && (
-                                                        <Box borderTop="1px dashed" borderColor="gray.200" pt={2} mt={1}>
-                                                            <Text fontSize="xs" fontWeight="bold" color="gray.600" mb={1}>Agreement Text (WYSIWYG)</Text>
-                                                            <RichTextEditor value={f.checkboxText || ""} onChange={val => updateField(i, "checkboxText", val)} />
-                                                        </Box>
-                                                    )}
-                                                </VStack>
-                                            )}
-                                        </Box>
-                                    </Reorder.Item>
+                                    <ReorderFieldItem key={f._id} value={f}>
+                                        {({ startDrag }) => (
+                                            <Box bg={editingFieldIndex === i ? "blue.50" : "gray.50"} p={2} borderRadius="sm" border="1px solid" borderColor={editingFieldIndex === i ? "blue.200" : "transparent"}>
+                                                <HStack>
+                                                    <Box
+                                                        cursor="grab"
+                                                        color="gray.300"
+                                                        _hover={{ color: "gray.500" }}
+                                                        touchAction="none"
+                                                        onPointerDown={(e) => {
+                                                            e.stopPropagation();
+                                                            startDrag(e);
+                                                        }}
+                                                    >
+                                                        <MdDragIndicator size={18} />
+                                                    </Box>
+                                                    <Text fontSize="xs" fontWeight="bold" flex={1}>{f.label}</Text>
+                                                    <IconButton
+                                                        icon={<MdEdit />}
+                                                        size="xs"
+                                                        colorScheme={editingFieldIndex === i ? "blue" : "gray"}
+                                                        variant={editingFieldIndex === i ? "solid" : "ghost"}
+                                                        onClick={() => setEditingFieldIndex(editingFieldIndex === i ? null : i)}
+                                                        aria-label="Edit"
+                                                    />
+                                                    <IconButton icon={<MdDelete />} size="xs" colorScheme="red" variant="ghost" onClick={() => removeField(i)} aria-label="Del" />
+                                                </HStack>
+                                                {editingFieldIndex === i && (
+                                                    <VStack mt={2} spacing={2} align="stretch">
+                                                        <HStack>
+                                                            <Box flex={1}>
+                                                                <Text fontSize="xs" color="gray.500" mb={0.5}>Label</Text>
+                                                                <Input size="xs" value={f.label} onChange={e => updateField(i, "label", e.target.value)} />
+                                                            </Box>
+                                                            <Box flex={1}>
+                                                                <Text fontSize="xs" color="gray.500" mb={0.5}>Key</Text>
+                                                                <Input size="xs" value={f.name} onChange={e => updateField(i, "name", e.target.value.replace(/\s/g, "_"))} fontFamily="mono" />
+                                                            </Box>
+                                                        </HStack>
+                                                        {f.type === 'checkbox' && (
+                                                            <Box borderTop="1px dashed" borderColor="gray.200" pt={2} mt={1}>
+                                                                <Text fontSize="xs" fontWeight="bold" color="gray.600" mb={1}>Agreement Text (WYSIWYG)</Text>
+                                                                <RichTextEditor value={f.checkboxText || ""} onChange={val => updateField(i, "checkboxText", val)} />
+                                                            </Box>
+                                                        )}
+                                                    </VStack>
+                                                )}
+                                            </Box>
+                                        )}
+                                    </ReorderFieldItem>
                                 ))}
                             </VStack>
                         </Reorder.Group>
@@ -608,6 +728,9 @@ function BlockSettings({
                     <ImageField label="Overlay Image" value={block.props.imageUrl} onChange={(v) => handleChange("imageUrl", v)} />
                     <Divider my={2} />
                     <Text fontSize="xs" fontWeight="bold" mb={2}>Positioning</Text>
+                    <Text fontSize="2xs" color="gray.500" mb={2}>
+                        Resize handle keeps aspect ratio by default. Hold Shift while dragging for free resize.
+                    </Text>
                     <VStack spacing={2} align="stretch" bg="gray.50" p={2} borderRadius="md">
                         <HStack>
                             <FormControl><FormLabel fontSize="2xs" m={0}>Top</FormLabel><Input size="xs" value={block.props.top || "auto"} onChange={(e) => handleChange("top", e.target.value)} /></FormControl>
@@ -622,8 +745,99 @@ function BlockSettings({
                             <FormControl><FormLabel fontSize="2xs" m={0}>MaxW</FormLabel><Input size="xs" value={block.props.maxWidth || "200px"} onChange={(e) => handleChange("maxWidth", e.target.value)} /></FormControl>
                         </HStack>
                         <HStack>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>Height</FormLabel><Input size="xs" value={block.props.height || "auto"} onChange={(e) => handleChange("height", e.target.value)} /></FormControl>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>MaxH</FormLabel><Input size="xs" value={block.props.maxHeight || "none"} onChange={(e) => handleChange("maxHeight", e.target.value)} /></FormControl>
+                        </HStack>
+                        <HStack>
                             <FormControl><FormLabel fontSize="2xs" m={0}>z-Index</FormLabel><Input size="xs" type="number" value={block.props.zIndex || 10} onChange={(e) => handleChange("zIndex", e.target.value)} /></FormControl>
-                            <FormControl><FormLabel fontSize="2xs" m={0}>Opacity</FormLabel><Input size="xs" type="number" step="0.1" min="0" max="1" value={block.props.opacity || 1} onChange={(e) => handleChange("opacity", e.target.value)} /></FormControl>
+                            <FormControl>
+                                <FormLabel fontSize="2xs" m={0}>Opacity</FormLabel>
+                                <HStack>
+                                    <Input
+                                        size="xs"
+                                        type="range"
+                                        step="0.05"
+                                        min="0"
+                                        max="1"
+                                        value={opacityValue}
+                                        onChange={(e) => handleOpacityChange(e.target.value)}
+                                    />
+                                    <Input
+                                        size="xs"
+                                        type="number"
+                                        step="0.05"
+                                        min="0"
+                                        max="1"
+                                        value={opacityValue}
+                                        onChange={(e) => handleOpacityChange(e.target.value)}
+                                        w="72px"
+                                    />
+                                </HStack>
+                            </FormControl>
+                        </HStack>
+                        <HStack>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>TranslateX</FormLabel><Input size="xs" placeholder="e.g. -50%" value={block.props.translateX || ""} onChange={(e) => handleChange("translateX", e.target.value)} /></FormControl>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>TranslateY</FormLabel><Input size="xs" placeholder="e.g. -50%" value={block.props.translateY || ""} onChange={(e) => handleChange("translateY", e.target.value)} /></FormControl>
+                        </HStack>
+                    </VStack>
+                </>
+            )}
+
+            {block.type === 'textOverlay' && (
+                <>
+                    <RichTextEditor key={block._id || block.props?._id || 'rte-overlay'} value={block.props.content || ""} onChange={(val) => handleChange("content", val)} />
+                    <Divider my={2} />
+                    <Text fontSize="xs" fontWeight="bold" mb={2}>Positioning</Text>
+                    <Text fontSize="2xs" color="gray.500" mb={2}>
+                        Text overlay supports free drag-and-drop and free resize.
+                    </Text>
+                    <VStack spacing={2} align="stretch" bg="gray.50" p={2} borderRadius="md">
+                        <HStack>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>Top</FormLabel><Input size="xs" value={block.props.top || "auto"} onChange={(e) => handleChange("top", e.target.value)} /></FormControl>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>Left</FormLabel><Input size="xs" value={block.props.left || "auto"} onChange={(e) => handleChange("left", e.target.value)} /></FormControl>
+                        </HStack>
+                        <HStack>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>Bottom</FormLabel><Input size="xs" value={block.props.bottom || "auto"} onChange={(e) => handleChange("bottom", e.target.value)} /></FormControl>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>Right</FormLabel><Input size="xs" value={block.props.right || "auto"} onChange={(e) => handleChange("right", e.target.value)} /></FormControl>
+                        </HStack>
+                        <HStack>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>Width</FormLabel><Input size="xs" value={block.props.width || "260px"} onChange={(e) => handleChange("width", e.target.value)} /></FormControl>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>MaxW</FormLabel><Input size="xs" value={block.props.maxWidth || "none"} onChange={(e) => handleChange("maxWidth", e.target.value)} /></FormControl>
+                        </HStack>
+                        <HStack>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>Height</FormLabel><Input size="xs" value={block.props.height || "140px"} onChange={(e) => handleChange("height", e.target.value)} /></FormControl>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>MaxH</FormLabel><Input size="xs" value={block.props.maxHeight || "none"} onChange={(e) => handleChange("maxHeight", e.target.value)} /></FormControl>
+                        </HStack>
+                        <HStack>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>z-Index</FormLabel><Input size="xs" type="number" value={block.props.zIndex || 11} onChange={(e) => handleChange("zIndex", e.target.value)} /></FormControl>
+                            <FormControl>
+                                <FormLabel fontSize="2xs" m={0}>Opacity</FormLabel>
+                                <HStack>
+                                    <Input
+                                        size="xs"
+                                        type="range"
+                                        step="0.05"
+                                        min="0"
+                                        max="1"
+                                        value={opacityValue}
+                                        onChange={(e) => handleOpacityChange(e.target.value)}
+                                    />
+                                    <Input
+                                        size="xs"
+                                        type="number"
+                                        step="0.05"
+                                        min="0"
+                                        max="1"
+                                        value={opacityValue}
+                                        onChange={(e) => handleOpacityChange(e.target.value)}
+                                        w="72px"
+                                    />
+                                </HStack>
+                            </FormControl>
+                        </HStack>
+                        <HStack>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>TranslateX</FormLabel><Input size="xs" placeholder="e.g. -50%" value={block.props.translateX || ""} onChange={(e) => handleChange("translateX", e.target.value)} /></FormControl>
+                            <FormControl><FormLabel fontSize="2xs" m={0}>TranslateY</FormLabel><Input size="xs" placeholder="e.g. -50%" value={block.props.translateY || ""} onChange={(e) => handleChange("translateY", e.target.value)} /></FormControl>
                         </HStack>
                     </VStack>
                 </>
@@ -632,8 +846,8 @@ function BlockSettings({
             {/* CUSTOM HTML */}
             {block.type === 'customHtml' && (
                 <>
-                    <FormControl><FormLabel fontSize="xs">HTML Code</FormLabel><Textarea value={block.props.html || ""} onChange={(e) => handleChange("html", e.target.value)} rows={8} fontFamily="monospace" fontSize="xs" placeholder="<div>Your HTML here</div>" /></FormControl>
-                    <FormControl mt={2}><FormLabel fontSize="xs">Custom CSS (JSON object)</FormLabel><Textarea value={block.props.customCss || ""} onChange={(e) => handleChange("customCss", e.target.value)} rows={3} fontFamily="monospace" fontSize="xs" placeholder='{"background":"#f5f5f5","padding":"20px"}' /></FormControl>
+                    <FormControl><FormLabel fontSize="xs">HTML Code</FormLabel><Textarea value={block.props.html || ""} onChange={(e) => handleChange("html", e.target.value)} rows={15} fontFamily="monospace" fontSize="xs" placeholder="<div>Your HTML here</div>" /></FormControl>
+                    <FormControl mt={2}><FormLabel fontSize="xs">Custom CSS (JSON object)</FormLabel><Textarea value={block.props.customCss || ""} onChange={(e) => handleChange("customCss", e.target.value)} rows={20} fontFamily="monospace" fontSize="xs" placeholder='{"background":"#f5f5f5","padding":"20px"}' /></FormControl>
                 </>
             )}
 
@@ -658,16 +872,48 @@ function BlockSettings({
                                 </HStack>
                                 <ColorPicker label="Body Text" value={block.props.textColor} onChange={(v) => handleChange("textColor", v)} />
 
-                                <HStack spacing={4} borderTop="1px solid" borderColor="gray.100" pt={2}>
-                                    <VStack align="start" spacing={1} flex={1}>
-                                        <Text fontSize="2xs" color="gray.500">Margin</Text>
-                                        <Input size="xs" value={block.props.margin || ""} onChange={(e) => handleChange("margin", e.target.value)} />
-                                    </VStack>
-                                    <VStack align="start" spacing={1} flex={1}>
-                                        <Text fontSize="2xs" color="gray.500">Padding</Text>
-                                        <Input size="xs" value={block.props.padding || ""} onChange={(e) => handleChange("padding", e.target.value)} />
-                                    </VStack>
-                                </HStack>
+                                <Box borderTop="1px solid" borderColor="gray.100" pt={2}>
+                                    <Text fontSize="2xs" color="gray.500" fontWeight="bold" mb={1}>Margin (top right bottom left)</Text>
+                                    <HStack spacing={2}>
+                                        <VStack align="start" spacing={0} flex={1}>
+                                            <Text fontSize="2xs" color="gray.400">Top</Text>
+                                            <Input size="xs" placeholder="0" value={block.props.marginTop || ""} onChange={(e) => handleChange("marginTop", e.target.value)} />
+                                        </VStack>
+                                        <VStack align="start" spacing={0} flex={1}>
+                                            <Text fontSize="2xs" color="gray.400">Right</Text>
+                                            <Input size="xs" placeholder="0" value={block.props.marginRight || ""} onChange={(e) => handleChange("marginRight", e.target.value)} />
+                                        </VStack>
+                                        <VStack align="start" spacing={0} flex={1}>
+                                            <Text fontSize="2xs" color="gray.400">Bottom</Text>
+                                            <Input size="xs" placeholder="0" value={block.props.marginBottom || ""} onChange={(e) => handleChange("marginBottom", e.target.value)} />
+                                        </VStack>
+                                        <VStack align="start" spacing={0} flex={1}>
+                                            <Text fontSize="2xs" color="gray.400">Left</Text>
+                                            <Input size="xs" placeholder="0" value={block.props.marginLeft || ""} onChange={(e) => handleChange("marginLeft", e.target.value)} />
+                                        </VStack>
+                                    </HStack>
+                                </Box>
+                                <Box pt={2}>
+                                    <Text fontSize="2xs" color="gray.500" fontWeight="bold" mb={1}>Padding (top right bottom left)</Text>
+                                    <HStack spacing={2}>
+                                        <VStack align="start" spacing={0} flex={1}>
+                                            <Text fontSize="2xs" color="gray.400">Top</Text>
+                                            <Input size="xs" placeholder="0" value={block.props.paddingTop || ""} onChange={(e) => handleChange("paddingTop", e.target.value)} />
+                                        </VStack>
+                                        <VStack align="start" spacing={0} flex={1}>
+                                            <Text fontSize="2xs" color="gray.400">Right</Text>
+                                            <Input size="xs" placeholder="0" value={block.props.paddingRight || ""} onChange={(e) => handleChange("paddingRight", e.target.value)} />
+                                        </VStack>
+                                        <VStack align="start" spacing={0} flex={1}>
+                                            <Text fontSize="2xs" color="gray.400">Bottom</Text>
+                                            <Input size="xs" placeholder="0" value={block.props.paddingBottom || ""} onChange={(e) => handleChange("paddingBottom", e.target.value)} />
+                                        </VStack>
+                                        <VStack align="start" spacing={0} flex={1}>
+                                            <Text fontSize="2xs" color="gray.400">Left</Text>
+                                            <Input size="xs" placeholder="0" value={block.props.paddingLeft || ""} onChange={(e) => handleChange("paddingLeft", e.target.value)} />
+                                        </VStack>
+                                    </HStack>
+                                </Box>
                             </VStack>
                         </AccordionPanel>
                     </AccordionItem></Accordion>
@@ -681,74 +927,38 @@ function BlockSettings({
                         editingIndex={editingChildIndex}
                         handleChildChange={handleChildChange}
                         pools={pools}
+                        activeViewport={activeViewport}
+                        responsiveBuilderV2={responsiveBuilderV2}
                     />
                 </>
-            )}
-
-            {/* RECURSIVE CHILD EDITOR */}
-            {currentChild && (
-                <Box bg="blue.50" p={2} borderRadius="md" mt={4} border="1px solid" borderColor="blue.100">
-                    <HStack justify="space-between" mb={2}>
-                        <HStack>
-                            <MdEdit />
-                            <Text fontWeight="bold" fontSize="sm">Layer: {currentChild.type.toUpperCase()}</Text>
-                        </HStack>
-                        <Button size="xs" onClick={() => setEditingChildIndex(null)}>Finish</Button>
-                    </HStack>
-                    <Box bg="white" p={3} borderRadius="sm" shadow="sm">
-                        <BlockSettings
-                            block={currentChild}
-                            handleChange={(key, val) => handleChildChange(editingChildIndex, { ...currentChild, props: { ...currentChild.props, [key]: val } })}
-                            pools={pools}
-                            editingFieldIndex={editingFieldIndex}
-                            setEditingFieldIndex={setEditingFieldIndex}
-                            updateField={(i, k, v) => {
-                                const f = [...(currentChild.props.fields || [])];
-                                f[i] = { ...f[i], [k]: v };
-                                handleChildChange(editingChildIndex, { ...currentChild, props: { ...currentChild.props, fields: f } });
-                            }}
-                            removeField={(i) => {
-                                const f = (currentChild.props.fields || []).filter((_, j) => j !== i);
-                                handleChildChange(editingChildIndex, { ...currentChild, props: { ...currentChild.props, fields: f } });
-                            }}
-                            newFieldName={newFieldName}
-                            setNewFieldName={setNewFieldName}
-                            newFieldLabel={newFieldLabel}
-                            setNewFieldLabel={setNewFieldLabel}
-                            newFieldType={newFieldType}
-                            setNewFieldType={setNewFieldType}
-                            addField={() => {
-                                const f = [...(currentChild.props.fields || []), { _id: `id_${Date.now()}`, name: newFieldName, label: newFieldLabel || newFieldName, type: newFieldType }];
-                                handleChildChange(editingChildIndex, { ...currentChild, props: { ...currentChild.props, fields: f } });
-                                setNewFieldName(""); setNewFieldLabel("");
-                            }}
-                            newLinkLabel={newLinkLabel}
-                            setNewLinkLabel={setNewLinkLabel}
-                            newLinkUrl={newLinkUrl}
-                            setNewLinkUrl={setNewLinkUrl}
-                            addLink={() => {
-                                const l = [...(currentChild.props.links || []), { label: newLinkLabel, url: newLinkUrl }];
-                                handleChildChange(editingChildIndex, { ...currentChild, props: { ...currentChild.props, links: l } });
-                                setNewLinkLabel(""); setNewLinkUrl("");
-                            }}
-                            removeImage={(i) => {
-                                const img = (currentChild.props.images || []).filter((_, j) => j !== i);
-                                handleChildChange(editingChildIndex, { ...currentChild, props: { ...currentChild.props, images: img } });
-                            }}
-                            isNested={true}
-                        />
-                    </Box>
-                </Box>
             )}
             <AddBlockModal isOpen={isOpen} onClose={onClose} onAddBlock={handleAddChild} />
         </VStack>
     );
 }
 
-function ChildrenEditor({ children = [], onAdd, onRemove, onEdit, editingIndex, handleChildChange }) {
+function ChildrenEditor({
+    children = [],
+    onAdd,
+    onRemove,
+    onEdit,
+    editingIndex,
+    handleChildChange,
+    pools,
+    activeViewport,
+    responsiveBuilderV2
+}) {
+    // Local state for field editing within inline child settings
+    const [localEditingFieldIndex, setLocalEditingFieldIndex] = useState(null);
+    const [localNewFieldName, setLocalNewFieldName] = useState("");
+    const [localNewFieldLabel, setLocalNewFieldLabel] = useState("");
+    const [localNewFieldType, setLocalNewFieldType] = useState("text");
+    const [localNewLinkLabel, setLocalNewLinkLabel] = useState("");
+    const [localNewLinkUrl, setLocalNewLinkUrl] = useState("");
+
     const getLayerLabel = (c) => {
         if (c.props.layerName) return c.props.layerName;
-        if (c.type === 'text' && c.props.content) {
+        if ((c.type === 'text' || c.type === 'textOverlay') && c.props.content) {
             const plainText = c.props.content.replace(/<[^>]*>/g, '').substring(0, 20);
             return plainText ? `"${plainText}..."` : "TEXT";
         }
@@ -756,18 +966,133 @@ function ChildrenEditor({ children = [], onAdd, onRemove, onEdit, editingIndex, 
     };
 
     return (
-        <Box>
-            <HStack justify="space-between" mb={2}><Text fontWeight="bold" fontSize="sm">Layers</Text><Button size="xs" leftIcon={<MdAdd />} colorScheme="blue" onClick={onAdd}>Add Layer</Button></HStack>
-            {children.length === 0 && <Text fontSize="xs" color="gray.400">No layers yet</Text>}
-            <VStack align="stretch" spacing={1}>
-                {children.map((c, i) => (
-                    <HStack key={c._id || i} bg={editingIndex === i ? "blue.100" : "gray.50"} p={2} borderRadius="sm" cursor="pointer" onClick={() => onEdit(i)} _hover={{ bg: "gray.100" }}>
-                        <Text fontSize="xs" flex={1} fontWeight={editingIndex === i ? "bold" : "normal"}>{getLayerLabel(c)}</Text>
-                        <IconButton icon={<MdEdit />} size="xs" variant="ghost" onClick={(e) => { e.stopPropagation(); onEdit(i); }} aria-label="Edit" />
-                        <IconButton icon={<MdDelete />} size="xs" colorScheme="red" variant="ghost" onClick={(e) => { e.stopPropagation(); onRemove(i); }} aria-label="Delete" />
-                    </HStack>
-                ))}
-            </VStack>
+        <Box border="1px solid" borderColor="gray.100" borderRadius="md" overflow="hidden" display="flex" flexDirection="column">
+            <HStack justify="space-between" p={3} bg="gray.50" borderBottom="1px solid" borderColor="gray.100" position="sticky" top={0} zIndex={5}>
+                <Text fontWeight="bold" fontSize="sm">Layers</Text>
+                <Button size="xs" leftIcon={<MdAdd />} colorScheme="blue" onClick={onAdd}>Add Layer</Button>
+            </HStack>
+
+            <Box maxH="400px" overflowY="auto" p={2} sx={{
+                "&::-webkit-scrollbar": { width: "4px" },
+                "&::-webkit-scrollbar-track": { background: "transparent" },
+                "&::-webkit-scrollbar-thumb": { background: "gray.200", borderRadius: "10px" }
+            }}>
+                {children.length === 0 && <Text fontSize="xs" color="gray.400" p={2}>No layers yet</Text>}
+                <VStack align="stretch" spacing={2}>
+                    {children.map((c, i) => (
+                        <Box key={c._id || i}>
+                            <HStack
+                                bg={editingIndex === i ? "blue.500" : "white"}
+                                color={editingIndex === i ? "white" : "inherit"}
+                                p={2}
+                                borderRadius="md"
+                                border="1px solid"
+                                borderColor={editingIndex === i ? "blue.500" : "gray.100"}
+                                cursor="pointer"
+                                onClick={() => onEdit(i === editingIndex ? null : i)}
+                                _hover={{ borderColor: "blue.400" }}
+                                transition="all 0.2s"
+                            >
+                                <Text fontSize="xs" flex={1} fontWeight={editingIndex === i ? "bold" : "medium"}>
+                                    {getLayerLabel(c)}
+                                </Text>
+                                <HStack spacing={1}>
+                                    <IconButton
+                                        icon={<MdEdit />}
+                                        size="xs"
+                                        variant="ghost"
+                                        color={editingIndex === i ? "white" : "gray.500"}
+                                        _hover={{ bg: "whiteAlpha.300" }}
+                                        onClick={(e) => { e.stopPropagation(); onEdit(i === editingIndex ? null : i); }}
+                                        aria-label="Edit"
+                                    />
+                                    <IconButton
+                                        icon={<MdDelete />}
+                                        size="xs"
+                                        colorScheme="red"
+                                        variant="ghost"
+                                        _hover={{ bg: "red.50" }}
+                                        onClick={(e) => { e.stopPropagation(); onRemove(i); }}
+                                        aria-label="Delete"
+                                    />
+                                </HStack>
+                            </HStack>
+
+                            {editingIndex === i && (
+                                <Box mt={2} mb={4} p={3} bg="white" border="1px solid" borderColor="blue.100" borderRadius="md" shadow="sm">
+                                    <HStack justify="space-between" mb={3} pb={2} borderBottom="1px solid" borderColor="gray.50">
+                                        <Text fontWeight="bold" fontSize="xs" color="blue.600">
+                                            Edit {c.type.toUpperCase()} Props
+                                        </Text>
+                                        <Button size="xs" variant="ghost" onClick={() => onEdit(null)}>Finish</Button>
+                                    </HStack>
+                                    <BlockSettings
+                                        block={c}
+                                        handleChange={(key, val) => {
+                                            const nextProps = (responsiveBuilderV2 && isLayoutOverrideKey(key))
+                                                ? applyResponsiveLayoutUpdates(c.props || {}, { [key]: val }, activeViewport)
+                                                : { ...(c.props || {}), [key]: val };
+                                            handleChildChange(i, { ...c, props: nextProps });
+                                        }}
+                                        pools={pools}
+                                        editingFieldIndex={localEditingFieldIndex}
+                                        setEditingFieldIndex={setLocalEditingFieldIndex}
+                                        updateField={(fieldIdx, k, v) => {
+                                            const f = [...(c.props.fields || [])];
+                                            f[fieldIdx] = { ...f[fieldIdx], [k]: v };
+                                            handleChildChange(i, { ...c, props: { ...c.props, fields: f } });
+                                        }}
+                                        removeField={(fieldIdx) => {
+                                            const f = (c.props.fields || []).filter((_, j) => j !== fieldIdx);
+                                            handleChildChange(i, { ...c, props: { ...c.props, fields: f } });
+                                        }}
+                                        newFieldName={localNewFieldName}
+                                        setNewFieldName={setLocalNewFieldName}
+                                        newFieldLabel={localNewFieldLabel}
+                                        setNewFieldLabel={setLocalNewFieldLabel}
+                                        newFieldType={localNewFieldType}
+                                        setNewFieldType={setLocalNewFieldType}
+                                        addField={() => {
+                                            if (!localNewFieldName.trim()) return;
+                                            const f = [...(c.props.fields || []), {
+                                                _id: `id_${Date.now()}`,
+                                                name: localNewFieldName.trim(),
+                                                label: localNewFieldLabel.trim() || localNewFieldName.trim(),
+                                                type: localNewFieldType
+                                            }];
+                                            handleChildChange(i, { ...c, props: { ...c.props, fields: f } });
+                                            setLocalNewFieldName(""); setLocalNewFieldLabel("");
+                                        }}
+                                        newLinkLabel={localNewLinkLabel}
+                                        setNewLinkLabel={setLocalNewLinkLabel}
+                                        newLinkUrl={localNewLinkUrl}
+                                        setNewLinkUrl={setLocalNewLinkUrl}
+                                        addLink={() => {
+                                            if (!localNewLinkLabel.trim()) return;
+                                            const l = [...(c.props.links || []), {
+                                                label: localNewLinkLabel.trim(),
+                                                url: localNewLinkUrl.trim()
+                                            }];
+                                            handleChildChange(i, { ...c, props: { ...c.props, links: l } });
+                                            setLocalNewLinkLabel(""); setLocalNewLinkUrl("");
+                                        }}
+                                        removeLink={(linkIdx) => {
+                                            const l = (c.props.links || []).filter((_, j) => j !== linkIdx);
+                                            handleChildChange(i, { ...c, props: { ...c.props, links: l } });
+                                        }}
+                                        removeImage={(imageIdx) => {
+                                            const img = (c.props.images || []).filter((_, j) => j !== imageIdx);
+                                            handleChildChange(i, { ...c, props: { ...c.props, images: img } });
+                                        }}
+                                        activeViewport={activeViewport}
+                                        responsiveBuilderV2={responsiveBuilderV2}
+                                    />
+                                </Box>
+                            )}
+                        </Box>
+                    ))}
+                </VStack>
+            </Box>
         </Box>
     );
 }

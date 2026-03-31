@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     useSteps,
     Stepper,
@@ -34,10 +34,13 @@ import {
     HStack,
     Spinner,
     Tooltip,
+    Divider,
+    Select,
+    ButtonGroup,
 } from "@chakra-ui/react";
 import { renderToString } from "react-dom/server";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Marker, Polyline, useMap, LayerGroup, CircleMarker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, LayerGroup, CircleMarker } from "react-leaflet";
 import 'leaflet-polylinedecorator';
 import L from "leaflet";
 import Axios from "axios";
@@ -90,24 +93,44 @@ function ContainerTracking({
     const [selectedLocation2, setSelectedLocation2] = useState()
     const [updateat, setUpdateat] = useState("")
     const [loading, setLoading] = useState(false)
+    const [poNumber, setPoNumber] = useState("")
+    const [fullRoutePath, setFullRoutePath] = useState(null);
     const [errorState, setErrorState] = useState({
         hasError: false,
         errorType: null, // 'not_found_local', 'not_found_searates', 'api_error', 'network_error'
         message: '',
         searchedNumber: ''
     });
+    const [trackingAnalytics, setTrackingAnalytics] = useState(null);
+
+    // UI: Tracking type selector & sealine dropdown
+    const [trackingType, setTrackingType] = useState("auto"); // auto | ct | bl | bk
+    const [sealineSelect, setSealineSelect] = useState("auto"); // auto | SCAC code
+    const [sealineOptions, setSealineOptions] = useState([]);
+
+    // Fetch sealine list on mount for dropdown
+    useEffect(() => {
+        axios.get(`${API_URL}/searates/getSealineList`)
+            .then(r => { if (r.data?.data) setSealineOptions(r.data.data); })
+            .catch(() => { });
+    }, []);
 
     // ==========================================================
     // âœ… PATCHED UNIFIED FETCH LOGIC STARTS HERE
     // ==========================================================
     const unifiedFetchSeaRatesData = async ({ number, so_id, refresh = false }) => {
-        const url = `${API_URL}/searates/searatesTrackByNumber/${number}${so_id ? `/${so_id}` : ``}${refresh ? `?refresh=true` : ``}`;
+        const qp = new URLSearchParams();
+        if (refresh) qp.set('refresh', 'true');
+        if (trackingType && trackingType !== 'auto') qp.set('type', trackingType);
+        if (sealineSelect && sealineSelect !== 'auto') qp.set('sealine', sealineSelect);
+        const url = API_URL + '/searates/searatesTrackByNumber/' + number + (so_id ? '/' + so_id : '') + (qp.toString() ? '?' + qp.toString() : '');
 
         try {
             const res = await axios.get(url);
-            const containerData = Array.isArray(res.data) ? res.data[0] : null;
-            const searatesData = res.data?.data?.data || res.data?.data || null;
-            const src = containerData || searatesData;
+            let dataList = Array.isArray(res.data) ? res.data : (res.data?.data ? [res.data.data] : []);
+
+            // Find best candidate (first one with containers, or just the first if all empty)
+            let src = dataList.find(d => d.containers?.length > 0 || d.container?.length > 0) || dataList[0];
 
             if (!src) {
                 console.warn("âš ï¸ No valid data structure found in response");
@@ -119,9 +142,9 @@ function ContainerTracking({
             }
 
             if (res.data?.data?.data || res.data?.data) {
-                console.log("searatesData", searatesData)
+                console.log("searatesData", src)
             } else {
-                console.log("containerData", containerData)
+                console.log("containerData", src)
             }
 
             const normalized = {
@@ -136,10 +159,14 @@ function ContainerTracking({
                         ? { lat: src.route_data.pin[0], lng: src.route_data.pin[1] }
                         : {}
                 ),
+                fullRoute: src.fullRoute || null,
+                poNumber: src.po_number || src.metadata?.po_number || "",
+                updateat: src.metadata?.updated_at || src.last_updated_date || new Date().toISOString(),
+                tracking_analytics: src.tracking_analytics || null
             };
             return normalized;
         } catch (err) {
-            console.error("âŒ unifiedFetchSeaRatesData error:", err);
+            console.error(" unifiedFetchSeaRatesData error:", err);
             // Enrich error with context
             if (!err.type) {
                 if (err.response?.status === 404) {
@@ -177,8 +204,17 @@ function ContainerTracking({
             setDataLocationDeparture("");
             setDataLocationArrive("");
             setDataContainer([]);
+            setFullRoutePath(null); // Clear fullRoutePath
 
             const data = await unifiedFetchSeaRatesData({ number, so_id, refresh });
+
+            // 🛑 Detect UNKNOWN status from SeaRates (acts as negative cache)
+            const trackingStatus = data.containers?.[0]?.container_status || data.metadata?.status || "";
+            if (trackingStatus.toUpperCase() === 'UNKNOWN') {
+                const err = new Error("Tracking data could not be found. The number might be incorrect, too old, or not supported by the carrier yet.");
+                err.type = 'unknown_tracking';
+                throw err;
+            }
 
             setDataContainer(data.containers || []);
             setContainerName(data.containers?.[0]?.container_number || data.metadata?.number || "");
@@ -190,11 +226,29 @@ function ContainerTracking({
             setDataRoute(data.dataRoute || []);
             setoOrderSealineState(data.containers?.[0]?.sealine_name || data.metadata?.sealine_name || "");
             setDataVessel(data.vessels || []);
-            setUpdateat(data.metadata?.last_updated_date || data.metadata?.updated_at || "");
+            setUpdateat(data.updateat);
+            setPoNumber(data.poNumber);
+            setFullRoutePath(data.fullRoute);
+            setTrackingAnalytics(data.tracking_analytics);
+            setDataRoute(data.dataRoute || []);
 
-            const polDateStr = data.dataRoute?.[0]?.pol?.[0]?.date;
-            const podDateStr = data.dataRoute?.[0]?.pod?.[0]?.date;
-            if (polDateStr && podDateStr) {
+            const trackingStatusObj = data.containers?.[0]?.container_status || data.metadata?.status || "";
+            let polDateStr = data.dataRoute?.[0]?.pol?.[0]?.date;
+            let podDateStr = data.dataRoute?.[0]?.pod?.[0]?.date || data.dataRoute?.[0]?.postpod?.[0]?.date;
+            let polLocationId = data.dataRoute?.[0]?.pol?.[0]?.location;
+            let podLocationId = data.dataRoute?.[0]?.pod?.[0]?.location || data.dataRoute?.[0]?.postpod?.[0]?.location;
+
+            // 🛑 FALLBACK FOR MISSING POD DATE OR LOCATION
+            if ((!podDateStr || !podLocationId) && data.events && data.events.length > 0) {
+                const sortedEvents = [...data.events].sort((a, b) => new Date(b.date) - new Date(a.date));
+                const lastEvent = sortedEvents[0];
+                if (!podDateStr) podDateStr = lastEvent.date;
+                if (!podLocationId) podLocationId = lastEvent.location_list_id || lastEvent.location_id;
+            }
+
+            if (trackingStatusObj.toUpperCase() === 'DELIVERED') {
+                setDataProgressPercentage(100);
+            } else if (polDateStr && podDateStr) {
                 const polDate = new Date(polDateStr);
                 const podDate = new Date(podDateStr);
                 if (!isNaN(polDate) && !isNaN(podDate)) {
@@ -205,46 +259,47 @@ function ContainerTracking({
                     const progressPercentage = Math.max(0, Math.min(100, progress * 100));
                     setDataProgressPercentage(progressPercentage);
                 } else {
-                    console.warn("âš ï¸ Invalid date format in dataRoute");
                     setDataProgressPercentage(0);
                 }
             } else {
-                console.warn("âš ï¸ Missing pol/pod date in dataRoute");
                 setDataProgressPercentage(0);
             }
 
-            let locationNameDeparture = data.locations.find(
-                (loc) => loc.location_list_id === data.dataRoute?.[0]?.pol?.[0]?.location
-                    || loc.id === data.dataRoute?.[0]?.pol?.[0]?.location
+            let locationNameDeparture = data.locations?.find(
+                (loc) => loc.location_list_id === polLocationId || loc.id === polLocationId
             );
             setDataLocationDeparture(locationNameDeparture?.name || "");
+            setDataTimeDeparture(polDateStr || "");
 
-            let locationNameArrive = data.locations.find(
-                (loc) => loc.location_list_id === data.dataRoute?.[0]?.pod?.[0]?.location
-                    || loc.id === data.dataRoute?.[0]?.pod?.[0]?.location
+            let locationNameArrive = data.locations?.find(
+                (loc) => loc.location_list_id === podLocationId || loc.id === podLocationId
             );
             setDataLocationArrive(locationNameArrive?.name || "");
+            setDataTimeArrive(podDateStr || "");
 
             setLoading(false);
             setIsVisible(false);
         } catch (err) {
-            console.error("âŒ handleDataFetch error:", err);
+            console.error(" handleDataFetch error:", err);
 
             // Determine error type and set appropriate message
             let errorType = 'api_error';
             let message = 'An error occurred while fetching tracking data.';
             const serverMsg = err.serverMessage || err.response?.data?.message || '';
 
-            if (err.type === 'not_found') {
+            if (err.type === 'not_found' || err.type === 'unknown_tracking') {
                 // Check if it's a SeaRates issue or local DB issue
-                if (serverMsg.toLowerCase().includes('searates') ||
+                if (err.type === 'unknown_tracking') {
+                    errorType = 'not_found_searates';
+                    message = err.message;
+                } else if (serverMsg.toLowerCase().includes('searates') ||
                     serverMsg.toLowerCase().includes('subscription') ||
                     serverMsg.toLowerCase().includes('unavailable')) {
                     errorType = 'not_found_searates';
                     message = 'SeaRates tracking service is currently unavailable. This may be due to subscription limits or service maintenance.';
                 } else {
                     errorType = 'not_found_local';
-                    message = `Tracking number "${number}" was not found in our database.`;
+                    message = `Tracking number "${dataNumber || number}" was not found in our database.`;
                 }
             } else if (err.type === 'network_error' || !err.response) {
                 errorType = 'network_error';
@@ -396,34 +451,6 @@ function ContainerTracking({
         count: steps.length,
     });
 
-    const markerWhiteIcon = useMemo(() => L.divIcon({
-        className: "text-danger shadow-marker",
-        html: renderToString(<FaMapMarkerAlt style={{ fontSize: '24px' }} />),
-        iconSize: [24, 24],
-    }), []);
-
-
-
-
-    const RecenterMap = ({ lat, lng }) => {
-        const map = useMap();
-
-        useEffect(() => {
-            if (lat && lng) {
-                map.setView([lat, lng]);
-            }
-        }, [lat, lng, map]);
-
-        return null;
-    };
-
-    const wrapLongitude = (lng, referenceLng) => {
-        while (lng < referenceLng - 180) lng += 360;
-        while (lng > referenceLng + 180) lng -= 360;
-        return lng;
-    };
-
-
     const haversineDistance = (lat1, lon1, lat2, lon2) => {
         const R = 6371; // Earth radius in km
         const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -439,7 +466,11 @@ function ContainerTracking({
         return R * c; // in kilometers
     };
 
-
+    const wrapLongitude = (lng, referenceLng) => {
+        while (lng < referenceLng - 180) lng += 360;
+        while (lng > referenceLng + 180) lng -= 360;
+        return lng;
+    };
 
     const fullRoute = useMemo(() => {
         if (
@@ -460,6 +491,11 @@ function ContainerTracking({
 
             pin = dataPinLocationState;
         } else if (
+            dataPinLocationState?.lat != null &&
+            dataPinLocationState?.lng != null
+        ) {
+            pin = [dataPinLocationState.lat, dataPinLocationState.lng];
+        } else if (
             Array.isArray(dataPinLocationState) &&
             dataPinLocationState.length === 1 &&
             dataPinLocationState[0]?.longitude != null &&
@@ -467,7 +503,6 @@ function ContainerTracking({
         ) {
             pin = [dataPinLocationState[0].latitude, dataPinLocationState[0].longitude];
         } else {
-
             pin = [-6.21462, 106.84513]; // default location
         }
 
@@ -521,6 +556,41 @@ function ContainerTracking({
 
         return routeWithCurrent;
     }, [dataLocationState, dataPinLocationState, locationPath]);
+
+    const RecenterMap = ({ lat, lng }) => {
+        const map = useMap();
+
+        useEffect(() => {
+            if (lat != null && lng != null) {
+                // Ensure the view is centered on the SAME wrapped coordinate as markers
+                map.setView([lat, wrapLongitude(lng, 106.8333)]);
+            }
+        }, [lat, lng, map]);
+
+        return null;
+    };
+
+    const markerRedIcon = useMemo(() => L.divIcon({
+        className: "text-danger shadow-marker",
+        html: renderToString(<FaMapMarkerAlt style={{ fontSize: '24px' }} />),
+        iconSize: [24, 24],
+    }), []);
+
+    const markerYellowIcon = useMemo(() => L.divIcon({
+        className: "text-warning shadow-marker",
+        html: renderToString(<FaMapMarkerAlt style={{ fontSize: '24px' }} />),
+        iconSize: [24, 24],
+    }), []);
+
+    const lastLocationBeforeShip = useMemo(() => {
+        if (!fullRoute || fullRoute.length === 0) return null;
+        const currentIdx = fullRoute.findIndex(p => p.isPin);
+        if (currentIdx > 0) {
+            const prev = fullRoute[currentIdx - 1];
+            return prev.location_list_id || prev.id || prev.name;
+        }
+        return null;
+    }, [fullRoute]);
 
 
     const [flip, setflip] = useState(false);
@@ -643,7 +713,6 @@ function ContainerTracking({
         const sortedEvents = vesselEvents.sort((a, b) => new Date(b.date) - new Date(a.date));
         const latestEvent = sortedEvents[0];
         const locationStart = dataLocationState.find(loc => loc.location_list_id === firstVesselEvent.location_id);
-        console.log("dataLocationState", dataLocationState)
         const locationEnd = dataLocationState.find(loc => loc.location_list_id === latestEvent.location_id);
 
         const vesselDetails = {
@@ -677,682 +746,162 @@ function ContainerTracking({
     };
 
     return (
-        <div className="container-fluid px-0 position-relative w-100 h-100 " >
+        <div className="container-fluid px-0 position-relative w-100 h-100">
 
-            <div className='position-absolute w-100 top-0 pt-3 start-0  ' >
-                <div className="container ps-0 ps-md-0">
+            {/* ================= FLOATING UI ================= */}
+            <div className='position-absolute w-100 top-0 pt-3 start-0' style={{ zIndex: 1100 }}>
+                <div className="container">
                     <div className="row">
-                        <div className="col-12 ">
-                            <div className="col-md-5  col-9 ps-5">
-                                <div className={`card shadow bg - white  ms - 0 mb - 1 px - 2 py - 2 ${admin ? "" : "d-none"} `} style={{ zIndex: "999" }} >
-                                    <InputGroup size="md" width="100%" >
+                        <div className="col-12">
+                            <div className="col-md-5 col-11 ps-md-5 ps-3">
+
+                                {/* SEARCH */}
+                                {admin && (
+                                    <Box
+                                        bg="rgba(255,255,255,0.85)"
+                                        backdropFilter="blur(10px)"
+                                        borderRadius="xl"
+                                        boxShadow="lg"
+                                        p={3}
+                                        mb={3}
+                                    >
                                         <form onSubmit={handleSubmit}>
-
-                                            <InputLeftElement width='4.5rem'>
-                                                <Image
-
-                                                    src={`/ image / po.PNG`}
-                                                    width="auto"
-                                                    height={"30px"}
-                                                />
-
-                                                <div
-                                                    className={`  ${isVisible ? "fade-slide-down" : "fade-Show-Top"}  ${!containerNameState ? "d-none" : ""} button - map - container d - block position - absolute bg - white shadow - sm px - 2 py - 0 py - 0`}
-                                                    style={{ bottom: "-21.5px", zIndex: "999999" }}
-                                                    onClick={() => {
-                                                        handleToggle()
-                                                    }
-                                                    }
-                                                >
-                                                    <BiUpArrow style={{ cursor: 'pointer' }} />
-                                                </div>
-
-                                                <div className={` ${isVisible ? "fade-Show-Top" : "fade-slide-down"} ${!containerNameState ? "d-none" : ""} button - map - container d - block position - absolute bg - white shadow - sm px - 2 py - 0 py - 0`}
-                                                    style={{ bottom: "-21.5px", zIndex: "999999" }}
-                                                    onClick={() => {
-                                                        handleToggle()
-                                                    }
-                                                    }
-                                                >
-                                                    <BiDownArrow style={{ cursor: 'pointer' }} />
-                                                </div>
-
-                                            </InputLeftElement>
-
-                                            <Input
-                                                pl='4.5rem'
-                                                pr='8rem'
-                                                placeholder='Enter Number'
-                                                value={dataNumber}
-                                                onChange={(e) => setDataNumber(e.target.value)}
-                                            />
-
-                                            <InputRightElement width='4.5rem' className="d-flex justify-content-end position-relatives"
-
-                                            >
-                                                <IconButton
-                                                    className={dataNumber.trim() === "" ? "d-none" : "me-1"}
-                                                    onClick={() => {
-                                                        setDataNumber("")
-                                                        setContainerName("");
-                                                        setLoading(false)
-                                                    }}
-                                                    colorScheme='blackAlpha'
-                                                    variant="ghost"
-                                                    aria-label='Search database'
-                                                    icon={<FaX />}
+                                            <Flex gap={2}>
+                                                <Input
+                                                    value={dataNumber}
+                                                    onChange={(e) => setDataNumber(e.target.value)}
+                                                    placeholder="Enter CT / BL / Booking"
                                                     size="sm"
                                                 />
                                                 <IconButton
-                                                    colorScheme='blue'
-                                                    aria-label='Search database'
                                                     icon={<FaSearch />}
-                                                    size="sm"
                                                     type="submit"
+                                                    size="sm"
+                                                    colorScheme="blue"
+                                                    isLoading={loading}
                                                 />
-
-
-                                            </InputRightElement>
+                                            </Flex>
                                         </form>
-                                    </InputGroup>
-                                </div>
+                                    </Box>
+                                )}
+
+                                {/* LOADING */}
+                                {loading && (
+                                    <Box
+                                        p={6}
+                                        bg="rgba(255,255,255,0.75)"
+                                        backdropFilter="blur(12px)"
+                                        borderRadius="xl"
+                                    >
+                                        <Skeleton height="20px" mb={3} />
+                                        <SkeletonText noOfLines={4} />
+                                    </Box>
+                                )}
+
+                                {/* ERROR */}
+                                {!loading && errorState.hasError && !containerNameState && (
+                                    <Box p={5} bg="white" borderRadius="xl" boxShadow="md">
+                                        <VStack>
+                                            <Text fontWeight="bold">Error</Text>
+                                            <Text fontSize="sm">{errorState.message}</Text>
+                                            <Button onClick={handleRefresh} size="sm">
+                                                Retry
+                                            </Button>
+                                        </VStack>
+                                    </Box>
+                                )}
+
+                                {/* MAIN CARD */}
+                                {!loading && containerNameState && (
+                                    <Box
+                                        p={5}
+                                        bg="rgba(255,255,255,0.8)"
+                                        backdropFilter="blur(12px)"
+                                        borderRadius="2xl"
+                                        boxShadow="xl"
+                                    >
+                                        {/* HEADER */}
+                                        <Flex justify="space-between" mb={3}>
+                                            <Box>
+                                                <Text fontWeight="bold">{containerNameState}</Text>
+                                                <Text fontSize="xs">{orderSealineState}</Text>
+                                            </Box>
+
+                                            <Badge colorScheme="blue">
+                                                {containerStatusState}
+                                            </Badge>
+                                        </Flex>
+
+                                        {/* PROGRESS */}
+                                        <Progress value={dataProgressPercentage} mb={3} />
+
+                                        {/* LOCATIONS */}
+                                        <Flex justify="space-between" fontSize="xs">
+                                            <Text>{dataLocationDeparture}</Text>
+                                            <Text>{dataLocationArrive}</Text>
+                                        </Flex>
+
+                                        {/* TABS */}
+                                        <Tabs mt={4}>
+                                            <TabList>
+                                                <Tab>Route</Tab>
+                                                <Tab>Vessel</Tab>
+                                            </TabList>
+
+                                            <TabPanels>
+                                                <TabPanel>
+                                                    {steps.map((step, i) => (
+                                                        <Box key={i} mb={3}>
+                                                            <Text fontWeight="bold">{step.location}</Text>
+                                                            {step.events.map((e, j) => (
+                                                                <Text key={j} fontSize="xs">
+                                                                    {e.description}
+                                                                </Text>
+                                                            ))}
+                                                        </Box>
+                                                    ))}
+                                                </TabPanel>
+
+                                                <TabPanel>
+                                                    {dataVesselState.map((v, i) => (
+                                                        <Text key={i}>{v.name}</Text>
+                                                    ))}
+                                                </TabPanel>
+                                            </TabPanels>
+                                        </Tabs>
+                                    </Box>
+                                )}
+
                             </div>
                         </div>
-
-                        {!containerNameState && loading &&
-                            <div className="col-12 ">
-                                <div className="col-md-5 col-8 ps-5">
-                                    <div className="card shadow bg-white  ms-0  px-2 py-2" style={{ zIndex: "999", fontSize: "12px" }}>
-                                        <div className="card  w-100 shadow p-3  bg-white rounded" style={{ maxWidth: " 600px", maxHeight: "85vh", margin: "auto" }}>
-                                            <div className="d-flex justify-content-center w-100">
-                                                <Spinner
-                                                    color="blue"
-                                                />
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
-                            </div>
-                        }
-
-                        {/* Error State Card - shows when error occurs */}
-                        {!loading && !containerNameState && errorState.hasError && (
-                            <div className="col-12">
-                                <div className="col-md-5 col-9 ps-5">
-                                    <div className="card shadow bg-white ms-0 px-2 py-2" style={{ zIndex: "999", fontSize: "12px" }}>
-                                        <div className="card w-100 shadow p-3 bg-white rounded" style={{ maxWidth: "600px", maxHeight: "85vh", margin: "auto" }}>
-                                            <Box borderWidth="1px" borderRadius="md" px={4} py={4} bg="white" boxShadow="md">
-                                                <Flex direction="column" align="center" gap={3}>
-                                                    {/* Error Icon */}
-                                                    <Box fontSize="3xl">
-                                                        {errorState.errorType === 'not_found_local' && 'ðŸ”'}
-                                                        {errorState.errorType === 'not_found_searates' && 'âš ï¸'}
-                                                        {errorState.errorType === 'server_error' && 'âŒ'}
-                                                        {errorState.errorType === 'network_error' && 'ðŸŒ'}
-                                                        {errorState.errorType === 'api_error' && 'âš ï¸'}
-                                                    </Box>
-
-                                                    {/* Error Title */}
-                                                    <Text fontSize="md" fontWeight="bold" textAlign="center">
-                                                        {errorState.errorType === 'not_found_local' && 'Tracking Not Found'}
-                                                        {errorState.errorType === 'not_found_searates' && 'External Tracking Unavailable'}
-                                                        {errorState.errorType === 'server_error' && 'Server Error'}
-                                                        {errorState.errorType === 'network_error' && 'Connection Error'}
-                                                        {errorState.errorType === 'api_error' && 'Error'}
-                                                    </Text>
-
-                                                    {/* Error Message */}
-                                                    <Text fontSize="sm" color="gray.600" textAlign="center">
-                                                        {errorState.message}
-                                                    </Text>
-
-                                                    {/* Searched Number Badge */}
-                                                    {errorState.searchedNumber && (
-                                                        <Badge colorScheme="gray" fontSize="xs">
-                                                            Searched: {errorState.searchedNumber}
-                                                        </Badge>
-                                                    )}
-
-                                                    {/* Retry Button */}
-                                                    <Button
-                                                        size="sm"
-                                                        colorScheme="blue"
-                                                        leftIcon={<BiRefresh />}
-                                                        onClick={(e) => handleRefresh(e)}
-                                                        mt={2}
-                                                    >
-                                                        Try Again
-                                                    </Button>
-                                                </Flex>
-                                            </Box>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {containerNameState &&
-                            <div className="col-12 ">
-                                <div className="col-md-5 col-9 ps-5">
-                                    <div className={` ${isVisible ? "fade-slide-down" : "fade-Show-Top"} card shadow bg - white  ms - 0  px - 2 py - 2 `}
-                                        style={{ zIndex: "800", fontSize: "12px" }}
-
-
-
-                                    >
-                                        <div className="card w-100 shadow p-3  bg-white rounded" style={{ maxWidth: " 600px", maxHeight: "85vh", margin: "auto" }}>
-                                            <Box borderWidth="1px" borderRadius="md" px={4} pt="2" bg="white" boxShadow="md">
-                                                <Flex direction="column" gap="0" mb="0" p="0" className={containerNameState === "undefined" || !containerNameState ? "d-none" : ""}>
-                                                    <Flex justify="space-between" lineHeight="1" align="center" my="0" p="0">
-                                                        <Text fontSize="sm" fontWeight="bold">{containerNameState}</Text>
-                                                        <Badge colorScheme="blue" mt="-4">{containerStatusState}</Badge>
-                                                    </Flex>
-
-                                                    <Flex my="0" p="0" lineHeight="0" >
-                                                        <Text fontSize="sm">{orderSealineState}</Text>
-
-                                                    </Flex>
-                                                    <Flex my="0" p="0" mt="1" lineHeight="0" >
-                                                        <Text fontSize="sm">{orderSOIDState}</Text>
-
-                                                    </Flex>
-
-                                                </Flex>
-
-                                                <Flex direction="column" gap="0" mb="0" p="0" className={containerNameState === "undefined" || !containerNameState ? "" : "d-none"}>
-                                                    <Flex justify="center" align="center" mt="3" mb="2" p="0">
-                                                        <Text fontSize="sm" fontWeight="bold">
-
-                                                            No Data Found with the current search number
-
-                                                        </Text>
-                                                    </Flex>
-
-                                                </Flex>
-
-
-                                                {/* Ship line section */}
-                                                <Flex align="center" mt="2" justify="space-between" position="relative" mb={2} className={containerNameState === "undefined" || !containerNameState ? "d-none" : ""}>
-                                                    {/* Start icon */}
-                                                    <Icon as={GiCargoShip} boxSize={4} color="pink.400" />
-
-                                                    {/* Line with middle dot */}
-                                                    <Box flex="1" mx={2} position="relative">
-                                                        {/* Progress line */}
-                                                        <Box
-                                                            height="2px"
-                                                            bg="gray.200"
-                                                            width="100%"
-                                                            position="absolute"
-                                                            top="50%"
-                                                            transform="translateY(-50%)"
-                                                        />
-                                                        <Box
-                                                            height="2px"
-                                                            bg="pink.400"
-                                                            width={`${dataProgressPercentage}% `}
-                                                            position="absolute"
-                                                            top="50%"
-                                                            transform="translateY(-50%)"
-                                                            borderRadius="full"
-                                                        />
-                                                        {/* Progress dot */}
-                                                        <Box
-                                                            position="absolute"
-                                                            left={`calc(${dataProgressPercentage}% - 6px)`}
-                                                            top="50%"
-                                                            transform="translateY(-50%)"
-                                                            bg="white"
-                                                            border="2px solid #3182ce"
-                                                            borderRadius="full"
-                                                            boxSize={4}
-                                                            zIndex={2}
-                                                            transition="left 0.3s ease"
-                                                        />
-
-                                                    </Box>
-
-                                                    {/* End icon */}
-                                                    <Icon as={LuWarehouse} boxSize={4} color="gray.500" />
-                                                </Flex>
-
-                                                {/* Location Info */}
-                                                <Flex justify="space-between" mb="0" align="center" className={containerNameState === "undefined" || !containerNameState ? "d-none" : ""}>
-                                                    <Box mb="0">
-                                                        <Text fontWeight="semibold" className="text-start" fontSize="sm" mb="1">{dataLocationDeparture || 'TBA'}</Text>
-                                                        <Text fontSize="xs" color="gray.500" className="text-start">{formatDate(dataTimeDeparture)}</Text>
-                                                    </Box>
-                                                    <Text mb="1">âž¡ï¸</Text>
-                                                    <Box textAlign="right" mb="0">
-                                                        <Text mb="1" fontWeight="semibold" className="text-end" fontSize="sm">{dataLocationArrive || 'TBA'}</Text>
-                                                        <Text mb="1" fontSize="xs" color="gray.500" className="text-end">{formatDate(dataTimeArrive)}</Text>
-                                                    </Box>
-                                                </Flex>
-                                            </Box>
-
-                                            <Tabs className={containerNameState === "undefined" || !containerNameState ? "d-none" : ""}>
-                                                <TabList >
-                                                    <Tab style={{ fontSize: "12px" }}>Route </Tab>
-                                                    <Tab style={{ fontSize: "12px" }}>Vessel</Tab>
-                                                    <Tab className={dataContainerState.length > 0 ? "" : "d-none"} style={{ fontSize: "12px" }}>Container</Tab>
-                                                    {admin && <Tab style={{ fontSize: "12px" }}>Log Data</Tab>}
-                                                </TabList>
-
-                                                <TabPanels >
-                                                    <TabPanel  >
-                                                        <Stack spacing={6} pl={6} borderLeft="2px solid" borderColor="gray.300" className="py-3" style={{ maxHeight: "150px", overflow: "auto" }}>
-                                                            {steps.map((step, index) => (
-                                                                <Box key={index} position="relative" pl={-1} ml={0}  >
-                                                                    <Circle
-                                                                        size="3"
-                                                                        bg="blue.500"
-                                                                        position="absolute"
-                                                                        left="-15.5"
-                                                                        top="1"
-                                                                        zIndex="999"
-                                                                    />
-                                                                    <VStack align="start" spacing={1} pl={2}>
-                                                                        <Text mb="1" fontWeight="bold">{step.location}</Text>
-                                                                        {step.events
-                                                                            .filter(event => event.actual !== 0)
-                                                                            .map((event, idx) => (
-                                                                                <Flex key={idx} justify="space-between" w="100%" align="start">
-                                                                                    <Text fontSize="sm" mb="0" className="text-start" flex="1" pr="4" noOfLines={2} wordBreak="break-word">
-                                                                                        {event.description}
-                                                                                    </Text>
-                                                                                    <Text fontSize="sm" mb="0" pe="2" className="text-end" color="gray.500" whiteSpace="nowrap">
-                                                                                        {formatDate(event.date)}
-                                                                                    </Text>
-                                                                                </Flex>
-
-                                                                            ))}
-                                                                    </VStack>
-                                                                </Box>
-                                                            ))}
-                                                        </Stack>
-                                                    </TabPanel>
-                                                    <TabPanel>
-                                                        <div className="container-fluid px-0" style={{ maxHeight: "150px", overflow: "auto" }}>
-                                                            {dataVesselState.map((vessel, idx) => {
-                                                                const voyage = vessel.voyage || "N/A";  // Default to "N/A" if voyage is missing
-
-                                                                // Example: Fetch or get vessel details by using the index or other methods here
-                                                                let data
-                                                                if (vessel.imo) {
-                                                                    data = getVesselDetails(vessel.vessel_id);
-                                                                }
-                                                                return (
-                                                                    <div key={idx} className="card shadow-sm my-2 text-start bg-white pt-2 pb-4 px-2">
-                                                                        <div className="container">
-                                                                            <div className="row">
-
-
-
-                                                                                {vessel.name &&
-                                                                                    <div className="d-flex mt-1 justify-content-between">
-                                                                                        <div className="col-4 fw-bold">
-                                                                                            Vessel
-                                                                                        </div>
-                                                                                        <div className="col-auto">
-                                                                                            {vessel.name}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                }
-
-                                                                                {vessel.imo &&
-                                                                                    <div className="d-flex mt-1 justify-content-between">
-                                                                                        <div className="col-4 fw-bold">
-                                                                                            Voyage
-                                                                                        </div>
-                                                                                        <div className="col-auto">
-                                                                                            {vessel.imo && data?.voyage ? data.voyage : "N/A"}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                }
-
-                                                                                {vessel.imo &&
-                                                                                    <div className="d-flex mt-1 justify-content-between">
-                                                                                        <div className="col-4 fw-bold">
-                                                                                            Loading
-                                                                                        </div>
-                                                                                        <div className="col-auto">
-                                                                                            {vessel.imo && data?.locationStart ? data.locationStart : "N/A"}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                }
-
-                                                                                {vessel.imo &&
-                                                                                    <div className="d-flex mt-1 justify-content-between">
-                                                                                        <div className="col-4 fw-bold">
-                                                                                            Discharge
-                                                                                        </div>
-                                                                                        <div className="col-auto">
-
-                                                                                            {vessel.imo && data?.locationEnd ? data.locationEnd : "N/A"}
-
-                                                                                        </div>
-                                                                                    </div>
-                                                                                }
-
-                                                                                {vessel.imo &&
-                                                                                    <div className="d-flex mt-1 justify-content-between">
-                                                                                        <div className="col-4 fw-bold">
-                                                                                            ETD
-                                                                                        </div>
-                                                                                        <div className="col-auto">
-
-                                                                                            {vessel.imo && data?.ETD ? formatDate(data.ETD) : "N/A"}
-
-                                                                                        </div>
-                                                                                    </div>
-                                                                                }
-
-                                                                                {vessel.imo &&
-                                                                                    <div className="d-flex mt-1 justify-content-between">
-                                                                                        <div className="col-4 fw-bold">
-                                                                                            ETA
-                                                                                        </div>
-                                                                                        <div className="col-auto">
-
-                                                                                            {vessel.imo && data?.ETA ? formatDate(data.ETA) : "N/A"}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                }
-
-
-
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-
-                                                        </div>
-                                                    </TabPanel>
-                                                    <TabPanel>
-                                                        <div className="container-fluid px-0" style={{ maxHeight: "150px", overflow: "auto" }}>
-                                                            {dataContainerState.map((data, idx) => {
-                                                                return (
-                                                                    <div key={idx} className="card shadow-sm my-2 text-start bg-white pt-2 pb-4 px-2">
-                                                                        <div className="container">
-                                                                            <div className="row">
-
-                                                                                <div className="col-12 fw-bold mb-2">
-                                                                                    Container {idx + 1}
-                                                                                </div>
-
-                                                                                <div className="col-3 mt-2 fw-bold">
-                                                                                    Number
-                                                                                </div>
-                                                                                <div className="col-9 mt-2">
-                                                                                    {data.container_number || data.number || "N/A"}
-                                                                                </div>
-                                                                                {data.size_type &&
-                                                                                    <>
-                                                                                        <div className="col-3 fw-bold">
-                                                                                            Size
-                                                                                        </div>
-                                                                                        <div className="col-9">
-                                                                                            {data.size_type}
-                                                                                        </div>
-                                                                                    </>
-                                                                                }
-
-                                                                                <div className="col-3 fw-bold">
-                                                                                    Status
-                                                                                </div>
-                                                                                <div className="col-9">
-                                                                                    {data.container_status || data.status || "N/A"}
-                                                                                </div>
-
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )
-                                                            })}
-                                                        </div>
-                                                    </TabPanel>
-
-                                                    <TabPanel>
-                                                        <div className="container-fluid px-0" style={{ maxHeight: "150px", overflow: "auto" }}>
-
-                                                            <div className="card shadow-sm my-2 text-start bg-white pt-2 pb-2 px-2">
-                                                                <div className="container">
-                                                                    <div className="row">
-                                                                        <div className="col-10">
-
-                                                                            <div className="row">
-
-                                                                                <div className="col-md-7 col-lg-5 col-12 col-sm-12 col-xl-12 fw-bold ">
-                                                                                    Last Update
-                                                                                </div>
-
-                                                                                <div className="col-md-3 col-lg-7 col-12 col-sm-12 col-xl-12 ">
-                                                                                    {
-
-                                                                                        new Date(updateat).toLocaleString("en-GB", {
-                                                                                            year: "numeric",
-                                                                                            month: "2-digit",
-                                                                                            day: "2-digit",
-                                                                                            hour: "2-digit",
-                                                                                            minute: "2-digit",
-                                                                                            second: "2-digit",
-                                                                                        })
-
-
-
-                                                                                    }
-                                                                                </div>
-
-                                                                            </div>
-
-                                                                        </div>
-                                                                        <div className="col-2">
-
-                                                                            {containerStatusState !== "DELIVERED" &&
-                                                                                <div className="d-flex justify-content-end">
-                                                                                    <Tooltip
-                                                                                        label=" 
-                                                                                                Refresh button, functional only after 5 hours from last update
-                                                                                                "
-                                                                                        hasArrow
-                                                                                        className="d-flex justify-content-center text-center"
-                                                                                        arrowSize={15}
-                                                                                    >
-                                                                                        <IconButton
-                                                                                            onClick={handleRefresh}
-                                                                                            className="pointer" variant="outline" colorScheme="green" icon={<BiRefresh className="pointer" />}>
-                                                                                        </IconButton>
-                                                                                    </Tooltip>
-                                                                                </div>
-                                                                            }
-
-                                                                        </div>
-                                                                    </div>
-
-                                                                </div>
-                                                            </div>
-
-
-                                                        </div>
-                                                    </TabPanel>
-
-                                                </TabPanels>
-                                            </Tabs>
-
-                                        </div>
-
-                                    </div>
-                                </div>
-                            </div>
-                        }
                     </div>
                 </div>
-
             </div>
 
-            <div className="row  px-0" style={{ maxHeight: "100vh", maxWidth: "100vw", height: "100vw", width: "100vw", minWidth: "400px", minHeight: "400px" }} >
-                <div className=" col-12 px-0 py-0  h-100 w-100 "   >
+            {/* ================= MAP ================= */}
+            <div className="row px-0" style={{ height: "100vh" }}>
+                <div className="col-12 px-0">
                     <MapContainer
-                        className="rounded petaindofood"
-
-                        center={
-                            dataPinLocation?.[0]
-                                ? [dataPinLocation[0].longitude, dataPinLocation[0].latitude]
-                                : (
-                                    Array.isArray(dataPinLocationState?.[0])
-                                        ? dataPinLocationState[0] // [longitude, latitude]
-                                        : (dataPinLocationState?.[0]?.longitude != null && dataPinLocationState?.[0]?.latitude != null
-                                            ? [
-                                                dataPinLocationState[0].longitude,
-                                                wrapLongitude(dataPinLocationState[0].latitude, 106.8333)
-                                            ]
-                                            : [-6.21462, 106.84513]
-                                        )
-                                )
-                        }
-
-
-
-
-                        minZoom={2}
+                        center={[-6.2, 106.8]}
                         zoom={4}
-                        maxZoom={6}
-
-                        id="mapid"
-                        style={{ height: '100%', width: '100%' }}
+                        style={{ height: "100%", width: "100%" }}
                     >
-
-
-                        <RecenterMap
-                            lat={
-                                dataPinLocation?.[0]
-                                    ? dataPinLocation[0].latitude  // Correcting to use latitude for lat
-                                    : dataPinLocationState?.[0]
-                                        ? dataPinLocationState[0].latitude  // Correcting to use latitude for lat
-                                        : -6.21462  // Default latitude value
-                            }
-                            lng={
-                                dataPinLocation?.[0]
-                                    ? dataPinLocation[0].longitude  // Correctly using longitude for lng
-                                    : dataPinLocationState?.[0]
-                                        ? wrapLongitude(dataPinLocationState[0].longitude, 106.8333)  // Applying wrapLongitude to longitude
-                                        : 106.84513  // Default longitude value
-                            }
-                        />
-
                         <TileLayer
-                            attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         />
 
-
-
-                        <LayerGroup>
-                            {dataLocation && dataLocation.map((location, idx) => {
-                                if (
-                                    !location ||
-                                    location.lat == null ||
-                                    location.lng == null
-                                ) return null;
-
-                                return (
-                                    <Marker
-                                        key={idx}
-                                        position={[location.lat, wrapLongitude(location.lng, 106.8333)]}
-                                        icon={markerWhiteIcon}
-                                    />
-                                );
-                            })}
-
-                            {locationPath && dataLocationState && locationPath.map((id, idx) => {
-                                const location = dataLocationState.find(
-                                    loc => (loc.location_list_id ?? loc.id) === id
-                                );
-
-                                // Exclude if location or lat/lng is null/undefined
-                                if (
-                                    !location ||
-                                    location.lat == null ||
-                                    location.lng == null
-                                ) return null;
-
-                                return (
-                                    <Marker
-                                        key={idx}
-                                        position={[location.lat, wrapLongitude(location.lng, 106.8333)]}
-                                        icon={markerWhiteIcon}
-                                    />
-                                );
-                            })}
-
-
-
-
-                        </LayerGroup>
-
-
-                        {fullRoute.map((point, idx) => {
-                            const next = fullRoute[idx + 1];
-                            if (!next) return null;
-
-                            return (
-                                <>
-                                    <Polyline
-                                        key={`route - ${idx} `}
-                                        positions={[
-                                            [point.lat, wrapLongitude(point.lng, 106.8333)],
-                                            [next.lat, wrapLongitude(next.lng, 106.8333)]
-                                        ]}
-                                        pathOptions={{
-                                            color: 'gray',
-                                            weight: 5,
-                                            opacity: 1,
-                                            dashArray: '4, 6', // â† This makes it dotted/dashed
-                                            lineCap: 'round',
-                                        }}
-                                    />
-                                    <Polyline
-                                        key={`route - black - ${idx} `}
-                                        positions={[
-                                            [point.lat, wrapLongitude(point.lng, 106.8333)],
-                                            [next.lat, wrapLongitude(next.lng, 106.8333)]
-                                        ]}
-                                        pathOptions={{
-                                            color: 'white',
-                                            weight: 2,
-                                            lineCap: 'round',
-                                            dashArray: '4, 6', // â† This makes it dotted/dashed
-                                        }}
-                                    />
-                                </>
-                            );
-                        })}
-
                         <Marker
                             position={
-                                dataPinLocation?.[0]?.longitude != null && dataPinLocation?.[0]?.latitude != null
-                                    ? [dataPinLocation[0].latitude, wrapLongitude(dataPinLocation[0].longitude, 106.8333)]
-                                    : Array.isArray(dataPinLocationState) && dataPinLocationState.length === 2 &&
-                                        typeof dataPinLocationState[0] === 'number' && typeof dataPinLocationState[1] === 'number'
-                                        ? dataPinLocationState // Itâ€™s [longitude, latitude]
-                                        : dataPinLocationState?.[0]?.longitude != null && dataPinLocationState?.[0]?.latitude != null
-                                            ? [dataPinLocationState[0].latitude, wrapLongitude(dataPinLocationState[0].longitude, 106.8333)]
-                                            : [-6.21462, 106.84513] // fallback
+                                dataPinLocationState?.lat
+                                    ? [dataPinLocationState.lat, dataPinLocationState.lng]
+                                    : [-6.2, 106.8]
                             }
-
                             icon={markerIcon}
                         />
-
-
-
                     </MapContainer>
-
                 </div>
-
             </div>
-        </div >
+        </div>
     );
 }
 

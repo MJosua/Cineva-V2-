@@ -25,6 +25,7 @@ const TeamModal = ({ isOpen, onClose, team, mode, onSave }: TeamModalProps) => {
   const [formData, setFormData] = useState({
     team_name: '',
     department_id: '',
+    department_collaborator: [] as number[],
   });
 
   useEffect(() => {
@@ -41,6 +42,9 @@ const TeamModal = ({ isOpen, onClose, team, mode, onSave }: TeamModalProps) => {
       setFormData({
         team_name: team.team_name,
         department_id: team.department_id.toString(),
+        department_collaborator: team.department_collaborator ? 
+          (typeof team.department_collaborator === 'string' ? JSON.parse(team.department_collaborator) : team.department_collaborator) 
+          : [],
       });
 
       if (team.team_id) {
@@ -66,6 +70,7 @@ const TeamModal = ({ isOpen, onClose, team, mode, onSave }: TeamModalProps) => {
       setFormData({
         team_name: '',
         department_id: '',
+        department_collaborator: [],
       });
       setSelectedUsers([]);
       setTeamLeader(null);
@@ -87,6 +92,7 @@ const TeamModal = ({ isOpen, onClose, team, mode, onSave }: TeamModalProps) => {
     const teamToSave = {
       ...formData,
       department_id: parseInt(formData.department_id),
+      department_collaborator: formData.department_collaborator,
       team_leader_id: teamLeader
     };
 
@@ -100,7 +106,9 @@ const TeamModal = ({ isOpen, onClose, team, mode, onSave }: TeamModalProps) => {
     const isUnique = !seenUserIds.has(user.user_id!);
     const isActive = user.is_active && !user.is_deleted;
     const departmentMatch =
-      !formData.department_id || user.department_id === Number(formData.department_id);
+      !formData.department_id || 
+      user.department_id === Number(formData.department_id) ||
+      formData.department_collaborator.includes(user.department_id!);
     if (isUnique && isActive && departmentMatch) {
       seenUserIds.add(user.user_id!);
       return true;
@@ -145,15 +153,43 @@ const TeamModal = ({ isOpen, onClose, team, mode, onSave }: TeamModalProps) => {
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.map((department) => (
-                    <SelectItem key={department.department_id} value={department.department_id.toString()}>
-                      {department.department_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    {departments.map((department) => (
+                      <SelectItem key={department.department_id} value={department.department_id.toString()}>
+                        {department.department_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Collaborator Departments</Label>
+                <div className="grid grid-cols-2 gap-2 p-3 border rounded-md max-h-32 overflow-y-auto">
+                  {departments
+                    .filter(d => d.department_id.toString() !== formData.department_id)
+                    .map((dept) => (
+                      <div key={dept.department_id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`collab-${dept.department_id}`}
+                          checked={formData.department_collaborator.includes(dept.department_id)}
+                          onCheckedChange={(checked) => {
+                            const newCollabs = checked
+                              ? [...formData.department_collaborator, dept.department_id]
+                              : formData.department_collaborator.filter(id => id !== dept.department_id);
+                            setFormData({ ...formData, department_collaborator: newCollabs });
+                          }}
+                        />
+                        <Label 
+                          htmlFor={`collab-${dept.department_id}`}
+                          className="text-sm font-normal cursor-pointer truncate"
+                        >
+                          {dept.department_name}
+                        </Label>
+                      </div>
+                    ))}
+                </div>
+              </div>
             </div>
-          </div>
 
           {formData.department_id && (
             <Card>

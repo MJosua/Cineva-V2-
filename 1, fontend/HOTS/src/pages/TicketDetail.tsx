@@ -802,17 +802,29 @@ const TicketDetail = () => {
             </CardCollapsible>
 
             {/* Render assigned widgets after request information */}
-            {assignedWidgets.map(widget => (
-              <WidgetRenderer
-                key={widget.id}
-                config={widget}
-                data={{
-                  ticketData: ticketDetail,
-                  userData: user,
-                  serviceId: ticketDetail?.service_id?.toString(),
-                }}
-              />
-            ))}
+            {assignedWidgets.map(widget => {
+              // 💉 Data Injection: If this is a QR-related widget, try to find qr_config in detail_rows
+              let widgetValue = undefined;
+              if (widget.id === 'qr_creator' || widget.id === 'QRCodePreviewWidget') {
+                const qrEntry = ticketDetail.detail_rows?.find(
+                  r => r.lbl_col === 'QR Configuration' || r.cstm_col?.includes('"targetUrl":')
+                );
+                if (qrEntry) widgetValue = qrEntry.cstm_col;
+              }
+
+              return (
+                <WidgetRenderer
+                  key={widget.id}
+                  config={widget}
+                  data={{
+                    ticketData: ticketDetail,
+                    userData: user,
+                    serviceId: ticketDetail?.service_id?.toString(),
+                    value: widgetValue, // Pass the injected value
+                  }}
+                />
+              );
+            })}
 
             {/* Custom Form Data Table */}
             {customFormData.length > 0 && (

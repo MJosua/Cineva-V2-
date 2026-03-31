@@ -1,4 +1,5 @@
 ﻿import React from "react";
+import containerImg from '../../../../assets/images/container_opening.jpg';
 
 import {
 
@@ -14,7 +15,7 @@ const OrderList = () => {
                 <div className="row ">
                     <div className="col-3" >
                         <img className=""
-                            src={require('../../../../assets/images/container_opening.jpg')}
+                            src={containerImg}
                             width='100%' alt="container" />
                     </div>
                     <div className="col-9 text-start pe-3" >

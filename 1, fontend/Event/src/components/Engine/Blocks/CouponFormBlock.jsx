@@ -27,6 +27,42 @@ async function checkCouponStatus(eventSlug, couponCode, poolId, useEncryption = 
     }
 }
 
+const AGREEMENT_WYSIWYG_SX = {
+    "p": { m: 0, lineHeight: "inherit" },
+    "p + p": { marginTop: "0.35em" },
+    ".ql-align-center": { textAlign: "center" },
+    ".ql-align-right": { textAlign: "right" },
+    ".ql-align-justify": { textAlign: "justify" },
+    ".ql-font-inter": { fontFamily: "Inter, sans-serif" },
+    ".ql-font-poppins": { fontFamily: "Poppins, sans-serif" },
+    ".ql-font-montserrat": { fontFamily: "Montserrat, sans-serif" },
+    ".ql-font-roboto": { fontFamily: "Roboto, sans-serif" },
+    ".ql-font-playfair": { fontFamily: "\"Playfair Display\", serif" },
+    ".ql-font-bebas": { fontFamily: "\"Bebas Neue\", cursive" },
+    ".ql-font-courier": { fontFamily: "\"Courier New\", monospace" },
+    ".ql-size-small": { fontSize: "0.75em" },
+    ".ql-size-large": { fontSize: "1.5em" },
+    ".ql-size-huge": { fontSize: "2.5em" },
+    ".ql-lineheight-100": { lineHeight: "1" },
+    ".ql-lineheight-120": { lineHeight: "1.2" },
+    ".ql-lineheight-140": { lineHeight: "1.4" },
+    ".ql-lineheight-160": { lineHeight: "1.6" },
+    ".ql-lineheight-180": { lineHeight: "1.8" },
+    ".ql-lineheight-200": { lineHeight: "2" },
+    ".ql-stroke-soft": {
+        WebkitTextStroke: "0.5px rgba(0,0,0,0.85)",
+        textShadow: "0 0 1px rgba(0,0,0,0.65)"
+    },
+    ".ql-stroke-medium": {
+        WebkitTextStroke: "1px rgba(0,0,0,0.9)",
+        textShadow: "0 0 1px rgba(0,0,0,0.75)"
+    },
+    ".ql-stroke-strong": {
+        WebkitTextStroke: "1.5px rgba(0,0,0,0.95)",
+        textShadow: "0 0 2px rgba(0,0,0,0.8)"
+    }
+};
+
 export default function CouponFormBlock({
     title = "Submit Your Receipt",
     description = "",
@@ -342,14 +378,12 @@ export default function CouponFormBlock({
                                             m={0}
                                         >
                                             <Box
-                                                as="span"
+                                                as="div"
                                                 className="wysiwyg-label"
-                                                display="inline-block"
-                                                sx={{
-                                                    'p': { m: 0 }, // prevent Quill <p> from adding margin
-                                                    'span[style*="color"]': { color: 'inherit' }, // let the style attribute win
-                                                }}
-                                                dangerouslySetInnerHTML={{ __html: field.checkboxText }}
+                                                display="block"
+                                                w="100%"
+                                                sx={AGREEMENT_WYSIWYG_SX}
+                                                dangerouslySetInnerHTML={{ __html: field.checkboxText || "" }}
                                             />
                                         </FormLabel>
                                     </HStack>

@@ -27,6 +27,10 @@ const SERVICE_IDS = {
     // HR/Admin Services  
     USER_APPROVAL: 21,          // New User Approval Request
     MEETING_ROOM: 22,           // Meeting Room Booking
+    
+    // POSM & Assets
+    POSM_REQUEST: 14,
+    IT_ASSET_REQUEST: 19,
 
     // Add more as discovered...
 };
@@ -173,6 +177,8 @@ const RESOURCE_CATEGORIES = {
     SUPPORT_TYPE: 'support_type',       // IT Support Category
     SAMPLE_CATEGORY: 'sample_category', // SRF Sample Category
     MEETING_ROOM: 'meeting_room',       // Admin Meeting Room
+    IT_ASSET: 'it_asset',               // IT Asset Management
+    STORAGE_LOCATION: 'storage_location', // Inventory Storage Locations (Warehouse, Garage, etc)
 };
 
 /**

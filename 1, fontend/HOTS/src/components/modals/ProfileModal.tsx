@@ -6,10 +6,17 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Camera, Upload, Check, AlertCircle, User, Mail, Building, IdCard, PenTool } from 'lucide-react';
+import { Camera, Upload, Check, AlertCircle, User, Mail, Building, IdCard, PenTool, ShieldQuestion, KeyRound } from 'lucide-react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { API_URL } from '@/config/sourceConfig';
 import axios from 'axios';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import ChangePasswordModal from './ChangePasswordModal';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -34,6 +41,7 @@ const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get token from localStorage (HOTS uses 'hots_tokek')
@@ -265,6 +273,45 @@ const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
               </div>
             )}
           </div>
+
+          <Separator />
+
+          {/* Account Security / Forget Password Section */}
+          <div className="space-y-1">
+            <Accordion type="single" collapsible className="w-full border-none">
+              <AccordionItem value="password-config" className="border-none">
+                <AccordionTrigger className="flex items-center gap-2 hover:no-underline py-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <ShieldQuestion className="w-4 h-4" />
+                    Forget Password Configuration
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-1">
+                  <div className="bg-muted/30 p-3 rounded-lg border border-dashed flex flex-col items-center gap-3">
+                    <p className="text-xs text-muted-foreground text-center">
+                      Security feature to reset your current account password. 
+                      You will need your current password to proceed.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => setIsChangePasswordOpen(true)}
+                    >
+                      <KeyRound className="w-4 h-4 mr-2" />
+                      Forget Password
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+
+          {/* New Password Modal */}
+          <ChangePasswordModal 
+            isOpen={isChangePasswordOpen} 
+            onClose={() => setIsChangePasswordOpen(false)} 
+          />
 
           {/* Additional Attributes */}
           {profileData?.attributes && Object.keys(profileData.attributes).filter(k => k !== 'default_signature').length > 0 && (

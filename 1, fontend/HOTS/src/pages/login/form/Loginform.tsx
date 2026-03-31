@@ -12,6 +12,9 @@ import { validateLoginForm } from "@/utils/validation";
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { BaseLoginProps } from '@/types/loginTypes';
 
+import axios from 'axios';
+import { API_URL } from '../../../config/sourceConfig';
+
 const Loginform = ({
   showPassword,
   setShowPassword,
@@ -23,6 +26,22 @@ const Loginform = ({
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const [loginBadge, setLoginBadge] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchBadge = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/auth/system-meta/login_badge_info`);
+        if (response.data.success) {
+          setLoginBadge(response.data.data);
+        }
+      } catch (err) {
+        // Silently fail, badge is optional
+      }
+    };
+    fetchBadge();
+  }, []);
 
   const { isLoading, error, isAuthenticated, isLocked, loginAttempts } = useAppSelector(
     (state) => state.auth
@@ -203,6 +222,25 @@ const Loginform = ({
           </>
         )}
       </Button>
+
+      {loginBadge && (
+        <div className={`mt-4 p-4 rounded-xl border flex items-start gap-4 animate-in fade-in slide-in-from-top-2 duration-500 shadow-sm border-dashed ${loginBadge.bg_color || 'bg-blue-50/50'} ${loginBadge.border_color || 'border-blue-200'}`}>
+          <div className="mt-1 flex-shrink-0">
+            <div className={`p-1.5 rounded-lg bg-white shadow-sm ${loginBadge.text_color || 'text-blue-600'}`}>
+              <AlertCircle className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-[11px] font-bold uppercase tracking-widest mb-1 ${loginBadge.text_color || 'text-blue-800'}`}>
+              {loginBadge.title || "Information"}
+            </p>
+            <div 
+              className={`text-xs font-semibold leading-relaxed ${loginBadge.text_color || 'text-blue-900'} opacity-90`}
+              dangerouslySetInnerHTML={{ __html: loginBadge.content }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="mt-6 text-center text-sm text-gray-500">
         <p>For technical support, contact IT Department</p>

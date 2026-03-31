@@ -47,6 +47,7 @@ const initialState: TicketsState = {
     comment: 0,
     document: 0,
     ticket: 0,
+    inventory: 0,
     processingTicketId: null  // 🆕 Track which specific ticket is generating document
   }
 };
@@ -336,14 +337,14 @@ const ticketsSlice = createSlice({
       state.ticketDetail = null;
       state.detailError = null;
     },
-    triggerSSERefresh: (state, action: PayloadAction<'assignment' | 'task' | 'comment' | 'document' | 'ticket'>) => {
+    triggerSSERefresh: (state, action: PayloadAction<'assignment' | 'task' | 'comment' | 'document' | 'ticket' | 'inventory'>) => {
       // Use simple counters or timestamps to trigger useEffects
-      if (!state.sseSignals) state.sseSignals = { assignment: 0, task: 0, comment: 0, document: 0, ticket: 0 };
+      if (!state.sseSignals) state.sseSignals = { assignment: 0, task: 0, comment: 0, document: 0, ticket: 0, inventory: 0 };
       state.sseSignals[action.payload] = Date.now();
     },
     // 🆕 Track document generation processing state (per-ticket)
     setDocumentProcessing: (state, action: PayloadAction<string | null>) => {
-      if (!state.sseSignals) state.sseSignals = { assignment: 0, task: 0, comment: 0, document: 0, ticket: 0 };
+      if (!state.sseSignals) state.sseSignals = { assignment: 0, task: 0, comment: 0, document: 0, ticket: 0, inventory: 0 };
       state.sseSignals.processingTicketId = action.payload;
     },
     // 🆕 Update sidebar counts (Approvals only for this slice)

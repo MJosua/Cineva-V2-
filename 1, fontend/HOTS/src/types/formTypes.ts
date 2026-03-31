@@ -24,9 +24,17 @@ export interface FormConfig {
 
 export interface FormItem {
   id: string;
-  type: 'field' | 'section' | 'rowgroup' | 'specialfunc';
+  type: 'field' | 'section' | 'rowgroup' | 'specialfunc' | 'textblock';
   order: number;
-  data: FormField | FormSection | RowGroup | SpecialElement;
+  data: FormField | FormSection | RowGroup | SpecialElement | TextBlock;
+}
+
+export interface TextBlock {
+  title?: string; // Optional title for builder label
+  textType: 'title' | 'normal' | 'subtext';
+  content: string;
+  className?: string;
+  uiCondition?: string;
 }
 
 // Special Elements for CMS content, headers, tables, diagrams, etc.
@@ -60,7 +68,7 @@ export interface FormSection {
 export interface FormField {
   label: string;
   name: string;
-  type: 'text' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'time' | 'file' | 'toggle' | 'number' | 'suggestion-insert' | 'html' | 'cms';
+  type: 'text' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'time' | 'file' | 'toggle' | 'number' | 'suggestion-insert' | 'html' | 'cms' | 'textblock' | 'qrcodedesign';
   placeholder?: string;
   required?: boolean;
   options?: string[];
@@ -97,9 +105,14 @@ export interface FormField {
 
   // Other field comparison
   dependsOtherFieldByValue?: string;
-  maxnumber?: number;
-  minnumber?: number;
+  maxnumber?: number | string;
+  minnumber?: number | string;
   rounding?: number | string;
+  weekopcal?: boolean;
+
+  // Text block properties
+  textType?: 'title' | 'normal' | 'subtext';
+  content?: string;
 }
 
 export interface RowData {
@@ -148,7 +161,7 @@ export interface RowGroup {
 // Legacy type - kept for backward compatibility
 export interface FormStructureItem {
   id: string;
-  type: 'field' | 'section' | 'rowgroup' | 'specialfunc';
+  type: 'field' | 'section' | 'rowgroup' | 'specialfunc' | 'textblock';
   order: number;
-  data: FormField | FormSection | RowGroup | SpecialElement;
+  data: FormField | FormSection | RowGroup | SpecialElement | TextBlock;
 }

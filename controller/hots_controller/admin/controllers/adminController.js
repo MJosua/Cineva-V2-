@@ -46,7 +46,7 @@ module.exports = {
                 user u
             LEFT JOIN user_role r ON
                 u.role_id = r.role_id 
-            LEFT JOIN m_department d ON 
+            LEFT JOIN m_company_department d ON 
                 u.department_id = d.department_id
             WHERE r.role_id IN (1,2,4) `+ desc + find;
 
@@ -425,7 +425,7 @@ module.exports = {
 
         if (req.dataToken.role_id = 4) {
 
-            queryGetDepartment = `SELECT * FROM m_department d`
+            queryGetDepartment = `SELECT * FROM m_company_department d`
 
             dbHots.query(queryGetDepartment, (err, results) => {
                 if (err) {
@@ -466,9 +466,9 @@ module.exports = {
                             u.firstname,
                             u.lastname 
                             FROM 
-                                m_team t
+                                m_company_team t
                             LEFT JOIN
-                                m_team_member tm
+                                m_company_team_member tm
                             ON
                                 t.team_id = tm.team_id
                             LEFT JOIN
@@ -702,9 +702,9 @@ module.exports = {
                             u.firstname,
                             u.lastname 
                             FROM 
-                                m_team t
+                                m_company_team t
                             LEFT JOIN
-                                m_team_member tm
+                                m_company_team_member tm
                             ON
                                 t.team_id = tm.team_id
                             LEFT JOIN
@@ -712,7 +712,7 @@ module.exports = {
                             ON
                                 tm.user_id = u.user_id
                                 left join
-                                m_department d
+                                m_company_department d
                                 on
                                 t.department_id = d.department_id
                             WHERE 
@@ -784,7 +784,7 @@ module.exports = {
                 user u
             LEFT JOIN user_role r ON
                 u.role_id = r.role_id 
-            LEFT JOIN m_department d ON 
+            LEFT JOIN m_company_department d ON 
                 u.department_id = d.department_id
             WHERE r.role_id IN (1,2,4) 
             and

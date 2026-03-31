@@ -1,4 +1,4 @@
-﻿/**
+/**
  * controller/engine/engineTicket.js
  * Engine controller that uses canonical HOTS tables:
  *  - t_ticket
@@ -13,8 +13,9 @@
  * plus list, my-approvals, my-requests, cancel, requestRevision, resubmit, revisions endpoints
  */
 
-const { dbHots } = require('../../../config/db');
-const { engineLoader, formLoader, workflowEngine, triggerEngine, documentEngine } = require('../../../core/init-engines');
+const { dbHots, dbQueryLinkShortener } = require('../../../config/db');
+const { API_URL } = require('../../../config/env');
+const { engineLoader, formLoader, workflowEngine, triggerEngine, documentEngine, transactionEngine } = require('../../../core/init-engines');
 const engineLoaderCore = require('../../../core/engine-loader');
 const FormLoader = require('../../../core/form-loader');
 const workflowEngineCore = require('../../../core/workflow-engine');
@@ -126,7 +127,8 @@ async function saveEav(p, ticketId, form_data, revision = null, serviceItems = n
     let value;
 
     if (v && typeof v === 'object' && Object.prototype.hasOwnProperty.call(v, 'value')) {
-      value = String(v.value ?? '');
+      const rawValue = v.value ?? '';
+      value = (typeof rawValue === 'object') ? JSON.stringify(rawValue) : String(rawValue);
       // console.log(`  → Extracted value from object:`, value);
     } else if (typeof v === 'object') {
       value = JSON.stringify(v);
@@ -162,6 +164,75 @@ async function saveEav(p, ticketId, form_data, revision = null, serviceItems = n
   }
 }
 
+async function syncQrShortener(formData, userId) {
+  try {
+    console.log('🔗 [QR_SYNC] Starting sync check...');
+    if (!formData || typeof formData !== 'object') {
+      console.log('⚠️ [QR_SYNC] No valid form data to scan');
+      return;
+    }
+
+    let config = null;
+
+    for (const key of Object.keys(formData)) {
+      const entry = formData[key];
+      if (!entry) continue;
+
+      // Extract the candidate from either raw entry or EAV value
+      let rawVal = entry.value !== undefined ? entry.value : entry;
+      
+      // If it's a string (expected for EAV persisted data), try to parse it
+      let candidate = rawVal;
+      if (typeof rawVal === 'string') {
+        try { candidate = JSON.parse(rawVal); } catch (e) { /* ignore */ }
+      }
+
+      // Check if this candidate matches the QR configuration shape
+      if (candidate && typeof candidate === 'object' && candidate.customCode && candidate.targetUrl) {
+        config = candidate;
+        console.log(`🔗 [QR_SYNC] Successfully detected QR config in field "${key}"`);
+        break;
+      }
+    }
+
+    if (!config) return;
+
+    const { targetUrl, customCode, title, requireLogin } = config;
+
+    if (!targetUrl || !customCode) {
+      console.log('⚠️ [QR_SYNC] Missing targetUrl or customCode, skipping sync');
+      return;
+    }
+
+    console.log(`🔗 [QR_SYNC] Preparing DB Upsert for code "${customCode}"...`);
+    console.log(`🔗 [QR_SYNC] Target: ${targetUrl}, Title: ${title}, LoginRequired: ${requireLogin ? 1 : 0}`);
+
+    // UPSERT into m_url_shortener
+    await dbQueryLinkShortener(`
+      INSERT INTO m_url_shortener (user_id, short_code, target_url, title, require_login, qr_config)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        target_url = VALUES(target_url),
+        title = VALUES(title),
+        require_login = VALUES(require_login),
+        qr_config = VALUES(qr_config),
+        updated_at = NOW()
+    `, [
+      userId || 1, 
+      customCode, 
+      targetUrl, 
+      title || 'QR Redirect', 
+      requireLogin ? 1 : 0,
+      JSON.stringify(config)
+    ]);
+
+    console.log(`✅ [QR_SYNC] Short code "${customCode}" synchronized successfully`);
+  } catch (err) {
+    console.error('❌ [QR_SYNC] Failed to sync QR shortener:', err.message);
+  }
+}
+
+
 const EngineController = {
 
   /**
@@ -176,13 +247,13 @@ const EngineController = {
     try {
       console.log(timestamp, `🎫 Creating User Approval Ticket (Engine) for user_id: ${user_id}, department_id: ${department_id}`);
 
-      // Step 1: Get department_head and department_name from m_department
+      // Step 1: Get department_head and department_name from m_company_department
       let approvers = [];
       let department_name = 'Unknown';
 
       if (department_id) {
         const [deptResult] = await dbHots.promise().query(
-          `SELECT department_head, department_name FROM m_department WHERE department_id = ?`,
+          `SELECT department_head, department_name FROM m_company_department WHERE department_id = ?`,
           [department_id]
         );
 
@@ -201,7 +272,7 @@ const EngineController = {
 
         const [fallbackResult] = await dbHots.promise().query(
           `SELECT department_id, department_head 
-           FROM m_department 
+           FROM m_company_department 
            WHERE department_id IN (1, 10) 
            AND department_head IS NOT NULL`
         );
@@ -289,6 +360,7 @@ const EngineController = {
   /* CREATE */
   async create(req, res) {
     try {
+      console.log('🚀 [ENGINE][CREATE] Received Request Body:', JSON.stringify(req.body, null, 2));
       console.log('🔥 [ENGINE][CREATE] Starting ticket creation...');
       // 🧩 [TEMPORARY] Sync config cache
       await engineLoader.reloadAll();
@@ -460,8 +532,19 @@ const EngineController = {
             // Status 1 = Fulfilled (Green), Status 3 = In Progress (Orange)
             let initialStatus = (approvers && approvers.length > 0) ? 2 : 1;
 
+            // Initialize service display name with default from module
+            let serviceDisplayName = module.service_name || module.module_name;
+
             // 🔥 [FIX] If Service 23 (Project), it should start as IN_PROGRESS (3) if no approval needed, not FULFILLED (1)
-            let serviceDisplayName = module.module_name || module.module_key;
+            let finalTitle = title || form_data.subject || module.module_name || 'Service Request';
+            if (Number(sid) === 8) {
+                const rawIdea = form_data.idea || "";
+                const ideaStr = (typeof rawIdea === 'object' && rawIdea.value !== undefined) ? rawIdea.value : String(rawIdea);
+                if (ideaStr) {
+                    const cleanIdea = String(ideaStr).replace(/<[^>]*>/g, '').trim(); // Remove HTML if any
+                    finalTitle = `${module.module_name} - ${cleanIdea.substring(0, 30)}${cleanIdea.length > 30 ? '...' : ''}`;
+                }
+            }
             if (Number(sid) === 23 || module.module_key === 'it_project') {
               if (initialStatus === 1) {
                 console.log('🚧 [PROJECT] No approvers found, setting initial status to IN_PROGRESS (3)');
@@ -493,7 +576,7 @@ const EngineController = {
                 initialStatus,
                 module.engine_version || 4,
                 JSON.stringify(form_data || {}),
-                title || module.module_name,
+                title || finalTitle || module.module_name,
                 rootTicketId || ticket_id,
                 newDepth
               ]
@@ -503,10 +586,62 @@ const EngineController = {
             // insert details (EAV) — pass serviceItems for data separation
             await saveEav(p, ticket_id, form_data, null, module.items, sid);
 
-            // 🔥 [PROJECT TIMELINE INTEGRATION] 
+            // 🔗 [QR_SYNC] Sync shortener if present
+            await syncQrShortener(form_data, creator_id);
+
+            // 🔥 [INVENTORY STOCK REALIZATION]
+            // Service 14 (POSM) and 19 (IT Asset)
+            const inventoryServices = [14, 19, SERVICE_IDS.POSM_REQUEST, SERVICE_IDS.IT_ASSET_REQUEST];
+            if (inventoryServices.includes(Number(sid))) {
+              console.log(`📦 [ENGINE][INVENTORY] Detecting inventory service ${sid}. Checking for items...`);
+              
+              const inventoryItems = [];
+              for (const [key, val] of Object.entries(form_data)) {
+                let rows = [];
+                if (Array.isArray(val)) {
+                  rows = val;
+                } else if (typeof val === 'object' && val !== null && val.value && Array.isArray(val.value)) {
+                  // Handle cases where form_data[key] is { value: [...] }
+                  rows = val.value;
+                } else if (typeof val === 'string' && val.trim().startsWith('[') && val.trim().endsWith(']')) {
+                  try { rows = JSON.parse(val); } catch(e) {}
+                }
+
+                if (Array.isArray(rows)) {
+                  for (const row of rows) {
+                    const itemId = row.id || row.item_id || row.asset_id || row.product_id;
+                    const qty = row.quantity || row.qty || 1;
+                    if (itemId) {
+                      inventoryItems.push({ id: itemId, quantity: qty });
+                    }
+                  }
+                }
+              }
+
+              if (inventoryItems.length > 0) {
+                console.log(`📦 [ENGINE][INVENTORY] Found ${inventoryItems.length} items. Starting inventory transaction...`);
+                // Service 19 (IT Asset) allows backorder, Service 14 (POSM) is hard block
+                const forceAllow = (Number(sid) === 19 || Number(sid) === SERVICE_IDS.IT_ASSET_REQUEST);
+                
+                const invTx = await transactionEngine.begin('inventory', {
+                  user_id: creator_id,
+                  operation: 'issue',
+                  items: inventoryItems,
+                  force_allow_out_of_stock: forceAllow,
+                  connection: p // 🔗 Share the same transaction connection!
+                });
+                
+                await invTx.commit();
+                console.log(`✅ [ENGINE][INVENTORY] Inventory transaction committed: ${invTx.result.transaction_id}`);
+              }
+            }
+
+            // 🔥 [PROJECT & IDEA BANK TIMELINE INTEGRATION] 
             // Save description and initial notes to t_ticket_work_data as timeline entries
             const initialTimelineEntityId = `PROJECT_INIT_${ticket_id}`;
-            if (Number(sid) === 23 || module.module_key === 'it_project') {
+            const isProjectOrIdea = Number(sid) === 23 || module.module_key === 'it_project' || Number(sid) === 8 || module.module_key === 'idea_bank';
+
+            if (isProjectOrIdea) {
               const timelineEntries = [];
               const timelineGroupId = initialTimelineEntityId;
               const creatorId = creator_id || null;
@@ -528,10 +663,40 @@ const EngineController = {
                 );
               }
 
-              if (form_data.initial_notes) {
+              if (form_data.initial_notes || form_data.idea || form_data.attachment) {
+                // 1. Extract Note/Idea text
+                const rawNote = form_data.initial_notes || form_data.idea || "";
+                let noteText = "";
+                if (rawNote && typeof rawNote === 'object') {
+                  noteText = rawNote.value !== undefined ? rawNote.value : JSON.stringify(rawNote);
+                } else {
+                  noteText = rawNote;
+                }
+
+                // 2. Extract Attachments
+                let attachmentHtml = "";
+                const attachObj = form_data.attachment;
+                if (attachObj) {
+                  // Resolve the actual array of files
+                  const rawAttach = (attachObj && typeof attachObj === 'object' && attachObj.value !== undefined)
+                    ? attachObj.value
+                    : attachObj;
+
+                  const attachArr = Array.isArray(rawAttach) ? rawAttach : (rawAttach ? [rawAttach] : []);
+                  attachmentHtml = attachArr.map(a => {
+                    const isImg = a.type?.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp)$/i.test(a.url || "");
+                    if (isImg) {
+                      return `<div style="margin-top:10px;"><img src="${API_URL || ''}${a.url}" style="max-width:100%; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div>`;
+                    }
+                    return `<div style="margin-top:5px;">📎 <a href="${API_URL || ''}${a.url}" target="_blank" style="color:#2563eb; text-decoration:underline; font-weight:500;">${a.name || "Attachment"}</a></div>`;
+                  }).join("");
+                }
+
+                const finalContent = `<div style="white-space:pre-wrap; font-family:inherit;">${noteText}</div>${attachmentHtml}`;
+
                 timelineEntries.push([
                   ticket_id, null, sid, 'timeline_update', initialTimelineEntityId,
-                  'content', form_data.initial_notes, 'text',
+                  'content', finalContent, 'text',
                   creatorId, new Date(), new Date(), ticket_id, 0,
                   'manual_update', timelineGroupId, 0, 1, 0, null, company_id || 1
                 ]);
@@ -1125,7 +1290,7 @@ const EngineController = {
                 -- Team Members (if assigned to team)
                 SELECT tm.user_id 
                 FROM t_ticket_assignment tta
-                JOIN m_team_member tm ON tm.team_id = tta.assigned_id
+                JOIN m_company_team_member tm ON tm.team_id = tta.assigned_id
                 WHERE tta.ticket_id = ? AND tta.assigned_type = 'team'
                 UNION
                 -- Approvers
@@ -1596,6 +1761,9 @@ const EngineController = {
         await p.beginTransaction();
         if (eavRows.length) await p.query('INSERT INTO t_ticket_detail (ticket_id,cstm_col,lbl_col,value,field_id,field_type,row_index,column_key,revision,field_meta_json) VALUES ?', [eavRows]);
 
+        // 🔗 [QR_SYNC] Sync shortener if present
+        await syncQrShortener(form_data, header.created_by);
+
         await p.query('UPDATE t_ticket SET status=?, revision=?, workflow_level=0, last_update=NOW() WHERE ticket_id=?', ['submitted', newRevision, tid]);
 
         const workflowDef = await workflowEngine.loadWorkflow(header.service_id || header.service_name);
@@ -1824,7 +1992,7 @@ const EngineController = {
                              (SELECT GROUP_CONCAT(COALESCE(u_task.firstname, t_team.team_name) SEPARATOR ', ')
                               FROM t_ticket_assignment ta_task
                               LEFT JOIN user u_task ON ta_task.assigned_id = u_task.user_id AND ta_task.assigned_type = 'user'
-                              LEFT JOIN m_team t_team ON ta_task.assigned_id = t_team.team_id AND ta_task.assigned_type = 'team'
+                              LEFT JOIN m_company_team t_team ON ta_task.assigned_id = t_team.team_id AND ta_task.assigned_type = 'team'
                               WHERE ta_task.ticket_id = ae.ticket_id)
                          ELSE NULL
                     END AS assigned_value
@@ -1845,18 +2013,18 @@ const EngineController = {
             u_as.user_id = tta.assigned_id 
             AND tta.assigned_type = 'user'
 
-        LEFT JOIN m_team tm ON 
+        LEFT JOIN m_company_team tm ON 
             tm.team_id = tta.assigned_id 
             AND tta.assigned_type = 'team'
 
-        LEFT JOIN m_department md ON
+        LEFT JOIN m_company_department md ON
             md.department_id = tta.assigned_id
             AND tta.assigned_type = 'department'
 
         LEFT JOIN m_service_status ts ON ts.status_id = t.status_id
 
         LEFT JOIN user u_cr ON u_cr.user_id = t.created_by
-        LEFT JOIN m_department dpt ON dpt.department_id = u_cr.department_id
+        LEFT JOIN m_company_department dpt ON dpt.department_id = u_cr.department_id
 
         WHERE t.ticket_id = ? 
         GROUP BY t.ticket_id;

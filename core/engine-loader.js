@@ -35,7 +35,7 @@ class EngineLoader {
     this.servicesById.clear();
 
     // canonical source: m_service
-    const rows = await this.dbQuery('SELECT * FROM m_service WHERE active = 1');
+    const rows = await this.dbQuery('SELECT * FROM m_service WHERE active != 0');
 
     for (const r of rows) {
       // Normalize parsed JSON fields
@@ -70,7 +70,7 @@ class EngineLoader {
           try {
             const placeholders = pageIds.map(() => '?').join(',');
             const cmsRows = await this.dbQuery(
-              `SELECT page_id, content_json FROM m_cms_page WHERE page_id IN (${placeholders})`,
+              `SELECT page_id, content_json FROM cms_m_page WHERE page_id IN (${placeholders})`,
               pageIds
             );
 

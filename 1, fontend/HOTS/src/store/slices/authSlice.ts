@@ -74,7 +74,7 @@ export const loginUser = createAsyncThunk(
         localStorage.setItem('current_delv_week', current_delv_week);
         // Persist user data for recovery scenarios
         persistUserData(userData);
-        
+
         return { token: hots_tokek, userData };
       } else {
         return rejectWithValue(response.data.message);
@@ -125,7 +125,7 @@ const authSlice = createSlice({
       state.user = action.payload.userData;
       state.isAuthenticated = true;
       state.error = null;
-      
+
       // Persist user data
       persistUserData(action.payload.userData);
     },
@@ -141,11 +141,11 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isAuthenticated = true;
         state.token = action.payload.token;
-        state.user = action.payload.userData.uid;
+        state.user = action.payload.userData;
         state.error = null;
         state.loginAttempts = 0;
         state.isLocked = false;
-        
+
         // Persist user data
         persistUserData(action.payload.userData);
       })

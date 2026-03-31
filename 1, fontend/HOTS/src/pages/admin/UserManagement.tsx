@@ -22,7 +22,6 @@ import {
   fetchRoles,
   fetchJobTitles,
   fetchSuperiors,
-  fetchServices,
   UserType,
   Team,
   WorkflowGroup,
@@ -43,7 +42,7 @@ import { WorkflowStepData } from '@/components/workflow/WorkflowStepsManager';
 
 const UserManagement = () => {
   const dispatch = useAppDispatch();
-  const { users, teams, departments, workflowGroups, roles, jobTitles, superiors, services, filters, isLoading } = useAppSelector(state => state.userManagement);
+  const { users, teams, departments, workflowGroups, roles, jobTitles, superiors, filters, isLoading } = useAppSelector(state => state.userManagement);
 
   const [activeTab, setActiveTab] = useState("users");
   const { searchValue, setSearchValue } = useHeader();
@@ -74,7 +73,6 @@ const UserManagement = () => {
     dispatch(fetchRoles());
     dispatch(fetchJobTitles());
     dispatch(fetchSuperiors());
-    dispatch(fetchServices());
   }, [dispatch]);
 
 

@@ -65,7 +65,7 @@ const getTicketStakeholders = async (ticketId, excludeUserId = null) => {
                 -- Team members (if team-assigned)
                 SELECT tm.user_id 
                 FROM t_ticket t
-                JOIN m_team_member tm ON tm.team_id = t.assigned_team
+                JOIN m_company_team_member tm ON tm.team_id = t.assigned_team
                 WHERE t.ticket_id = ?
                 UNION
                 -- Assignment assignees
@@ -135,7 +135,7 @@ select
 	s.service_id,
 	s.approval_level
 from
-	m_team_member t
+	m_company_team_member t
 left join
 m_service s on
 	t.team_id = s.team_id
@@ -593,7 +593,7 @@ module.exports = {
                         from
                             user u
                         left join
-                        m_team_member mtm on
+                        m_company_team_member mtm on
                             u.user_id = mtm.user_id
                         where
                         u.user_id = 
@@ -1232,7 +1232,7 @@ module.exports = {
 
                     (
                         SELECT tm2.user_id
-                        FROM m_team_member tm2
+                        FROM m_company_team_member tm2
                         WHERE tm2.team_id = tta.assigned_id
                         AND tm2.team_leader = 1
                         AND tta.assigned_type = 'team'
@@ -1247,11 +1247,11 @@ module.exports = {
                     u1.user_id = tta.assigned_id 
                     AND tta.assigned_type = 'user'
 
-                LEFT JOIN m_team tm ON 
+                LEFT JOIN m_company_team tm ON 
                     tm.team_id = tta.assigned_id 
                     AND tta.assigned_type = 'team'
 
-                LEFT JOIN m_department md ON
+                LEFT JOIN m_company_department md ON
                     md.department_id = tta.assigned_id
                     AND tta.assigned_type = 'department'
 
@@ -1280,7 +1280,7 @@ module.exports = {
             LEFT JOIN t_ticket_assignment tta ON t.ticket_id = tta.ticket_id
 
 
-              LEFT JOIN m_team tm ON
+              LEFT JOIN m_company_team tm ON
                 tm.team_id = tta.assigned_id 
                 AND tta.assigned_type = 'team'
 
@@ -1573,7 +1573,7 @@ module.exports = {
                         SELECT 
                             user_id 
                         FROM 
-                            m_team_member mtm
+                            m_company_team_member mtm
                         WHERE
                             mtm.team_leader = 0
                         AND
@@ -2035,11 +2035,11 @@ module.exports = {
                 u.user_id = tta.assigned_id 
                 AND tta.assigned_type = 'user'
 
-            LEFT JOIN m_team tm ON
+            LEFT JOIN m_company_team tm ON
                 tm.team_id = tta.assigned_id 
                 AND tta.assigned_type = 'team'
 
-            LEFT JOIN m_department md ON
+            LEFT JOIN m_company_department md ON
                 md.department_id = tta.assigned_id
                 AND tta.assigned_type = 'department'
 
@@ -2067,7 +2067,7 @@ module.exports = {
                 LEFT JOIN m_service_status ts 
                     ON ts.status_id = t.status_id
 
-                LEFT JOIN m_team tm
+                LEFT JOIN m_company_team tm
                     ON (tta.assigned_type = 'team'
                         AND tm.team_id = tta.assigned_id)
 
@@ -2221,11 +2221,11 @@ module.exports = {
             LEFT JOIN t_ticket_assignment tta ON t.ticket_id = tta.ticket_id
 
             
-            LEFT JOIN m_team tm ON
+            LEFT JOIN m_company_team tm ON
                 tm.team_id = tta.assigned_id 
                 AND tta.assigned_type = 'team'
                 
-           LEFT JOIN m_team_member tmm ON
+           LEFT JOIN m_company_team_member tmm ON
                 tmm.team_id = tm.team_id AND tmm.user_id = ${req.dataToken.user_id}
             LEFT JOIN t_ticket_event ae ON
                 t.ticket_id = ae.ticket_id AND ae.approver_id = ${req.dataToken.user_id} -- Left join with the approver_id condition
@@ -2258,7 +2258,7 @@ module.exports = {
                 LEFT JOIN t_ticket_assignment tta 
                     ON t.ticket_id = tta.ticket_id
 
-                LEFT JOIN m_team_member tmm
+                LEFT JOIN m_company_team_member tmm
                     ON tmm.team_id = tta.assigned_id
                     AND tta.assigned_type = 'team'
                     AND tmm.user_id = ${req.dataToken.user_id}
@@ -2295,7 +2295,7 @@ module.exports = {
                     EXISTS (
                         SELECT 1
                         FROM t_ticket_assignment a
-                        JOIN m_team_member m 
+                        JOIN m_company_team_member m 
                             ON m.team_id = a.assigned_id 
                             AND m.team_leader = 1
                             AND m.user_id = ${req.dataToken.user_id}
@@ -2416,7 +2416,7 @@ module.exports = {
         left join m_service_status ts on
             ts.status_id = t.status_id
             LEFT JOIN t_ticket_assignment tta ON t.ticket_id = tta.ticket_id
-         LEFT JOIN m_team tm ON
+         LEFT JOIN m_company_team tm ON
                 tm.team_id = tta.assigned_id 
                 AND tta.assigned_type = 'team'
         where
@@ -2479,7 +2479,7 @@ module.exports = {
                     ts.status_id = t.status_id
             LEFT JOIN t_ticket_assignment tta ON t.ticket_id = tta.ticket_id
 
-                 LEFT JOIN m_team tm ON
+                 LEFT JOIN m_company_team tm ON
                 tm.team_id = tta.assigned_id 
                 AND tta.assigned_type = 'team'
                 where
@@ -2535,7 +2535,7 @@ module.exports = {
                 LEFT JOIN m_service_status ts ON ts.status_id = t.status_id
             LEFT JOIN t_ticket_assignment tta ON t.ticket_id = tta.ticket_id
 
- LEFT JOIN m_team tm ON
+ LEFT JOIN m_company_team tm ON
                 tm.team_id = tta.assigned_id 
                 AND tta.assigned_type = 'team'
 
@@ -3397,7 +3397,7 @@ module.exports = {
                     SELECT ws.*, u.firstname, u.lastname, t.team_name
                     FROM m_workflow_step ws
                     LEFT JOIN user u ON u.user_id = ws.assigned_user_id
-                    LEFT JOIN m_team t ON t.team_id = ws.assigned_team_id
+                    LEFT JOIN m_company_team t ON t.team_id = ws.assigned_team_id
                     WHERE ws.workflow_group_id = ?
                     ORDER BY ws.step_order
                 `;
@@ -3646,12 +3646,12 @@ module.exports = {
 
             LEFT JOIN t_ticket_assignment tta ON t.ticket_id = tta.ticket_id
 
-  LEFT JOIN m_team tm ON
+  LEFT JOIN m_company_team tm ON
                 tm.team_id = tta.assigned_id 
                 AND tta.assigned_type = 'team'
                
             
-                LEFT JOIN m_department d ON d.department_id = u.department_id
+                LEFT JOIN m_company_department d ON d.department_id = u.department_id
                 LEFT JOIN t_ticket_detail td ON td.ticket_id = t.ticket_id
                 WHERE t.ticket_id = ?
             `;
@@ -3919,7 +3919,7 @@ module.exports = {
                     if (type === "team") {
                         // Insert one event per team member (respecting team_leader flag)
                         const [teamMembers] = await dbHots.promise().execute(
-                            `SELECT user_id, team_leader FROM m_team_member WHERE team_id = ?`,
+                            `SELECT user_id, team_leader FROM m_company_team_member WHERE team_id = ?`,
                             [assignedValue]
                         );
 
@@ -4372,7 +4372,7 @@ module.exports = {
     -- Team leader (correct scoping)
     (
         SELECT tm2.user_id
-        FROM m_team_member tm2
+        FROM m_company_team_member tm2
         WHERE tm2.team_id = tta.assigned_id
           AND tm2.team_leader = 1
           AND tta.assigned_type = 'team'
@@ -4389,11 +4389,11 @@ LEFT JOIN user u_assigned
     ON u_assigned.user_id = tta.assigned_id
     AND tta.assigned_type = 'user'
 
-LEFT JOIN m_team tm 
+LEFT JOIN m_company_team tm 
     ON tm.team_id = tta.assigned_id 
     AND tta.assigned_type = 'team'
 
-LEFT JOIN m_department md
+LEFT JOIN m_company_department md
     ON md.department_id = tta.assigned_id
     AND tta.assigned_type = 'department'
 
@@ -4499,19 +4499,19 @@ LIMIT ${limit} OFFSET ${offset};
                         ) as list_approval,
                         (
                             SELECT tm2.user_id
-                            FROM m_team_member tm2
+                            FROM m_company_team_member tm2
                             WHERE tm2.team_id = tta.assigned_id AND tm2.team_leader = 1 and tta.assigned_type = 'team'
                             LIMIT 1
                         ) as team_leader_id
                     FROM t_ticket t
                     LEFT JOIN m_service s ON s.service_id = t.service_id
                      LEFT JOIN t_ticket_assignment tta ON t.ticket_id = tta.ticket_id
-  LEFT JOIN m_department md ON
+  LEFT JOIN m_company_department md ON
                 md.department_id = tta.assigned_id
                 AND tta.assigned_type = 'department'
                     LEFT JOIN m_service_status ts ON ts.status_id = t.status_id
 
- LEFT JOIN m_team tm ON
+ LEFT JOIN m_company_team tm ON
                 tm.team_id = tta.assigned_id 
                 AND tta.assigned_type = 'team'
 
@@ -4578,7 +4578,7 @@ WHERE
         tta.assigned_type = 'team'
         AND tta.assigned_id IN (
             SELECT tm.team_id 
-            FROM m_team_member tm 
+            FROM m_company_team_member tm 
             WHERE tm.user_id = ?
         )
     )
@@ -4686,7 +4686,7 @@ WHERE
 
     (
         SELECT tm2.user_id
-        FROM m_team_member tm2
+        FROM m_company_team_member tm2
         WHERE tm2.team_id = tta.assigned_id
           AND tm2.team_leader = 1
           AND tta.assigned_type = 'team'
@@ -4703,16 +4703,16 @@ LEFT JOIN user u1
     ON u1.user_id = tta.assigned_id 
     AND tta.assigned_type = 'user'
 
-LEFT JOIN m_team tm 
+LEFT JOIN m_company_team tm 
     ON tm.team_id = tta.assigned_id 
     AND tta.assigned_type = 'team'
 
-LEFT JOIN m_department md 
+LEFT JOIN m_company_department md 
     ON md.department_id = tta.assigned_id
     AND tta.assigned_type = 'department'
 
 LEFT JOIN user u ON u.user_id = t.created_by
-LEFT JOIN m_department d ON d.department_id = u.department_id
+LEFT JOIN m_company_department d ON d.department_id = u.department_id
 
 LEFT JOIN t_ticket_event ae ON ae.ticket_id = t.ticket_id
 
@@ -4730,7 +4730,7 @@ WHERE
         tta.assigned_type = 'team'
         AND tta.assigned_id IN (
             SELECT tm.team_id 
-            FROM m_team_member tm 
+            FROM m_company_team_member tm 
             WHERE tm.user_id = ?
         )
     )
@@ -4810,7 +4810,7 @@ LIMIT ${limit} OFFSET ${offset};
                   tta.assigned_type = 'team'
         AND 
                 tta.assigned_id IN (
-                    SELECT tm.team_id FROM m_team_member tm WHERE tm.user_id = ?
+                    SELECT tm.team_id FROM m_company_team_member tm WHERE tm.user_id = ?
                 ) OR
                 tta.assigned_id = ?
                 or
@@ -4990,7 +4990,7 @@ LIMIT ${limit} OFFSET ${offset};
                 -- Team leader (team assignment)
                 (
                     SELECT tm2.user_id
-                    FROM m_team_member tm2
+                    FROM m_company_team_member tm2
                     WHERE tm2.team_id = tta.assigned_id
                       AND tm2.team_leader = 1
                       AND tta.assigned_type = 'team'
@@ -5004,11 +5004,11 @@ LIMIT ${limit} OFFSET ${offset};
             LEFT JOIN t_ticket_assignment tta ON tta.ticket_id = t.ticket_id
     
             LEFT JOIN user u_as ON u_as.user_id = tta.assigned_id AND tta.assigned_type = 'user'
-            LEFT JOIN m_team tm ON tm.team_id = tta.assigned_id AND tta.assigned_type = 'team'
-            LEFT JOIN m_department md ON md.department_id = tta.assigned_id AND tta.assigned_type = 'department'
+            LEFT JOIN m_company_team tm ON tm.team_id = tta.assigned_id AND tta.assigned_type = 'team'
+            LEFT JOIN m_company_department md ON md.department_id = tta.assigned_id AND tta.assigned_type = 'department'
     
             LEFT JOIN user u_cr ON u_cr.user_id = t.created_by
-            LEFT JOIN m_department dpt ON dpt.department_id = u_cr.department_id
+            LEFT JOIN m_company_department dpt ON dpt.department_id = u_cr.department_id
     
             WHERE t.ticket_id = ?
     
@@ -5778,11 +5778,11 @@ LIMIT ${limit} OFFSET ${offset};
             LEFT JOIN t_ticket_assignment tta ON t.ticket_id = tta.ticket_id
 
 
-                LEFT JOIN m_team tm ON
+                LEFT JOIN m_company_team tm ON
                 tm.team_id = tta.assigned_id 
                 AND tta.assigned_type = 'team'
                 
-                LEFT JOIN m_department d ON d.department_id = u.department_id
+                LEFT JOIN m_company_department d ON d.department_id = u.department_id
                 LEFT JOIN t_ticket_detail td ON td.ticket_id = t.ticket_id
                 WHERE t.ticket_id = ?
             `;

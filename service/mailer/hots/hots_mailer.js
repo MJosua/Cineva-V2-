@@ -197,23 +197,35 @@ module.exports = {
 
         try {
             const info = await transporter.sendMail({
-                from: mailaccount,
+                from: 'HOTS-noreply@indofoodinternational.com',
                 to: address,
-                subject: "Reset Password",
+                subject: "[HOTS-noreply] Reset Password",
                 html: `
               <div>
-                <h3>To reset your password, copy this URL into an incognito browser tab or click the link below:</h3>
+                <h3>
+                Dear User,
+                </h3>
                 <br>
-                <a href="${feUrlHots}/forgot-password/${token}">
-                  ${feUrlHots}/forgot-password/${token}
+                We received a request to reset the password for your HOTS account.
+                <br>
+                To reset your password, please click the link below and follow the instructions:
+                <br>
+                <a href="${feUrlHots}/hots/forgot-password/${token}">
+                  ${feUrlHots}/hots/forgot-password/${token}
                 </a>
-                <br><br>
+                <br>
+                If you did not request a password reset, please ignore this email and your password will remain unchanged.
+                <br>
+                For security purposes, this link may expire after a certain period of time.
+                <br>
+                Thank you.
+                <br>
                 <h4>Please do not share this link with anyone.</h4>
               </div>
             `,
             });
             // Debug: Log the token and full URL for manual testing
-            const resetUrl = `${feUrlHots}/forgot-password/${token}`;
+            const resetUrl = `${feUrlHots}/hots/forgot-password/${token}`;
             console.log(`\n----------------------------------------------------`);
             console.log(`📧 [HOTS Forgot Password Debug]`);
             console.log(`Recipient: ${address}`);
@@ -757,7 +769,7 @@ module.exports = {
             <p style="font-weight:900; text-align:center;">
             Click this to visit the Hots Task Page, please login first and click again if not directly sending you to the ticket detail page :
             <br>
-            <a style="font-weight:700;" href="https://www.indofoodinternational.com/hots/ticket/${ticket_id}">Click Me</a>
+            <a style="font-weight:700;" href="${feUrlHots}/hots/ticket/${ticket_id}">Click Me</a>
             </p>
             
             ${approvalTable &&
@@ -880,7 +892,7 @@ module.exports = {
         let timestamp = date.toLocaleDateString("id") + " " + date.toLocaleTimeString("id") + " : ";
 
         // Link to the approval page (or dashboard)
-        const approvalLink = `${process.env.FE_URL_HOTS}/admin/user-approvals`;
+        const approvalLink = `${feUrlHots}/hots/task-list`;
 
         const htmlContent = `
         <div style="font-family: Arial, sans-serif; color: #333;">
@@ -895,12 +907,17 @@ module.exports = {
             </table>
 
             <p>Please review and approve this request:</p>
-            <div style="margin: 20px 0;">
-                <a href="${approvalLink}" style="background-color:#007bff; color:#fff; padding:10px 20px; text-decoration:none; border-radius:5px;">
+                <a href="${feUrlHots}/hots/ticket/${draftDetails.ticket_id}" 
+                   style="display: inline-block; padding: 12px 24px; background-color: #1e40af; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">
                     Review Request
                 </a>
             </div>
-             <p>If the button doesn’t work, visit: ${approvalLink}</p>
+            <p style="margin-top: 20px; color: #64748b; font-size: 14px;">
+                Link: <br>
+                <a href="${feUrlHots}/hots/ticket/${draftDetails.ticket_id}" style="color: #1e40af;">
+                    ${feUrlHots}/hots/ticket/${draftDetails.ticket_id}
+                </a>
+            </p>
         </div>`;
 
         try {

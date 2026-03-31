@@ -1,7 +1,6 @@
 ﻿import React from "react";
 import { useNavigate } from "react-router-dom";
-
-
+import logoIndofood from '../assets/ui/logo_indofoodCBP_white.png';
 
 const LogoBar = () => {
 
@@ -16,7 +15,7 @@ const LogoBar = () => {
             justify-content-center">
             <img
                 className="px-2"
-                src={require('../assets/ui/logo_indofoodCBP_white.png')}
+                src={logoIndofood}
                 width="30%"
                 alt='content'
             />

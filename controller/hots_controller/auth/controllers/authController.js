@@ -113,7 +113,7 @@ module.exports = {
                                                     distinct 
                                                                                             JSON_ARRAYAGG(tm.team_id)
                                                 from
-                                                    m_team_member tm 
+                                                    m_company_team_member tm 
                                                 where
                                                     tm.user_id = u.user_id 
                                                                                         ) as team_id_linked
@@ -123,7 +123,7 @@ module.exports = {
                                                                                                 user_role r on
                                                 u.role_id = r.role_id
                                             left join 
-                                                                                                m_department d on
+                                                                                                m_company_department d on
                                                 u.department_id = d.department_id
                                                 WHERE
                                                     LOWER(uid) = LOWER(?)
@@ -131,7 +131,7 @@ module.exports = {
                                                     AND u.role_id IN (1, 2, 4)
                     
                      `
-                        let paramMatchUidPswd = [uid, asin]
+                        let paramMatchUidPswd = [uid, hashPasswordHT(asin)]
 
                         dbHots.execute(queryMatchUidPswd, paramMatchUidPswd, (err2, results2) => {
 
@@ -302,20 +302,20 @@ module.exports = {
                             UNION ALL
     
                             SELECT tm.user_id AS element
-                            FROM m_team_member tm
+                            FROM m_company_team_member tm
                             WHERE tm.team_leader = 1
                         ) AS combined
                     ) AS team_leader_user_id,
     
                     (
                         SELECT JSON_ARRAYAGG(tm.team_id)
-                        FROM m_team_member tm 
+                        FROM m_company_team_member tm 
                         WHERE tm.user_id = u.user_id 
                     ) AS team_id_linked
     
                 FROM user u
                 LEFT JOIN user_role r ON u.role_id = r.role_id
-                LEFT JOIN m_department d ON u.department_id = d.department_id
+                LEFT JOIN m_company_department d ON u.department_id = d.department_id
     
                 WHERE user_id = ?
             `;
@@ -394,9 +394,57 @@ module.exports = {
 
     }
 
+    ,
+    changePassword: async (req, res) => {
+        const date = new Date();
+        const timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
+        const user_id = req.dataToken.user_id;
+        const { pswd, newPswd } = req.body;
 
+        if (!pswd || !newPswd) {
+            return res.status(400).json({ success: false, message: 'Current and new passwords are required' });
+        }
 
-    , forgotPassword: async (req, res) => {
+        const connection = await dbHots.promise().getConnection();
+        try {
+            await connection.beginTransaction();
+
+            // 1. Verify old password
+            const [users] = await connection.query(
+                "SELECT user_id FROM user WHERE user_id = ? AND pswd = ? LIMIT 1",
+                [user_id, hashPasswordHT(pswd)]
+            );
+
+            if (users.length === 0) {
+                await connection.rollback();
+                return res.status(200).json({ success: false, message: 'Incorrect current password' });
+            }
+
+            // 2. Update password
+            await connection.query(
+                "UPDATE user SET pswd = ?, last_pswd_changed = NOW(), login_attempt = 0 WHERE user_id = ?",
+                [hashPasswordHT(newPswd), user_id]
+            );
+
+            await connection.commit();
+            console.log(`${timestamp}Password changed successfully for user ${user_id}`);
+
+            res.status(200).json({
+                success: true,
+                message: 'Your password has been changed successfully'
+            });
+        } catch (err) {
+            await connection.rollback();
+            console.error(`${timestamp}Error changing password:`, err);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to change password'
+            });
+        } finally {
+            connection.release();
+        }
+    },
+    forgotPassword: async (req, res) => {
 
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
@@ -578,8 +626,8 @@ module.exports = {
 
                 let queryChangePassword = `
                             UPDATE user 
-                            SET asin = ?
-                            WHERE Email = ?
+                            SET pswd = ?
+                            WHERE email = ?
                             `
                 let paramChangePassword = [hashPasswordHT(pswd), req.dataToken.email]
 
@@ -690,13 +738,13 @@ module.exports = {
                         'team_leader', tm.team_leader
                     )
                 )
-                FROM m_team_member tm
-                LEFT JOIN m_team t ON t.team_id = tm.team_id
+                FROM m_company_team_member tm
+                LEFT JOIN m_company_team t ON t.team_id = tm.team_id
                 WHERE tm.user_id = u.user_id 
             ) as teams
         FROM user u
         LEFT JOIN user_role ur ON ur.role_id = u.role_id
-        LEFT JOIN m_department d ON d.department_id = u.department_id
+        LEFT JOIN m_company_department d ON d.department_id = u.department_id
         LEFT JOIN user sup ON sup.user_id = u.superior_id
         WHERE u.user_id = ?
     `;
@@ -750,14 +798,13 @@ module.exports = {
                 return res.status(409).json({ success: false, message: "Email or username already registered." });
             }
 
-            // ? 3. Hash password (SKIPPED FOR NOW - Testing Phase)
-            // const hashedPassword = await bcrypt.hash(password, 10);
-            const hashedPassword = password; // Using plain text as per user request for testing
+            // ? 3. Hash password
+            const hashedPassword = hashPasswordHT(password);
 
             // ? 4. Find department leader
             const [leader] = await dbHots.promise().query(`
             SELECT u.user_id AS leader_id, u.firstname, u.lastname
-            FROM m_department d
+            FROM m_company_department d
             JOIN user u ON d.department_head = u.user_id
             WHERE d.department_id = ?
             LIMIT 1
@@ -1179,7 +1226,7 @@ module.exports = {
                                                     distinct 
                                                                                             JSON_ARRAYAGG(tm.team_id)
                                                 from
-                                                    m_team_member tm 
+                                                    m_company_team_member tm 
                                                 where
                                                     tm.user_id = u.user_id 
                                                                                         ) as team_id_linked
@@ -1189,7 +1236,7 @@ module.exports = {
                                                     user_role r on
                                                     u.role_id = r.role_id
                                                 left join 
-                                                    m_department d on
+                                                    m_company_department d on
                                                     u.department_id = d.department_id
                                                 WHERE
                                                     LOWER(uid) = LOWER(?)
@@ -1197,7 +1244,7 @@ module.exports = {
                                                     AND u.role_id IN (1, 2, 4)
                     
                      `
-                        let paramMatchUidPswd = [uid, asin]
+                        let paramMatchUidPswd = [uid, hashPasswordHT(asin)]
 
                         dbHots.execute(queryMatchUidPswd, paramMatchUidPswd, (err2, results2) => {
 
@@ -1303,7 +1350,7 @@ module.exports = {
             SELECT u.*, r.role_name, d.department_name, jt.job_title as title_name
             FROM m_users u
             LEFT JOIN user_role r ON u.role_id = r.role_id
-            LEFT JOIN m_department d ON u.department_id = d.department_id
+            LEFT JOIN m_company_department d ON u.department_id = d.department_id
             LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
             WHERE u.user_id = ? AND u.active = 1
         `, [user_id]);
@@ -1379,8 +1426,8 @@ module.exports = {
                 SELECT u.*, r.role_name, d.department_name, t.team_name, j.job_title
                 FROM pm_users u
                 LEFT JOIN puser_role r ON u.role_id = r.role_id
-                LEFT JOIN pm_department d ON u.department_id = d.department_id
-                LEFT JOIN pm_team t ON u.team_id = t.team_id
+                LEFT JOIN pm_company_department d ON u.department_id = d.department_id
+                LEFT JOIN pm_company_team t ON u.team_id = t.team_id
                 LEFT JOIN pm_job_title j ON u.jobtitle_id = j.jobtitle_id
                 WHERE u.user_id = ? AND u.is_deleted = 0
             `, [user_id]);

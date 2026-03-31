@@ -1,106 +1,138 @@
-
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Package, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Package, Search, Loader2 } from 'lucide-react';
 import { WidgetProps } from '@/types/widgetTypes';
+import axios from 'axios';
+import { API_URL } from '@/config/sourceConfig';
 
-// Sample stock data
-const sampleStockData = [
-  { id: 1, item: 'Laptop Dell XPS 13', current: 15, max: 25, status: 'low' },
-  { id: 2, item: 'Wireless Mouse', current: 45, max: 50, status: 'good' },
-  { id: 3, item: 'Monitor 24"', current: 8, max: 20, status: 'low' },
-  { id: 4, item: 'Keyboard Mechanical', current: 32, max: 35, status: 'good' },
-  { id: 5, item: 'USB-C Cable', current: 2, max: 30, status: 'critical' },
-];
+interface InventoryItem {
+  id: number;
+  resource_category: string;
+  resource_key: string;
+  resource_label: string;
+  attributes: {
+    total_stock: number;
+    max_stock: number;
+    uom?: string;
+  };
+}
 
 const StockOverview: React.FC<WidgetProps> = ({ 
   formData, 
   serviceId 
 }) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'critical': return 'text-red-600 bg-red-50';
-      case 'low': return 'text-orange-600 bg-orange-50';
-      case 'good': return 'text-green-600 bg-green-50';
-      default: return 'text-gray-600 bg-gray-50';
-    }
-  };
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'critical': return <AlertTriangle className="w-4 h-4 text-red-600" />;
-      case 'low': return <AlertTriangle className="w-4 h-4 text-orange-600" />;
-      case 'good': return <CheckCircle className="w-4 h-4 text-green-600" />;
-      default: return <Package className="w-4 h-4 text-gray-600" />;
-    }
-  };
+  useEffect(() => {
+    const fetchInventory = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('hots_tokek');
+        const response = await axios.get(`${API_URL}/hots_settings/get/inventory`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data.success) {
+          const allData: InventoryItem[] = response.data.data;
+          // Contextualize category based on the form's service ID
+          const targetCategory = Number(serviceId) === 14 ? 'posm' : 'it_asset';
+          const filtered = allData.filter(item => item.resource_category === targetCategory && item.attributes?.total_stock > 0);
+          setItems(filtered);
+        }
+      } catch (err) {
+        console.error("Failed to fetch inventory for widget:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInventory();
+  }, [serviceId]);
+
+  const filteredItems = useMemo(() => {
+    if (!searchQuery) return items;
+    return items.filter(item => 
+      item.resource_label.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      item.resource_key.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [items, searchQuery]);
+
+  if (loading) {
+    return (
+      <Card className="mb-6 animate-pulse border-none shadow-sm">
+        <CardContent className="h-48 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const title = Number(serviceId) === 14 ? 'Available POSM Catalog' : 'Available IT Equipment';
 
   return (
-    <Card className="mb-6">
-      <CardHeader>
-        <div className="flex items-center space-x-2">
-          <Package className="w-5 h-5 text-blue-600" />
-          <CardTitle className="text-lg">Current Stock Status</CardTitle>
+    <Card className="mb-6 overflow-hidden border-border/50 shadow-sm bg-card">
+      <CardHeader className="pb-4 border-b border-border/50 bg-muted/20">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Package className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-lg font-bold">{title}</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Browse items currently in stock
+              </p>
+            </div>
+          </div>
+          
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search items..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 bg-background focus-visible:ring-1 focus-visible:ring-primary/30"
+            />
+          </div>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Real-time inventory levels for IT equipment
-        </p>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {sampleStockData.map((item) => {
-            const percentage = (item.current / item.max) * 100;
-            
-            return (
-              <div key={item.id} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    {getStatusIcon(item.status)}
-                    <span className="text-sm font-medium">{item.item}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge 
-                      variant="outline" 
-                      className={getStatusColor(item.status)}
-                    >
-                      {item.current}/{item.max}
+      
+      <CardContent className="p-0">
+        <div className="max-h-[320px] overflow-y-auto custom-scrollbar p-2">
+          {filteredItems.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {filteredItems.map((item) => {
+                const current = Number(item.attributes?.total_stock) || 0;
+                const isLow = current <= 5;
+                
+                return (
+                  <div key={item.id} className="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-background hover:border-primary/30 transition-colors">
+                    <div className="min-w-0 pr-3">
+                      <p className="text-sm font-semibold truncate text-foreground" title={item.resource_label}>
+                        {item.resource_label}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                        {item.resource_key}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={`shrink-0 ${isLow ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-primary/5 text-primary border-primary/20'}`}>
+                      {current} {item.attributes?.uom || 'pcs'}
                     </Badge>
                   </div>
-                </div>
-                <Progress 
-                  value={percentage} 
-                  className={`h-2 ${
-                    item.status === 'critical' ? '[&>div]:bg-red-500' :
-                    item.status === 'low' ? '[&>div]:bg-orange-500' :
-                    '[&>div]:bg-green-500'
-                  }`}
-                />
-              </div>
-            );
-          })}
-        </div>
-        
-        <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-          <div className="p-2 bg-green-50 rounded-lg">
-            <p className="text-sm font-medium text-green-800">Available</p>
-            <p className="text-lg font-bold text-green-600">
-              {sampleStockData.filter(item => item.status === 'good').length}
-            </p>
-          </div>
-          <div className="p-2 bg-orange-50 rounded-lg">
-            <p className="text-sm font-medium text-orange-800">Low Stock</p>
-            <p className="text-lg font-bold text-orange-600">
-              {sampleStockData.filter(item => item.status === 'low').length}
-            </p>
-          </div>
-          <div className="p-2 bg-red-50 rounded-lg">
-            <p className="text-sm font-medium text-red-800">Critical</p>
-            <p className="text-lg font-bold text-red-600">
-              {sampleStockData.filter(item => item.status === 'critical').length}
-            </p>
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-10">
+              <Package className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm font-medium text-muted-foreground">
+                {searchQuery ? "No matching items found" : "No stock available"}
+              </p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

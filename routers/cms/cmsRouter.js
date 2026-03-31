@@ -1,30 +1,36 @@
 // routers/cms/cmsRouter.js
 const express = require('express');
 const router = express.Router();
-const cms = require('../../controller/cms/cmsController');
+const { hotsCMS, hotsMedia } = require('../../controller');
+const { hotsTempUploader } = require('../../config/uploader');
+const uploadController = require('../../controller/hots_controller/engine/uploadController');
 const { decodeTokenHT } = require('../../config/encrypts');
 
-// PUBLIC
-router.get('/public/:slug', async (req, res) => {
-  try {
-    return await cms.getPublicPage(req, res);
-  } catch (e) {
-    console.error('[cmsRouter] public handler error', e);
-    return res.status(500).json({ ok: false, message: e.message });
-  }
-});
+// PUBLIC ROUTES
+router.get('/posts', hotsCMS.getPosts);
+router.get('/categories', hotsCMS.getCategories);
+router.get('/public/:slug', hotsCMS.getPublicPostBySlug);
 
 // ADMIN — debug wrapper + protect
 router.use('/admin', (req, res, next) => {
-  console.log('[cmsRouter] ADMIN route hit:', req.method, req.originalUrl, 'from', req.ip);
-  next();
+    console.log('[cmsRouter] ADMIN route hit:', req.method, req.originalUrl, 'from', req.ip);
+    next();
 });
 router.use('/admin', decodeTokenHT);
 
 // ADMIN ROUTES
-router.get('/admin/list', (req, res) => cms.listPages(req, res));
-router.get('/admin/:id', (req, res) => cms.getPageById(req, res));
-router.post('/admin/save', express.json({ limit: '10mb' }), (req, res) => cms.savePage(req, res));
-router.delete('/admin/:id', (req, res) => cms.deletePage(req, res));
+router.get('/admin/list', hotsCMS.getAdminPosts);
+router.get('/admin/:id', hotsCMS.getPostById);
+router.post('/admin/save', express.json({ limit: '10mb' }), hotsCMS.upsertPost);
+router.post('/admin/category', hotsCMS.createCategory);
+router.put('/admin/:id/quick', hotsCMS.quickUpdate);
+router.put('/admin/:id/category', hotsCMS.quickUpdateCategory);
+router.delete('/admin/:id', hotsCMS.deletePost);
+
+// MEDIA LIBRARY ROUTES
+router.get('/admin/media/list', hotsMedia.getMediaList);
+router.post('/admin/media/upload-temp', hotsTempUploader('temp', 'media-').single('file'), uploadController.uploadTemp);
+router.post('/admin/media/finalize', express.json(), hotsMedia.finalizeMedia);
+router.delete('/admin/media/:id', hotsMedia.deleteMedia);
 
 module.exports = router;

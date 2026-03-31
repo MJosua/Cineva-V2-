@@ -10,7 +10,7 @@ const user_controller = {
             const rows = await dbHots.execute(`
             SELECT u.*, d.department_name as department_name, r.role_name as role_name 
             FROM user u
-            LEFT JOIN m_department d ON u.department_id = d.department_id
+            LEFT JOIN m_company_department d ON u.department_id = d.department_id
             LEFT JOIN user_role r ON u.role_id = r.role_id
             WHERE u.finished_date IS NULL
             ORDER BY u.registration_date DESC
@@ -92,7 +92,7 @@ const user_controller = {
             const [rows] = await connection.execute(`
                 SELECT u.*, d.department_name as department_name, r.role_name as role_name 
                 FROM user u
-                LEFT JOIN m_department d ON u.department_id = d.department_id
+                LEFT JOIN m_company_department d ON u.department_id = d.department_id
                 LEFT JOIN user_role r ON u.role_id = r.role_id
                 WHERE u.id = ? AND u.finished_date IS NULL
             `, [id]);

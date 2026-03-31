@@ -1,4 +1,5 @@
 ﻿import React from "react";
+import logoIndofood from '../../assets/images/indofood_CBP_logo.png';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -47,9 +48,9 @@ const NavbarPreLogin = () => {
 
             <div className="position-fixed top-0 mt-2 ms-2">
                 <Image
-                    src={require('../../assets/images/indofood_CBP_logo.png')}
+                    src={logoIndofood}
                     width='55%'
-                    fallbacksrc={require('../../assets/images/indofood_CBP_logo.png')}
+                    fallbacksrc={logoIndofood}
                 />
             </div>
 
@@ -79,10 +80,10 @@ const NavbarPreLogin = () => {
                             user_id === null ?
                                 navigate('/e-order/login')
                                 :
-                                navigate('/e-order/dashboard') 
+                                navigate('/e-order/dashboard')
                         }} icon={<ArrowForwardIcon />} >
                             Login
-                        </MenuItem> 
+                        </MenuItem>
                     </MenuList>
                 </Menu>
             </div>

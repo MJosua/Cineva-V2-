@@ -46,10 +46,39 @@ route.post('/create/ticket/:service_id', decodeTokenHT, dynamicUploadMiddleware,
     req.body.creator_id = req.dataToken.user_id;
     req.body.creator_email = req.dataToken.email;
 
-    // [Specfic Logic for Meeting Room (13)]
-    // If PIC_user_id is provided (e.g. Kiosk/Tablet booking), 
+    // [Specific Logic for Meeting Room (13)]
+    // 1. If it's a HOTS request, enforce the logged-in user as the PIC
+    if (service_id === 13 && req.body.request_source === "HOTS") {
+        if (!req.body.form_data) req.body.form_data = {};
+
+        // Auto-fill PIC info from session (Using UID as requested)
+        req.body.form_data.PIC = {
+            type: "field",
+            label: "PIC",
+            value: req.dataToken.uid || req.dataToken.user_name || req.dataToken.firstname,
+            field_id: "PIC_field"
+        };
+        req.body.form_data.PIC_user_id = {
+            type: "field",
+            label: "PIC User ID",
+            value: String(req.dataToken.user_id),
+            field_id: "PIC_user_id_field"
+        };
+
+        // Also ensure requested_by is set correctly
+        req.body.form_data.requested_by = {
+            type: "field",
+            label: "Requested By",
+            value: req.dataToken.firstname || req.dataToken.user_name,
+            field_id: "requested_by_field"
+        };
+
+        // Override creator_id to ensure it shows up in "My Tickets"
+        req.body.creator_id = req.dataToken.user_id;
+    }
+    // 2. Original Logic: If PIC_user_id is provided (e.g. Kiosk/Tablet booking), 
     // we impersonate the creator so the ticket appears in the PIC's "My Tickets" list.
-    if (service_id === 13 && req.body.form_data && req.body.form_data.PIC_user_id && req.body.form_data.PIC_user_id.value) {
+    else if (service_id === 13 && req.body.form_data && req.body.form_data.PIC_user_id && req.body.form_data.PIC_user_id.value) {
         req.body.creator_id = req.body.form_data.PIC_user_id.value;
     }
 

@@ -26,6 +26,7 @@ export interface Team {
   team_id: number;
   team_name: string;
   department_id: number;
+  department_collaborator?: string | number[];
   creation_date: string;
   finished_date?: string | null;
   member_count: number;

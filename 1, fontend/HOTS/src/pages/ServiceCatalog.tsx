@@ -83,8 +83,8 @@ const ServiceCatalog = () => {
   }, []);
 
   // Group services by category for rendering
-  const serviceCategories = categoryList.map(category => {
-    const categoryServices = serviceCatalog.filter(service =>
+  const serviceCategories = (categoryList || []).map(category => {
+    const categoryServices = (serviceCatalog || []).filter(service =>
       service.category_id === category.category_id &&
       service.active === 1 &&
       searchInObject(service, searchValue)
@@ -104,7 +104,7 @@ const ServiceCatalog = () => {
         url: `/${service.nav_link}`
       }))
     };
-  }).filter(category => category.services.length > 0);
+  }).filter(category => category.services && category.services.length > 0);
 
   const SkeletonCard = () => (
     <Card>
@@ -125,7 +125,7 @@ const ServiceCatalog = () => {
     </Card>
   );
 
-  if (isLoading) {
+  if (isLoading && serviceCatalog.length === 0) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">

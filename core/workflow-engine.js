@@ -239,7 +239,7 @@ class WorkflowEngine {
 
           if (teamId) {
             const rows = await this.dbQuery(
-              'SELECT user_id, team_leader FROM m_team_member WHERE team_id = ?',
+              'SELECT user_id, team_leader FROM m_company_team_member WHERE team_id = ?',
               [teamId]
             );
 

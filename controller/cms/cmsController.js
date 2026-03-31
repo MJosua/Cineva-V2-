@@ -9,7 +9,7 @@ module.exports = {
       console.log('[cmsController] getPublicPage', slug);
 
       const rows = await dbQueryHots(
-        'SELECT * FROM m_cms_page WHERE slug = ? AND status = ?',
+        'SELECT * FROM cms_m_page WHERE slug = ? AND status = ?',
         [slug, 'published']
       );
 
@@ -30,7 +30,7 @@ module.exports = {
       console.log('[cmsController] listPages by', req.dataToken?.user_id);
 
       const rows = await dbQueryHots(
-        'SELECT * FROM m_cms_page ORDER BY created_at DESC LIMIT 200'
+        'SELECT * FROM cms_m_page ORDER BY created_at DESC LIMIT 200'
       );
 
       return res.json({ ok: true, pages: rows });
@@ -47,7 +47,7 @@ module.exports = {
       console.log('[cmsController] getPageById', id);
 
       const rows = await dbQueryHots(
-        'SELECT * FROM m_cms_page WHERE page_id = ? LIMIT 1',
+        'SELECT * FROM cms_m_page WHERE page_id = ? LIMIT 1',
         [id]
       );
 
@@ -107,14 +107,14 @@ module.exports = {
       // UPDATE
       if (page_id) {
         await dbQueryHots(
-          `UPDATE m_cms_page
+          `UPDATE cms_m_page
            SET slug=?, title=?, summary=?, content_json=?, meta_json=?, status=?, updated_by=?, module_key=?
            WHERE page_id = ?`,
           [slug, title, summary, contentStr, metaStr, status, userId, module_key, page_id]
         );
 
         await dbQueryHots(
-          `INSERT INTO t_cms_page_log (page_id, user_id, action, payload)
+          `INSERT INTO cms_t_page_log (page_id, user_id, action, payload)
            VALUES (?, ?, ?, ?)`,
           [page_id, userId, 'updated', JSON.stringify(payload)]
         );
@@ -125,7 +125,7 @@ module.exports = {
 
       // CREATE
       const result = await dbQueryHots(
-        `INSERT INTO m_cms_page
+        `INSERT INTO cms_m_page
          (slug, title, summary, content_json, meta_json, status, created_by, updated_by, module_key)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [slug, title, summary, contentStr, metaStr, status, userId, userId, module_key]
@@ -134,7 +134,7 @@ module.exports = {
       const insertId = result.insertId;
 
       await dbQueryHots(
-        `INSERT INTO t_cms_page_log (page_id, user_id, action, payload)
+        `INSERT INTO cms_t_page_log (page_id, user_id, action, payload)
          VALUES (?, ?, ?, ?)`,
         [insertId, userId, 'created', JSON.stringify(payload)]
       );
@@ -157,12 +157,12 @@ module.exports = {
       const id = Number(req.params.id);
 
       await dbQueryHots(
-        'DELETE FROM m_cms_page WHERE page_id = ?',
+        'DELETE FROM cms_m_page WHERE page_id = ?',
         [id]
       );
 
       await dbQueryHots(
-        'INSERT INTO t_cms_page_log (page_id, user_id, action) VALUES (?, ?, ?)',
+        'INSERT INTO cms_t_page_log (page_id, user_id, action) VALUES (?, ?, ?)',
         [id, req.dataToken.user_id, 'deleted']
       );
 

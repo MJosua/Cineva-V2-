@@ -43,6 +43,8 @@ const {
   hotsPreferences,
   hotsProfile,
   hotsNotification,
+  hotsSystemMenu,
+  hotsUrlShortener,
   cmsRouter,
   engineRouter,
   engineWorkDataRouter,
@@ -58,7 +60,7 @@ const {
 
 function registerRoutes(App) {
   App.get('/', (req, res) => {
-    res.status(200).send('<h1>CONNECTION BLOCKED!</h2><br><h2>YOU ARE NOT SUPPOSE TO ACCESS THIS SITE WITH PAGE!</h2>');
+    res.status(200).send('<h1>CONNECTION BLOCKED!</h2><br><h2>YOU ARE NOT SUPPOSE TO ACCESS THIS SITE WITH PAGE! JANGAN LUPA TAMBAHKAN VERSIONING DI SETIAP ROUTER </h2>');
   });
 
   App.use('/cms', cmsRouter);
@@ -112,6 +114,8 @@ function registerRoutes(App) {
   App.use('/hotsprefs', hotsPreferences);
   App.use('/hots_profile', hotsProfile);
   App.use('/hots_notifications', hotsNotification);
+  App.use('/hots_system_menu', hotsSystemMenu);
+  App.use('/hots_url', hotsUrlShortener);
 
   App.use('/shortener', shortener);
   App.use('/debugRouter', debugRouter);

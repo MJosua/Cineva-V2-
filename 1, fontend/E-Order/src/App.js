@@ -174,15 +174,15 @@ function App() {
   return (
     <div className="App">
 
-      <Routes basename="/">
+      <Routes>
         <Route
           path="/i2i/containertracking/:number?/:so_id?"
-          element={<ContainerTracking admin />}
+          element={<ContainerTracking admin={true} />}
         />
 
         <Route
           path="/e-order/containertracking/:number?/:so_id?"
-          element={<ContainerTracking />}
+          element={<ContainerTracking admin />}
         />
 
         {/* PUBLIC ACCESS */}
@@ -202,6 +202,7 @@ function App() {
 
             <Route path="/" element={<LandingPage />} />
             <Route path="/e-order" element={<LandingPage />} />
+            <Route path="/e-order/aboutio" element={<Aboutus />} />
             <Route path="/e-order/indofoodpo/:so_id" element={<IndofoodPO />} />
             <Route path="/e-order/login" element={<LoginPage />} />
             <Route path="/e-order/jahwgefys" element={<MaintenanceLoginPage />} />
@@ -261,7 +262,7 @@ function App() {
           <>
             <Route path="/" element={<CheckToken />} >
 
-              <Route path="/e-order/containertracking" element={<PageContainerTracking />} />
+              <Route path="/e-order/containertrackingadmin" element={<PageContainerTracking admin={true} />} />
 
 
               <Route path="/e-order/indofoodpo/:so_id" element={<IndofoodPO />} />

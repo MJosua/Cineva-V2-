@@ -7,6 +7,7 @@ import {
     Stack,
     StackDivider
 } from "@chakra-ui/react"
+import emptyPlateImg from "../../../assets/images/emptyplate.PNG";
 import { CiLocationOn } from 'react-icons/ci'
 
 import DeliverToComponent from "../../orders/components/DeliverToComponent.jsx";
@@ -113,7 +114,7 @@ const DetailProduct = () => {
                                     alt={state.product_code}
                                     width='95%'
                                     height='100px'
-                                    fallbackSrc={require("../../../assets/images/emptyplate.PNG")}
+                                    fallbackSrc={emptyPlateImg}
                                 />
                             </div>
 

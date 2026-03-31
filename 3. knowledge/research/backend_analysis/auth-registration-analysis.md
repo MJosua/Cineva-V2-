@@ -23,7 +23,7 @@
 ## Database Tables
 - `user_draft` - Stores pending registrations
 - `user` - Active users
-- `m_department` - Department master with `department_head`
+- `m_company_department` - Department master with `department_head`
 
 ## Note
 Does NOT use Core Engine - uses direct `dbHots` queries.

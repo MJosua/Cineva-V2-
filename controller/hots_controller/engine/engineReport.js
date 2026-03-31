@@ -1,4 +1,4 @@
-﻿/**
+/**
  * controller/engine/engineReport.js
  */
 
@@ -184,6 +184,11 @@ module.exports = {
         const { dbHots } = require('../../../config/db');
         try {
             const { assignmentId } = req.params;
+            const { limit, page } = req.query;
+
+            const pageSize = limit ? parseInt(limit) : 20;
+            const offset = page ? (parseInt(page) - 1) * pageSize : 0;
+
             const [rows] = await dbHots.promise().query(`
                 SELECT r.id, r.entity_id, r.content, r.created_at, r.updated_at,
                        CONCAT(u.firstname, ' ', u.lastname) as author_name,
@@ -199,9 +204,15 @@ module.exports = {
                 GROUP BY r.id, r.entity_id, r.content, r.created_at, r.updated_at,
                          u.firstname, u.lastname, e.status, e.depth
                 ORDER BY r.created_at DESC
+                LIMIT ? OFFSET ?
+            `, [assignmentId, pageSize, offset]);
+
+            // Get total count
+            const [[{ total }]] = await dbHots.promise().query(`
+                SELECT COUNT(*) as total FROM t_ticket_work_data_report WHERE assignment_id = ? AND deleted_at IS NULL
             `, [assignmentId]);
 
-            res.json({ ok: true, reports: rows });
+            res.json({ ok: true, reports: rows, total });
         } catch (e) {
             console.error('[CARD_REPORTS][GET_ALL]', e);
             res.status(500).json({ ok: false, error: e.message });

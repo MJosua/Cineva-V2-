@@ -23,7 +23,7 @@ module.exports = {
           CONCAT(u.firstname, ' ', u.lastname) as manager_name,
           (SELECT COUNT(*) from t_project_members pm WHERE pm.project_id = p.project_id) as member_count
         from t_project p
-        LEFT join hots.m_department d ON p.department_id = d.department_id
+        LEFT join hots.m_company_department d ON p.department_id = d.department_id
         LEFT join hots.user u ON p.manager_id = u.user_id
         ORDER BY p.created_date DESC
       `;
@@ -67,7 +67,7 @@ module.exports = {
           CONCAT(u.firstname, ' ', u.lastname) as manager_name,
           (SELECT COUNT(*) from t_project_members pm WHERE pm.project_id = p.project_id) as member_count
         from t_project p
-        LEFT join hots.m_department d ON p.department_id = d.department_id
+        LEFT join hots.m_company_department d ON p.department_id = d.department_id
         LEFT join hots.user u ON p.manager_id = u.user_id
         WHERE p.project_id IN (SELECT project_id from t_project_members WHERE user_id = ?)
         ORDER BY p.created_date DESC
@@ -112,7 +112,7 @@ module.exports = {
         CONCAT(u.firstname, ' ', u.lastname) as manager_name,
         (SELECT COUNT(*) FROM t_project_members pm WHERE pm.project_id = p.project_id) AS member_count
       FROM t_project p
-      LEFT JOIN hots.m_department d ON p.department_id = d.department_id
+      LEFT JOIN hots.m_company_department d ON p.department_id = d.department_id
       LEFT JOIN hots.user u ON p.manager_id = u.user_id
       WHERE p.allow_join = true
         AND p.status IN ('planning', 'active')
@@ -227,19 +227,19 @@ module.exports = {
       // Add the project creator as a member
       const addMemberQuery = 'INSERT INTO t_project_members (project_id, user_id, role, joined_date) VALUES (?, ?, ?, NOW())';
       await dbPMS.promise().execute(addMemberQuery, [project_id, userId, 'owner']);
-      
+
       console.log(`${yellowTerminal}[PROJECT CREATE] Added creator as member:`, userId);
 
       // Assign teams to project if selected
       if (selected_teams && selected_teams.length > 0) {
         console.log(`${yellowTerminal}[PROJECT CREATE] Assigning teams:`, selected_teams);
-        
+
         const teamAssignQuery = 'INSERT INTO t_project_team_assignments (project_id, team_id, assigned_date) VALUES (?, ?, NOW())';
         for (const teamId of selected_teams) {
           try {
             await dbPMS.promise().execute(teamAssignQuery, [project_id, teamId]);
             console.log(`${yellowTerminal}[PROJECT CREATE] Assigned team ${teamId} to project`);
-            
+
             // Add team members to project
             const teamMembersQuery = `
               SELECT tm.user_id 
@@ -247,7 +247,7 @@ module.exports = {
               WHERE tm.team_id = ? AND tm.user_id != ?
             `;
             const [teamMembers] = await dbPMS.promise().execute(teamMembersQuery, [teamId, userId]);
-            
+
             for (const member of teamMembers) {
               const memberInsertQuery = 'INSERT IGNORE INTO t_project_members (project_id, user_id, role, joined_date) VALUES (?, ?, ?, NOW())';
               await dbPMS.promise().execute(memberInsertQuery, [project_id, member.user_id, 'member']);
@@ -261,19 +261,19 @@ module.exports = {
 
       res.status(201).json({
         success: true,
-        data: { 
-          project_id, 
+        data: {
+          project_id,
           ...projectData,
-          selected_teams 
+          selected_teams
         },
-        packet: { 
-          project_id, 
+        packet: {
+          project_id,
           ...projectData,
-          selected_teams 
+          selected_teams
         },
         message: 'Project created successfully'
       });
-      
+
       console.log(`${yellowTerminal}[PROJECT CREATE] Success response sent`);
     } catch (error) {
       console.error(`${yellowTerminal}[PROJECT CREATE] Error:`, error);
@@ -288,11 +288,11 @@ module.exports = {
   getUserProjects: async (req, res) => {
     try {
       const { userId } = req.query;
-      
+
       if (!userId) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'userId parameter is required' 
+        return res.status(400).json({
+          success: false,
+          error: 'userId parameter is required'
         });
       }
 
@@ -312,7 +312,7 @@ module.exports = {
         FROM PM.t_project p
         INNER JOIN PM.t_project_members pm ON p.project_id = pm.project_id
         LEFT JOIN hots.user manager ON p.manager_id = manager.user_id
-        LEFT JOIN hots.m_department d ON p.department_id = d.department_id
+        LEFT JOIN hots.m_company_department d ON p.department_id = d.department_id
         LEFT JOIN (
           SELECT 
             project_id,
@@ -333,9 +333,9 @@ module.exports = {
       });
     } catch (error) {
       console.error('Error fetching user projects:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Failed to fetch user projects' 
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch user projects'
       });
     }
   },
@@ -362,7 +362,7 @@ module.exports = {
           CONCAT(u.firstname, ' ', u.lastname) as manager_name,
           (SELECT COUNT(*) from t_project_members pm WHERE pm.project_id = p.project_id) as member_count
         from t_project p
-        LEFT join hots.m_department d ON p.department_id = d.department_id
+        LEFT join hots.m_company_department d ON p.department_id = d.department_id
         LEFT join hots.user u ON p.manager_id = u.user_id
         WHERE p.project_id = ?
       `;
@@ -489,7 +489,7 @@ module.exports = {
           d.department_name
         from t_project_members pm
         LEFT join hots.user u ON pm.user_id = u.user_id
-        LEFT join hots.m_department d ON u.department_id = d.department_id
+        LEFT join hots.m_company_department d ON u.department_id = d.department_id
         WHERE pm.project_id = ?
       `;
       const [members] = await dbPMS.promise().execute(query, [id]);

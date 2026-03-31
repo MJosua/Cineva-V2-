@@ -15,10 +15,10 @@ import {
   SidebarInset,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Home, FileText, CheckSquare, List, Settings, LogOut, Monitor, Users, Search, User, Code, FileCode, HelpCircle, ChevronRight, ClipboardList, Palette, Database, Briefcase, Building } from 'lucide-react';
+import { Home, FileText, CheckSquare, List, Settings, LogOut, Monitor, Users, Search, User, Code, FileCode, HelpCircle, ChevronRight, ClipboardList, Palette, Database, Briefcase, Building, Package, Layout, LayoutDashboard } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import ProfileModal from "@/components/modals/ProfileModal";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
@@ -32,9 +32,10 @@ import { fetchTaskCount } from '@/store/slices/ticketsSlice';
 import { fetchAssignmentCount } from '@/store/slices/assignmentSlice';
 import { TutorialManager } from '@/components/tutorial/TutorialManager';
 import { useHeader } from '@/contexts/HeaderContext';
-import { Outlet } from 'react-router-dom';
+import { fetchSidebarMenu } from '@/store/slices/sidebarSlice';
 import NotificationBell from './NotificationBell';
-import { fetchDashboardFunctions } from '@/store/slices/dashboardSlice';
+import { fetchDashboardFunctions, fetchDashboardSummaries } from '@/store/slices/dashboardSlice';
+import { fetchCatalogData, selectServiceCatalog } from '@/store/slices/catalogSlice';
 
 interface UserProfile {
   user_id: number;
@@ -48,59 +49,7 @@ interface UserProfile {
   department_id?: number;
 }
 
-const adminItems = [
-  {
-    title: "API Builder",
-    url: "/admin/api-builder",
-    icon: Database,
-    description: "Create & manage SQL functions",
-  },
-  {
-    title: "Service Catalog Admin",
-    url: "/admin/service-catalog",
-    icon: List,
-  },
-  {
-    title: "User Management",
-    url: "/admin/users",
-    icon: Users,
-  },
-  {
-    title: "Function Logs",
-    url: "/admin/function-logs",
-    icon: FileCode,
-  },
-  {
-    title: "System Settings",
-    url: "/admin/settings",
-    icon: Settings,
-  },
-];
-
-// HR Management menu items (visible to HR dept, IT dept, or Admin role)
-const hrItems = [
-  {
-    title: "Employees",
-    url: "/admin/users",
-    icon: Users,
-  },
-  {
-    title: "Teams",
-    url: "/admin/teams",
-    icon: Users,
-  },
-  {
-    title: "Departments",
-    url: "/admin/departments",
-    icon: Building,
-  },
-  {
-    title: "Job Titles",
-    url: "/admin/job-titles",
-    icon: Briefcase,
-  },
-];
-
+// Help Items remain hardcoded or can be added to DB later
 const helpItems = [
   {
     title: "User Guide",
@@ -121,8 +70,10 @@ interface AppLayoutProps {
 export function AppSidebar() {
   const { taskCount } = useAppSelector(state => state.tickets);
   const { assignmentCount } = useAppSelector(state => state.assignment);
-  const { user } = useAppSelector(state => state.auth);
+  const { user, isAuthenticated } = useAppSelector(state => state.auth);
+  const { menuData: systemMenu, isLoading: menuLoading } = useAppSelector((state) => state.sidebar);
   const { data: dashboardFunctions, loading: dashboardLoading } = useAppSelector(state => state.dashboard);
+  const serviceCatalog = useAppSelector(selectServiceCatalog);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
     try {
       const cached = localStorage.getItem('user_profile_cache');
@@ -133,6 +84,16 @@ export function AppSidebar() {
   });
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
+  // Icon Mapping for Dynamic Menu
+  const getIcon = (iconName: string) => {
+    const icons: Record<string, any> = {
+      Home, FileText, CheckSquare, List, Settings, Monitor, Users, Search, 
+      User, Code, FileCode, HelpCircle, ChevronRight, ClipboardList, 
+      Palette, Database, Briefcase, Building, Package, LayoutDashboard
+    };
+    return icons[iconName] || Layout;
+  };
+
 
   // utils/pathUtils.ts
 
@@ -141,7 +102,7 @@ export function AppSidebar() {
       title: "Dashboard",
       url: "/dashboard",
       icon: Home,
-      hidden: dashboardFunctions.length === 0
+      hidden: !dashboardFunctions || dashboardFunctions.length === 0
     },
     {
       title: "Service Catalog",
@@ -196,13 +157,28 @@ export function AppSidebar() {
   };
 
   useEffect(() => {
-    if (user) {
+    if (user && isAuthenticated) {
       fetchUserProfile();
       dispatch(fetchTaskCount());
       dispatch(fetchAssignmentCount());
-      dispatch(fetchDashboardFunctions());
+      
+      // Only fetch modular menu if not in Redux/Cache
+      if (Object.keys(systemMenu).length === 0) {
+        dispatch(fetchSidebarMenu());
+      }
+      
+      // Only fetch dashboard list if not in Redux/Cache
+      // Only fetch catalog if empty
+      if (serviceCatalog.length === 0) {
+        dispatch(fetchCatalogData());
+      }
+      
+      // Only fetch dashboard list if not in Redux/Cache
+      if (dashboardFunctions.length === 0) {
+        dispatch(fetchDashboardFunctions());
+      }
     }
-  }, [user, dispatch]);
+  }, [user, isAuthenticated, dispatch, serviceCatalog.length, dashboardFunctions.length, systemMenu]);
 
   const handleLogout = () => {
     dispatch(logoutUser()).then(() => {
@@ -313,100 +289,40 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* HR Management Section - visible to HR (dept 1), IT (dept 10), or Admin (role 4) */}
-        {isHR && (
-          <SidebarGroup>
+        {/* Dynamic Modular Menu Sections */}
+        {Object.entries(systemMenu).map(([groupName, items]) => (
+          <SidebarGroup key={groupName}>
             <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider px-3 py-2">
-              HR Management
+              {groupName}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {hrItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild tooltip={item.title}>
-                      <Link
-                        to={item.url}
-                        className={cn(
-                          "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                          location.pathname === item.url && "bg-sidebar-accent text-sidebar-accent-foreground"
-                        )}
-                      >
-                        <item.icon className="w-5 h-5 flex-shrink-0" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-
-        {/* Only show Administration menu for users with role === 4 */}
-        {
-          isAdmin && (
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider px-3 py-2">
-                Administration
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {adminItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild tooltip={item.title}>
+                {items.map((item) => {
+                  const Icon = getIcon(item.menu_icon);
+                  return (
+                    <SidebarMenuItem key={item.menu_id}>
+                      <SidebarMenuButton asChild tooltip={item.menu_name}>
                         <Link
-                          to={item.url}
+                          to={item.menu_path}
                           className={cn(
                             "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                            location.pathname === item.url && "bg-sidebar-accent text-sidebar-accent-foreground"
+                            location.pathname === item.menu_path && "bg-sidebar-accent text-sidebar-accent-foreground"
                           )}
                         >
-                          <item.icon className="w-5 h-5 flex-shrink-0" />
-                          <span>{item.title}</span>
+                          <Icon className="w-5 h-5 flex-shrink-0" />
+                          <span>{item.menu_name}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                  ))}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Admin Guide">
-                      <Link
-                        to="/admin/guide"
-                        className={cn(
-                          "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                          location.pathname === "/admin/guide" && "bg-sidebar-accent text-sidebar-accent-foreground"
-                        )}
-                      >
-                        <HelpCircle className="w-5 h-5 flex-shrink-0" />
-                        <span>Admin Guide</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )
-        }
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
 
 
-        {
-          isAdmin && (
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="CMS Pages">
-                <Link
-                  to="/admin/cms"
-                  className={cn(
-                    "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                    location.pathname.startsWith("/admin/cms") &&
-                    "bg-sidebar-accent text-sidebar-accent-foreground"
-                  )}
-                >
-                  <FileText className="w-5 h-5 flex-shrink-0" />
-                  <span>CMS Pages</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
+
 
       </SidebarContent >
 

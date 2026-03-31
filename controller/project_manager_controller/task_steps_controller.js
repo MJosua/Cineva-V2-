@@ -7,7 +7,7 @@ module.exports = {
   getTaskSteps: async (req, res) => {
     try {
       const { taskId } = req.params;
-      
+
       const [taskSteps] = await dbPMS.promise().execute(`
         SELECT 
           ts.*,
@@ -29,10 +29,10 @@ module.exports = {
             t.team_name
           FROM PM.t_task_step_assignments tsa
           LEFT JOIN hots.user u ON tsa.user_id = u.user_id
-          LEFT JOIN hots.m_team t ON tsa.team_id = t.team_id
+          LEFT JOIN hots.m_company_team t ON tsa.team_id = t.team_id
           WHERE tsa.task_step_id = ?
         `, [step.step_id]);
-        
+
         step.assignments = assignments;
       }
 
@@ -97,7 +97,7 @@ module.exports = {
           // If assigning to team, also assign to all team members
           if (assignment.type === 'team') {
             const [teamMembers] = await dbPMS.promise().execute(`
-              SELECT user_id FROM hots.m_team_member WHERE team_id = ? AND is_active = 1
+              SELECT user_id FROM hots.m_company_team_member WHERE team_id = ? AND is_active = 1
             `, [assignment.id]);
 
             for (const member of teamMembers) {
@@ -164,9 +164,9 @@ module.exports = {
       updateFields.push('updated_date = NOW()');
 
       if (updateFields.length === 1) { // Only updated_date
-        return res.status(400).json({ 
-          success: false, 
-          error: 'No valid fields provided for update' 
+        return res.status(400).json({
+          success: false,
+          error: 'No valid fields provided for update'
         });
       }
 
@@ -235,10 +235,10 @@ module.exports = {
         LEFT JOIN hots.user u ON r.submitted_by = u.user_id
         WHERE r.report_id = ?
       `;
-      
+
       const [reportRows] = await dbPMS.promise().execute(getReportSql, [result.insertId]);
       const report = reportRows[0];
-      
+
       if (report && report.report_data) {
         report.report_data = JSON.parse(report.report_data);
       }
@@ -272,7 +272,7 @@ module.exports = {
       `;
 
       const [rows] = await dbPMS.promise().execute(sql, [stepId]);
-      
+
       // Parse JSON report_data for each report
       const reports = rows.map(report => ({
         ...report,
@@ -299,7 +299,7 @@ module.exports = {
       // Check if user owns the report or has permission
       const checkSql = 'SELECT submitted_by FROM PM.t_task_step_reports WHERE report_id = ?';
       const [checkRows] = await dbPMS.promise().execute(checkSql, [reportId]);
-      
+
       if (checkRows.length === 0) {
         return res.status(404).json({ success: false, error: 'Report not found' });
       }
@@ -485,7 +485,7 @@ module.exports = {
   getTaskStepTemplates: async (req, res) => {
     try {
       const { category } = req.query;
-      
+
       let query = `
         SELECT 
           tst.*,

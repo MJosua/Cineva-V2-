@@ -49,7 +49,7 @@ module.exports = {
                 AND (
                     (ta.assigned_type = 'user' AND ta.assigned_id = ?)
                     OR (ta.assigned_type = 'team' AND ta.assigned_id IN (
-                        SELECT team_id FROM m_team_member WHERE user_id = ?
+                        SELECT team_id FROM m_company_team_member WHERE user_id = ?
                     ))
                 )
             `, [user_id, user_id]);

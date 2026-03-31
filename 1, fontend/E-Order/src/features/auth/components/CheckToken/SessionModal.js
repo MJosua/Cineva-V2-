@@ -8,7 +8,7 @@ const SessionModal = ({
     pswd,
     setPswd
 }) => {
-    
+
 
     return (
         <Modal
@@ -24,7 +24,7 @@ const SessionModal = ({
                         <div className="container-fluid px-5 pb-3">
                             <div className="row">
                                 <div className="col-12 d-flex justify-content-center py-3">
-                                    <Image src={"../image/notif.png"} />
+                                    <Image src={"/image/notif.png"} />
                                 </div>
                                 <div className="col-12 text-center fw-bold fs-5">
                                     Dear {uid}, <br />

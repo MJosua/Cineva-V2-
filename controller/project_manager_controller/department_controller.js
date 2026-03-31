@@ -15,10 +15,10 @@ module.exports = {
           COUNT(DISTINCT p.project_id) as project_count,
           COUNT(DISTINCT t.team_id) as team_count,
           COUNT(DISTINCT usr.user_id) as member_count
-        FROM hots.m_department d
+        FROM hots.m_company_department d
         LEFT JOIN hots.user u ON d.department_head = u.user_id
         LEFT JOIN PM.t_project p ON d.department_id = p.department_id
-        LEFT JOIN hots.m_team t ON d.department_id = t.department_id
+        LEFT JOIN hots.m_company_team t ON d.department_id = t.department_id
         LEFT JOIN hots.user usr ON d.department_id = usr.department_id
         GROUP BY d.department_id
         ORDER BY d.department_name ASC
@@ -45,7 +45,7 @@ module.exports = {
         SELECT 
           d.*,
           CONCAT(u.firstname, ' ', u.lastname) AS head_name
-        FROM hots.m_department d
+        FROM hots.m_company_department d
         LEFT JOIN hots.user u ON d.department_head = u.user_id
         WHERE d.department_id = ?
       `, [id]);
@@ -61,13 +61,13 @@ module.exports = {
           CONCAT(u.firstname, ' ', u.lastname) AS team_member_name,
           (
             SELECT CONCAT(u2.firstname, ' ', u2.lastname)
-            FROM hots.m_team_member tm2
+            FROM hots.m_company_team_member tm2
             JOIN hots.user u2 ON tm2.user_id = u2.user_id
             WHERE tm2.team_id = t.team_id AND tm2.team_leader = 1
             LIMIT 1
           ) AS team_leader_name
-        FROM hots.m_team t
-        LEFT JOIN hots.m_team_member tm ON t.team_id = tm.team_id
+        FROM hots.m_company_team t
+        LEFT JOIN hots.m_company_team_member tm ON t.team_id = tm.team_id
         LEFT JOIN hots.user u ON tm.user_id = u.user_id
         WHERE t.department_id = ?
       `, [id]);
@@ -104,7 +104,7 @@ module.exports = {
         SELECT 
           d.*,
           CONCAT(u.firstname, ' ', u.lastname) AS head_name
-        FROM hots.m_department d
+        FROM hots.m_company_department d
         LEFT JOIN hots.user u ON d.department_head = u.user_id
         WHERE d.department_id = ?
       `, [id]);
@@ -120,13 +120,13 @@ module.exports = {
           CONCAT(u.firstname, ' ', u.lastname) AS team_member_name,
           (
             SELECT CONCAT(u2.firstname, ' ', u2.lastname)
-            FROM hots.m_team_member tm2
+            FROM hots.m_company_team_member tm2
             JOIN hots.user u2 ON tm2.user_id = u2.user_id
             WHERE tm2.team_id = t.team_id AND tm2.team_leader = 1
             LIMIT 1
           ) AS team_leader_name
-        FROM hots.m_team t
-        LEFT JOIN hots.m_team_member tm ON t.team_id = tm.team_id
+        FROM hots.m_company_team t
+        LEFT JOIN hots.m_company_team_member tm ON t.team_id = tm.team_id
         LEFT JOIN hots.user u ON tm.user_id = u.user_id
         WHERE t.department_id = ?
       `, [id]);
@@ -160,7 +160,7 @@ module.exports = {
       const data = req.body;
 
       const [result] = await dbPMS.promise().execute(`
-        INSERT INTO m_department 
+        INSERT INTO m_company_department 
         (department_id, department_name, department_shortname, description, department_head, is_active, created_date, updated_date)
         VALUES (?, ?, ?, ?, ?, 1, NOW(), NOW())
       `, [
@@ -172,7 +172,7 @@ module.exports = {
       ]);
 
       const [newDepartment] = await dbPMS.promise().execute(
-        'SELECT * FROM m_department WHERE department_id = ?',
+        'SELECT * FROM m_company_department WHERE department_id = ?',
         [data.department_id]
       );
 
@@ -193,7 +193,7 @@ module.exports = {
       const data = req.body;
 
       await dbPMS.promise().execute(`
-        UPDATE m_department 
+        UPDATE m_company_department 
         SET department_name = ?, department_shortname = ?, description = ?, 
             department_head = ?, updated_date = NOW()
         WHERE department_id = ?
@@ -206,7 +206,7 @@ module.exports = {
       ]);
 
       const [updatedDepartment] = await dbPMS.promise().execute(
-        'SELECT * FROM m_department WHERE department_id = ?',
+        'SELECT * FROM m_company_department WHERE department_id = ?',
         [id]
       );
 

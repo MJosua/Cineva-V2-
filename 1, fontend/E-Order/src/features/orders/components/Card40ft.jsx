@@ -1,4 +1,5 @@
 ﻿import React, { useState } from 'react';
+import productDetailImg from '../../../../assets/images/indomie-mi-goreng-special_detail.png';
 import {
     Image,
     Radio,
@@ -40,11 +41,11 @@ const Card40ft = () => {
                                 <Image
                                     // key={state.product.code}
                                     className="d-flex justify-content-center border rounded-3"
-                                    src={require('../../../../assets/images/indomie-mi-goreng-special_detail.png')}
+                                    src={productDetailImg}
                                     boxSize=''
                                     // alt={state.product_code}
                                     width='95%'
-                                    fallbacksrc={require('../../../../assets/images/indomie-mi-goreng-special_detail.png')}>
+                                    fallbacksrc={productDetailImg}>
                                 </Image>
                             </div>
 
@@ -165,11 +166,11 @@ const Card40ft = () => {
                                 <Image
                                     // key={state.product.code}
                                     className="d-flex justify-content-center border rounded-3"
-                                    src={require('../../../../assets/images/indomie-mi-goreng-special_detail.png')}
+                                    src={productDetailImg}
                                     boxSize=''
                                     // alt={state.product_code}
                                     width='95%'
-                                    fallbacksrc={require('../../../../assets/images/indomie-mi-goreng-special_detail.png')}>
+                                    fallbacksrc={productDetailImg}>
                                 </Image>
                             </div>
 

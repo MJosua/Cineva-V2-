@@ -102,7 +102,7 @@ getTicketDetail: async (req, res) => {
                 SELECT
                     tm.user_id
                 FROM
-                    m_team_member tm
+                    m_company_team_member tm
                 WHERE
                     tm.team_id = t.assigned_team
                     AND tm.team_leader = 1
@@ -142,7 +142,7 @@ getTicketDetail: async (req, res) => {
         LEFT JOIN
             user ua ON ua.user_id = t.assigned_to
         LEFT JOIN
-            m_team tm ON tm.team_id = t.assigned_team
+            m_company_team tm ON tm.team_id = t.assigned_team
         WHERE
             t.ticket_id = ?
             AND t.service_id = ?
@@ -159,31 +159,31 @@ getTicketDetail: async (req, res) => {
                 });
             } else {
                 console.log(timestamp, `getTicketDetail success for service_id: ${service_id}, ticket_id: ${ticket_id}`);
-                
+
                 if (results.length > 0) {
                     // Process the result to structure the form data properly
                     let ticketData = results[0];
-                    
+
                     // Convert cstm_col/lbl_col pairs back to form structure
                     let formData = {};
                     for (let i = 1; i <= 16; i++) {
                         let cstmCol = `cstm_col${i}`;
                         let lblCol = `lbl_col${i}`;
-                        
+
                         if (ticketData[cstmCol] !== null && ticketData[lblCol] !== null) {
                             // Create field key from label (similar to form creation)
                             let fieldKey = ticketData[lblCol].toLowerCase().replace(/[^a-z0-9]/g, '_');
                             formData[fieldKey] = ticketData[cstmCol];
                         }
-                        
+
                         // Remove the raw columns from response
                         delete ticketData[cstmCol];
                         delete ticketData[lblCol];
                     }
-                    
+
                     // Add structured form data
                     ticketData.form_data = formData;
-                    
+
                     // Parse form_json if exists for field definitions
                     if (ticketData.form_json) {
                         try {
@@ -193,20 +193,20 @@ getTicketDetail: async (req, res) => {
                             ticketData.form_config = null;
                         }
                     }
-                    
-                    return res.status(200).send({ 
+
+                    return res.status(200).send({
                         success: true,
-                        data: [ticketData] 
+                        data: [ticketData]
                     });
                 } else {
-                    return res.status(404).send({ 
+                    return res.status(404).send({
                         success: false,
-                        message: "Ticket not found" 
+                        message: "Ticket not found"
                     });
                 }
             }
         });
-        
+
     } else {
         res.status(400).send({
             success: false,

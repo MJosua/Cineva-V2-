@@ -318,7 +318,7 @@ module.exports = {
         tm.*,
         CONCAT(u.firstname, ' ', u.lastname) as fullname
         from
-            m_team_member tm
+            m_company_team_member tm
         join 
             user u on
             tm.user_id = u.user_id
@@ -958,13 +958,13 @@ module.exports = {
                 from
                     hots.user u
                     left join
-                    hots.m_team mt on 
+                    hots.m_company_team mt on 
                     u.department_id = mt.department_id 
                     left join 
                     hots.user_role mr on
                     u.role_id = mr.role_id
                     left join
-                    hots.m_job_title mjt on
+                    hots.m_company_job_title mjt on
                     u.jobtitle_id = mjt.jobtitle_id
           `);
 
@@ -1053,7 +1053,7 @@ module.exports = {
                 FROM hots.t_workflow_instances wi
                 LEFT JOIN hots.m_service_workflow wg ON wi.workflow_group_id = wg.workflow_id
                 LEFT JOIN hots.user u ON wi.created_by_user_id = u.user_id
-                LEFT JOIN hots.m_team mt ON wi.team_id = mt.team_id
+                LEFT JOIN hots.m_company_team mt ON wi.team_id = mt.team_id
                 ORDER BY wi.creation_date DESC
             `);
 
@@ -1306,7 +1306,7 @@ module.exports = {
                     creation_date,
                     finished_date
                 FROM 
-                    hots.m_job_title 
+                    hots.m_company_job_title 
                 WHERE 
                     finished_date IS NULL
                 ORDER BY 
@@ -1337,7 +1337,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-            INSERT INTO hots.m_job_title 
+            INSERT INTO hots.m_company_job_title 
             (job_title, department_id, creation_date) 
             VALUES (?, ?, NOW())
         `, [job_title, department_id]);
@@ -1368,7 +1368,7 @@ module.exports = {
             // Log payload for debugging
             // console.log('updateJobTitle payload:', { id, job_title, department_id, description });
 
-            let sql = `UPDATE hots.m_job_title SET job_title = ?, description = ?`;
+            let sql = `UPDATE hots.m_company_job_title SET job_title = ?, description = ?`;
             let params = [job_title, description];
 
             // Only update department_id if it's explicitly provided (not undefined)
@@ -1406,7 +1406,7 @@ module.exports = {
         try {
             // Soft delete by setting finished_date
             const [result] = await dbHots.promise().query(`
-                UPDATE hots.m_job_title 
+                UPDATE hots.m_company_job_title 
                 SET finished_date = NOW()
                 WHERE jobtitle_id = ?
             `, [id]);
@@ -1902,7 +1902,7 @@ module.exports = {
         try {
             const [teams] = await dbHots.promise().query(`
             SELECT team_id, team_name, department_id, creation_date 
-            FROM hots.m_team 
+            FROM hots.m_company_team 
             WHERE finished_date IS NULL 
             ORDER BY team_name
         `);
@@ -1938,9 +1938,9 @@ module.exports = {
                     COUNT(tm.user_id) as member_count,
                     SUM(tm.team_leader) as leader_count,
                     CONCAT_WS(' ', u.firstname, u.lastname) AS head_fullname
-                FROM hots.m_team t
-                LEFT JOIN hots.m_department d ON t.department_id = d.department_id
-                LEFT JOIN hots.m_team_member tm ON t.team_id = tm.team_id
+                FROM hots.m_company_team t
+                LEFT JOIN hots.m_company_department d ON t.department_id = d.department_id
+                LEFT JOIN hots.m_company_team_member tm ON t.team_id = tm.team_id
                 LEFT JOIN hots.user AS u ON u.user_id = tm.user_id
                 GROUP BY t.team_id, t.department_id
                 ORDER BY  t.team_id 
@@ -1978,9 +1978,9 @@ module.exports = {
                     u.email,
                     tm.team_leader,
                     mjt.job_title as job_title
-                FROM hots.m_team_member tm
+                FROM hots.m_company_team_member tm
                 JOIN hots.user u ON tm.user_id = u.user_id
-                LEFT JOIN hots.m_job_title mjt ON u.jobtitle_id = mjt.jobtitle_id
+                LEFT JOIN hots.m_company_job_title mjt ON u.jobtitle_id = mjt.jobtitle_id
                 WHERE tm.team_id = ? AND tm.finished_date IS NULL AND u.finished_date IS NULL
                 ORDER BY tm.team_leader DESC, u.firstname, u.lastname
             `, [team_id]);
@@ -2019,7 +2019,7 @@ module.exports = {
                 u.uid,
                 u.email,
                 u.role_name
-            FROM hots.m_team_member tm
+            FROM hots.m_company_team_member tm
             JOIN hots.user u ON u.user_id = tm.user_id
             WHERE tm.team_id = ? AND tm.team_leader = 1 AND tm.finished_date IS NULL
             ORDER BY u.firstname
@@ -2052,7 +2052,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-                UPDATE hots.m_team 
+                UPDATE hots.m_company_team 
                 SET finished_date = NOW() 
                 WHERE team_id = ? AND finished_date IS NULL
             `, [id]);
@@ -2086,8 +2086,8 @@ module.exports = {
                 d.description,
                 COUNT(DISTINCT t.team_id) as team_count,
                 COUNT(DISTINCT u.user_id) as user_count
-            FROM hots.m_department d
-            LEFT JOIN hots.m_team t ON d.department_id = t.department_id 
+            FROM hots.m_company_department d
+            LEFT JOIN hots.m_company_team t ON d.department_id = t.department_id 
                 AND t.finished_date IS NULL
             LEFT JOIN hots.user u ON d.department_id = u.department_id 
                 AND u.finished_date IS NULL
@@ -2119,7 +2119,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-            INSERT INTO hots.m_team_member (team_id, user_id, team_leader, creation_date, updated_date)
+            INSERT INTO hots.m_company_team_member (team_id, user_id, team_leader, creation_date, updated_date)
             VALUES (?, ?, ?, NOW(), NOW())
             ON DUPLICATE KEY UPDATE 
               team_leader = VALUES(team_leader),
@@ -2153,7 +2153,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-            UPDATE hots.m_team_member 
+            UPDATE hots.m_company_team_member 
             SET team_leader = ?, updated_date = NOW() 
             WHERE team_member_id = ? AND finished_date IS NULL
         `, [team_leader, id]);
@@ -2182,7 +2182,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-            DELETE FROM hots.m_team_member 
+            DELETE FROM hots.m_company_team_member 
             WHERE team_id = ? AND user_id = ?
           `, [team_id, user_id]);
 
@@ -2218,7 +2218,7 @@ module.exports = {
                 CASE WHEN d.finished_date IS NOT NULL THEN 1 ELSE 0 END as is_deleted,
                 d.description,
                 d.created_date
-                FROM hots.m_department AS d
+                FROM hots.m_company_department AS d
                 LEFT JOIN hots.user AS u
                 ON u.user_id = d.department_head
                 ORDER BY d.department_name ASC;
@@ -2249,7 +2249,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-            INSERT INTO hots.m_department (
+            INSERT INTO hots.m_company_department (
                 department_name, 
                 department_shortname, 
                 department_head, 
@@ -2286,7 +2286,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-            UPDATE hots.m_department 
+            UPDATE hots.m_company_department 
             SET 
                 department_name = ?, 
                 department_shortname = ?, 
@@ -2321,7 +2321,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-            UPDATE hots.m_department 
+            UPDATE hots.m_company_department 
             SET finished_date = NOW() 
             WHERE department_id = ? AND finished_date IS NULL
         `, [id]);
@@ -2350,7 +2350,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-            INSERT INTO hots.m_team (team_name, department_id, description, created_date) 
+            INSERT INTO hots.m_company_team (team_name, department_id, description, created_date) 
             VALUES (?, ?, ?, NOW())
         `, [team_name, department_id, description]);
 
@@ -2382,7 +2382,7 @@ module.exports = {
 
         try {
             const [result] = await dbHots.promise().query(`
-            UPDATE hots.m_team 
+            UPDATE hots.m_company_team 
             SET 
                 team_name = ?, 
                 department_id = ?, 
@@ -2428,10 +2428,10 @@ module.exports = {
                     u.firstname as leader_firstname,
                     u.lastname as leader_lastname,
                     COUNT(tm.user_id) as member_count
-                FROM hots.m_team t
-                LEFT JOIN hots.m_department d ON t.department_id = d.department_id
+                FROM hots.m_company_team t
+                LEFT JOIN hots.m_company_department d ON t.department_id = d.department_id
                 LEFT JOIN hots.user u ON t.team_leader = u.user_id
-                LEFT JOIN hots.m_team_member tm ON t.team_id = tm.team_id AND tm.finished_date IS NULL
+                LEFT JOIN hots.m_company_team_member tm ON t.team_id = tm.team_id AND tm.finished_date IS NULL
                 WHERE t.department_id = ? AND t.finished_date IS NULL
                 GROUP BY t.team_id, t.team_name, t.team_shortname, t.team_leader, t.description, t.department_id, d.department_name, u.firstname, u.lastname
                 ORDER BY t.team_name
@@ -2478,7 +2478,7 @@ module.exports = {
             FROM t_ticket t
             LEFT JOIN t_ticket_detail d ON d.ticket_id = t.ticket_id
             LEFT JOIN user u ON u.user_id = t.created_by
-            LEFT JOIN m_department dpt ON u.department_id = dpt.department_id
+            LEFT JOIN m_company_department dpt ON u.department_id = dpt.department_id
             WHERE t.service_id = 13
             GROUP BY t.ticket_id
             HAVING 
@@ -2532,7 +2532,7 @@ module.exports = {
                 FROM t_ticket t
                 LEFT JOIN t_ticket_detail d ON d.ticket_id = t.ticket_id
                 LEFT JOIN user u ON u.user_id = t.created_by
-                LEFT JOIN m_department dpt ON u.department_id = dpt.department_id
+                LEFT JOIN m_company_department dpt ON u.department_id = dpt.department_id
                 WHERE t.service_id = 13
                 GROUP BY t.ticket_id
                 HAVING

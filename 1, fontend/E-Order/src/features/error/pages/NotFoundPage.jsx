@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useState } from "react";
 import { Image, Text, Spinner, useToast } from "@chakra-ui/react";
+import emptyBoxImg from "../../../assets/images/emptybox.PNG";
 import { useNavigate, useLocation } from "react-router-dom";
 import Axios from "axios";
 import { API_URL } from "../../../config";
@@ -121,7 +122,7 @@ const NotFoundPage = (props) => {
               width="95%"
               maxWidth="250px"
               maxHeight="260px"
-              src={require("../../../assets/images/emptybox.PNG")}
+              src={emptyBoxImg}
             />
           </div>
           <div className="d-flex justify-content-center">

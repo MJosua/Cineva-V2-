@@ -69,7 +69,7 @@ async function prepareSRFData(ticketId, { db, eventSnapshot = null }) {
         FROM t_ticket t
         LEFT JOIN user u ON t.created_by = u.user_id
         LEFT JOIN m_service m ON t.service_id = m.service_id
-        LEFT JOIN m_department d ON u.department_id = d.department_id
+        LEFT JOIN m_company_department d ON u.department_id = d.department_id
         WHERE t.ticket_id = ?
     `;
     const ticketRows = await query(ticketSql, [ticketId]);
@@ -377,8 +377,8 @@ async function prepareCardData(entityId, { db, eventSnapshot = null }) {
                 u.jobtitle_id, j.job_title as job_title_name,
                 u.department_id, d.department_name
             FROM user u
-            LEFT JOIN m_job_title j ON u.jobtitle_id = j.jobtitle_id
-            LEFT JOIN m_department d ON u.department_id = d.department_id
+            LEFT JOIN m_company_job_title j ON u.jobtitle_id = j.jobtitle_id
+            LEFT JOIN m_company_department d ON u.department_id = d.department_id
             WHERE u.user_id = ?
          `;
         const [rows] = await query(userSql, [entityId]);

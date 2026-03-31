@@ -213,7 +213,7 @@
     "foreign_keys": [],
     "raw": "`id` int NOT NULL AUTO_INCREMENT,\n  `key_name` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `schema` json DEFAULT NULL,\n  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `key_name` (`key_name`)"
   },
-  "m_cms_page": {
+  "cms_m_page": {
     "file": "dump-hots-202512041039.sql",
     "columns": [
       {
@@ -684,7 +684,7 @@
     ],
     "raw": "`id` int NOT NULL AUTO_INCREMENT,\n  `title` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `description` text COLLATE utf8mb4_unicode_ci,\n  `icon` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'AppWindow',\n  `path` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `type` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `roles_allowed` json NOT NULL DEFAULT (_utf8mb4'[]'),\n  `department_scope` json NOT NULL DEFAULT (_utf8mb4'[]'),\n  `is_active` tinyint(1) DEFAULT '1',\n  `order_index` int DEFAULT '0',\n  `created_by` int DEFAULT NULL,\n  `updated_by` int DEFAULT NULL,\n  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  `category_id` int DEFAULT NULL,\n  `related_service_id` int DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `fk_dashboard_category` (`category_id`),\n  CONSTRAINT `fk_dashboard_category` FOREIGN KEY (`category_id`) REFERENCES `m_dashboard_category` (`id`) ON DELETE SET NULL"
   },
-  "m_department": {
+  "m_company_department": {
     "file": "dump-hots-202512041039.sql",
     "columns": [
       {
@@ -1239,7 +1239,7 @@
     "foreign_keys": [],
     "raw": "`type_id` int NOT NULL,\n  `system_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `system_shortname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `system_description` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `creation_date` date DEFAULT NULL,\n  `finished_date` date DEFAULT NULL,\n  PRIMARY KEY (`type_id`)"
   },
-  "m_job_title": {
+  "m_company_job_title": {
     "file": "dump-hots-202512041039.sql",
     "columns": [
       {
@@ -2093,7 +2093,7 @@
     "foreign_keys": [],
     "raw": "`type_id` int NOT NULL AUTO_INCREMENT,\n  `type_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `type_description` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `creation_date` date DEFAULT NULL,\n  `finished_date` date DEFAULT NULL,\n  PRIMARY KEY (`type_id`)"
   },
-  "m_team": {
+  "m_company_team": {
     "file": "dump-hots-202512041039.sql",
     "columns": [
       {
@@ -2138,7 +2138,7 @@
       },
       {
         "name": "CONSTRAINT",
-        "definition": "`Team_FK` FOREIGN KEY (`department_id`) REFERENCES `m_department` (`department_id`)"
+        "definition": "`Team_FK` FOREIGN KEY (`department_id`) REFERENCES `m_company_department` (`department_id`)"
       }
     ],
     "primary_key": [
@@ -2150,7 +2150,7 @@
         "columns": [
           "department_id"
         ],
-        "ref_table": "m_department",
+        "ref_table": "m_company_department",
         "ref_columns": [
           "department_id"
         ]
@@ -2160,15 +2160,15 @@
         "columns": [
           "department_id"
         ],
-        "ref_table": "m_department",
+        "ref_table": "m_company_department",
         "ref_columns": [
           "department_id"
         ]
       }
     ],
-    "raw": "`team_id` int NOT NULL AUTO_INCREMENT,\n  `team_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `department_id` int DEFAULT NULL,\n  `created_date` date DEFAULT NULL,\n  `finished_date` date DEFAULT NULL,\n  `description` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `updated_date` datetime DEFAULT NULL,\n  `team_shortname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  PRIMARY KEY (`team_id`),\n  KEY `Team_FK` (`department_id`),\n  CONSTRAINT `Team_FK` FOREIGN KEY (`department_id`) REFERENCES `m_department` (`department_id`)"
+    "raw": "`team_id` int NOT NULL AUTO_INCREMENT,\n  `team_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `department_id` int DEFAULT NULL,\n  `created_date` date DEFAULT NULL,\n  `finished_date` date DEFAULT NULL,\n  `description` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `updated_date` datetime DEFAULT NULL,\n  `team_shortname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  PRIMARY KEY (`team_id`),\n  KEY `Team_FK` (`department_id`),\n  CONSTRAINT `Team_FK` FOREIGN KEY (`department_id`) REFERENCES `m_company_department` (`department_id`)"
   },
-  "m_team_member": {
+  "m_company_team_member": {
     "file": "dump-hots-202512041039.sql",
     "columns": [
       {
@@ -2216,7 +2216,7 @@
       "member_id"
     ],
     "foreign_keys": [],
-    "raw": "`member_id` int NOT NULL AUTO_INCREMENT,\n  `team_id` int DEFAULT NULL,\n  `user_id` int DEFAULT NULL,\n  `member_desc` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `creation_date` timestamp NULL DEFAULT NULL,\n  `finished_date` datetime DEFAULT NULL,\n  `team_leader` int DEFAULT NULL,\n  `updated_date` datetime DEFAULT NULL,\n  `finished_marker` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  PRIMARY KEY (`member_id`),\n  UNIQUE KEY `m_team_member_unique` (`team_id`,`user_id`)"
+    "raw": "`member_id` int NOT NULL AUTO_INCREMENT,\n  `team_id` int DEFAULT NULL,\n  `user_id` int DEFAULT NULL,\n  `member_desc` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `creation_date` timestamp NULL DEFAULT NULL,\n  `finished_date` datetime DEFAULT NULL,\n  `team_leader` int DEFAULT NULL,\n  `updated_date` datetime DEFAULT NULL,\n  `finished_marker` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  PRIMARY KEY (`member_id`),\n  UNIQUE KEY `m_company_team_member_unique` (`team_id`,`user_id`)"
   },
   "m_ticket_status": {
     "file": "dump-hots-202512041039.sql",
@@ -2350,7 +2350,7 @@
     "foreign_keys": [],
     "raw": "`log_id` bigint NOT NULL AUTO_INCREMENT,\n  `ticket_id` bigint DEFAULT NULL,\n  `user_id` int DEFAULT NULL,\n  `action` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `time_stamp` datetime DEFAULT NULL,\n  PRIMARY KEY (`log_id`)"
   },
-  "t_cms_page_log": {
+  "cms_t_page_log": {
     "file": "dump-hots-202512041039.sql",
     "columns": [
       {

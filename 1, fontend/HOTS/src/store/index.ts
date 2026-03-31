@@ -15,6 +15,8 @@ import srf_todaysweekReducer from './slices/srf_todaysweekSlice';
 import dashboardReducer from "./slices/dashboardSlice";
 import meetingroomReducer from "./slices/meetingroom_slice";
 import assignmentReducer from "./slices/assignmentSlice";
+import inventoryReducer from "./slices/inventorySlice";
+import sidebarReducer from "./slices/sidebarSlice";
 
 export const store = configureStore({
   reducer: {
@@ -39,6 +41,8 @@ export const store = configureStore({
 
     meetingroom: meetingroomReducer,
     assignment: assignmentReducer,
+    inventory: inventoryReducer,
+    sidebar: sidebarReducer,
   },
 });
 

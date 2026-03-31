@@ -2,27 +2,24 @@
  * core/transaction/types/inventory.js
  * 
  * Transaction type handler for Inventory Management.
- * Template for future Inventory implementation.
- * 
- * @module transaction-types/inventory
+ * Implements multi-location stock tracking in resource_m_data attributes.
  */
+
+const { dbHots } = require('../../../config/db');
 
 const InventoryType = {
     name: 'inventory',
 
     /**
      * Validate inventory transaction before execution
-     * @param {object} context - { user_id, operation, items, warehouse_id, ... }
-     * @param {TransactionManager} manager
+     * @param {object} context - { user_id, operation, items: [{id, location_id, quantity}], ... }
      */
     async validate(context, manager) {
-        const { user_id, operation, items } = context;
+        const { user_id, operation, items, force_allow_out_of_stock } = context;
 
-        if (!user_id) {
-            throw new Error('Inventory requires user_id');
-        }
-
-        const validOperations = ['receive', 'issue', 'transfer', 'adjust', 'count'];
+        if (!user_id) throw new Error('Inventory requires user_id');
+        
+        const validOperations = ['receive', 'issue', 'adjust', 'transfer'];
         if (!operation || !validOperations.includes(operation)) {
             throw new Error(`Inventory requires operation: ${validOperations.join(', ')}`);
         }
@@ -31,84 +28,125 @@ const InventoryType = {
             throw new Error('Inventory requires items array');
         }
 
-        // Validate each item
         for (const item of items) {
-            if (!item.product_id) {
-                throw new Error('Each item requires product_id');
+            if (operation === 'transfer') {
+                if (!item.from_location_id || !item.to_location_id) {
+                    throw new Error('Transfer requires from_location_id and to_location_id');
+                }
+            } else {
+                if (!item.location_id) {
+                    throw new Error(`Operation ${operation} requires location_id`);
+                }
             }
-            if (operation !== 'count' && (!item.quantity || item.quantity <= 0)) {
-                throw new Error('Each item requires positive quantity');
+
+            const itemId = item.id || item.product_id;
+            const requestedQty = parseInt(item.quantity) || 0;
+
+            // Check stock if decrementing
+            if ((operation === 'issue' || operation === 'transfer') && !force_allow_out_of_stock) {
+                const sourceLocId = operation === 'transfer' ? item.from_location_id : item.location_id;
+                
+                const [rows] = await dbHots.promise().query(
+                    "SELECT resource_label, attributes FROM resource_m_data WHERE id = ?",
+                    [itemId]
+                );
+
+                if (rows.length === 0) throw new Error(`Item ID ${itemId} not found`);
+                
+                const attr = rows[0].attributes || {};
+                const stocks = attr.stocks || {};
+                const currentStockAtLoc = parseInt(stocks[sourceLocId]) || 0;
+                
+                if (currentStockAtLoc < requestedQty) {
+                    throw new Error(`Insufficient stock for ${rows[0].resource_label} at selected location. Available: ${currentStockAtLoc}, Requested: ${requestedQty}`);
+                }
             }
         }
-
-        // TODO: Validate warehouse access
-        // TODO: Validate stock availability for issue/transfer
 
         return true;
     },
 
     /**
      * Execute inventory transaction
-     * @param {object} context - Validated context
-     * @param {TransactionManager} manager
-     * @returns {object} Result with transaction_id
      */
     async execute(context, manager) {
-        const { user_id, operation, items, warehouse_id, notes } = context;
+        const { user_id, operation, items, connection, notes } = context;
+        const p = connection || dbHots.promise();
 
-        console.log(`📦 [TX:Inventory] ${operation.toUpperCase()} operation for ${items.length} items by user ${user_id}`);
+        console.log(`📦 [TX:Inventory] ${operation.toUpperCase()} multi-location operation`);
 
-        // TODO: Implement actual inventory logic
-        // 1. Generate transaction ID
-        // 2. Create inventory header
-        // 3. Process each item:
-        //    - receive: Add to stock
-        //    - issue: Deduct from stock
-        //    - transfer: Move between warehouses
-        //    - adjust: Set stock level
-        //    - count: Record physical count
-        // 4. Update stock levels
-        // 5. Create audit trail
+        const results = [];
+        const transaction_id = `INV-${operation.toUpperCase()}-${Date.now()}`;
 
-        // Placeholder result
-        const result = {
-            ok: true,
-            transaction_id: `INV-${operation.toUpperCase()}-${Date.now()}`,
-            operation,
-            items_count: items.length,
-            total_quantity: items.reduce((sum, item) => sum + (item.quantity || 0), 0),
-            warehouse_id: warehouse_id || 'default',
-            status: 'completed',
-            message: 'Inventory type is a template - implement actual logic'
+        for (const item of items) {
+            const itemId = item.id || item.product_id;
+            const qty = parseInt(item.quantity) || 0;
+            
+            const [rows] = await p.query("SELECT attributes FROM resource_m_data WHERE id = ?", [itemId]);
+            if (rows.length === 0) throw new Error(`Item ${itemId} not found`);
+
+            let attr = rows[0].attributes || {};
+            if (!attr.stocks) attr.stocks = {};
+            
+            // Migrate legacy current_stock if it exists but stocks doesn't
+            if (attr.current_stock !== undefined && Object.keys(attr.stocks).length === 0) {
+                attr.stocks['DEFAULT'] = parseInt(attr.current_stock) || 0;
+                delete attr.current_stock;
+            }
+
+            if (operation === 'transfer') {
+                const { from_location_id, to_location_id } = item;
+                attr.stocks[from_location_id] = (parseInt(attr.stocks[from_location_id]) || 0) - qty;
+                attr.stocks[to_location_id] = (parseInt(attr.stocks[to_location_id]) || 0) + qty;
+                
+                // Log transfer out
+                await p.query(
+                    `INSERT INTO resource_t_log (transaction_id, resource_id, location_id, operation, quantity, current_stock_snapshot, user_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [transaction_id, itemId, from_location_id, 'transfer_out', qty, attr.stocks[from_location_id], user_id, notes || 'Inter-location transfer']
+                );
+                
+                // Log transfer in
+                await p.query(
+                    `INSERT INTO resource_t_log (transaction_id, resource_id, location_id, operation, quantity, current_stock_snapshot, user_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [transaction_id, itemId, to_location_id, 'transfer_in', qty, attr.stocks[to_location_id], user_id, notes || 'Inter-location transfer']
+                );
+            } else {
+                if (operation === 'receive') {
+                    attr.stocks[item.location_id] = (parseInt(attr.stocks[item.location_id]) || 0) + qty;
+                } else if (operation === 'issue') {
+                    attr.stocks[item.location_id] = (parseInt(attr.stocks[item.location_id]) || 0) - qty;
+                } else if (operation === 'adjust') {
+                    attr.stocks[item.location_id] = qty; // Absolute count
+                }
+                
+                // Log standard operation
+                await p.query(
+                    `INSERT INTO resource_t_log (transaction_id, resource_id, location_id, operation, quantity, current_stock_snapshot, user_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [transaction_id, itemId, item.location_id, operation, qty, attr.stocks[item.location_id], user_id, notes || 'Stock update']
+                );
+            }
+
+            // Recalculate total_stock for quick lookup
+            attr.total_stock = Object.values(attr.stocks).reduce((sum, val) => sum + (parseInt(val) || 0), 0);
+
+            const [res] = await p.execute(
+                "UPDATE resource_m_data SET attributes = ? WHERE id = ?",
+                [JSON.stringify(attr), itemId]
+            );
+            
+            results.push({ id: itemId, affectedRows: res.affectedRows, operation });
+        }
+
+        return { 
+            ok: true, 
+            transaction_id, 
+            operation, 
+            results 
         };
-
-        console.log(`📦 [TX:Inventory] Transaction created: ${result.transaction_id}`);
-        return result;
     },
 
-    /**
-     * Post-commit hook
-     */
-    async afterCommit(context, result, manager) {
-        console.log(`📧 [TX:Inventory] Post-commit: Update reports, notify warehouse`);
-
-        // TODO: Implement
-        // - Update stock reports
-        // - Notify warehouse team
-        // - Check reorder points
-        // - Trigger replenishment if needed
-    },
-
-    /**
-     * Rollback hook
-     */
     async rollback(context, result, manager) {
-        console.log(`🔄 [TX:Inventory] Rolling back transaction ${result?.transaction_id}`);
-
-        // TODO: Implement
-        // - Reverse stock changes
-        // - Delete transaction records
-        // - Update audit trail
+        console.log(`🔄 [TX:Inventory] Rollback handled by DB transaction`);
     }
 };
 

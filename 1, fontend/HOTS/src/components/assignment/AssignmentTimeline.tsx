@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Send, Clock, FileText, Activity, RefreshCw, Paperclip, X, File as FileIcon, FilePieChart, Archive, FileDown, Loader2 } from 'lucide-react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import ImagePreviewModal from '@/components/modals/ImagePreviewModal';
+import { TicketPagination } from '@/components/ui/TicketPagination';
 
 // ── Unified entry type ──────────────────────────────────────────────
 interface UnifiedEntry {
@@ -38,6 +39,7 @@ interface AssignmentTimelineProps {
     assignmentId: number | string;
     ticketId: string;
     readOnly?: boolean;
+    pageSize?: number;
 }
 
 const statusEmoji = (s?: string) => {
@@ -46,9 +48,11 @@ const statusEmoji = (s?: string) => {
     return '⬜';
 };
 
-const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId, ticketId, readOnly = false }) => {
+const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId, ticketId, readOnly = false, pageSize = 10 }) => {
     const [entries, setEntries] = useState<UnifiedEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
     const [submitting, setSubmitting] = useState(false);
     const [content, setContent] = useState('<p></p>');
     const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -60,7 +64,10 @@ const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId, t
     const { toast } = useToast();
     const { sseSignals } = useAppSelector(state => state.tickets);
 
-    useEffect(() => { fetchAll(); }, [assignmentId]);
+    useEffect(() => { 
+        setCurrentPage(1); 
+        fetchAll(1); 
+    }, [assignmentId]);
 
     useEffect(() => {
         if (sseSignals?.assignment) {
@@ -69,16 +76,21 @@ const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId, t
         }
     }, [sseSignals?.assignment]);
 
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+        fetchAll(page);
+    };
+
     // ── Fetch both sources & merge ──────────────────────────────────
-    const fetchAll = async () => {
+    const fetchAll = async (page = currentPage) => {
         setLoading(true);
         const token = localStorage.getItem('hots_tokek');
         const headers = { Authorization: `Bearer ${token}` };
 
         try {
             const [timelineRes, reportsRes] = await Promise.allSettled([
-                axios.get(`${API_URL}/engine/assignment/${assignmentId}/timeline`, { headers }),
-                axios.get(`${API_URL}/engine/report/card-reports/${assignmentId}`, { headers })
+                axios.get(`${API_URL}/engine/assignment/${assignmentId}/timeline?limit=${pageSize}&page=${page}`, { headers }),
+                axios.get(`${API_URL}/engine/report/card-reports/${assignmentId}?limit=${pageSize}&page=${page}`, { headers })
             ]);
 
             // Manual timeline posts
@@ -115,9 +127,14 @@ const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId, t
 
             // Merge & sort newest first
             const merged = [...manualPosts, ...cardReports]
-                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .slice(0, pageSize); // Keep consistent with requested page size
 
+            const totalT = timelineRes.status === 'fulfilled' ? timelineRes.value.data.total || 0 : 0;
+            const totalR = reportsRes.status === 'fulfilled' ? reportsRes.value.data.total || 0 : 0;
+            
             setEntries(merged);
+            setTotalItems(totalT + totalR);
         } catch (e) {
             console.error('[TIMELINE] fetchAll error:', e);
         } finally {
@@ -409,6 +426,32 @@ const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId, t
                         </div>
                     </div>
                 )}
+                {/* Header for read-only / compact mode */}
+                {readOnly && (
+                    <div className="flex flex-col gap-2 mb-2 p-2 bg-white rounded-md border border-slate-100 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                                <Activity className="w-4 h-4 text-blue-500" />
+                                Timeline Updates
+                            </h3>
+                            {totalItems > pageSize && (
+                                <div className="text-[10px] text-muted-foreground bg-slate-100 px-2 py-0.5 rounded-full font-medium">
+                                    Page {currentPage}/{Math.ceil(totalItems / pageSize)}
+                                </div>
+                            )}
+                        </div>
+                        {totalItems > pageSize && (
+                            <div className="scale-[0.8] origin-left -ml-2 -mb-2 border-t pt-1">
+                                <TicketPagination
+                                    currentPage={currentPage}
+                                    totalPages={Math.ceil(totalItems / pageSize)}
+                                    totalItems={totalItems}
+                                    onPageChange={handlePageChange}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Unified Timeline List */}
                 <div className="space-y-3 relative z-0">
@@ -549,6 +592,16 @@ const AssignmentTimeline: React.FC<AssignmentTimelineProps> = ({ assignmentId, t
                                     </div>
                                 ));
                             })()}
+                        </div>
+                    )}
+                    {totalItems > pageSize && (
+                        <div className="mt-4 pt-4 border-t px-4 pb-4">
+                            <TicketPagination
+                                currentPage={currentPage}
+                                totalPages={Math.ceil(totalItems / pageSize)}
+                                totalItems={totalItems}
+                                onPageChange={handlePageChange}
+                            />
                         </div>
                     )}
                 </div>

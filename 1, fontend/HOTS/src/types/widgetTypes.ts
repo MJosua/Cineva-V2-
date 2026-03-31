@@ -34,7 +34,7 @@ export interface WidgetProps {
   setGlobalValues?: React.Dispatch<React.SetStateAction<Record<string, any>>>;
   userData?: Record<string, any>;
   serviceId?: string | number;
-
+  value?: any;
 }
 
 export interface WidgetConfig extends WidgetPreset {

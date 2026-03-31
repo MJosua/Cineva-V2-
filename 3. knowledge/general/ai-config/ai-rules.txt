@@ -16,4 +16,9 @@
    - Update `knowledge/sql/relations.json` if adding foreign keys
    - This keeps the knowledge folder as the source of truth for expected schema
 10. MIGRATION SCRIPTS: When adding tables/columns, also provide the ALTER TABLE or CREATE TABLE SQL statement for the user to run.
-
+11. CMS AUTO-DOCUMENTATION: After completing every significant feature, major bugfix, or architectural shift, the AI MUST create a corresponding "System Update" post in the CMS (hots.cms_m_page):
+    - module_key: 'update' (Technical/System) or 'guide' (New User Feature).
+    - category_id: '1' (Updates) or '2' (Guides).
+    - Content: Use professional titles and `richtext` blocks with `**bold**` and `` `code` ``.
+    - Status: Set to 'published'. 
+    - Purpose: Maintains a "living changelog" visible to the user at `/help/faq`.

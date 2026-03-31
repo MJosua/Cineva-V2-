@@ -389,7 +389,8 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
     // If internal booking is enabled, open the booking modal (Skip if in Kiosk View as it's handled by Standalone Parent)
     if (enableBooking && !isKioskView) {
       setPurpose("");
-      setPIC("");
+      // Auto-fill PIC from logged in user (Prefer UID as requested)
+      setPIC(user?.uid || user?.user_name || user?.firstname || "");
       setShowBookingModal(true);
     }
   };
@@ -775,6 +776,7 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
                     value={PIC}
                     onChange={(e) => setPIC(e.target.value)}
                     className="bg-gray-50/50"
+                    disabled={!isKioskView && !!user} // Disable if logged in (user is always PIC)
                   />
                 </div>
 
@@ -811,8 +813,10 @@ const GanttRoomUsage: React.FC<GanttRoomUsageProps> = ({ formData = {}, setGloba
                           end_time: { type: "field", label: "End Time", value: userSelection.end, field_id: "end_time_field" },
                           purpose: { type: "field", label: "Purpose of Meeting", value: purpose, field_id: "purpose_field" },
                           PIC: { type: "field", label: "PIC", value: PIC, field_id: "PIC_field" },
+                          PIC_user_id: { type: "field", label: "PIC User ID", value: String(user?.user_id || ""), field_id: "PIC_user_id_field" },
                           requested_by: { type: "field", label: "Requested By", value: user?.firstname || "User", field_id: "requested_by_field" }
-                        }
+                        },
+                        request_source: "HOTS"
                       };
 
                       await axios.post(`${API_URL}/hots_ticket/create/ticket/13`, payload, {

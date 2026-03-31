@@ -59,6 +59,21 @@ const TeamManagement = () => {
     return department ? department.department_name : 'Unknown Department';
   };
 
+  const getCollaboratorNames = (collaboratorJson: any) => {
+    if (!collaboratorJson) return [];
+    try {
+      const collabIds = typeof collaboratorJson === 'string' ? JSON.parse(collaboratorJson) : collaboratorJson;
+      if (!Array.isArray(collabIds)) return [];
+      return collabIds.map((id: number) => {
+        const dept = departments.find(d => d.department_id === id);
+        return dept ? dept.department_name : null;
+      }).filter(Boolean);
+    } catch (e) {
+      console.error("Error parsing collaborators:", e);
+      return [];
+    }
+  };
+
   const getStatusBadge = (team: Team) => {
     const isActive = !team.finished_date;
     return isActive ? (
@@ -229,7 +244,20 @@ const TeamManagement = () => {
                   {filteredTeams.sort((a, b) => a.team_name.localeCompare(b.team_name)).map((team) => (
                     <TableRow key={team.team_id}>
                       <TableCell className="font-medium">{highlightText(team.team_name, searchValue)}</TableCell>
-                      <TableCell>{getDepartmentName(team.department_id)}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col space-y-1">
+                          <div className="flex items-center gap-1">
+                            <Badge className="bg-blue-600 text-white hover:bg-blue-700">{getDepartmentName(team.department_id)}</Badge>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {getCollaboratorNames(team.department_collaborator).map((name: string, i: number) => (
+                              <Badge key={i} variant="outline" className="text-[10px] font-normal px-1 py-0 h-4 border-gray-300">
+                                {name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">{team.member_count || 0} members</Badge>
                       </TableCell>

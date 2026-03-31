@@ -5,7 +5,7 @@ module.exports = {
   getAllProjectTemplates: async (req, res) => {
     try {
       const { category, active = 'true' } = req.query;
-      
+
       let query = `
         SELECT 
           pt.*,
@@ -38,8 +38,8 @@ module.exports = {
       });
     } catch (error) {
       console.error('Error fetching project templates:', error);
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         error: 'Failed to fetch project templates',
         data: [],
         packet: []
@@ -50,7 +50,7 @@ module.exports = {
   getTemplatesByCategory: async (req, res) => {
     try {
       const { category } = req.params;
-      
+
       const [templates] = await dbPMS.promise().execute(`
         SELECT 
           pt.*,
@@ -71,8 +71,8 @@ module.exports = {
       });
     } catch (error) {
       console.error('Error fetching templates by category:', error);
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         error: 'Failed to fetch templates by category',
         data: [],
         packet: []
@@ -95,8 +95,8 @@ module.exports = {
       `, [id]);
 
       if (templateResult.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
+        return res.status(404).json({
+          success: false,
           error: 'Project template not found',
           data: null,
           packet: null
@@ -123,8 +123,8 @@ module.exports = {
       });
     } catch (error) {
       console.error('Error fetching project template:', error);
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         error: 'Failed to fetch project template',
         data: null,
         packet: null
@@ -182,9 +182,9 @@ module.exports = {
       });
     } catch (error) {
       console.error('Error creating project template:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Failed to create project template' 
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create project template'
       });
     }
   },
@@ -201,9 +201,9 @@ module.exports = {
       `, [id]);
 
       if (template.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          error: 'Project template not found' 
+        return res.status(404).json({
+          success: false,
+          error: 'Project template not found'
         });
       }
 
@@ -259,7 +259,7 @@ module.exports = {
           d.department_name
         FROM pm.t_project p
         LEFT JOIN hots.user u ON p.manager_id = u.user_id
-        LEFT JOIN hots.m_department d ON p.department_id = d.department_id
+        LEFT JOIN hots.m_company_department d ON p.department_id = d.department_id
         WHERE p.project_id = ?
       `, [projectId]);
 
@@ -271,9 +271,9 @@ module.exports = {
       });
     } catch (error) {
       console.error('Error creating project from template:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Failed to create project from template' 
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create project from template'
       });
     }
   },
@@ -306,9 +306,9 @@ module.exports = {
       });
     } catch (error) {
       console.error('Error updating project template:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Failed to update project template' 
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update project template'
       });
     }
   },
@@ -331,9 +331,9 @@ module.exports = {
       });
     } catch (error) {
       console.error('Error deleting project template:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Failed to delete project template' 
+      res.status(500).json({
+        success: false,
+        error: 'Failed to delete project template'
       });
     }
   }

@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
 interface ProtectedRouteProps {
@@ -9,13 +8,18 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated, token } = useAppSelector((state) => state.auth);
+  const location = useLocation();
   
   // Check both Redux state and localStorage for authentication
   const localToken = localStorage.getItem('hots_tokek');
   const isAuth = isAuthenticated && (token || localToken);
   
   if (!isAuth) {
-    return <Navigate to="/login" replace />;
+    // Save current path to redirect back after login
+    const searchParams = new URLSearchParams();
+    searchParams.set('redirect', location.pathname + location.search);
+    
+    return <Navigate to={`/login?${searchParams.toString()}`} replace />;
   }
 
   return <>{children}</>;

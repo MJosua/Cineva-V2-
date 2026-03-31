@@ -278,8 +278,10 @@ export const useCatalogData = () => {
   };
 
   // Fetch data from API
-  const fetchData = () => {
-    dispatch(fetchCatalogData());
+  const fetchData = (force = false) => {
+    if (force || serviceCatalog.length === 0) {
+      dispatch(fetchCatalogData());
+    }
   };
 
   // Helper functions

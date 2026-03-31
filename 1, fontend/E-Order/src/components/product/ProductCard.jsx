@@ -1,4 +1,5 @@
 ﻿import React from "react";
+import productImg from "../assets/images/indomie-mi-goreng-special.png";
 import {
 
     Box,
@@ -16,7 +17,7 @@ const ProductCard = () => {
                 <div className="row ">
                     <div className="col-3" >
                         <img className=""
-                            src={require('../assets/images/indomie-mi-goreng-special.png')}
+                            src={productImg}
                             width='100%' alt="container" />
                     </div>
                     <div className="col-9 text-start pe-1" >

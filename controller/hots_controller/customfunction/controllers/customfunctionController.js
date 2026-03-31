@@ -1895,7 +1895,7 @@ module.exports = {
             try {
                 const [result] = await dbHots.promise().query(`
                 SELECT GROUP_CONCAT(u.email) AS emails
-                FROM m_team_members tm
+                FROM m_company_team_members tm
                 JOIN user u ON tm.user_id = u.user_id
                 WHERE tm.team_id = ? AND tm.is_leader = 1
                 `, [teamId]);
@@ -2943,8 +2943,8 @@ module.exports = {
                 jt.job_title AS job_title_name,
                 d.department_name
                 FROM user u
-                LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
-                LEFT JOIN m_department d ON u.department_id = d.department_id
+                LEFT JOIN m_company_job_title jt ON u.jobtitle_id = jt.jobtitle_id
+                LEFT JOIN m_company_department d ON u.department_id = d.department_id
                 WHERE u.active = 1
                 AND (
                 CONCAT(u.firstname, ' ', u.lastname) LIKE ?

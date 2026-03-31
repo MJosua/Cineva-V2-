@@ -1,4 +1,12 @@
-﻿import React from "react";
+﻿// Polyfill for require to prevent production crashes from legacy code
+if (typeof window !== 'undefined' && typeof window.require === 'undefined') {
+    window.require = (path) => {
+        console.warn("require() called in browser (Vite):", path);
+        return path;
+    };
+}
+
+import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
 import App from "./App";

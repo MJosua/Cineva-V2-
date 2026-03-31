@@ -1,11 +1,11 @@
 # Decision Guide: Event CMS Schema Strategy
 
-## 1. Where to store the "Campaign"? (`EVENT_t_campaign` vs `m_cms_page`)
+## 1. Where to store the "Campaign"? (`EVENT_t_campaign` vs `cms_m_page`)
 
-You asked if we should use the existing `m_cms_page` instead of creating `EVENT_t_campaign`.
+You asked if we should use the existing `cms_m_page` instead of creating `EVENT_t_campaign`.
 
-### Analysis of `m_cms_page`
-If `m_cms_page` was designed for static content (Privacy Policy, About Us, dynamic landing pages), it likely has columns like:
+### Analysis of `cms_m_page`
+If `cms_m_page` was designed for static content (Privacy Policy, About Us, dynamic landing pages), it likely has columns like:
 *   `page_id`
 *   `slug`
 *   `content_json` (or blocks)
@@ -17,14 +17,14 @@ An Event is **MORE** than just a Page. It has:
 *   **Logic:** "One submission per person", "Winning Probability", "Prize Pool ID".
 *   **Workflow:** Needs approval before going live.
 
-### Decision: **Create `EVENT_t_campaign` but LINK it to `m_cms_page`** (or embedding).
+### Decision: **Create `EVENT_t_campaign` but LINK it to `cms_m_page`** (or embedding).
 
 **Option A: Separation of Concerns (Recommended)**
 *   `EVENT_t_campaign`: Stores the **Business Logic** (Dates, Rules, Ticket ID, Status).
-*   `m_cms_page`: Stores the **Visual Content** (Blocks, Images, Text).
-*   **Link:** `EVENT_t_campaign.page_id` -> `m_cms_page.page_id`.
+*   `cms_m_page`: Stores the **Visual Content** (Blocks, Images, Text).
+*   **Link:** `EVENT_t_campaign.page_id` -> `cms_m_page.page_id`.
 
-**Verdict:** **Go with `EVENT_t_campaign` + `m_cms_page`.**
+**Verdict:** **Go with `EVENT_t_campaign` + `cms_m_page`.**
 
 ---
 

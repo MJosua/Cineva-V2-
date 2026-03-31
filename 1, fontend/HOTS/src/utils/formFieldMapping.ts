@@ -1,5 +1,5 @@
 
-import { FormField, RowGroup, RowData } from '@/types/formTypes';
+import { FormField, FormSection, RowGroup, RowData } from '@/types/formTypes';
 
 export interface TicketColumnMapping {
   [key: string]: any; // cstm_col1, cstm_col2, etc.
@@ -143,7 +143,7 @@ export const mapUnifiedForm = (
 ) => {
   if (!data || !Array.isArray(items)) return [];
 
-  return items
+  const mappedItems = items
     .flatMap((item) => {
       if (!item || !item.data) return null;
 
@@ -206,67 +206,62 @@ export const mapUnifiedForm = (
         }
 
         // --- SECTION FIELD ---
-        case "section":
-          return {
-            id: item.id,
-            type: "section",
-            label: item.data.label || "Section",
-            fields: (item.data.fields || []).map((f) => ({
-              name: f.name,
-              value: data[f.name] ?? "",
-              selectedObject: selectedObjects[f.name] ?? null, // ✅ each sub-field gets its selectedObject
-            })),
-          };
+        case "section": {
+          const section = item.data as FormSection;
+          return (section.fields || []).map((f) => ({
+            id: `${item.id}_${f.name}`,
+            name: f.name,
+            label: f.label || f.name,
+            value: data[f.name] ?? "",
+            selectedObject: selectedObjects[f.name] ?? null,
+            type: "field",
+          }));
+        }
 
         // --- ROWGROUP FIELD ---
         case "rowgroup": {
-          const structure = item.data.structure || {};
-          const combinedMapping = structure.combinedMapping || null;
-          const defaultRows = item.data.rowGroup || [];
-          const inputRows = data[item.id] || defaultRows;
-
-          const rows = inputRows.map((row: any) => {
-            const resultRow: Record<string, any> = { id: row.id };
-
-            // 🔹 Copy all default columns
-            if ("firstValue" in row) resultRow.firstValue = row.firstValue;
-            if ("secondValue" in row) resultRow.secondValue = row.secondValue;
-            if ("thirdValue" in row) resultRow.thirdValue = row.thirdValue;
-
-            // 🔹 Handle combined mapping (e.g., "second_third")
-            if (combinedMapping) {
-              const [left, right] = combinedMapping.split("_");
-              const leftVal = row[`${left}Value`] ?? row[left] ?? "";
-              const rightVal = row[`${right}Value`] ?? row[right] ?? "";
-              if (leftVal || rightVal) {
-                resultRow.combinedValue = `${leftVal} ${rightVal}`.trim();
-              }
-            }
-
-            return resultRow;
-          });
-
-          return {
+          const rowGroup = item.data as any;
+          const rows = rowGroup.rowGroup || [];
+          return [{
             id: item.id,
+            name: item.id,
             type: "rowgroup",
             label: item.data.label || "Row Group",
             rows,
-            combinedMapping,
-          };
+            value: "",
+            selectedObject: null,
+          }];
         }
 
         // --- DEFAULT FALLBACK ---
-        default:
+        default: {
           const name = item.id;
-          return {
+          return [{
             id: item.id,
+            name: item.id,
+            label: item.id,
             type: item.type,
             value: data[item.id] ?? "",
             selectedObject: selectedObjects[name] ?? null,
-          };
+          }];
+        }
       }
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .flat();
+
+  // 🚀 [WIDGET FALLBACK] Ensure qr_config is included if present in globalValues but not in items
+  if (data.qr_config && !mappedItems.some((m: any) => m.name === 'qr_config')) {
+    (mappedItems as any[]).push({
+      id: 'qr_config_auto',
+      name: 'qr_config',
+      label: 'QR Configuration',
+      value: data.qr_config,
+      selectedObject: null,
+    });
+  }
+
+  return mappedItems;
 };
 
 export const convertUnifiedToEngineEav = (unifiedItems) => {

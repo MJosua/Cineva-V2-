@@ -88,22 +88,22 @@
     "constraint": null
   },
   {
-    "from_table": "m_team",
+    "from_table": "m_company_team",
     "from_columns": [
       "department_id"
     ],
-    "to_table": "m_department",
+    "to_table": "m_company_department",
     "to_columns": [
       "department_id"
     ],
     "constraint": "Team_FK"
   },
   {
-    "from_table": "m_team",
+    "from_table": "m_company_team",
     "from_columns": [
       "department_id"
     ],
-    "to_table": "m_department",
+    "to_table": "m_company_department",
     "to_columns": [
       "department_id"
     ],

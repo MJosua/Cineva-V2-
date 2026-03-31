@@ -102,6 +102,18 @@ export const UnifiedFormStructureEditor: React.FC<UnifiedFormStructureEditorProp
           }
         };
         break;
+      case 'textblock':
+        newItem = {
+          id: `textblock-${Date.now()}`,
+          type: 'textblock',
+          order: items.length,
+          data: {
+            title: 'Instruction Text',
+            textType: 'subtext',
+            content: 'Enter instructional content',
+          } as import('@/types/formTypes').TextBlock
+        };
+        break;
     }
 
     onUpdate([...items, newItem]);
@@ -146,6 +158,12 @@ export const UnifiedFormStructureEditor: React.FC<UnifiedFormStructureEditorProp
       clonedItem.data = {
         ...specialfunc,
         title: `${specialfunc.title || 'function'} (Copy)`
+      };
+    } else if (item.type === 'textblock') {
+      const tb = item.data as import('@/types/formTypes').TextBlock;
+      clonedItem.data = {
+        ...tb,
+        title: `${tb.title || 'Instruction Text'} (Copy)`
       };
     }
 
@@ -399,6 +417,8 @@ export const UnifiedFormStructureEditor: React.FC<UnifiedFormStructureEditorProp
                   dbColumnIndex += 1; // just reserve one column for row group JSON
                 } else if (item.type === "specialfunc") {
                   dbColumnIndex += 1; // just reserve one column for row group JSON
+                } else if (item.type === "textblock") {
+                  // Text blocks don't consume database columns
                 }
 
                 // render inside Draggable
@@ -905,6 +925,52 @@ export const UnifiedFormStructureEditor: React.FC<UnifiedFormStructureEditorProp
               </div>
             </div>
           )}
+        </div>
+      );
+    } else if (item.type === 'textblock') {
+      const tb = item.data as import('@/types/formTypes').TextBlock;
+
+      return (
+        <div className="p-4 bg-gray-50 border-l-4 border-l-gray-500 rounded-lg shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div {...dragHandleProps} className="cursor-move">
+                <GripVertical className="w-4 h-4 text-gray-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">📝</span>
+                  <span className="font-medium text-gray-800">
+                    {tb.textType.toUpperCase() + ' TEXT'}
+                  </span>
+                  <div className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                    Instruction Block
+                  </div>
+                </div>
+                <div className="text-xs text-gray-600 truncate max-w-sm">
+                  {tb.content || 'No text content defined'}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => cloneItem(item)}
+                className="h-8 px-2"
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => removeItem(item.id)}
+                className="h-8 px-2 text-red-600 hover:text-red-700"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       );
     }

@@ -10,10 +10,10 @@ echo [1/3] cleanup previous zip (if exact match)...
 if exist %ZIP_NAME% del %ZIP_NAME%
 
 echo [2/3] Zipping important files...
-echo Including: config, controller, core, routers, service, middleware, script
+echo Including: app, bootstrap, config, controller, core, jobs, middleware, routers, script, server, service
 echo Including: index.js, package.json, package-lock.json, ecosystem.config.js
 
-powershell -Command "Compress-Archive -Path config, controller, core, routers, service, middleware, script, index.js, package.json, package-lock.json, ecosystem.config.js -DestinationPath %ZIP_NAME%"
+powershell -Command "Compress-Archive -Path app, bootstrap, config, controller, core, jobs, middleware, routers, script, server, service, index.js, package.json, package-lock.json, ecosystem.config.js -DestinationPath %ZIP_NAME%"
 
 echo [3/3] Done!
 echo.

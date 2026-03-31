@@ -37,7 +37,6 @@ const HeaderBar = (props) => {
                         <div className="row d-flex align-items-center bd-highlight"
                             onClick={() => navigate('/')}
                         >
-                            {/* <img className="col-3 m-0  " src={require('../assets/images/logo.png')} width='10%' alt="content" /> */}
                             <strong className="col-3 m-0 p-0">
                                 Qweeck
                             </strong>

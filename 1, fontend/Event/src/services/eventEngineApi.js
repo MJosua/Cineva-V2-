@@ -57,6 +57,7 @@ console.log("[EventEngine] Using API Mode (Forced):", !USE_MOCK);
 // Dynamic base URL — resolved by apiResolver.js on app startup (fast-failover).
 // See: src/utils/apiResolver.js
 import { getApiBase } from '../utils/apiResolver';
+export { getApiBase };
 const API_BASE = getApiBase();
 
 // Debounce flag so multiple concurrent 401s only fire one modal

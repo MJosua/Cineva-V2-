@@ -30,6 +30,7 @@ export interface SystemVariableContext {
   srf_po?: { po_number: string;[key: string]: any }[];
   srf_todaysweek?: { actualWeek: number;[key: string]: any }; // Changed from array to object
   meetingrooms?: { id: number; name?: string; room_name?: string; capacity?: number; location?: string }[];
+  inventory?: { id: number; resource_category: string; resource_label: string;[key: string]: any }[];
 }
 
 export const useSystemVariableContext = (): SystemVariableContext => {
@@ -37,7 +38,6 @@ export const useSystemVariableContext = (): SystemVariableContext => {
   const userManagement = useAppSelector(state => state.userManagement);
   //srf
   const srf = useAppSelector(state => state.srf);
-  console.log("srf", srf)
 
   const sku = useAppSelector(state => state.sku);
   const srf_purpose = useAppSelector(state => state.srf_purpose)
@@ -48,7 +48,7 @@ export const useSystemVariableContext = (): SystemVariableContext => {
 
   //meetingbook
   const meetingroom = useAppSelector((state) => state.meetingroom);
-
+  const inventoryData = useAppSelector((state: any) => state.inventory);
 
   const srf_todaysweek = useAppSelector(state => state.srf_todaysweek);
   return {
@@ -83,6 +83,7 @@ export const useSystemVariableContext = (): SystemVariableContext => {
     srf_po: (srf_po as any)?.data || {},
     srf_todaysweek: (srf_todaysweek as any)?.data || {},
     meetingrooms: meetingroom?.rooms || [],
+    inventory: inventoryData?.items || [],
   };
 
 
@@ -116,6 +117,12 @@ export const SYSTEM_VARIABLE_ENTRIES: SystemVariableEntry[] = [
     key: '${user.department}',
     type: 'string',
     description: 'Department name of the current user',
+    resolve: (ctx) => ctx.user?.department_name || '',
+  },
+  {
+    key: '${user_department}',
+    type: 'string',
+    description: 'Department name of the current user (alias)',
     resolve: (ctx) => ctx.user?.department_name || '',
   },
   {
@@ -263,6 +270,20 @@ export const SYSTEM_VARIABLE_ENTRIES: SystemVariableEntry[] = [
         item_name: room.room_name || (room as any).name || "Unnamed Room",
         filter: room.id,
       }));
+    },
+  },
+  {
+    key: '${posm_item_list}',
+    type: 'array[]',
+    description: 'Dynamic list of POSM inventory items for request forms',
+    resolve: (ctx) => {
+      if (!Array.isArray(ctx.inventory)) return [];
+      return ctx.inventory
+        .filter(item => item.resource_category === 'posm')
+        .map(item => ({
+          item_name: item.resource_label,
+          filter: item.id.toString(),
+        }));
     },
   },
 ];

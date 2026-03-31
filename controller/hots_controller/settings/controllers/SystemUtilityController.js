@@ -25,7 +25,7 @@ module.exports = {
                 FROM t_ticket t
                 LEFT JOIN t_ticket_detail d ON d.ticket_id = t.ticket_id
                 LEFT JOIN user u ON u.user_id = t.created_by
-                LEFT JOIN m_department dpt ON u.department_id = dpt.department_id
+                LEFT JOIN m_company_department dpt ON u.department_id = dpt.department_id
                 WHERE t.service_id = 13 AND t.status_id != 7
                 GROUP BY t.ticket_id
                 HAVING 
@@ -65,7 +65,7 @@ module.exports = {
                 FROM t_ticket t
                 LEFT JOIN t_ticket_detail d ON d.ticket_id = t.ticket_id
                 LEFT JOIN user u ON u.user_id = t.created_by
-                LEFT JOIN m_department dpt ON u.department_id = dpt.department_id
+                LEFT JOIN m_company_department dpt ON u.department_id = dpt.department_id
                 WHERE t.service_id = 13 AND t.status_id != 7
                 GROUP BY t.ticket_id
                 HAVING

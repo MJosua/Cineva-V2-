@@ -8,5 +8,6 @@ route.get('/searatesTrack/:so_id/:number', readToken, srtsController.GetSeaRates
 route.get('/searatesTrackByNumber/:number',  srtsController.GetSeaRatesTrackNumber)
 route.get('/searatesTrackByNumber/:number/:so_id',  srtsController.GetSeaRatesTrackNumberandsoid)
 route.get('/checkdata/:number',  srtsController.SearatesCheck)
+route.get('/getSealineList', srtsController.getSealineList)
 
 module.exports = route;

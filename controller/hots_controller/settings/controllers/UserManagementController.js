@@ -16,9 +16,9 @@ module.exports = {
             const [result] = await dbHots.promise().query(`
                 SELECT *, CASE WHEN u.finished_date IS NOT NULL THEN 1 ELSE 0 END as is_deleted
                 FROM hots.user u
-                LEFT JOIN hots.m_team mt ON u.department_id = mt.department_id 
+                LEFT JOIN hots.m_company_team mt ON u.department_id = mt.department_id 
                 LEFT JOIN hots.user_role mr ON u.role_id = mr.role_id
-                LEFT JOIN hots.m_job_title mjt ON u.jobtitle_id = mjt.jobtitle_id
+                LEFT JOIN hots.m_company_job_title mjt ON u.jobtitle_id = mjt.jobtitle_id
             `);
             console.log(`Trying to get all users success from ${user_id} at ${timestamp}`);
             res.status(200).json({ data: result, success: true, message: "Service getuser success" });
@@ -195,7 +195,7 @@ module.exports = {
             let user_id = req.dataToken?.user_id || 'unknown';
             const [result] = await dbHots.promise().query(`
                 SELECT jobtitle_id, job_title, department_id, description, creation_date, finished_date
-                FROM hots.m_job_title WHERE finished_date IS NULL ORDER BY job_title ASC
+                FROM hots.m_company_job_title WHERE finished_date IS NULL ORDER BY job_title ASC
             `);
             console.log(`Trying to get all job titles success from ${user_id} at ${timestamp}`);
             res.status(200).json({ data: result, success: true, message: "Service get job title success" });
@@ -211,7 +211,7 @@ module.exports = {
         const { job_title, department_id } = req.body;
         try {
             const [result] = await dbHots.promise().query(`
-                INSERT INTO hots.m_job_title (job_title, department_id, creation_date) VALUES (?, ?, NOW())
+                INSERT INTO hots.m_company_job_title (job_title, department_id, creation_date) VALUES (?, ?, NOW())
             `, [job_title, department_id]);
             console.log(`Job title created successfully by ${user_id} at ${timestamp}`);
             res.status(200).json({ data: { jobtitle_id: result.insertId, job_title, department_id }, success: true, message: "Job title created successfully" });
@@ -227,7 +227,7 @@ module.exports = {
             let user_id = req.dataToken?.user_id || 'unknown';
             const { id } = req.params;
             const { job_title, department_id, description } = req.body;
-            let sql = `UPDATE hots.m_job_title SET job_title = ?, description = ?`;
+            let sql = `UPDATE hots.m_company_job_title SET job_title = ?, description = ?`;
             let params = [job_title, description];
             if (department_id !== undefined) { sql += `, department_id = ?`; params.push(department_id); }
             sql += ` WHERE jobtitle_id = ?`;
@@ -246,7 +246,7 @@ module.exports = {
         let user_id = req.dataToken.user_id;
         const { id } = req.params;
         try {
-            await dbHots.promise().query(`UPDATE hots.m_job_title SET finished_date = NOW() WHERE jobtitle_id = ?`, [id]);
+            await dbHots.promise().query(`UPDATE hots.m_company_job_title SET finished_date = NOW() WHERE jobtitle_id = ?`, [id]);
             console.log(`Job title deleted successfully by ${user_id} at ${timestamp}`);
             res.status(200).json({ success: true, message: "Job title deleted successfully" });
         } catch (err) {
@@ -262,7 +262,7 @@ module.exports = {
         try {
             const [teams] = await dbHots.promise().query(`
                 SELECT team_id, team_name, department_id, creation_date 
-                FROM hots.m_team WHERE finished_date IS NULL ORDER BY team_name
+                FROM hots.m_company_team WHERE finished_date IS NULL ORDER BY team_name
             `);
             console.log(`Teams fetched successfully by ${user_id} at ${timestamp}`);
             res.status(200).json({ success: true, data: teams });
@@ -278,13 +278,14 @@ module.exports = {
         try {
             const [teams] = await dbHots.promise().query(`
                 SELECT t.team_id, t.team_name, t.department_id, d.department_name, t.finished_date,
+                    t.department_collaborator,
                     COUNT(tm.user_id) as member_count, SUM(tm.team_leader) as leader_count,
                     CONCAT_WS(' ', u.firstname, u.lastname) AS head_fullname
-                FROM hots.m_team t
-                LEFT JOIN hots.m_department d ON t.department_id = d.department_id
-                LEFT JOIN hots.m_team_member tm ON t.team_id = tm.team_id
+                FROM hots.m_company_team t
+                LEFT JOIN hots.m_company_department d ON t.department_id = d.department_id
+                LEFT JOIN hots.m_company_team_member tm ON t.team_id = tm.team_id
                 LEFT JOIN hots.user AS u ON u.user_id = tm.user_id
-                GROUP BY t.team_id, t.department_id ORDER BY t.team_id 
+                GROUP BY t.team_id, t.department_id, t.department_collaborator ORDER BY t.team_id 
             `);
             console.log(`Teams fetched successfully by ${user_id} at ${timestamp}`);
             res.status(200).json({ success: true, data: teams });
@@ -301,9 +302,9 @@ module.exports = {
         try {
             const [members] = await dbHots.promise().query(`
                 SELECT u.user_id, u.firstname, u.lastname, u.email, tm.team_leader, mjt.job_title as job_title
-                FROM hots.m_team_member tm
+                FROM hots.m_company_team_member tm
                 JOIN hots.user u ON tm.user_id = u.user_id
-                LEFT JOIN hots.m_job_title mjt ON u.jobtitle_id = mjt.jobtitle_id
+                LEFT JOIN hots.m_company_job_title mjt ON u.jobtitle_id = mjt.jobtitle_id
                 WHERE tm.team_id = ? AND tm.finished_date IS NULL AND u.finished_date IS NULL
                 ORDER BY tm.team_leader DESC, u.firstname, u.lastname
             `, [team_id]);
@@ -322,7 +323,7 @@ module.exports = {
         try {
             const [leaders] = await dbHots.promise().query(`
                 SELECT tm.team_id, tm.team_name, u.user_id, u.firstname, u.lastname, u.uid, u.email, u.role_name
-                FROM hots.m_team_member tm
+                FROM hots.m_company_team_member tm
                 JOIN hots.user u ON u.user_id = tm.user_id
                 WHERE tm.team_id = ? AND tm.team_leader = 1 AND tm.finished_date IS NULL
                 ORDER BY u.firstname
@@ -338,12 +339,13 @@ module.exports = {
         let date = new Date();
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
         let user_id = req.dataToken.user_id;
-        const { team_name, department_id, description } = req.body;
+        const { team_name, department_id, description, department_collaborator } = req.body;
         try {
+            const collabJson = department_collaborator ? JSON.stringify(department_collaborator) : null;
             const [result] = await dbHots.promise().query(`
-                INSERT INTO hots.m_team (team_name, department_id, description, created_date) 
-                VALUES (?, ?, ?, NOW())
-            `, [team_name, department_id, description]);
+                INSERT INTO hots.m_company_team (team_name, department_id, description, department_collaborator, created_date) 
+                VALUES (?, ?, ?, ?, NOW())
+            `, [team_name, department_id, description, collabJson]);
             console.log(`Team created successfully by ${user_id} at ${timestamp}`);
             res.status(200).json({ success: true, message: "Team created successfully", data: { id: result.insertId } });
         } catch (err) {
@@ -356,12 +358,14 @@ module.exports = {
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ';
         let user_id = req.dataToken.user_id;
         const { id } = req.params;
-        const { team_name, department_id, description } = req.body;
+        const { team_name, department_id, description, department_collaborator } = req.body;
         try {
+            const collabJson = department_collaborator ? JSON.stringify(department_collaborator) : null;
             await dbHots.promise().query(`
-                UPDATE hots.m_team SET team_name = ?, department_id = ?, description = ?, updated_date = NOW()
+                UPDATE hots.m_company_team SET team_name = ?, department_id = ?, description = ?, 
+                department_collaborator = ?, updated_date = NOW()
                 WHERE team_id = ? AND finished_date IS NULL
-            `, [team_name, department_id, description, id]);
+            `, [team_name, department_id, description, collabJson, id]);
             console.log(`Team updated successfully by ${user_id} at ${timestamp}`);
             res.status(200).json({ success: true, message: "Team updated successfully" });
         } catch (err) {
@@ -375,7 +379,7 @@ module.exports = {
         let user_id = req.dataToken.user_id;
         const { id } = req.params;
         try {
-            await dbHots.promise().query(`UPDATE hots.m_team SET finished_date = NOW() WHERE team_id = ? AND finished_date IS NULL`, [id]);
+            await dbHots.promise().query(`UPDATE hots.m_company_team SET finished_date = NOW() WHERE team_id = ? AND finished_date IS NULL`, [id]);
             console.log(`Team deleted successfully by ${user_id} at ${timestamp}`);
             res.status(200).json({ success: true, message: "Team deleted successfully" });
         } catch (err) {
@@ -390,7 +394,7 @@ module.exports = {
         const { team_id, user_id, team_leader = 0 } = req.body;
         try {
             const [result] = await dbHots.promise().query(`
-                INSERT INTO hots.m_team_member (team_id, user_id, team_leader, creation_date, updated_date)
+                INSERT INTO hots.m_company_team_member (team_id, user_id, team_leader, creation_date, updated_date)
                 VALUES (?, ?, ?, NOW(), NOW())
                 ON DUPLICATE KEY UPDATE team_leader = VALUES(team_leader), updated_date = NOW()
             `, [team_id, user_id, team_leader]);
@@ -409,7 +413,7 @@ module.exports = {
         const { team_leader } = req.body;
         try {
             await dbHots.promise().query(`
-                UPDATE hots.m_team_member SET team_leader = ?, updated_date = NOW() 
+                UPDATE hots.m_company_team_member SET team_leader = ?, updated_date = NOW() 
                 WHERE team_member_id = ? AND finished_date IS NULL
             `, [team_leader, id]);
             console.log(`Team member updated successfully by ${user_id} at ${timestamp}`);
@@ -425,7 +429,7 @@ module.exports = {
         const actor_user_id = req.dataToken.user_id;
         const { team_id, user_id } = req.params;
         try {
-            const [result] = await dbHots.promise().query(`DELETE FROM hots.m_team_member WHERE team_id = ? AND user_id = ?`, [team_id, user_id]);
+            const [result] = await dbHots.promise().query(`DELETE FROM hots.m_company_team_member WHERE team_id = ? AND user_id = ?`, [team_id, user_id]);
             console.log(`Team member ${user_id} removed from team ${team_id} by ${actor_user_id} at ${timestamp}`);
             res.status(200).json({ success: true, message: "Team member removed successfully", affectedRows: result.affectedRows });
         } catch (err) {
@@ -443,7 +447,7 @@ module.exports = {
                     CONCAT_WS(' ', u.firstname, u.lastname) AS head_fullname,
                     CASE WHEN d.finished_date IS NOT NULL THEN 1 ELSE 0 END as is_deleted,
                     d.description, d.created_date
-                FROM hots.m_department AS d
+                FROM hots.m_company_department AS d
                 LEFT JOIN hots.user AS u ON u.user_id = d.department_head
                 ORDER BY d.department_name ASC
             `);
@@ -462,8 +466,8 @@ module.exports = {
             const [departments] = await dbHots.promise().query(`
                 SELECT d.department_id, d.department_name, d.department_shortname, d.department_head, d.description,
                     COUNT(DISTINCT t.team_id) as team_count, COUNT(DISTINCT u.user_id) as user_count
-                FROM hots.m_department d
-                LEFT JOIN hots.m_team t ON d.department_id = t.department_id AND t.finished_date IS NULL
+                FROM hots.m_company_department d
+                LEFT JOIN hots.m_company_team t ON d.department_id = t.department_id AND t.finished_date IS NULL
                 LEFT JOIN hots.user u ON d.department_id = u.department_id AND u.finished_date IS NULL
                 WHERE d.finished_date IS NULL
                 GROUP BY d.department_id, d.department_name, d.department_shortname, d.department_head, d.description
@@ -483,7 +487,7 @@ module.exports = {
         const { department_name, department_shortname, department_head, description } = req.body;
         try {
             const [result] = await dbHots.promise().query(`
-                INSERT INTO hots.m_department (department_name, department_shortname, department_head, description, created_date) 
+                INSERT INTO hots.m_company_department (department_name, department_shortname, department_head, description, created_date) 
                 VALUES (?, ?, ?, ?, NOW())
             `, [department_name, department_shortname, department_head, description]);
             console.log(`Department created successfully by ${user_id} at ${timestamp}`);
@@ -502,7 +506,7 @@ module.exports = {
         const updatestatus = status === 'active' ? null : new Date();
         try {
             await dbHots.promise().query(`
-                UPDATE hots.m_department SET department_name = ?, department_shortname = ?, 
+                UPDATE hots.m_company_department SET department_name = ?, department_shortname = ?, 
                     department_head = ?, description = ?, finished_date = ?, updated_date = NOW()
                 WHERE department_id = ? AND (finished_date IS NULL OR finished_date IS NOT NULL)
             `, [department_name, department_shortname, department_head, description, updatestatus, id]);
@@ -519,7 +523,7 @@ module.exports = {
         let user_id = req.dataToken.user_id;
         const { id } = req.params;
         try {
-            await dbHots.promise().query(`UPDATE hots.m_department SET finished_date = NOW() WHERE department_id = ? AND finished_date IS NULL`, [id]);
+            await dbHots.promise().query(`UPDATE hots.m_company_department SET finished_date = NOW() WHERE department_id = ? AND finished_date IS NULL`, [id]);
             console.log(`Department deleted successfully by ${user_id} at ${timestamp}`);
             res.status(200).json({ success: true, message: "Department deleted successfully" });
         } catch (err) {
@@ -534,7 +538,7 @@ module.exports = {
         const { department_id } = req.params;
         try {
             const [teams] = await dbHots.promise().query(`
-                SELECT team_id, team_name, department_id, description FROM hots.m_team 
+                SELECT team_id, team_name, department_id, description FROM hots.m_company_team 
                 WHERE department_id = ? AND finished_date IS NULL ORDER BY team_name
             `, [department_id]);
             console.log(`Teams for department ${department_id} fetched successfully by ${user_id} at ${timestamp}`);
@@ -551,7 +555,7 @@ module.exports = {
         if (!team_id) return res.status(400).send({ success: false, message: 'Invalid team ID!' });
         const queryGetMember = `
             SELECT tm.*, CONCAT(u.firstname, ' ', u.lastname) as fullname
-            FROM m_team_member tm
+            FROM m_company_team_member tm
             JOIN user u ON tm.user_id = u.user_id
             WHERE tm.team_id = ? AND tm.team_leader = 0
         `;

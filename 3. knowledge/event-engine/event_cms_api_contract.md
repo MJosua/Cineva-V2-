@@ -102,7 +102,7 @@ All responses follow this envelope:
 | **Path** | `/api/event-engine/campaigns/:slug` |
 | **Type** | READ |
 | **Purpose** | Get single campaign details |
-| **DB Tables** | `EVENT_t_campaign`, `m_cms_page` (joined) |
+| **DB Tables** | `EVENT_t_campaign`, `cms_m_page` (joined) |
 | **Frontend Consumer** | `EventDashboard.jsx`, `EventEditor.jsx` |
 
 **Path Parameters:**

@@ -5,8 +5,7 @@ import { Package, Download } from 'lucide-react';
 import { WidgetProps } from '@/types/widgetTypes';
 import { API_URL } from '@/config/sourceConfig';
 import { fetchAnalyst } from '@/store/slices/analystslice';
-import { useDispatch } from 'react-redux';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch, useAppSelector } from '@/hooks/useAppSelector';
 import { fetchCountry } from '@/store/slices/countryslice';
 import { Skeleton } from '@/components/ui/skeleton';
 import { resolveSystemVariable } from '@/utils/systemVariableResolver';
@@ -23,14 +22,9 @@ import { fetchTodaysweek } from '@/store/slices/srf_todaysweekSlice';
 const Fetchsrfdata: React.FC<WidgetProps> = ({
     formData,
     serviceId,
-    serviceInfo,
-    widgetData,
-    isLoading,
-    isReady,
-    error,
     handleReload
 }) => {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const { skulist, loading } = useAppSelector(state => state.sku);
     // Set up system variable context for template resolution
     const navigate = useNavigate()

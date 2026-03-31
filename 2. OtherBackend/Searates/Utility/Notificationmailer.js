@@ -3,7 +3,7 @@
  * Generates HTML for delivery notification email
  */
 
-const { dbQuery } = require('../key../../config/db');
+const { dbQuery } = require('../config/db');
 
 async function getNotifMailDeliverHtml(order_id) {
   try {

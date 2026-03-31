@@ -131,7 +131,6 @@ export const DynamicForm: React.FC<{
       const mappedData = mapUnifiedForm(
         globalValues,
         config.items,
-        fileFields,
         selectedObjects || [],
       );
       toast({
@@ -254,7 +253,7 @@ export const DynamicForm: React.FC<{
     setConfig((prev) => ({
       ...prev,
       items: prev.items.map((item) =>
-        item.data.name === fieldName
+        item.type === 'field' && (item.data as FormField).name === fieldName
           ? { ...item, data: { ...item.data, options: newOptions } }
           : item
       ),
@@ -369,7 +368,7 @@ export const DynamicForm: React.FC<{
       // ******* THE IMPORTANT FIX *******
       const engineValues = {};
 
-      unified.forEach((item) => {
+      unified.forEach((item: any) => {
         // Simple fields
         if (item.name && item.value !== undefined) {
           engineValues[item.name] = item.value;
@@ -378,7 +377,7 @@ export const DynamicForm: React.FC<{
 
         // Sections
         if (item.type === "section" && Array.isArray(item.fields)) {
-          item.fields.forEach((f) => {
+          item.fields.forEach((f: any) => {
             if (f.name) engineValues[f.name] = f.value ?? "";
           });
           return;
@@ -386,7 +385,7 @@ export const DynamicForm: React.FC<{
 
         // Rowgroups → flatten values (optional)
         if (item.type === "rowgroup" && Array.isArray(item.rows)) {
-          item.rows.forEach((row, idx) => {
+          item.rows.forEach((row: any, idx: number) => {
             Object.keys(row)
               .filter((k) => k.endsWith("Value"))
               .forEach((key) => {
@@ -479,7 +478,7 @@ export const DynamicForm: React.FC<{
           ? <div className="text-center text-gray-500">Loading form schema...</div>
           : (() => {
             // 🧩 LAYOUT CONTROLS
-            const layout = config.layout || {};
+            const layout = config.layout || ({} as any);
             const hideCard = layout.hide_field_card;
             const hideFields = layout.hide_fields;
             const hideSubmit = layout.hide_submit;
@@ -595,6 +594,24 @@ export const DynamicForm: React.FC<{
                                   schema={normalizedSchema}
                                   onFieldOptionsUpdate={handleFieldOptionsUpdate}
                                 />
+                              </div>
+                            );
+                          }
+
+                          if (item.type === "textblock") {
+                            const tb = item.data as import("@/types/formTypes").TextBlock;
+
+                            const baseClass = tb.className || (
+                              tb.textType === 'title' ? "text-xl font-bold mb-4 mt-6 text-foreground" :
+                              tb.textType === 'subtext' ? "text-sm text-muted-foreground italic mb-4" :
+                              "text-base mb-4"
+                            );
+
+                            return (
+                              <div key={item.id} className="col-span-1 md:col-span-3">
+                                <div className={baseClass}>
+                                  {tb.content}
+                                </div>
                               </div>
                             );
                           }

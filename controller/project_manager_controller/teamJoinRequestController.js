@@ -10,7 +10,7 @@ module.exports = {
     try {
       const { team_id, message } = req.body;
       const user_id = req.dataToken.user_id; // From token middleware
-      
+
       console.log(timestamp + 'Creating team join request:', { team_id, user_id, message });
 
       // Check if request already exists
@@ -21,9 +21,9 @@ module.exports = {
 
       if (existingRequest.length > 0) {
         console.log(timestamp + 'Join request already exists for user:', user_id, 'team:', team_id);
-        return res.status(400).json({ 
-          success: false, 
-          error: 'You already have a pending request for this team' 
+        return res.status(400).json({
+          success: false,
+          error: 'You already have a pending request for this team'
         });
       }
 
@@ -46,8 +46,8 @@ module.exports = {
           hu.lastname,
           hu.email
         FROM pm.t_team_join_requests tjr
-        JOIN hots.m_team ht ON tjr.team_id = ht.team_id
-        JOIN hots.m_department hd ON ht.department_id = hd.department_id
+        JOIN hots.m_company_team ht ON tjr.team_id = ht.team_id
+        JOIN hots.m_company_department hd ON ht.department_id = hd.department_id
         JOIN hots.user hu ON tjr.user_id = hu.user_id
         WHERE tjr.request_id = ?
       `, [requestId]);
@@ -81,8 +81,8 @@ module.exports = {
           hr.lastname as reviewer_lastname,
           CONCAT(hr.firstname, ' ', hr.lastname) as reviewer_name
         FROM pm.t_team_join_requests tjr
-        JOIN hots.m_team ht ON tjr.team_id = ht.team_id
-        JOIN hots.m_department hd ON ht.department_id = hd.department_id
+        JOIN hots.m_company_team ht ON tjr.team_id = ht.team_id
+        JOIN hots.m_company_department hd ON ht.department_id = hd.department_id
         JOIN hots.user hu ON tjr.user_id = hu.user_id
         LEFT JOIN hots.user hr ON tjr.reviewed_by = hr.user_id
         WHERE 1 = 1
@@ -147,12 +147,12 @@ module.exports = {
 
         // Check if user is already a team member
         const [existingMember] = await dbHots.promise().execute(`
-          SELECT * FROM hots.m_team_member WHERE team_id = ? AND user_id = ?
+          SELECT * FROM hots.m_company_team_member WHERE team_id = ? AND user_id = ?
         `, [teamId, userId]);
 
         if (existingMember.length === 0) {
           await dbHots.promise().execute(`
-            INSERT INTO hots.m_team_member 
+            INSERT INTO hots.m_company_team_member 
             (team_id, user_id, team_leader, member_desc, creation_date, updated_date, finished_marker)
             VALUES (?, ?, 0, 'Joined via request', NOW(), NOW(), 0)
           `, [teamId, userId]);
@@ -177,8 +177,8 @@ module.exports = {
           hr.lastname as reviewer_lastname,
           CONCAT(hr.firstname, ' ', hr.lastname) as reviewer_name
         FROM pm.t_team_join_requests tjr
-        JOIN hots.m_team ht ON tjr.team_id = ht.team_id
-        JOIN hots.m_department hd ON ht.department_id = hd.department_id
+        JOIN hots.m_company_team ht ON tjr.team_id = ht.team_id
+        JOIN hots.m_company_department hd ON ht.department_id = hd.department_id
         JOIN hots.user hu ON tjr.user_id = hu.user_id
         LEFT JOIN hots.user hr ON tjr.reviewed_by = hr.user_id
         WHERE tjr.request_id = ?
@@ -209,8 +209,8 @@ module.exports = {
           hr.lastname as reviewer_lastname,
           CONCAT(hr.firstname, ' ', hr.lastname) as reviewer_name
         FROM pm.t_team_join_requests tjr
-        JOIN hots.m_team ht ON tjr.team_id = ht.team_id
-        JOIN hots.m_department hd ON ht.department_id = hd.department_id
+        JOIN hots.m_company_team ht ON tjr.team_id = ht.team_id
+        JOIN hots.m_company_department hd ON ht.department_id = hd.department_id
         LEFT JOIN hots.user hr ON tjr.reviewed_by = hr.user_id
         WHERE tjr.user_id = ?
         ORDER BY tjr.requested_date DESC

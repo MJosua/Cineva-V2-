@@ -45,6 +45,9 @@ const projectmngr_department = require('./project_manager_controller/department_
 const projectmngr_team = require('./project_manager_controller/team_controller')
 const projectmngr_dashboard = require('./project_manager_controller/dashboard_controller');
 const hotsDashboardController = require('./hots_controller/dashboard/controllers/dashboardController'); // 🔧 Phase 5: Moved to module
+const hotsSystemMeta = require('./hots_controller/settings/controllers/SystemMetaController');
+const hotsCMS = require('./hots_controller/cms/CMSController');
+const hotsMedia = require('./hots_controller/cms/MediaLibraryController');
 
 // Coupon System
 const couponController = require('./event/couponController');
@@ -82,6 +85,9 @@ module.exports = {
     hotsSystemUtility,
     hotsDashboardController,
     hotsPublicController,
+    hotsSystemMeta,
+    hotsCMS,
+    hotsMedia,
 
 
     // searates

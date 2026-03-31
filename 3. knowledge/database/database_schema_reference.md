@@ -16,8 +16,8 @@ Quick reference for commonly used tables and their correct column names.
 | `nik` | VARCHAR(10) | NIK (employee ID) |
 | `active` | INT | 1 = active, 0 = inactive (**NOT** `is_active`) |
 | `role_id` | INT | FK to m_role |
-| `jobtitle_id` | INT | FK to m_job_title.jobtitle_id |
-| `department_id` | INT | FK to m_department |
+| `jobtitle_id` | INT | FK to m_company_job_title.jobtitle_id |
+| `department_id` | INT | FK to m_company_department |
 | `superior_id` | INT | FK to user (manager) |
 | `phone` | VARCHAR(100) | Extension phone |
 | `plant_id` | INT | Factory/Plant ID |
@@ -26,24 +26,24 @@ Quick reference for commonly used tables and their correct column names.
 
 ---
 
-## Job Title Table (`m_job_title`)
+## Job Title Table (`m_company_job_title`)
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `jobtitle_id` | INT | Primary key (**NOT** `id`) |
 | `job_title` | VARCHAR | Job title name (**NOT** `name`) |
-| `department_id` | INT | FK to m_department |
+| `department_id` | INT | FK to m_company_department |
 | `is_active` | INT | 1 = active |
 
 **JOIN Example:**
 ```sql
-LEFT JOIN m_job_title jt ON u.jobtitle_id = jt.jobtitle_id
+LEFT JOIN m_company_job_title jt ON u.jobtitle_id = jt.jobtitle_id
 -- SELECT jt.job_title AS job_title_name
 ```
 
 ---
 
-## Department Table (`m_department`)
+## Department Table (`m_company_department`)
 
 | Column | Type | Description |
 |--------|------|-------------|

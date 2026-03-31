@@ -12,6 +12,9 @@ import {
     Input,
     visuallyHiddenStyle
 } from '@chakra-ui/react';
+import emptyPlateImg from '../../../assets/images/emptyplate.PNG';
+import banner3Img from '../../../assets/images/banner3.jpeg';
+
 
 import Sidebar from "../../../components/layout/Sidebar.jsx";
 
@@ -216,10 +219,10 @@ const ProfilePage = (state) => {
                                                 <Image
 
                                                     className="d-flex justify-content-center pe-2"
-                                                    src={"../../../assets/images/banner3.jpeg"}
+                                                    src={banner3Img}
                                                     borderRadius="10px"
                                                     width='100%'
-                                                    fallbackSrc={require("../../../assets/images/emptyplate.PNG")}
+                                                    fallbackSrc={emptyPlateImg}
                                                 />
                                             </div>
                                         </div>

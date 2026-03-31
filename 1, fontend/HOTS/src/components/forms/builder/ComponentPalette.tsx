@@ -17,6 +17,7 @@ export const ComponentPalette = () => {
         { type: 'separator', label: 'Layout' },
         { type: 'section', label: 'Section', icon: Layout },
         { type: 'rowgroup', label: 'Row Group (Repeater)', icon: Rows },
+        { type: 'textblock', label: 'Instruction Text', icon: FileText, dataType: 'textblock' },
         { type: 'specialfunc', label: 'Special Function', icon: Code },
     ];
 

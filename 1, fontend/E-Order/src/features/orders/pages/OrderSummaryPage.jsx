@@ -1,5 +1,6 @@
 ﻿import React from 'react';
 import { Image } from '@chakra-ui/react';
+import productDetailImg from "../../../assets/images/indomie-mi-goreng-special_detail.png";
 
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from "react-router-dom"
@@ -22,33 +23,33 @@ const OrderSummaryPage = () => {
         description: `Page of ${location.pathname} from Indofood`,
         canonical: `https://www.indofoodinternational.com/e-order${location.pathname}`,
         meta: {
-          charset: 'utf-8',
-          name: {
-            keywords: 'react,meta,document,html,tags'
-          }
+            charset: 'utf-8',
+            name: {
+                keywords: 'react,meta,document,html,tags'
+            }
         }
-      };
+    };
     return (
         <div className="py-5 container">
             <div className="pt-4 mb-4">
 
                 <div className="navbar navbar-expand-xl navbar-light bg-danger outline-dark fixed-top">
                     <div className="container-fluid">
-                            <div className=" py-1 d-flex justify-content-start px-1">
-                                <svg
-                                    className="Icon_ionic-ios-arrow-back "
-                                    onClick={()=>navigate('/e-order/order/confirmation') }
-                                    viewBox="11.251 6.194 13.503 23.619"
-                                    width='25'
-                                    height='25'>
-                                    <path id="Icon_ionic-ios-arrow-back"
-                                        d="M 15.32109355926514 18 L 24.2578125 9.0703125 C 24.91875076293945 8.409375190734863 24.91875076293945 7.340624809265137 24.2578125 6.686718940734863 C 23.59687423706055 6.025781631469727 22.52812576293945 6.032812595367432 21.8671875 6.686718940734863 L 11.7421875 16.8046875 C 11.10234355926514 17.44453048706055 11.08828163146973 18.47109413146973 11.69296836853027 19.13203048706055 L 21.86015701293945 29.3203125 C 22.19062614440918 29.65078163146973 22.62656402587891 29.8125 23.05546951293945 29.8125 C 23.484375 29.8125 23.92031288146973 29.65078163146973 24.25078201293945 29.3203125 C 24.91172027587891 28.65937423706055 24.91172027587891 27.59062576293945 24.25078201293945 26.93671798706055 L 15.32109355926514 18 Z">
-                                    </path>
-                                </svg>
-                                <div className=" order_summary_text ps-2">
-                                    Order Summary
-                                </div>
+                        <div className=" py-1 d-flex justify-content-start px-1">
+                            <svg
+                                className="Icon_ionic-ios-arrow-back "
+                                onClick={() => navigate('/e-order/order/confirmation')}
+                                viewBox="11.251 6.194 13.503 23.619"
+                                width='25'
+                                height='25'>
+                                <path id="Icon_ionic-ios-arrow-back"
+                                    d="M 15.32109355926514 18 L 24.2578125 9.0703125 C 24.91875076293945 8.409375190734863 24.91875076293945 7.340624809265137 24.2578125 6.686718940734863 C 23.59687423706055 6.025781631469727 22.52812576293945 6.032812595367432 21.8671875 6.686718940734863 L 11.7421875 16.8046875 C 11.10234355926514 17.44453048706055 11.08828163146973 18.47109413146973 11.69296836853027 19.13203048706055 L 21.86015701293945 29.3203125 C 22.19062614440918 29.65078163146973 22.62656402587891 29.8125 23.05546951293945 29.8125 C 23.484375 29.8125 23.92031288146973 29.65078163146973 24.25078201293945 29.3203125 C 24.91172027587891 28.65937423706055 24.91172027587891 27.59062576293945 24.25078201293945 26.93671798706055 L 15.32109355926514 18 Z">
+                                </path>
+                            </svg>
+                            <div className=" order_summary_text ps-2">
+                                Order Summary
                             </div>
+                        </div>
 
 
                     </div>
@@ -105,11 +106,11 @@ const OrderSummaryPage = () => {
                                 <Image
                                     // key={state.product.code}
                                     className="d-flex justify-content-center border rounded-3"
-                                    src={require('../../../assets/images/indomie-mi-goreng-special_detail.png')}
+                                    src={productDetailImg}
                                     boxSize=''
                                     // alt={state.product_code}
                                     width='95%'
-                                    fallbacksrc={require('../../../assets/images/indomie-mi-goreng-special_detail.png')}>
+                                    fallbacksrc={productDetailImg}>
                                 </Image>
                             </div>
 
@@ -154,11 +155,11 @@ const OrderSummaryPage = () => {
                                 <Image
                                     // key={state.product.code}
                                     className="d-flex justify-content-center border rounded-3"
-                                    src={require('../../../assets/images/indomie-mi-goreng-special_detail.png')}
+                                    src={productDetailImg}
                                     boxSize=''
                                     // alt={state.product_code}
                                     width='95%'
-                                    fallbacksrc={require('../../../assets/images/indomie-mi-goreng-special_detail.png')}>
+                                    fallbacksrc={productDetailImg}>
                                 </Image>
                             </div>
 
@@ -188,11 +189,11 @@ const OrderSummaryPage = () => {
                                 <Image
                                     // key={state.product.code}
                                     className="d-flex justify-content-end border rounded-3"
-                                    src={require('../../../assets/images/indomie-mi-goreng-special_detail.png')}
+                                    src={productDetailImg}
                                     boxSize=''
                                     // alt={state.product_code}
                                     width='90%'
-                                    fallbacksrc={require('../../../assets/images/indomie-mi-goreng-special_detail.png')}>
+                                    fallbacksrc={productDetailImg}>
                                 </Image>
                             </div>
 

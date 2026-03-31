@@ -45,7 +45,7 @@ async function getAssignmentsCount(userId) {
               AND (
                 (ta.assigned_id = ? AND ta.assigned_type = 'user')
                 OR (ta.assigned_type = 'team' AND ta.assigned_id IN (
-                  SELECT team_id FROM m_team_member WHERE user_id = ?
+                  SELECT team_id FROM m_company_team_member WHERE user_id = ?
                 ))
               )
         `, [userId, userId]);
@@ -91,7 +91,7 @@ async function pushCountersToTeam(teamId) {
     try {
         // Get all team members
         const [members] = await dbHots.promise().query(
-            'SELECT user_id FROM m_team_member WHERE team_id = ?',
+            'SELECT user_id FROM m_company_team_member WHERE team_id = ?',
             [teamId]
         );
 

@@ -134,7 +134,8 @@ export const StructuredRowGroup: React.FC<StructuredRowGroupProps> = ({
   };
 
   const addRow = () => {
-    if (rowGroup.maxRows > rows.length) {
+    const maxAllowed = rowGroup?.maxRows || 100;
+    if (maxAllowed > rows.length) {
       const newRow: RowData = {
         id: `row_${Date.now()}`,
         firstValue: "",
@@ -151,9 +152,10 @@ export const StructuredRowGroup: React.FC<StructuredRowGroupProps> = ({
 
         // 🧠 Initialize the new row’s rule memory (so 'changed' doesn’t trigger)
         if (typeof window !== "undefined") {
-          window.__ruleTrackers = window.__ruleTrackers || {};
-          window.__ruleTrackers[rowGroupId] = window.__ruleTrackers[rowGroupId] || {};
-          window.__ruleTrackers[rowGroupId][newRow.id] = {
+          const win = window as any;
+          win.__ruleTrackers = win.__ruleTrackers || {};
+          win.__ruleTrackers[rowGroupId] = win.__ruleTrackers[rowGroupId] || {};
+          win.__ruleTrackers[rowGroupId][newRow.id] = {
             lastValues: { firstValue: "", secondValue: "", thirdValue: "" },
           };
         }
@@ -184,31 +186,34 @@ export const StructuredRowGroup: React.FC<StructuredRowGroupProps> = ({
 
 
   const filteredFirstOptions = useMemo(() => {
-    const col = structure.firstColumn;
+    const col = structure?.firstColumn;
+    if (!col) return [];
     const opts = Array.isArray(col.options) ? col.options : [];
     return getFilteredOptions(col, opts, {
       globalValues,
       selectedObjects,
     });
-  }, [structure.firstColumn.options, globalValues, selectedObjects]);
+  }, [structure?.firstColumn?.options, globalValues, selectedObjects]);
 
   const filteredSecondOptions = useMemo(() => {
-    const col = structure.secondColumn;
+    const col = structure?.secondColumn;
+    if (!col) return [];
     const opts = Array.isArray(col.options) ? col.options : [];
     return getFilteredOptions(col, opts, {
       globalValues,
       selectedObjects,
     });
-  }, [structure.secondColumn.options, globalValues, selectedObjects]);
+  }, [structure?.secondColumn?.options, globalValues, selectedObjects]);
 
   const filteredThirdOptions = useMemo(() => {
-    const col = structure.thirdColumn;
+    const col = structure?.thirdColumn;
+    if (!col) return [];
     const opts = Array.isArray(col.options) ? col.options : [];
     return getFilteredOptions(col, opts, {
       globalValues,
       selectedObjects,
     });
-  }, [structure.thirdColumn.options, globalValues, selectedObjects]);
+  }, [structure?.thirdColumn?.options, globalValues, selectedObjects]);
 
   const renderField = useCallback((
     column: "firstColumn" | "secondColumn" | "thirdColumn",
@@ -216,8 +221,8 @@ export const StructuredRowGroup: React.FC<StructuredRowGroupProps> = ({
     onChange: (val: string) => void,
     rowId?: string
   ) => {
-    let col = structure[column];
-
+    let col = structure?.[column];
+    if (!col) return null;
 
     col = applyFieldRules(col, {
       watchedValues: globalValues,
@@ -227,7 +232,6 @@ export const StructuredRowGroup: React.FC<StructuredRowGroupProps> = ({
         columnKey: column,
         rowId,  // ✅ already known
         currentEditingRowId: rowId, // ✅ FIX: use the parameter, not r
-        rowContext: { rowGroupId },
       },
       setGlobalValues,
       schema,
@@ -284,7 +288,7 @@ export const StructuredRowGroup: React.FC<StructuredRowGroupProps> = ({
           <SuggestionInsertInput
             suggestions={opts}
             placeholder={col.placeholder}
-            required={col.required}
+            required={(col as any).required}
             value={value}
             onChange={onChange}
           />
@@ -293,18 +297,17 @@ export const StructuredRowGroup: React.FC<StructuredRowGroupProps> = ({
         return (
           <NumberField
             value={value}
-            onChange={(v) => onChange(v)}
+            onChange={(v: string) => onChange(v)}
             placeholder={col.placeholder}
-            rounding={col.rounding}
-            maxValue={col.maxnumber}
-            readOnly={col.readonly}
-            required={col.required}
+            rounding={(col as any).rounding}
+            maxValue={(col as any).maxnumber}
+            readonly={(col as any).readonly}
           />
         );
       case "select":
         return (
-          <Select value={value} onValueChange={(v) => onChange(v)} disabled={col.readonly}
-            required={col.required}
+          <Select value={value} onValueChange={(v) => onChange(v)} disabled={(col as any).readonly}
+            required={(col as any).required}
 
           >
             <SelectTrigger>

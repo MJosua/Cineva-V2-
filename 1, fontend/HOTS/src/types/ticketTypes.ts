@@ -184,6 +184,7 @@ export interface TicketsState {
     comment: number;
     document: number;
     ticket: number;
+    inventory: number;
     processingTicketId?: string | null;  // 🆕 Track which specific ticket is generating document
   };
 }

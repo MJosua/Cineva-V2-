@@ -30,14 +30,14 @@ export const BLOCKED_KEYWORDS = [
 export const ALLOWED_TABLES = [
     't_ticket', 't_ticket_detail', 't_ticket_event', 't_ticket_assignment',
     't_ticket_work_data', 't_generated_documents', 't_custom_function_logs',
-    'm_service', 'm_team', 'm_department', 'm_ticket_status',
+    'm_service', 'm_company_team', 'm_company_department', 'm_ticket_status',
     'm_workflow_step', 'm_service_workflow', 'm_service_triggers',
     'm_service_trigger_function',
     'user',
     't_ticket_analytics',
 ];
 
-export const READ_ONLY_TABLES = ['m_service', 'm_team', 'm_department', 'user', 'm_ticket_status'];
+export const READ_ONLY_TABLES = ['m_service', 'm_company_team', 'm_company_department', 'user', 'm_ticket_status'];
 
 export interface ValidationResult {
     valid: boolean;

@@ -372,6 +372,13 @@ const ServiceFormEditor = () => {
           order: destination.index,
           data: { title: 'New Row Group', maxRows: 10 } as unknown as RowGroup
         };
+      } else if (draggableId.startsWith('palette-textblock')) {
+        newItem = {
+          id: newId,
+          type: 'textblock',
+          order: destination.index,
+          data: { textType: 'subtext', content: 'Enter your instructional text here...' } as import('@/types/formTypes').TextBlock
+        };
       } else {
         return;
       }
@@ -489,6 +496,15 @@ const ServiceFormEditor = () => {
         <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
           <div className="font-medium text-sm text-purple-800">{rg.title}</div>
           <div className="text-xs text-purple-600">Row Group</div>
+        </div>
+      );
+    }
+    if (item.type === 'textblock') {
+      const tb = item.data as import('@/types/formTypes').TextBlock;
+      return (
+        <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="font-medium text-sm text-gray-800">{tb.textType.toUpperCase() + " Text Block"}</div>
+          <div className="text-xs text-gray-500 truncate">{tb.content || "Empty text block"}</div>
         </div>
       );
     }

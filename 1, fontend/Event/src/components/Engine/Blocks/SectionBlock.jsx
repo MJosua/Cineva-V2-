@@ -3,6 +3,7 @@ import { resolveComponent } from "../Registry";
 import { resolveMediaUrl } from "../../../utils/mediaHelper";
 import { useRef } from "react";
 import { useDroppable } from '@dnd-kit/core';
+import { applyResponsiveLayoutUpdates, BREAKPOINTS, resolveResponsiveProps } from "../responsiveLayout";
 
 export default function SectionBlock({
     background = "transparent",
@@ -14,10 +15,16 @@ export default function SectionBlock({
     theme,
     isEditor = false,
     onPropsChange,
+    onSelectBlock,
     eventSlug,
     eventId,
     id,
-    blockIndex
+    blockIndex,
+    currentViewport = BREAKPOINTS.desktop,
+    editorScale = 1,
+    justifyContent = "center",
+    alignItems = "center",
+    sectionHeight
 }) {
     const containerRef = useRef(null);
     const sectionId = id || `section-${blockIndex}`;
@@ -41,12 +48,51 @@ export default function SectionBlock({
     const handleChildPropsChange = (childIndex, updatedChildProps) => {
         if (!onPropsChange) return;
         const newChildren = [...children];
+        const previousProps = newChildren[childIndex]?.props || {};
         newChildren[childIndex] = {
             ...newChildren[childIndex],
-            props: { ...newChildren[childIndex].props, ...updatedChildProps }
+            props: applyResponsiveLayoutUpdates(previousProps, updatedChildProps, currentViewport)
         };
         onPropsChange({ children: newChildren });
     };
+
+    const hasCustomHeight = sectionHeight && sectionHeight.trim();
+
+    // When sectionHeight is set, the outer Box stays 100vh for snap scroll,
+    // but an inner scrollable container holds the actual tall content.
+    // The user scrolls inside the section first, then snap moves to the next section.
+
+    const childrenContent = (
+        <>
+            {children && children.map((child, index) => {
+                const Component = resolveComponent(child.type);
+                if (!Component) return null;
+                const childDragId = child._id || `${sectionId}-child-${index}`;
+                const childResolvedProps = resolveResponsiveProps(child.type, child.props || {}, currentViewport);
+                const childHiddenInViewport = childResolvedProps.display === "none";
+                return (
+                    <Box key={childDragId} w="100%" display={childHiddenInViewport ? "none" : undefined}>
+                        <Component
+                            _id={childDragId}
+                            id={childDragId}
+                            {...childResolvedProps}
+                            parentSectionIndex={blockIndex}
+                            childIndex={index}
+                            currentViewport={currentViewport}
+                            editorScale={editorScale}
+                            theme={theme}
+                            isEditor={isEditor}
+                            eventSlug={eventSlug}
+                            eventId={eventId}
+                            onSelectBlock={onSelectBlock}
+                            onPropsChange={(updatedProps) => handleChildPropsChange(index, updatedProps)}
+                            parentRef={containerRef}
+                        />
+                    </Box>
+                );
+            })}
+        </>
+    );
 
     return (
         <Box
@@ -61,7 +107,6 @@ export default function SectionBlock({
             minH="100vh"
             w="100%"
             m={margin}
-            p={padding}
             bg={background}
             backgroundImage={backgroundImage ? `url(${resolveMediaUrl(backgroundImage)})` : "none"}
             backgroundSize="cover"
@@ -69,32 +114,49 @@ export default function SectionBlock({
             display="flex"
             flexDirection="column"
             border={isOver && isEditor ? "2px solid #4299E1" : "none"}
-            justifyContent="center"
-            alignItems="center"
             scrollSnapAlign="start"
             sx={customStyles}
             overflow="hidden"
+            onPointerDown={(e) => {
+                if (e.target !== e.currentTarget) return;
+                if (isEditor && onSelectBlock && sectionId) {
+                    onSelectBlock(sectionId);
+                }
+            }}
+            // When custom height: section becomes a scroll container
+            {...(hasCustomHeight ? {
+                overflowY: "auto",
+            } : {})}
+            style={hasCustomHeight ? { WebkitOverflowScrolling: "touch" } : undefined}
         >
-            {children && children.map((child, index) => {
-                const Component = resolveComponent(child.type);
-                if (!Component) return null;
-                const childDragId = child._id || `${sectionId}-child-${index}`;
-                return (
-                    <Component
-                        key={childDragId}
-                        _id={childDragId}
-                        {...child.props}
-                        parentSectionIndex={blockIndex}
-                        childIndex={index}
-                        theme={theme}
-                        isEditor={isEditor}
-                        eventSlug={eventSlug}
-                        eventId={eventId}
-                        onPropsChange={(updatedProps) => handleChildPropsChange(index, updatedProps)}
-                        parentRef={containerRef}
-                    />
-                );
-            })}
+            {hasCustomHeight ? (
+                // Inner content wrapper with the actual custom height
+                <Box
+                    minH={sectionHeight}
+                    w="100%"
+                    p={padding}
+                    display="flex"
+                    flexDirection="column"
+                    justifyContent={justifyContent}
+                    alignItems={alignItems}
+                >
+                    {childrenContent}
+                </Box>
+            ) : (
+                // Standard section: no inner wrapper
+                <Box
+                    w="100%"
+                    h="100%"
+                    flex="1"
+                    p={padding}
+                    display="flex"
+                    flexDirection="column"
+                    justifyContent={justifyContent}
+                    alignItems={alignItems}
+                >
+                    {childrenContent}
+                </Box>
+            )}
         </Box>
     );
 }

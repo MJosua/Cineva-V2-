@@ -286,6 +286,23 @@ export function useSSE() {
             }
         });
 
+        // 📦 Inventory update event
+        eventSource.addEventListener('inventory_update', (e) => {
+            const data = JSON.parse(e.data);
+            console.log('📡 SSE: Inventory update received', data);
+
+            // Trigger signal for Inventory page to refetch
+            dispatch(triggerSSERefresh('inventory'));
+
+            // Show toast for stock movements
+            const payload = data.data || {};
+            if (payload.action === 'issue') {
+                toast({ title: '📦 Stock Issued', description: 'Inventory levels updated' });
+            } else if (payload.action === 'receive') {
+                toast({ title: '📥 Stock Received', description: 'New items added to storage' });
+            }
+        });
+
         // Global Broadcast event (Migrated from App.js)
         eventSource.addEventListener('broadcast', (e) => {
             const data = JSON.parse(e.data);

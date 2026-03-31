@@ -39,7 +39,7 @@ async function checkCouponStatus(eventSlug, couponCode, poolId, useEncryption = 
         const base = getApiBase ? getApiBase() : "/api";
         // Append ?pool=poolId when a pool is configured
         const poolQuery = poolId ? `?pool=${poolId}&encrypted=${useEncryption}` : `?encrypted=${useEncryption}`;
-        const res = await fetch(`${base}/event-engine/public/campaigns/${eventSlug}/check-coupon/${encodeURIComponent(couponCode)}${poolQuery}`, {
+        const res = await fetch(`${base}/public/campaigns/${eventSlug}/check-coupon/${encodeURIComponent(couponCode)}${poolQuery}`, {
             headers: { "Content-Type": "application/json" },
             credentials: "include",
         });
@@ -54,6 +54,42 @@ async function checkCouponStatus(eventSlug, couponCode, poolId, useEncryption = 
         return { status: "INVALID", message: e.message || "Network error." };
     }
 }
+
+const AGREEMENT_WYSIWYG_SX = {
+    "p": { m: 0, lineHeight: "inherit" },
+    "p + p": { marginTop: "0.35em" },
+    ".ql-align-center": { textAlign: "center" },
+    ".ql-align-right": { textAlign: "right" },
+    ".ql-align-justify": { textAlign: "justify" },
+    ".ql-font-inter": { fontFamily: "Inter, sans-serif" },
+    ".ql-font-poppins": { fontFamily: "Poppins, sans-serif" },
+    ".ql-font-montserrat": { fontFamily: "Montserrat, sans-serif" },
+    ".ql-font-roboto": { fontFamily: "Roboto, sans-serif" },
+    ".ql-font-playfair": { fontFamily: "\"Playfair Display\", serif" },
+    ".ql-font-bebas": { fontFamily: "\"Bebas Neue\", cursive" },
+    ".ql-font-courier": { fontFamily: "\"Courier New\", monospace" },
+    ".ql-size-small": { fontSize: "0.75em" },
+    ".ql-size-large": { fontSize: "1.5em" },
+    ".ql-size-huge": { fontSize: "2.5em" },
+    ".ql-lineheight-100": { lineHeight: "1" },
+    ".ql-lineheight-120": { lineHeight: "1.2" },
+    ".ql-lineheight-140": { lineHeight: "1.4" },
+    ".ql-lineheight-160": { lineHeight: "1.6" },
+    ".ql-lineheight-180": { lineHeight: "1.8" },
+    ".ql-lineheight-200": { lineHeight: "2" },
+    ".ql-stroke-soft": {
+        WebkitTextStroke: "0.5px rgba(0,0,0,0.85)",
+        textShadow: "0 0 1px rgba(0,0,0,0.65)"
+    },
+    ".ql-stroke-medium": {
+        WebkitTextStroke: "1px rgba(0,0,0,0.9)",
+        textShadow: "0 0 1px rgba(0,0,0,0.75)"
+    },
+    ".ql-stroke-strong": {
+        WebkitTextStroke: "1.5px rgba(0,0,0,0.95)",
+        textShadow: "0 0 2px rgba(0,0,0,0.8)"
+    }
+};
 
 // ── Main Block Component ────────────────────────────────────────────────────
 export default function UrlCouponBlock({
@@ -310,15 +346,44 @@ export default function UrlCouponBlock({
         // AVAILABLE
         return (
             <Box bg={bgColor === "transparent" ? "white" : bgColor} p={{ base: 6, md: 10 }} borderRadius="2xl" shadow="xl" maxW="500px" mx="auto">
-                <HStack mb={4} justify="center">
-                    <Icon as={MdCheckCircle} color="green.400" />
-                    <Badge colorScheme="green" px={3} py={1} borderRadius="full" fontSize="sm" fontFamily="mono">
-                        {isEditor ? "● PREVIEW" : (couponInfo?.item?.value || couponCode)}
-                    </Badge>
-                    {isEditor && (
-                        <Badge colorScheme="purple" px={2} py={1} borderRadius="full" fontSize="xs">editor mode</Badge>
+
+                <VStack spacing={2} align="center">
+
+                    {/* Coupon Code */}
+                    {!isEditor && (
+                        <>
+                            Coupon Code :
+                        </>
                     )}
-                </HStack>
+
+                    <HStack mb={4} justify="center">
+
+                        <Badge
+                            colorScheme="green"
+                            px={3}
+                            py={1}
+                            borderRadius="full"
+                            fontSize="sm"
+                            fontFamily="mono"
+                        >
+                            {isEditor ? "● PREVIEW" : (couponInfo?.item?.value || couponCode)}
+                        </Badge>
+                        <Icon as={MdCheckCircle} color="green.400" />
+
+                        {isEditor && (
+                            <Badge
+                                colorScheme="purple"
+                                px={2}
+                                py={1}
+                                borderRadius="full"
+                                fontSize="xs"
+                            >
+                                editor mode
+                            </Badge>
+                        )}
+                    </HStack>
+
+                </VStack>
 
                 <VStack spacing={5} align="stretch">
                     <Box textAlign="center">
@@ -382,14 +447,12 @@ export default function UrlCouponBlock({
                                         m={0}
                                     >
                                         <Box
-                                            as="span"
+                                            as="div"
                                             className="wysiwyg-label"
-                                            display="inline-block"
-                                            sx={{
-                                                'p': { m: 0 },
-                                                'span[style*="color"]': { color: 'inherit' },
-                                            }}
-                                            dangerouslySetInnerHTML={{ __html: field.checkboxText }}
+                                            display="block"
+                                            w="100%"
+                                            sx={AGREEMENT_WYSIWYG_SX}
+                                            dangerouslySetInnerHTML={{ __html: field.checkboxText || "" }}
                                         />
                                     </FormLabel>
                                 </HStack>

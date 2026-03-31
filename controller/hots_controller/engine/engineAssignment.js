@@ -1,4 +1,4 @@
-﻿// controller/engine/engineAssignment.js
+// controller/engine/engineAssignment.js
 const { dbHots } = require('../../../config/db');
 const triggerEngine = require('../../../core/trigger-engine');
 const { getAbsoluteUrl } = require('../../../core/urlHelper');
@@ -51,7 +51,7 @@ async function notifyAssignmentStakeholders(assignmentId, userId, eventType, dat
                 -- Team Members (if assigned to team)
                 SELECT tm.user_id 
                 FROM t_ticket_assignment tta
-                JOIN m_team_member tm ON tm.team_id = tta.assigned_id
+                JOIN m_company_team_member tm ON tm.team_id = tta.assigned_id
                 WHERE tta.id = ? AND tta.assigned_type = 'team'
                 UNION
                 -- Current Actor (to sync other tabs)
@@ -122,6 +122,144 @@ async function notifyAssignmentStakeholders(assignmentId, userId, eventType, dat
 }
 
 /**
+ * Helper: Core logic to complete a single assignment (DB operations only)
+ * MUST be called within an active transaction [conn]
+ */
+async function _executeAssignmentCompletion(conn, { assignmentId, user_id, completion_note, temp_file_ids }) {
+    // 1. Get assignment details
+    const [assignments] = await conn.query(
+        `SELECT ta.*, ta.title as assignment_title, t.service_id, t.created_by,
+                t.ticket_id, t.root_ticket_id, t.ticket_depth, t.company_id,
+                s.service_name
+         FROM t_ticket_assignment ta
+         JOIN t_ticket t ON t.ticket_id = ta.ticket_id
+         LEFT JOIN m_service s ON s.service_id = t.service_id
+         WHERE ta.id = ? AND ta.assignment_status = 'active'`,
+        [assignmentId]
+    );
+
+    if (!assignments.length) {
+        throw new Error(`Assignment ${assignmentId} not found or already completed`);
+    }
+
+    const assignment = assignments[0];
+    const { service_id, ticket_id, root_ticket_id, ticket_depth, company_id } = assignment;
+    const masterRouteId = (root_ticket_id && root_ticket_id !== '') ? root_ticket_id : ticket_id;
+    const safeCompanyId = company_id || 1;
+
+    // 2. Update status
+    await conn.query(
+        `UPDATE t_ticket_assignment 
+         SET assignment_status = 'completed', unassigned_at = NOW()
+         WHERE id = ?`,
+        [assignmentId]
+    );
+
+    // 3. Timeline Entry
+    let entityId = null;
+    if (completion_note && completion_note.trim().length > 0) {
+        entityId = `UPDATE_${Date.now()}`;
+        const fields = { content: completion_note, created_at: new Date().toISOString() };
+        for (const [field_name, field_value] of Object.entries(fields)) {
+            await conn.query(
+                `INSERT INTO t_ticket_work_data 
+                 (ticket_id, assignment_id, service_id, data_type, entity_id, field_name, field_value, 
+                  created_by, root_ticket_id, ticket_depth, entry_type, timeline_group_id, revision, 
+                  is_latest, is_hidden, company_id)
+                 VALUES (?, ?, ?, 'timeline_update', ?, ?, ?, ?, ?, ?, 'manual_update', ?, 0, 1, 0, ?)`,
+                [ticket_id, assignmentId, service_id || 0, entityId, field_name, field_value, user_id,
+                    masterRouteId, ticket_depth || 0, entityId, safeCompanyId]
+            );
+        }
+
+        // Files
+        if (temp_file_ids && Array.isArray(temp_file_ids) && temp_file_ids.length > 0) {
+            const placeholders = temp_file_ids.map(() => '?').join(',');
+            const [tempFiles] = await conn.query(
+                `SELECT * FROM t_ticket_file_temp WHERE upload_id IN (${placeholders}) AND uploaded_by = ? AND is_used = 0`,
+                [...temp_file_ids, user_id]
+            );
+            for (const tempFile of tempFiles) {
+                await conn.query(`UPDATE t_ticket_file_temp SET is_used = 1 WHERE upload_id = ?`, [tempFile.upload_id]);
+                const fileExt = (tempFile.filename || '').toLowerCase().match(/\.[^.]+$/)?.[0] || '';
+                if (!['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico'].includes(fileExt)) {
+                    await conn.query(
+                        `INSERT INTO t_ticket_file (entity_type, entity_id, ticket_id, uploaded_by, filename, original_name, file_path)
+                         VALUES ('timeline_update', ?, ?, ?, ?, ?, ?)`,
+                        [entityId, ticket_id, user_id, tempFile.filename, tempFile.original_filename, tempFile.file_path]
+                    );
+                }
+            }
+        }
+    }
+
+    // 4. Check ticket fullness
+    const [remaining] = await conn.query(
+        `SELECT COUNT(*) as count FROM t_ticket_assignment 
+         WHERE ticket_id = ? AND assignment_status = 'active'`,
+        [ticket_id]
+    );
+    if (remaining[0].count === 0) {
+        await conn.query('UPDATE t_ticket SET status_id = 1 WHERE ticket_id = ?', [ticket_id]);
+    }
+
+    return { assignment, remainingCount: remaining[0].count, entityId };
+}
+
+/**
+ * Helper: Post-completion actions (notifications, triggers, SSE)
+ */
+async function _onAssignmentCompletedAsync({ assignment, user_id, user_name, completion_note, completion_data, remainingCount, entityId }) {
+    const { id: assignmentId, ticket_id: ticketId, created_by: ticketCreatorId, service_id: serviceId, assignment_title, service_name } = assignment;
+
+    if (global.sseManager) {
+        // Timeline notify
+        if (entityId) {
+            notifyAssignmentStakeholders(assignmentId, user_id, 'assignment_update', {
+                action: 'timeline_update',
+                entityId,
+                content: completion_note.substring(0, 50) + (completion_note.length > 50 ? '...' : '')
+            }, { notify: true, title: '📋 Final Statement', message: 'Closing statement added' }).catch(() => { });
+        }
+
+        if (ticketCreatorId) {
+            const notifId = await global.sseManager.emitToUser(ticketCreatorId, 'doc_generation_started', {
+                assignmentId, ticketId, message: 'Processing completion triggers...'
+            }, { persist: true, title: '⏳ Processing...', message: 'Running completion actions' });
+
+            triggerEngine.runTriggersForEvent(serviceId, 'on_assignment_complete', {
+                assignmentId, ticketId, actor: { user_id }, completion_data
+            }).then(() => {
+                if (notifId?.notificationId) {
+                    global.sseManager.updateNotification(notifId.notificationId, {
+                        type: 'doc_generation_complete', title: '✅ Processing Complete', message: 'All actions finished'
+                    });
+                }
+                global.sseManager.emitToUser(ticketCreatorId, 'assignment_update', {
+                    assignmentId, ticketId, action: 'completed', allComplete: remainingCount === 0,
+                    assignment_title: assignment_title || 'Assignment', service_name, actor_name: user_name, timestamp: new Date().toISOString()
+                }, { persist: true, title: '✅ Assignment Complete', message: `${user_name} completed task` });
+            }).catch(err => {
+                console.error('Trigger error:', err);
+                if (notifId?.notificationId) {
+                    global.sseManager.updateNotification(notifId.notificationId, {
+                        type: 'assignment_update', title: '⚠️ Trigger Error', message: `Completion actions failed: ${err.message}`
+                    });
+                }
+            });
+        }
+    }
+
+    if (global.io) global.io.emit("message", "assignment_complete_" + assignmentId);
+
+    try {
+        const { pushCountersToUser, pushCountersToTeam } = require('../../../core/sse-helper');
+        if (assignment.assigned_type === 'user') pushCountersToUser(assignment.assigned_id);
+        else if (assignment.assigned_type === 'team') pushCountersToTeam(assignment.assigned_id);
+    } catch (e) { }
+}
+
+/**
  * Controller for assignment management
  */
 
@@ -133,7 +271,7 @@ module.exports = {
     getMyAssignments: async (req, res) => {
         try {
             const user_id = req.dataToken.user_id;
-            const { status, page = 1, limit = 10, search = '', sort = 'active_first' } = req.query;
+            const { status, page = 1, limit = 10, search = '', sort = 'active_first', service = '' } = req.query;
             const offset = (Number(page) - 1) * Number(limit);
 
             let filterQuery = 'WHERE ta.assignment_status != "cancelled"';
@@ -150,11 +288,17 @@ module.exports = {
                 params.push(searchParam, searchParam, searchParam, searchParam);
             }
 
+            // Category (Service) Filter
+            if (service) {
+                filterQuery += ' AND t.service_name = ?';
+                params.push(service);
+            }
+
             // Final mandatory filters (user/team matching)
             filterQuery += ` AND (
                 (ta.assigned_type = 'user' AND ta.assigned_id = ?)
                 OR (ta.assigned_type = 'team' AND ta.assigned_id IN (
-                    SELECT team_id FROM m_team_member WHERE user_id = ?
+                    SELECT team_id FROM m_company_team_member WHERE user_id = ?
                 ))
             )`;
             params.push(user_id, user_id);
@@ -168,6 +312,34 @@ module.exports = {
             `;
             const [countRows] = await dbHots.promise().query(countQuery, params);
             const totalRecords = countRows[0].total;
+
+            // Get category summary (independent of pagination and specific service filter)
+            let summaryFilterQuery = 'WHERE ta.assignment_status != "cancelled"';
+            const summaryParams = [];
+            if (status) {
+                summaryFilterQuery += ' AND ta.assignment_status = ?';
+                summaryParams.push(status);
+            }
+            if (search) {
+                summaryFilterQuery += ` AND (t.ticket_id LIKE ? OR t.title LIKE ? OR ta.notes LIKE ? OR t.service_name LIKE ?)`;
+                const searchParam = `%${search}%`;
+                summaryParams.push(searchParam, searchParam, searchParam, searchParam);
+            }
+            summaryFilterQuery += ` AND (
+                (ta.assigned_type = 'user' AND ta.assigned_id = ?)
+                OR (ta.assigned_type = 'team' AND ta.assigned_id IN (
+                    SELECT team_id FROM m_company_team_member WHERE user_id = ?
+                ))
+            )`;
+            summaryParams.push(user_id, user_id);
+
+            const [categoryRows] = await dbHots.promise().query(`
+                SELECT t.service_name as folder, COUNT(*) as count
+                FROM t_ticket_assignment ta
+                LEFT JOIN t_ticket t ON ta.ticket_id = t.ticket_id
+                ${summaryFilterQuery}
+                GROUP BY t.service_name
+            `, summaryParams);
 
             let orderBy = '(CASE WHEN ta.assignment_status = "active" THEN 0 ELSE 1 END) ASC, ta.assigned_at DESC';
             if (sort === 'newest') {
@@ -274,6 +446,7 @@ module.exports = {
             res.json({
                 ok: true,
                 assignments: processed,
+                categories: categoryRows,
                 pagination: {
                     total: totalRecords,
                     page: Number(page),
@@ -304,7 +477,7 @@ module.exports = {
         (
             (ta.assigned_type = 'user' AND ta.assigned_id = ?)
             OR (ta.assigned_type = 'team' AND ta.assigned_id IN (
-              SELECT team_id FROM m_team_member WHERE user_id = ?
+              SELECT team_id FROM m_company_team_member WHERE user_id = ?
             ))
           )
       `, [user_id, user_id]);
@@ -371,135 +544,110 @@ module.exports = {
      * Complete an assignment
      */
     completeAssignment: async (req, res) => {
+        const conn = await dbHots.promise().getConnection();
         try {
             const { assignmentId } = req.params;
-            const { completion_note, completion_data } = req.body;
+            const { completion_note, completion_data, temp_file_ids } = req.body;
             const user_id = req.dataToken.user_id;
             const user_name = `${req.dataToken.firstname || ''} ${req.dataToken.lastname || ''}`.trim() || 'Someone';
 
-            // Get assignment details with service_id, title, and service_name
-            const [assignments] = await dbHots.promise().query(
-                `SELECT ta.*, ta.title as assignment_title, t.service_id, t.created_by,
-                        s.service_name
-                 FROM t_ticket_assignment ta
-                 JOIN t_ticket t ON t.ticket_id = ta.ticket_id
-                 LEFT JOIN m_service s ON s.service_id = t.service_id
-                 WHERE ta.id = ?`,
-                [assignmentId]
-            );
+            await conn.beginTransaction();
+            const { assignment, remainingCount, entityId } = await _executeAssignmentCompletion(conn, {
+                assignmentId, user_id, completion_note, temp_file_ids
+            });
+            await conn.commit();
+            conn.release();
 
-            if (!assignments.length) {
-                return res.status(404).json({ ok: false, error: 'Assignment not found' });
-            }
-
-            const assignment = assignments[0];
-
-            // Update assignment status
-            await dbHots.promise().query(
-                `UPDATE t_ticket_assignment 
-         SET assignment_status = 'completed', unassigned_at = NOW()
-         WHERE id = ?`,
-                [assignmentId]
-            );
-
-            // Check if all assignments for this ticket are complete
-            const [remaining] = await dbHots.promise().query(
-                `SELECT COUNT(*) as count FROM t_ticket_assignment 
-         WHERE ticket_id = ? AND assignment_status = 'active'`,
-                [assignment.ticket_id]
-            );
-
-            // If no more active assignments, update ticket status to Fulfilled (2)
-            if (remaining[0].count === 0) {
-                await dbHots.promise().query(
-                    'UPDATE t_ticket SET status_id = 1 WHERE ticket_id = ?',
-                    [assignment.ticket_id]
-                );
-            }
-
-            console.log(`✅ [ASSIGNMENT] Assignment ${assignmentId} completed by user ${user_id}`);
-
-            // 🆕 RESPOND IMMEDIATELY (non-blocking)
             res.json({
                 ok: true,
                 message: 'Assignment completed successfully',
-                all_assignments_complete: remaining[0].count === 0
+                all_assignments_complete: remainingCount === 0,
+                timeline_entity_id: entityId
             });
 
-            // 🆕 ASYNC: Run completion triggers (fire-and-forget with notification)
-            if (global.sseManager && assignment.created_by) {
-                // Create "processing" notification for trigger execution
-                const notifId = await global.sseManager.emitToUser(assignment.created_by, 'doc_generation_started', {
-                    assignmentId,
-                    ticketId: assignment.ticket_id,
-                    message: 'Processing completion triggers...'
-                }, { persist: true, title: '⏳ Processing...', message: 'Running completion actions' });
-
-                // Fire triggers async
-                triggerEngine.runTriggersForEvent(
-                    assignment.service_id,
-                    'on_assignment_complete',
-                    {
-                        assignmentId,
-                        ticketId: assignment.ticket_id,
-                        actor: { user_id },
-                        completion_data
-                    }
-                ).then(() => {
-                    // Update notification to success
-                    if (notifId?.notificationId) {
-                        global.sseManager.updateNotification(notifId.notificationId, {
-                            type: 'doc_generation_complete',
-                            title: '✅ Processing Complete',
-                            message: 'All completion actions finished'
-                        });
-                    }
-                    // Emit completion SSE
-                    global.sseManager.emitToUser(assignment.created_by, 'assignment_update', {
-                        assignmentId,
-                        ticketId: assignment.ticket_id,
-                        action: 'completed',
-                        allComplete: remaining[0].count === 0,
-                        assignment_title: assignment.assignment_title || 'Assignment',
-                        service_name: assignment.service_name,
-                        actor_name: user_name,
-                        timestamp: new Date().toISOString()
-                    }, {
-                        persist: true,
-                        title: '✅ Assignment Complete',
-                        message: `${user_name} completed ${assignment.assignment_title || 'assignment'}`
-                    });
-                }).catch(err => {
-                    console.error('Trigger execution error:', err);
-                    // Update notification to error
-                    if (notifId?.notificationId) {
-                        global.sseManager.updateNotification(notifId.notificationId, {
-                            type: 'assignment_update',
-                            title: '⚠️ Trigger Error',
-                            message: `Completion actions failed: ${err.message}`
-                        });
-                    }
-                });
-            }
-
-            if (global.io) {
-                global.io.emit("message", "assignment_complete_" + assignmentId);
-            }
-
-            // 🆕 PUSH COUNTERS (Completed assignment = count decrement)
-            try {
-                const { pushCountersToUser, pushCountersToTeam } = require('../../../core/sse-helper');
-                if (assignment.assigned_type === 'user') {
-                    pushCountersToUser(assignment.assigned_id);
-                } else if (assignment.assigned_type === 'team') {
-                    pushCountersToTeam(assignment.assigned_id);
-                }
-            } catch (e) {
-                console.error('SSE Push Error (completeAssignment):', e.message);
-            }
+            // Async background tasks
+            _onAssignmentCompletedAsync({
+                assignment, user_id, user_name, completion_note, completion_data, remainingCount, entityId
+            }).catch(e => console.error('Error in post-completion tasks:', e));
 
         } catch (error) {
+            if (conn) { await conn.rollback(); conn.release(); }
             console.error('Error completing assignment:', error);
+            res.status(500).json({ ok: false, error: error.message });
+        }
+    },
+
+    /**
+     * POST /engine/assignment/bulk-complete
+     * Complete multiple assignments in the background
+     */
+    bulkCompleteAssignments: async (req, res) => {
+        try {
+            const { assignmentIds, completion_note, completion_data, temp_file_ids } = req.body;
+            const user_id = req.dataToken.user_id;
+            const user_name = `${req.dataToken.firstname || ''} ${req.dataToken.lastname || ''}`.trim() || 'Someone';
+
+            if (!Array.isArray(assignmentIds) || assignmentIds.length === 0) {
+                return res.status(400).json({ ok: false, error: 'No assignments selected' });
+            }
+
+            // Respond immediately to avoid frontend lag
+            res.json({ ok: true, message: `Processing ${assignmentIds.length} assignments in the background...` });
+
+            // Run bulk processing in background
+            setImmediate(async () => {
+                let successCount = 0;
+                let failCount = 0;
+                const errors = [];
+
+                for (const id of assignmentIds) {
+                    const conn = await dbHots.promise().getConnection();
+                    try {
+                        await conn.beginTransaction();
+                        const { assignment, remainingCount, entityId } = await _executeAssignmentCompletion(conn, {
+                            assignmentId: id, user_id, completion_note, temp_file_ids
+                        });
+                        await conn.commit();
+                        conn.release();
+
+                        successCount++;
+
+                        // Non-blocking trigger logic for each success
+                        _onAssignmentCompletedAsync({
+                            assignment, user_id, user_name, completion_note, completion_data, remainingCount, entityId
+                        }).catch(() => { });
+
+                    } catch (err) {
+                        if (conn) { await conn.rollback(); conn.release(); }
+                        failCount++;
+                        errors.push(`Task #${id}: ${err.message}`);
+                        console.error(`Bulk failure for ${id}:`, err.message);
+                    }
+                }
+
+                // Final SSE Bell Notification & Toast
+                if (global.sseManager) {
+                    const title = failCount === 0 ? '✅ Bulk Completion Finished' : '⚠️ Bulk Completion Partial Success';
+                    const message = `Successfully completed ${successCount} tasks. ${failCount > 0 ? `Failed: ${failCount}` : ''}`;
+                    
+                    // Show a persistent bell notification
+                    await global.sseManager.emitToUser(user_id, 'assignment_update', 
+                        { action: 'bulk_complete_result', successCount, failCount, total: assignmentIds.length },
+                        { persist: true, title, message }
+                    );
+
+                    // If errors occurred, send an additional warning with details
+                    if (failCount > 0) {
+                        await global.sseManager.emitToUser(user_id, 'assignment_update', 
+                            { action: 'bulk_error', errors },
+                            { persist: true, title: '❌ Completion Errors', message: errors.slice(0, 3).join('\n') }
+                        );
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('Error in bulk-complete initialization:', error);
             res.status(500).json({ ok: false, error: error.message });
         }
     },
@@ -511,7 +659,11 @@ module.exports = {
     getTimeline: async (req, res) => {
         try {
             const { assignmentId } = req.params;
+            const { limit, page } = req.query;
             const user_id = req.dataToken.user_id;
+
+            const pageSize = limit ? parseInt(limit) : 20;
+            const offset = page ? (parseInt(page) - 1) * pageSize : 0;
 
             // Verify access to assignment
             const [assignments] = await dbHots.promise().query(
@@ -549,6 +701,17 @@ module.exports = {
                   AND twd.is_latest = 1
                   AND twd.is_hidden = 0
                 ORDER BY twd.created_at DESC
+                LIMIT ? OFFSET ?
+            `, [masterRouteId, pageSize, offset]);
+
+            // Get total count for pagination
+            const [[{ total }]] = await dbHots.promise().query(`
+                SELECT COUNT(DISTINCT twd.entity_id) as total
+                FROM t_ticket_work_data twd
+                WHERE twd.root_ticket_id = ?
+                  AND twd.data_type = 'timeline_update'
+                  AND twd.is_latest = 1
+                  AND twd.is_hidden = 0
             `, [masterRouteId]);
 
             // Group by entity_id to reconstruct updates
@@ -598,8 +761,7 @@ module.exports = {
                 });
             }
 
-            res.json({ ok: true, updates: timelineArray });
-
+            res.json({ ok: true, updates: timelineArray, total });
         } catch (error) {
             console.error('Error fetching timeline:', error);
             res.status(500).json({ ok: false, error: error.message });
@@ -2460,7 +2622,7 @@ module.exports = {
  */
 async function checkTeamMembership(user_id, team_id) {
     const [rows] = await dbHots.promise().query(
-        'SELECT 1 FROM m_team_member WHERE user_id = ? AND team_id = ? LIMIT 1',
+        'SELECT 1 FROM m_company_team_member WHERE user_id = ? AND team_id = ? LIMIT 1',
         [user_id, team_id]
     );
     return rows.length > 0;

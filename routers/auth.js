@@ -2,7 +2,7 @@ const express = require("express");
 const route = express.Router();
 const { readToken } = require("../config/encrypts");
 
-const { authController } = require("../controller");
+const { authController, hotsSystemMeta, hotsCMS } = require("../controller");
 
 route.post("/login", authController.login);
 route.post("/forgot",  authController.forgotPassword);
@@ -14,6 +14,12 @@ route.post("/change_pass", readToken, authController.changePassword);
 
 route.get("/keep_login", readToken, authController.keepLogin);
 route.get("/ping", authController.isOpenLoginPage);
+route.get("/system-meta/:key", hotsSystemMeta.getPublicMeta);
+
+// Public CMS
+route.get("/cms/posts", hotsCMS.getPosts);
+route.get("/cms/categories", hotsCMS.getCategories);
+route.get("/cms/public/:slug", hotsCMS.getPublicPostBySlug);
 
 module.exports = route;
  

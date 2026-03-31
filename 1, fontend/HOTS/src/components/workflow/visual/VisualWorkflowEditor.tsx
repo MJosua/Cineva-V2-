@@ -10,7 +10,6 @@ import ReactFlow, {
     addEdge,
     ReactFlowProvider,
     ReactFlowInstance,
-    KeyCode,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -177,7 +176,7 @@ export const VisualWorkflowEditor: React.FC<VisualWorkflowEditorProps> = ({
                     onDrop={onDrop}
                     onDragOver={onDragOver}
                     nodeTypes={nodeTypes}
-                    deleteKeyCode={[KeyCode.Delete, KeyCode.Backspace]}
+                    deleteKeyCode={['Delete', 'Backspace']}
                     fitView
                     snapToGrid
                     snapGrid={[15, 15]}

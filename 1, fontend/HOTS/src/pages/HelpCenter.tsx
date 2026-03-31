@@ -3,102 +3,118 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Link } from 'react-router-dom';
 // import { AppLayout } from '@/components/layout/AppLayout';
-import { Search, BookOpen, Video, FileText, MessageCircle, Star, Clock, Users, ArrowRight, MessageSquare, HelpCircle, CheckSquare } from 'lucide-react';
+import { Search, BookOpen, Video, FileText, MessageCircle, Star, Clock, Users, ArrowRight, MessageSquare, HelpCircle, CheckSquare, ShieldAlert } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
+import axios from 'axios';
+import { API_URL } from '../config/sourceConfig';
+
 const HelpCenter = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [posts, setPosts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const popularArticles = [
-    {
-      title: "How to Submit a Service Request",
-      description: "Learn how to create and submit service requests through the system",
-      category: "Getting Started",
-      readTime: "3 min",
-      rating: 4.8,
-      views: 1250
-    },
-    {
-      title: "Understanding Approval Workflows",
-      description: "Guide to understanding how approval processes work in the system",
-      category: "Workflows",
-      readTime: "5 min",
-      rating: 4.6,
-      views: 890
-    },
-    {
-      title: "Managing Your Tickets",
-      description: "How to track, update, and manage your submitted tickets",
-      category: "Ticket Management",
-      readTime: "4 min",
-      rating: 4.9,
-      views: 1100
-    },
-    {
-      title: "File Upload Guidelines",
-      description: "Best practices for uploading files and attachments",
-      category: "Files & Attachments",
-      readTime: "2 min",
-      rating: 4.5,
-      views: 670
-    }
-  ];
+  // Icons mapping for CMS categories
+  const iconMap: { [key: string]: React.ElementType } = {
+    'BookOpen': BookOpen,
+    'FileText': FileText,
+    'Users': Users,
+    'MessageCircle': MessageCircle,
+    'ShieldCheck': ShieldAlert,
+    'HelpCircle': HelpCircle,
+    'Clock': Clock
+  };
 
-  const categories = [
-    {
-      name: "Getting Started",
-      description: "Basic guides to help you get up and running",
-      icon: BookOpen,
-      color: "bg-blue-100 text-blue-700",
-      articleCount: 12
-    },
-    {
-      name: "Service Requests",
-      description: "Everything about creating and managing service requests",
-      icon: FileText,
-      color: "bg-green-100 text-green-700",
-      articleCount: 18
-    },
-    {
-      name: "Approval Workflows",
-      description: "Understanding approval processes and workflows",
-      icon: Users,
-      color: "bg-purple-100 text-purple-700",
-      articleCount: 8
-    },
-    {
-      name: "Troubleshooting",
-      description: "Common issues and how to resolve them",
-      icon: MessageCircle,
-      color: "bg-orange-100 text-orange-700",
-      articleCount: 15
-    }
-  ];
+  React.useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [postsRes, catsRes] = await Promise.all([
+          axios.get(`${API_URL}/cms/posts?module_key=guide`),
+          axios.get(`${API_URL}/cms/categories`)
+        ]);
+
+        if (postsRes.data.ok) setPosts(postsRes.data.pages || postsRes.data.data);
+        if (catsRes.data.ok) setCategories(catsRes.data.data);
+      } catch (err) {
+        console.error("Failed to fetch CMS content", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
     <div className="w-full space-y-8">
       {/* Header Section */}
-      <div className="text-center py-12 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg">
-        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="text-center py-12 bg-gradient-to-r from-blue-50/50 to-slate-50 rounded-lg border border-blue-100/50">
+        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-white shadow-sm">
           <HelpCircle className="w-8 h-8 text-blue-600" />
         </div>
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Help Center</h1>
-        <p className="text-xl text-gray-600 mb-8">Find answers, guides, and support for all your questions</p>
-
-
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">User Guide</h1>
+        <p className="text-lg text-gray-500 mb-8 font-medium">Step-by-step instructions and platform documentation</p>
       </div>
 
-      <Tabs defaultValue="tickets" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="tickets">Tickets</TabsTrigger>
-          <TabsTrigger value="approval">Approval</TabsTrigger>
-          <TabsTrigger value="meeting-room">Meeting Room</TabsTrigger>
-          <TabsTrigger value="guide">Quick Guide</TabsTrigger>
+      <Tabs defaultValue="updates" className="w-full">
+        <TabsList className="grid w-full grid-cols-5 p-1 bg-slate-100/50 rounded-xl">
+          <TabsTrigger value="updates" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2.5">Articles</TabsTrigger>
+          <TabsTrigger value="tickets" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2.5">Tickets</TabsTrigger>
+          <TabsTrigger value="approval" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2.5">Approval</TabsTrigger>
+          <TabsTrigger value="meeting-room" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2.5">Meeting Room</TabsTrigger>
+          <TabsTrigger value="guide" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2.5">Quick Guide</TabsTrigger>
         </TabsList>
 
-
+        <TabsContent value="updates" className="space-y-6 pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {posts.map((post) => (
+              <Card key={post.page_id} className="group hover:shadow-xl transition-all duration-300 border-none bg-white/50 backdrop-blur-sm shadow-sm ring-1 ring-slate-200">
+                <CardHeader className="pb-3 px-6 pt-6">
+                  <div className="flex justify-between items-start mb-3">
+                    <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none font-bold uppercase tracking-wider text-[10px] px-2.5 py-1">
+                      System Update
+                    </Badge>
+                    <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {new Date(post.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <CardTitle className="text-lg font-bold text-slate-800 group-hover:text-blue-700 transition-colors">
+                    {post.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-6 pb-6 pt-0 flex gap-4">
+                  <div className="flex-1">
+                    <p className="text-sm text-slate-600 leading-relaxed mb-4 line-clamp-3">
+                      {post.summary}
+                    </p>
+                    <Button variant="ghost" asChild className="p-0 h-auto text-blue-600 font-bold text-xs hover:bg-transparent hover:text-blue-800 flex items-center gap-1">
+                      <Link to={`/page/${post.slug}`}>
+                        Read Details
+                        <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                    </Button>
+                  </div>
+                  {post.thumbnail && (
+                    <div className="shrink-0">
+                      <div className="w-20 h-20 rounded-lg border-2 border-white shadow-md overflow-hidden bg-slate-100 ring-1 ring-slate-200">
+                        <img 
+                          src={post.thumbnail} 
+                          alt="" 
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                        />
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
 
         <TabsContent value="tickets" className="space-y-6">
           <Card>
@@ -338,7 +354,6 @@ const HelpCenter = () => {
           </p>
           <div className="flex justify-center gap-4">
             <Button className="bg-blue-600 hover:bg-blue-700 text-white">Contact Support</Button>
-            <Button variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50">Schedule a Call</Button>
           </div>
         </CardContent>
       </Card>

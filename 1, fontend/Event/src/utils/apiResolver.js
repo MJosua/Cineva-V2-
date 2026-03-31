@@ -50,16 +50,6 @@ function deriveOrigin(apiBase) {
 
 const PRIMARY_ORIGIN = deriveOrigin(ENV_API_BASE);
 
-/**
- * Ordered fallback origins to probe.
- * First reachable origin wins.
- */
-const FALLBACK_ORIGINS = [
-    'https://backend.indofoodinternational.com:2468',
-    'http://110.35.82.52:2864',
-    'http://10.126.106.105',
-];
-
 // Path suffix to append when constructing the full API_BASE
 const API_PATH_SUFFIX = '/api/event-engine';
 
@@ -110,20 +100,6 @@ function pingEndpoint(origin, timeoutMs = CONNECTION_TIMEOUT_MS) {
     });
 }
 
-async function findHealthyOrigin(origins) {
-    for (const origin of origins) {
-        try {
-            console.log(`[apiResolver] Probing: ${origin}`);
-            const result = await pingEndpoint(origin);
-            console.log(`[apiResolver] ✔ Healthy: ${result}`);
-            return result;
-        } catch (e) {
-            console.warn(`[apiResolver] ✖ Failed: ${origin} — ${e.message}`);
-        }
-    }
-    throw new Error('[apiResolver] All endpoints failed.');
-}
-
 /**
  * CALL THIS ONCE in main.jsx before ReactDOM.createRoot().render().
  * 
@@ -134,11 +110,12 @@ async function findHealthyOrigin(origins) {
  *   });
  */
 export async function resolveApiBase() {
-    const candidates = [PRIMARY_ORIGIN, ...FALLBACK_ORIGINS.filter(u => u !== PRIMARY_ORIGIN)];
     try {
-        _resolvedOrigin = await findHealthyOrigin(candidates);
-    } catch {
-        console.error('[apiResolver] Could not reach any endpoint. Defaulting to primary origin.');
+        console.log(`[apiResolver] Probing: ${PRIMARY_ORIGIN}`);
+        _resolvedOrigin = await pingEndpoint(PRIMARY_ORIGIN);
+        console.log(`[apiResolver] ✔ Healthy: ${_resolvedOrigin}`);
+    } catch (e) {
+        console.error(`[apiResolver] ✖ Failed: ${PRIMARY_ORIGIN} — ${e.message}. Defaulting to primary.`);
         _resolvedOrigin = PRIMARY_ORIGIN;
     }
     return getApiBase();

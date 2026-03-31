@@ -38,7 +38,7 @@ module.exports = async function approveDepartmentJoining({ ticketId, context, db
         const draftRows = await dbQuery(
             `SELECT ud.department_id, md.department_head, md.department_name
              FROM user_draft ud
-             LEFT JOIN m_department md ON ud.department_id = md.department_id
+             LEFT JOIN m_company_department md ON ud.department_id = md.department_id
              WHERE ud.user_id = ?`,
             [userId]
         );

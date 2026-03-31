@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const { decodeTokenHT } = require('../../config/encrypts');
 const engineAssignment = require('../../controller/hots_controller/engine/engineAssignment');
@@ -24,6 +24,7 @@ router.get('/assignment/:assignmentId/work-data', decodeTokenHT, engineWorkData.
 
 // Complete assignment
 router.post('/assignment/:assignmentId/complete', decodeTokenHT, engineAssignment.completeAssignment);
+router.post('/assignment/bulk-complete', decodeTokenHT, engineAssignment.bulkCompleteAssignments);
 
 // Timeline routes
 router.post('/assignment/upload', decodeTokenHT, uploadAssignmentTimeline, engineAssignment.uploadTimelineFile);

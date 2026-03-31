@@ -1082,7 +1082,7 @@ module.exports = {
                 AND tr.so_id = trd.so_id
                 AND tr.invoice_id = trd.invoice_id
             LEFT JOIN trs_realization_searates trs ON trs.so_id = tr.so_id
-                AND trs.cont_id = tr.cont_id
+                AND trs.number = tr.cont_id
             LEFT JOIN mst_product mp ON mp.product_code = trd.sku
             LEFT JOIN mst_company mc ON mc.company_id = mo.company_id
             LEFT JOIN map_port_for_dist mpfd ON mo.company_id = mpfd.distributor_id
@@ -1389,7 +1389,7 @@ module.exports = {
                 AND trd.cont_id = tr.cont_id
             LEFT JOIN trs_realization_searates trs 
                 ON trs.so_id = trd.so_id 
-                AND trs.cont_id = trd.cont_id
+                AND trs.number = trd.cont_id
             LEFT JOIN mst_product mp 
                 ON mp.product_code = trd.sku
             WHERE trd.so_id = ${dbConf.escape(so_id)}

@@ -6,16 +6,32 @@ const catalogController = require('../../controller/hots_controller/settings/con
 const workflowController = require('../../controller/hots_controller/settings/controllers/WorkflowConfigController');
 const metadataController = require('../../controller/hots_controller/settings/controllers/MetadataController');
 const systemController = require('../../controller/hots_controller/settings/controllers/SystemUtilityController');
-const { hotsSRFController } = require('../../controller');
+const { hotsSRFController, hotsSystemMeta, hotsCMS } = require('../../controller');
 const hotsDataChangeController = require('../../controller/hots_controller/hotsDataChangeController');
 const teamJoinRequestController = require('../../controller/project_manager_controller/teamJoinRequestController');
-
+const inventoryController = require('../../controller/hots_controller/settings/controllers/InventoryController');
+const assetInstanceController = require('../../controller/hots_controller/settings/controllers/AssetInstanceController');
 
 route.get('/get_menu', decodeTokenHT, systemController.getmenu)
 route.get('/get_menu_active', decodeTokenHT, catalogController.getActiveServices)
 route.get('/get_menu_inactive', decodeTokenHT, catalogController.getInactiveServices)
 route.post('/toggle_menu', decodeTokenHT, catalogController.toggleServiceStatus)
 route.get('/get_data_diff', decodeTokenHT, hotsDataChangeController.getSOHeader)
+
+// System Metadata (EAV)
+route.get('/system-meta/:key/history', decodeTokenHT, hotsSystemMeta.getMetaHistory)
+route.post('/system-meta/update', decodeTokenHT, hotsSystemMeta.upsertMeta)
+
+// CMS Manager
+route.post('/cms/upsert', decodeTokenHT, hotsCMS.upsertPost)
+route.get('/cms/categories', decodeTokenHT, hotsCMS.getCategories)
+route.post('/cms/admin/category', decodeTokenHT, hotsCMS.createCategory)
+route.get('/cms/admin/list', decodeTokenHT, hotsCMS.getAdminPosts)
+route.get('/cms/admin/:id', decodeTokenHT, hotsCMS.getPostById)
+route.post('/cms/admin/save', decodeTokenHT, hotsCMS.upsertPost)
+route.put('/cms/admin/:id/quick', decodeTokenHT, hotsCMS.quickUpdate)
+route.put('/cms/admin/:id/category', decodeTokenHT, hotsCMS.quickUpdateCategory)
+route.delete('/cms/admin/:id', decodeTokenHT, hotsCMS.deletePost)
 
 // User Management
 route.get('/get/user', decodeTokenHT, userController.getAllUser)
@@ -83,6 +99,25 @@ route.get('/get/jobtitle', decodeTokenHT, userController.getAllJobTitle)
 route.post('/post/jobtitle', decodeTokenHT, userController.createJobTitle)
 route.put('/update/jobtitle/:id', decodeTokenHT, userController.updateJobTitle)
 route.delete('/delete/jobtitle/:id', decodeTokenHT, userController.deleteJobTitle)
+
+// Inventory & Assets
+route.get('/get/inventory', decodeTokenHT, inventoryController.getInventory)
+route.get('/public/locations', inventoryController.getPublicLocations) // Public suggestions
+route.post('/post/inventory/upsert', decodeTokenHT, inventoryController.upsertItem)
+route.delete('/delete/inventory/:id', decodeTokenHT, inventoryController.deleteItem)
+route.post('/post/inventory/transaction', decodeTokenHT, inventoryController.postTransaction)
+
+// Asset Registry (Serialized Individual Units)
+route.get('/get/asset-instances/:category', decodeTokenHT, assetInstanceController.getAssetInstances)
+route.post('/post/asset-instance/upsert', decodeTokenHT, assetInstanceController.upsertAssetInstance)
+route.post('/post/asset-instances/bulk-update', decodeTokenHT, assetInstanceController.bulkUpdateAssetInstances)
+route.delete('/delete/asset-instance/:id', decodeTokenHT, assetInstanceController.deleteAssetInstance)
+route.get('/get/asset-timeline/:resourceId', decodeTokenHT, assetInstanceController.getAssetTimeline)
+route.post('/post/asset-timeline/:resourceId', decodeTokenHT, assetInstanceController.postAssetTimeline)
+route.get('/get/asset-next-serial/:skuKey/:date', decodeTokenHT, assetInstanceController.getNextSerialNumber)
+route.get('/get/asset-by-sn/:category/:sn', assetInstanceController.getAssetBySN) // Public lookup for QR audit
+route.get('/public/asset/:sn', assetInstanceController.getPublicAssetBySN) // Dedicated public asset page
+route.post('/public/post-timeline/:sn', assetInstanceController.postPublicTimeline) // Protected public audit submission
 
 // Service Management
 route.get('/get/services', decodeTokenHT, catalogController.getAllServices)

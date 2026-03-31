@@ -1,8 +1,9 @@
 import { useParams } from "react-router-dom";
-import { Box, Spinner, Center, Heading } from "@chakra-ui/react";
+import { Spinner, Center, Heading } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { getPublicCampaign } from "../../services/eventEngineApi";
 import EngineRenderer from "../../components/Engine/EngineRenderer";
+import { getViewportFromWidth } from "../../components/Engine/responsiveLayout";
 
 export default function EnginePage() {
     const params = useParams();
@@ -15,6 +16,13 @@ export default function EnginePage() {
     const [eventData, setEventData] = useState(null);
     const [pageBlocks, setPageBlocks] = useState(null);
     const [notFound, setNotFound] = useState(false);
+    const [viewport, setViewport] = useState(getViewportFromWidth(window.innerWidth));
+
+    useEffect(() => {
+        const onResize = () => setViewport(getViewportFromWidth(window.innerWidth));
+        window.addEventListener("resize", onResize);
+        return () => window.removeEventListener("resize", onResize);
+    }, []);
 
     useEffect(() => {
         async function loadEvent() {
@@ -97,7 +105,7 @@ export default function EnginePage() {
             }
         }
         loadEvent();
-    }, [slug]);
+    }, [slug, currentRoute]);
 
 
     if (notFound) {
@@ -116,8 +124,6 @@ export default function EnginePage() {
         )
     }
 
-    return (
-        <EngineRenderer eventData={eventData} blocksOverride={pageBlocks} />
-    );
+    return <EngineRenderer eventData={eventData} blocksOverride={pageBlocks} viewport={viewport} />;
 }
 

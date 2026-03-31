@@ -16,13 +16,13 @@ async function generateChallengeData() {
 
         // 0. Ensure user 1 is in IT Team
         const [teamCheck] = await connection.query(
-            "SELECT * FROM m_team_member WHERE user_id = ? AND team_id = ?",
+            "SELECT * FROM m_company_team_member WHERE user_id = ? AND team_id = ?",
             [currentUserId, teamId]
         );
         if (teamCheck.length === 0) {
             console.log(`➕ Adding User ${currentUserId} to IT Team (Team ${teamId})...`);
             await connection.query(
-                "INSERT INTO m_team_member (team_id, user_id, team_leader) VALUES (?, ?, ?)",
+                "INSERT INTO m_company_team_member (team_id, user_id, team_leader) VALUES (?, ?, ?)",
                 [teamId, currentUserId, 0]
             );
         }

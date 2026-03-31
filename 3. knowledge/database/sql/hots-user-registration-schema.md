@@ -30,11 +30,11 @@ CREATE TABLE `user_draft` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
-## Table: `m_department`
+## Table: `m_company_department`
 Master data for departments, including the department head assignment.
 
 ```sql
-CREATE TABLE `m_department` (
+CREATE TABLE `m_company_department` (
   `department_id` int(11) NOT NULL AUTO_INCREMENT,
   `department_name` varchar(100) DEFAULT NULL,
   `department_shortname` varchar(50) DEFAULT NULL,
@@ -48,11 +48,11 @@ CREATE TABLE `m_department` (
 ```
 
 ## Relationships
-- `user_draft.department_id` -> `m_department.department_id`
-- `m_department.department_head` -> `user.user_id` (Leader)
+- `user_draft.department_id` -> `m_company_department.department_id`
+- `m_company_department.department_head` -> `user.user_id` (Leader)
 
 ## Flow
 1. User registers -> Insert into `user_draft`.
-2. System looks up `m_department.department_head`.
+2. System looks up `m_company_department.department_head`.
 3. Email sent to Header (Leader).
 4. Leader approves -> Insert into `user` table -> Update `user_draft.user_id` and `status`.

@@ -74,8 +74,10 @@ function createSafePool(dbName, connectionLimit = 20) {
                 });
 
                 const duration = Date.now() - start;
-                if (duration > 3000)
-                    console.warn(`⚠️ Slow query (${duration} ms) in ${dbName}`);
+                if (duration > 3000) {
+                    const sqlBrief = sql.length > 200 ? sql.substring(0, 197) + '...' : sql;
+                    console.warn(`⚠️ Slow query (${duration} ms) in ${dbName}: ${sqlBrief.replace(/\s+/g, ' ')}`);
+                }
 
                 return rows;
             } catch (err) {
@@ -113,6 +115,7 @@ const { pool: dbHots, query: dbQueryHots } = createSafePool(process.env.DB_NAME_
 const { pool: dbPMS, query: dbQueryPMS } = createSafePool(process.env.DB_NAME_PMS);
 const { pool: dbClick, query: dbQueryClick } = createSafePool(process.env.DB_NAME_Click);
 const { pool: dbSR, query: dbQuerySR } = createSafePool(process.env.DB_NAME_SR);
+const { pool: dbLinkShortener, query: dbQueryLinkShortener } = createSafePool("linkshortener");
 
 // MeetingBook (using safe factory now)
 const { pool: dbmeetingbookPool, query: dbmeetingbook } = createSafePool("meetingbook");
@@ -205,6 +208,7 @@ module.exports = {
     dbPMS, dbQueryPMS,
     dbClick, dbQueryClick,
     dbSR, dbQuerySR,
+    dbLinkShortener, dbQueryLinkShortener,
     dbmeetingbook: { query: dbmeetingbook },
     addSqlLogger,
 };

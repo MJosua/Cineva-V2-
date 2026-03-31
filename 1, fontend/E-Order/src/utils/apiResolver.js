@@ -38,8 +38,10 @@ const CONNECTION_TIMEOUT_MS = 2000;
  * Primary URL from CRA env. Set in .env:
  *   REACT_APP_API_URL=https://backend.indofoodinternational.com:2468
  */
-const PRIMARY_URL = process.env.REACT_APP_API_URL
+const PRIMARY_URL = import.meta.env.REACT_APP_API_URL
     || 'https://backend.indofoodinternational.com:2468';
+
+console.log(`[apiResolver] Initialized. PRIMARY_URL: ${PRIMARY_URL}`);
 
 /**
  * Ordered fallback list. First reachable URL wins.

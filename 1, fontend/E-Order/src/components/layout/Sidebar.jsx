@@ -74,13 +74,13 @@ const Sidebar = () => {
               {checkEdit ? (
                 <>
                   <span className="py-2">
-                    â€œAre you sure you want to go to the order page?
+                    Are you sure you want to go to the order page?
                     <br />
                     Your unsaved draft will not be saved.
                   </span>
                 </>
               ) : <span className="py-2">
-                â€œThis is the first time of you to make an order, would you like to see tutorial first ?
+                This is the first time of you to make an order, would you like to see tutorial first ?
               </span>}
             </ModalBody>
             <ModalFooter className="px-3">
@@ -483,13 +483,13 @@ const Sidebar = () => {
           <div
             className={
               "d-block d-flex hover-pink border-bottom text-muted fw-bold fs-6 py-3 btn rounded-0 " +
-              (type_id === 9 && location.pathname === '/e-order/containertracking'
+              (type_id === 9 && location.pathname === '/e-order/containertrackingadmin'
                 ? "bg-danger-02 "
                 : type_id === 9
                   ? ""
                   : "d-none")
             }
-            onClick={() => navigate("/e-order/containertracking")}
+            onClick={() => navigate("/e-order/containertrackingadmin")}
           >
             <div className="col-2 px-2">
               <Image
@@ -757,11 +757,11 @@ const Sidebar = () => {
                     <div className="col-2 px-2">
                         <Image
                             className="d-flex justify-content-center  pb-0 icon_width_35 pointer "
-                            src={require('../../assets/images/help.PNG')}
+                            src="/image/Help.png"
                             boxSize={8}
                             alt="content"
 
-                            fallbacksrc={require('../../assets/images/emptyplate.PNG')}>
+                            fallbacksrc="/image/emptyplate.PNG">
                         </Image>
                     </div>
                     <div className="d-flex ms-2">

@@ -30,7 +30,7 @@ module.exports = {
                     u.department_id,
                     d.department_name
                 FROM user u
-                LEFT JOIN m_department d ON u.department_id = d.department_id
+                LEFT JOIN m_company_department d ON u.department_id = d.department_id
                 WHERE u.user_id = ?
             `, [user_id]);
 

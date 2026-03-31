@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
-import { fetchDashboardFunctions } from "@/store/slices/dashboardSlice";
+import { fetchDashboardFunctions, fetchDashboardSummaries } from "@/store/slices/dashboardSlice";
 import DashboardCardEnhanced from "./DashboardCardEnhanced";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Database } from "lucide-react";
@@ -24,58 +24,20 @@ interface ServiceSummary {
 
 const DashboardPage: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
-    const { data, loading, error } = useSelector((state: RootState) => state.dashboard);
-    const [summaries, setSummaries] = useState<Record<number, ServiceSummary>>({});
-    const [summaryLoading, setSummaryLoading] = useState(false);
+    const { data, summaries, loading, summaryLoading } = useSelector((state: RootState) => state.dashboard);
 
     useEffect(() => {
-        dispatch(fetchDashboardFunctions());
-    }, [dispatch]);
+        if (data.length === 0) {
+            dispatch(fetchDashboardFunctions());
+        }
+    }, [dispatch, data]);
 
-    // Fetch summaries for each dashboard function using new card_summary endpoint
+    // Fetch summaries if we have data but no summaries
     useEffect(() => {
-        const fetchSummaries = async () => {
-            if (!data || data.length === 0) return;
-
-            const token = localStorage.getItem('hots_tokek');
-            if (!token) return;
-
-            setSummaryLoading(true);
-            const newSummaries: Record<number, ServiceSummary> = {};
-
-            // Fetch card summary for each function in parallel
-            await Promise.all(
-                data.map(async (func) => {
-                    try {
-                        const res = await axios.get(
-                            `${API_URL}/hotsdashboard/card_summary/${func.id}`,
-                            { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                        if (res.data.success && res.data.data) {
-                            const d = res.data.data;
-                            newSummaries[func.id] = {
-                                total: d.total,
-                                pending: d.pending,
-                                approved: d.approved,
-                                rejected: d.rejected,
-                                trend: d.trend || 0,
-                                trendDirection: d.trendDirection || 'neutral',
-                                sparklineData: d.sparklineData || []
-                            };
-                        }
-                        // If data is null (static type or no config), don't add to summaries
-                    } catch (err) {
-                        console.warn(`Failed to fetch summary for function ${func.id}:`, err);
-                    }
-                })
-            );
-
-            setSummaries(newSummaries);
-            setSummaryLoading(false);
-        };
-
-        fetchSummaries();
-    }, [data]);
+        if (data && data.length > 0 && Object.keys(summaries).length === 0) {
+            dispatch(fetchDashboardSummaries(data));
+        }
+    }, [data, dispatch, summaries]);
 
     // Filter data based on search value
     const { searchValue, setSearchPlaceholder } = useHeader();

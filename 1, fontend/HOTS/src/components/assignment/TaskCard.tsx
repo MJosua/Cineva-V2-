@@ -438,7 +438,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
                                 {task.description && (
                                     <div
-                                        className="text-xs text-muted-foreground mt-1 line-clamp-2 prose prose-sm max-w-none"
+                                        className="text-xs text-muted-foreground mt-1 prose prose-sm max-w-none"
                                         dangerouslySetInnerHTML={{ __html: task.description }}
                                     />
                                 )}

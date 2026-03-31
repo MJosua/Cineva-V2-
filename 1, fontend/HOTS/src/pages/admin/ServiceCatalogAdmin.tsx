@@ -70,12 +70,16 @@ const ServiceCatalogAdmin = () => {
 
   const forms: FormConfig[] = serviceCatalog.map(service => {
     let parsedConfig: any = {};
-    try {
-      if (service.form_json) {
-        parsedConfig = JSON.parse(service.form_json);
+    if (service.form_json) {
+      if (typeof service.form_json === 'string') {
+        try {
+          parsedConfig = JSON.parse(service.form_json);
+        } catch (error) {
+          console.error(`Failed to parse form_json for service ${service.service_id}:`, error);
+        }
+      } else if (typeof service.form_json === 'object') {
+        parsedConfig = service.form_json;
       }
-    } catch (error) {
-      console.error(`Failed to parse form_json for service ${service.service_id}:`, error);
     }
 
     return {
@@ -141,7 +145,7 @@ const ServiceCatalogAdmin = () => {
         duration: 3000
       });
 
-      fetchData();
+      fetchData(true);
 
     } catch (error: any) {
       console.error('Toggle error:', error);
@@ -220,7 +224,7 @@ const ServiceCatalogAdmin = () => {
 
       if (response.data.success) {
         // Update local state
-        fetchData();
+        fetchData(true);
         setWidgetModal({ isOpen: false, serviceId: '', serviceName: '', currentWidgets: [] });
 
         toast({

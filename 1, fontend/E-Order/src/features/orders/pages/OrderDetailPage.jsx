@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
+import statusIcons from '../../../assets/images/order_status_details_icons.png';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import Axios from 'axios';
@@ -1159,8 +1160,8 @@ const OrderDetailPage = () => {
                                     <div className='row px-3 d-flex justify-content-center'>
                                         {/* <Image
                                             className=''
-                                            src={require('../../../assets/images/order_status_details_icons.png')}
-                                            fallbackSrc={require('../../../assets/images/order_status_details_icons.png')}
+                                            src={statusIcons}
+                                            fallbackSrc={statusIcons}
                                             width='87%'
                                         /> */}
 

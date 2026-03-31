@@ -30,6 +30,7 @@ export const CUSTOM_COMPONENT_REGISTRY: Record<string, React.LazyExoticComponent
     'LaporanLembur': React.lazy(() => import('./report/LaporanLembur')),
     'CardNameGenerator': React.lazy(() => import('./report/CardNameGenerator')),
     'ProjectDashboard': React.lazy(() => import('./report/ProjectDashboard')),
+    'ShipmentReport': React.lazy(() => import('./report/ShipmentReport')),
     'gantt_room_schedule': React.lazy(() => import('../../widgets/GanttRoomUsage')),
     'room_monitoring_panel': React.lazy(() => import('../../widgets/RoomMonitoringPanel')),
 };

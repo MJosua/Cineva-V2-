@@ -93,8 +93,8 @@ module.exports = {
         let user_id = req.dataToken.user_id;
         try {
             const [services] = await dbHots.promise().query(`
-                SELECT hots.m_service.*, hots.m_service.workflow_id AS workflow_group_id, m_service_workflow.name AS workflow_group_name
-                FROM hots.m_service LEFT JOIN m_service_workflow ON hots.m_service.workflow_id  = m_service_workflow.id
+                SELECT hots.m_service.*, m_service_workflow.workflow_id AS workflow_group_id, m_service_workflow.name AS workflow_group_name
+                FROM hots.m_service LEFT JOIN m_service_workflow ON hots.m_service.service_id  = m_service_workflow.workflow_id
                 WHERE hots.m_service.finished_date IS NULL ORDER BY hots.m_service.service_name
             `);
             res.status(200).json({ success: true, data: services });

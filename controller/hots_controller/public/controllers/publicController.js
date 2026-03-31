@@ -17,7 +17,7 @@ module.exports = {
         SELECT 
           department_id AS id,
           department_name AS name
-        FROM hots.m_department
+        FROM hots.m_company_department
         WHERE finished_date is null
         ORDER BY department_name ASC
       `);

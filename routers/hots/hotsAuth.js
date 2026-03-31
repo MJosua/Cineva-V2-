@@ -8,6 +8,7 @@ const { decodeTokenHT } = require('../../config/encrypts')
 router.post('/login', hotsAuth.login);
 router.get('/keeplogin', decodeTokenHT, hotsAuth.keepLogin);
 router.get('/profile/', decodeTokenHT, hotsAuth.getProfile);
+router.post('/change_pass', decodeTokenHT, hotsAuth.changePassword);
 
 //lupa password
 router.post("/forgot",  hotsAuth.forgotPassword);

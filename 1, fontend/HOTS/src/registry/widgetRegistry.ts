@@ -78,6 +78,16 @@ export const widgetRegistry: Record<string, ExtendedWidgetConfig> = {
     category: "Template"
   },
 
+  FetchInventoryData: {
+    id: "FetchInventoryData",
+    name: "Fetch Inventory / POSM Data",
+    description: "Modularly fetches inventory data (POSM) for dynamic forms",
+    componentPath: "FetchInventoryData",
+    applicableTo: ["form"],
+    dataRequirements: ["inventory"],
+    category: "Template"
+  },
+
   job_applicants_table: {
     id: "job_applicants_table",
     name: "Job Applicants Table",
@@ -137,7 +147,24 @@ export const widgetRegistry: Record<string, ExtendedWidgetConfig> = {
     dataRequirements: ["diffData"],
     category: "Data Management"
   },
-
+  QRCodeDesignWidget: {
+    id: "QRCodeDesignWidget",
+    name: "QR Generator & Designer",
+    description: "Design branded QR codes and short links",
+    componentPath: "QRCodeDesignWidget",
+    applicableTo: ["form"],
+    dataRequirements: [],
+    category: "Tools"
+  },
+  QRCodePreviewWidget: {
+    id: "QRCodePreviewWidget",
+    name: "QR Code Preview & Download",
+    description: "View and download production-ready QR codes",
+    componentPath: "QRCodePreviewWidget",
+    applicableTo: ["ticket_detail"],
+    dataRequirements: ["ticketData"],
+    category: "Tools"
+  },
 };
 
 // Get widget by ID
