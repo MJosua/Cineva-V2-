@@ -44,7 +44,11 @@ const hotsReporting = require('./hots/hotsReporting')
 const hotsPreferences = require('./hots/hotsPreferences')
 const hotsProfile = require('./hots/hotsProfile')
 const hotsNotification = require('./hots/hotsNotification')
+const hotsJobMarketplace = require('./hots/hotsJobMarketplace')
 const hotsUrlShortener = require('./hots/urlShortener')
+const cinevaRouter = require('./hots/cinevaRouter')
+const saasRouter = require('./hots/saasRouter')
+const hotsContent = require('./hots/hotsContent')
 
 // Project Manager routes
 const projectmngr = require('./project_manager/project_routes')
@@ -117,7 +121,53 @@ module.exports = {
     hotsPreferences,
     hotsProfile,
     hotsNotification,
+    hotsJobMarketplace,
     hotsUrlShortener,
+    hotsSystemMenu: require('./hots/systemmenu'),
+
+
+    // Project Manager modules
+    projectmngr,
+    taskmngr,
+    ganttmngr,
+    kanbanmngr,
+    approvalmngr,
+    departmentmngr,
+    teammngr,
+    taskstepsmngr,
+    pmdashboard,
+    projectcommentmngr,
+    projecttemplatemngr,
+    notificationmngr,
+    timetrackingmngr,
+    usermngr,
+    rolemngr,
+
+
+    //meetingbook
+    mbbookings,
+    mbdayColors,
+    mbrooms,
+    mbsettings,
+    mbtimeslots,
+    mbusers,
+
+
+    engineRouter,
+    engineModuleRouter,
+    workflowadminRouter,
+    triggerRouter,
+    engineWorkDataRouter,
+    engineAssignmentRouter,
+    engineReportRouter, // 🆕 Reporting Router
+    engineProjectDashboardRouter,
+    cmsRouter,
+
+    // Coupon System
+    couponRouter,
+
+    // SSE
+    sseRouter,
     hotsSystemMenu: require('./hots/systemmenu'),
 
 
@@ -170,5 +220,10 @@ module.exports = {
     // Event Engine
     // Event Engine
     eventEnginePublicRouter,
-    eventEnginePrivateRouter
+    eventEnginePrivateRouter,
+
+    // Cineva & SaaS
+    cinevaRouter,
+    saasRouter,
+    hotsContent
 }

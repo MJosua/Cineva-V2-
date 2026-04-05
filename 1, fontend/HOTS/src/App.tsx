@@ -78,6 +78,13 @@ import TicketDetailPage from "./pages/module/admin/TicketDetailPage";
 import TicketListViewPage from "./pages/module/view/TicketListViewPage";
 import TicketViewPage from "./pages/module/view/TicketViewPage";
 import JobMarketplace from "./pages/JobMarketplace";
+import JobMarketplaceCampaigns from "./pages/jobmarketplace/JobMarketplaceCampaigns";
+import JobMarketplaceBatches from "./pages/jobmarketplace/JobMarketplaceBatches";
+import JobMarketplaceLocations from "./pages/jobmarketplace/JobMarketplaceLocations";
+import JobMarketplaceTalentAssignments from "./pages/jobmarketplace/JobMarketplaceTalentAssignments";
+import JobMarketplaceContentWorkflow from "./pages/jobmarketplace/JobMarketplaceContentWorkflow";
+import JobMarketplaceDetail from "./pages/jobmarketplace/JobMarketplaceDetail";
+import JobMarketplaceAdminCreate from "./pages/jobmarketplace/JobMarketplaceAdminCreate";
 import { MyAssignments } from "./pages/MyAssignments";
 import JobListPage from "./pages/dashboard/report/JobListPage";
 import AssignmentDetailPage from "./pages/dashboard/AssignmentDetailPage";
@@ -192,6 +199,13 @@ const AppContentInner = () => {
 
           {/* My Assignments & Marketplace */}
           <Route path="/job-marketplace" element={<JobMarketplace />} />
+          <Route path="/job-marketplace/campaigns" element={<JobMarketplaceCampaigns />} />
+          <Route path="/job-marketplace/admin/create" element={<JobMarketplaceAdminCreate />} />
+          <Route path="/job-marketplace/batches" element={<JobMarketplaceBatches />} />
+          <Route path="/job-marketplace/locations" element={<JobMarketplaceLocations />} />
+          <Route path="/job-marketplace/talent-assignments" element={<JobMarketplaceTalentAssignments />} />
+          <Route path="/job-marketplace/content-workflow" element={<JobMarketplaceContentWorkflow />} />
+          <Route path="/job-marketplace/detail/:job_id" element={<JobMarketplaceDetail />} />
           <Route path="/my-assignments" element={<MyAssignments />} />
           <Route path="/assignment/:ticket_id" element={<AssignmentDetailPage />} />
 

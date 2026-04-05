@@ -40,7 +40,8 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogFooter
+    DialogFooter,
+    DialogDescription
 } from '@/components/ui/dialog';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { API_URL } from '@/config/sourceConfig';
@@ -767,9 +768,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                             <FileText className="w-5 h-5 text-blue-500" />
                             Report Timeline — {task.title}
                         </DialogTitle>
-                        <p className="text-xs text-muted-foreground">
+                        <DialogDescription className="text-xs text-muted-foreground">
                             Each entry appears in Activity → Card Reports, sorted by date.
-                        </p>
+                        </DialogDescription>
                     </DialogHeader>
 
                     <div className="flex-1 overflow-y-auto py-2 pr-2 space-y-4 min-h-0 bg-slate-50 relative rounded-md border p-4">

@@ -121,7 +121,7 @@ export default function MediaLibraryModal({ isOpen, onClose, onSelect, title = "
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden bg-white">
+      <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden bg-white" aria-describedby={undefined}>
         <DialogHeader className="p-6 border-b bg-slate-50/50">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">

@@ -1,6 +1,14 @@
 // BISMILAHIROHMANNIROHIM
 const dotenv = require('dotenv');
+const fs = require('fs');
+const path = require('path');
 dotenv.config();
+
+const localEnvPath = path.join(__dirname, '.env.local');
+if (fs.existsSync(localEnvPath)) {
+  dotenv.config({ path: localEnvPath, override: true });
+  console.log('Loaded local environment override from .env.local');
+}
 
 global.log = require('./core/logger');
 

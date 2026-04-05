@@ -22,6 +22,10 @@ module.exports = {
             const dept_id = req.dataToken.department_id;
             const user_id = req.dataToken.user_id;
 
+            // Check if any services exist to decide if we hide the service menu
+            const [services] = await dbHots.promise().query(`SELECT COUNT(*) as count FROM m_service WHERE active = 1`);
+            const hasServices = services[0].count > 0;
+
             const [rows] = await dbHots.promise().query(`
                 SELECT * FROM m_system_menu 
                 WHERE is_active = 1 
@@ -29,6 +33,11 @@ module.exports = {
             `);
 
             const filtered = rows.filter((item) => {
+                // If no services, hide service-related menus
+                if (!hasServices && (item.menu_group === 'Service Catalog' || item.menu_group === 'Service Center' || item.menu_name === 'Service Catalog')) {
+                    return false;
+                }
+
                 const allowedRoles = safeParseJSON(item.roles_allowed);
                 const allowedDepts = safeParseJSON(item.department_scope);
                 const allowedUsers = safeParseJSON(item.users_allowed);

@@ -19,8 +19,6 @@ module.exports = {
     login: async (req, res) => {
         let date = new Date();
 
-        let current_delv_week = (await dbQuery(`SELECT day2week(NOW()) AS wikwik;`))[0].wikwik;
-
 
 
         let timestamp = yellowTerminal + date.toLocaleDateString('id') + ' ' + date.toLocaleTimeString('id') + ' : ' + ' ';
@@ -128,7 +126,7 @@ module.exports = {
                                                 WHERE
                                                     LOWER(uid) = LOWER(?)
                                                     AND pswd = ?
-                                                    AND u.role_id IN (1, 2, 4)
+                                                    AND u.role_id IN (1, 2, 4, 5)
                     
                      `
                         let paramMatchUidPswd = [uid, hashPasswordHT(asin)]
@@ -154,8 +152,7 @@ module.exports = {
                                     success: true,
                                     message: `Login success! Welcome ${uid}`,
                                     userData: results2[0],
-                                    hots_tokek,
-                                    current_delv_week
+                                    hots_tokek
                                 })
                                 // res.status(200).cookie('hots_tokek', hots_tokek, {
                                 //     httpOnly: true,
@@ -220,16 +217,8 @@ module.exports = {
             " : ";
 
         // ============================
-        // Fetch current week
+        // Fetch current week - REMOVED (Specific to Indofood Standard)
         // ============================
-        let current_delv_week;
-        try {
-            const weekRow = await dbQuery(`SELECT day2week(NOW()) AS wikwik;`);
-            current_delv_week = weekRow?.[0]?.wikwik || null;
-        } catch (e) {
-            log.hots.error("? ERROR fetching week:", e);
-            return res.status(500).send({ success: false, message: "weekQuery error", details: e });
-        }
 
         // ============================
         // Token validation
@@ -364,8 +353,7 @@ module.exports = {
                 res.status(200).send({
                     success: true,
                     userData,
-                    hots_tokek,
-                    current_delv_week
+                    hots_tokek
                 });
 
                 // ============================
@@ -1241,7 +1229,7 @@ module.exports = {
                                                 WHERE
                                                     LOWER(uid) = LOWER(?)
                                                     AND pswd = ?
-                                                    AND u.role_id IN (1, 2, 4)
+                                                    AND u.role_id IN (1, 2, 4, 5)
                     
                      `
                         let paramMatchUidPswd = [uid, hashPasswordHT(asin)]

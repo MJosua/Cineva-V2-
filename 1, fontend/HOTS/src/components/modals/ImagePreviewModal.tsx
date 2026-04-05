@@ -27,7 +27,7 @@ const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-4xl p-0 overflow-hidden bg-black/95 border-none">
+            <DialogContent className="sm:max-w-4xl p-0 overflow-hidden bg-black/95 border-none" aria-describedby={undefined}>
                 <DialogHeader className="p-4 bg-slate-900/50 backdrop-blur-md absolute top-0 left-0 right-0 z-10 flex flex-row items-center justify-between space-y-0">
                     <DialogTitle className="text-white text-sm font-medium flex items-center gap-2">
                         <Maximize2 className="w-4 h-4" />

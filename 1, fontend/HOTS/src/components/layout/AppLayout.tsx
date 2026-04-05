@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +15,7 @@ import {
   SidebarInset,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Home, FileText, CheckSquare, List, Settings, LogOut, Monitor, Users, Search, User, Code, FileCode, HelpCircle, ChevronRight, ClipboardList, Palette, Database, Briefcase, Building, Package, Layout, LayoutDashboard } from 'lucide-react';
+import { Home, FileText, CheckSquare, List, Settings, LogOut, Monitor, Users, Search, User, Code, FileCode, HelpCircle, ChevronRight, ClipboardList, Palette, Database, Briefcase, Building, Package, Layout, LayoutDashboard, Megaphone, Workflow, MapPin, Layers3, Inbox } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
@@ -25,7 +25,6 @@ import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { logoutUser } from "@/store/slices/authSlice";
 import { useToast } from "@/hooks/use-toast";
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import axios from 'axios';
 import { API_URL } from '@/config/sourceConfig';
 import { fetchTaskCount } from '@/store/slices/ticketsSlice';
@@ -34,7 +33,7 @@ import { TutorialManager } from '@/components/tutorial/TutorialManager';
 import { useHeader } from '@/contexts/HeaderContext';
 import { fetchSidebarMenu } from '@/store/slices/sidebarSlice';
 import NotificationBell from './NotificationBell';
-import { fetchDashboardFunctions, fetchDashboardSummaries } from '@/store/slices/dashboardSlice';
+import { fetchDashboardFunctions } from '@/store/slices/dashboardSlice';
 import { fetchCatalogData, selectServiceCatalog } from '@/store/slices/catalogSlice';
 
 interface UserProfile {
@@ -49,7 +48,6 @@ interface UserProfile {
   department_id?: number;
 }
 
-// Help Items remain hardcoded or can be added to DB later
 const helpItems = [
   {
     title: "User Guide",
@@ -71,9 +69,10 @@ export function AppSidebar() {
   const { taskCount } = useAppSelector(state => state.tickets);
   const { assignmentCount } = useAppSelector(state => state.assignment);
   const { user, isAuthenticated } = useAppSelector(state => state.auth);
-  const { menuData: systemMenu, isLoading: menuLoading } = useAppSelector((state) => state.sidebar);
-  const { data: dashboardFunctions, loading: dashboardLoading } = useAppSelector(state => state.dashboard);
+  const { menuData: systemMenu } = useAppSelector((state) => state.sidebar);
+  const { data: dashboardFunctions } = useAppSelector(state => state.dashboard);
   const serviceCatalog = useAppSelector(selectServiceCatalog);
+  
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
     try {
       const cached = localStorage.getItem('user_profile_cache');
@@ -82,9 +81,7 @@ export function AppSidebar() {
       return null;
     }
   });
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
-  // Icon Mapping for Dynamic Menu
   const getIcon = (iconName: string) => {
     const icons: Record<string, any> = {
       Home, FileText, CheckSquare, List, Settings, Monitor, Users, Search, 
@@ -94,39 +91,51 @@ export function AppSidebar() {
     return icons[iconName] || Layout;
   };
 
+  const roleId = Number(user?.role_id || 0);
+  const isTalent = roleId === 5;
 
-  // utils/pathUtils.ts
+  const fallbackMenuGroups = useMemo(() => {
+    if (isTalent) {
+      return [
+        {
+          label: "Talent Facing",
+          items: [
+            { title: "Job Marketplace", url: "/job-marketplace", icon: Briefcase },
+            { title: "Talent Join Request", url: "/my-tickets", icon: Inbox },
+            { title: "My Assignments", url: "/my-assignments", icon: ClipboardList, badge: assignmentCount },
+          ],
+        },
+      ];
+    }
 
-  const menuItems = [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: Home,
-      hidden: !dashboardFunctions || dashboardFunctions.length === 0
-    },
-    {
-      title: "Service Catalog",
-      url: "/service-catalog",
-      icon: List,
-    },
-    {
-      title: "My Tickets",
-      url: "/my-tickets",
-      icon: FileText,
-    },
-    {
-      title: "My Approvals",
-      url: "/task-list",
-      icon: CheckSquare,
-      badge: taskCount
-    },
-    {
-      title: "My Assignments",
-      url: "/my-assignments",
-      icon: ClipboardList,
-      badge: assignmentCount
-    },
-  ].filter(item => !item.hidden);
+    return [
+      {
+        label: "Talent Facing",
+        items: [
+          { title: "Job Marketplace", url: "/job-marketplace", icon: Briefcase },
+          { title: "My Assignments", url: "/my-assignments", icon: ClipboardList, badge: assignmentCount },
+        ],
+      },
+      {
+        label: "Internal Ops",
+        items: [
+          { title: "Campaigns", url: "/job-marketplace/campaigns", icon: Megaphone },
+          { title: "Batches", url: "/job-marketplace/batches", icon: Layers3 },
+          { title: "Locations", url: "/job-marketplace/locations", icon: MapPin },
+          { title: "Talent Flow", url: "/job-marketplace/talent-assignments", icon: Users },
+          { title: "Content Flow", url: "/job-marketplace/content-workflow", icon: Workflow },
+        ],
+      },
+      {
+        label: "Admin & HOTS",
+        items: [
+          { title: "Dashboard", url: "/dashboard", icon: Home, hidden: !dashboardFunctions || dashboardFunctions.length === 0 },
+          { title: "Service Catalog", url: "/service-catalog", icon: List },
+          { title: "My Approvals", url: "/task-list", icon: CheckSquare, badge: taskCount },
+        ],
+      },
+    ];
+  }, [assignmentCount, dashboardFunctions, isTalent, taskCount]);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -135,7 +144,6 @@ export function AppSidebar() {
   const { setOpenMobile } = useSidebar();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  // Auto-close sidebar on mobile after navigation
   useEffect(() => {
     setOpenMobile(false);
   }, [location.pathname, setOpenMobile]);
@@ -143,6 +151,7 @@ export function AppSidebar() {
   const fetchUserProfile = async () => {
     try {
       const token = localStorage.getItem('hots_tokek');
+      if (!token) return;
       const response = await axios.get(`${API_URL}/hots_auth/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -156,29 +165,37 @@ export function AppSidebar() {
     }
   };
 
+  const { isLoading: menuLoading, error: menuError } = useAppSelector(state => state.sidebar);
+  const { loading: dashboardLoading, error: dashboardError } = useAppSelector(state => state.dashboard);
+
+  const hasDynamicMenu = Object.keys(systemMenu).length > 0;
+  const shouldShowFallbackMenu = !hasDynamicMenu && fallbackMenuGroups.length > 0;
+
+  const getMenuBadge = (menuPath: string) => {
+    if (menuPath === "/my-assignments") return assignmentCount;
+    if (menuPath === "/task-list") return taskCount;
+    return null;
+  };
+
   useEffect(() => {
     if (user && isAuthenticated) {
       fetchUserProfile();
       dispatch(fetchTaskCount());
       dispatch(fetchAssignmentCount());
       
-      // Only fetch modular menu if not in Redux/Cache
-      if (Object.keys(systemMenu).length === 0) {
+      if (Object.keys(systemMenu).length === 0 && !menuLoading && !menuError) {
         dispatch(fetchSidebarMenu());
       }
       
-      // Only fetch dashboard list if not in Redux/Cache
-      // Only fetch catalog if empty
       if (serviceCatalog.length === 0) {
         dispatch(fetchCatalogData());
       }
       
-      // Only fetch dashboard list if not in Redux/Cache
-      if (dashboardFunctions.length === 0) {
+      if (dashboardFunctions.length === 0 && !dashboardLoading && !dashboardError) {
         dispatch(fetchDashboardFunctions());
       }
     }
-  }, [user, isAuthenticated, dispatch, serviceCatalog.length, dashboardFunctions.length, systemMenu]);
+  }, [user, isAuthenticated, dispatch, serviceCatalog.length, dashboardFunctions.length, Object.keys(systemMenu).length, menuLoading, menuError, dashboardLoading, dashboardError]);
 
   const handleLogout = () => {
     dispatch(logoutUser()).then(() => {
@@ -190,32 +207,15 @@ export function AppSidebar() {
     });
   };
 
-  // Check if user has admin role (role === 4)
-  const isAdmin = user?.role_id?.toString() === '4';
-
-  // Check if user has HR access (department 1=HR, 10=IT, or role 4=Admin)
-  const departmentId = userProfile?.department_id || user?.department_id;
-  const isHR = isAdmin || departmentId === 1 || departmentId === 10;
-
-
-  useEffect(() => {
-    if (location.pathname.includes('/help/')) {
-      setIsHelpOpen(true);
-    }
-  }, [location.pathname]);
-
-
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border p-2 h-20 pt-5">
-        <div className="flex  items-center space-x-3" style={{ position: 'relative' }} >
-          {/* Show when collapsible != icon */}
+        <div className="flex items-center space-x-3" style={{ position: 'relative' }} >
           <div className="w-6 h-6 bg-primary ms-1 mt-3 mb-3 rounded items-center justify-center flex-shrink-0 hidden group-data-[collapsible=icon]:flex">
-            <span className="text-primary-foreground  font-bold text-xs">H</span>
+            <span className="text-primary-foreground font-bold text-xs">H</span>
           </div>
 
-          {/* Show when collapsible == icon */}
-          <div className="w-10 h-10  bg-primary rounded items-center justify-center flex-shrink-0 flex group-data-[collapsible=icon]:hidden">
+          <div className="w-10 h-10 bg-primary rounded items-center justify-center flex-shrink-0 flex group-data-[collapsible=icon]:hidden">
             <span className="text-primary-foreground font-bold text-xs">HOTS</span>
           </div>
 
@@ -227,29 +227,68 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="p-0 shadow-sm">
+        {shouldShowFallbackMenu && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider px-3 py-2">
+              Main Menu
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {fallbackMenuGroups.map((group) => (
+                  <SidebarGroup key={group.label}>
+                    <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider px-3 py-2">
+                      {group.label}
+                    </SidebarGroupLabel>
+                    <SidebarGroupContent>
+                      <SidebarMenu>
+                        {group.items.filter(item => !item.hidden).map((item) => (
+                          <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton asChild tooltip={item.title}>
+                              <Link
+                                to={item.url}
+                                className={cn(
+                                  "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-primary/10 hover:text-primary",
+                                  location.pathname === item.url && "bg-primary/10 text-primary"
+                                )}
+                              >
+                                <item.icon className="w-5 h-5 flex-shrink-0" />
+                                <span>{item.title}</span>
+                                {item.badge && (
+                                  <span className="ml-auto bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5 group-data-[collapsible=icon]:hidden">
+                                    {item.badge}
+                                  </span>
+                                )}
+                              </Link>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  </SidebarGroup>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider px-3 py-2">
-            Main Menu
+            Help & Support
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {helpItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild tooltip={item.title}>
                     <Link
                       to={item.url}
                       className={cn(
-                        "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-primary/10 hover:text-primary",
-                        location.pathname === item.url && "bg-primary/10 text-primary"
+                        "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                        location.pathname === item.url && "bg-sidebar-accent text-sidebar-accent-foreground"
                       )}
                     >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <item.icon className="w-4 h-4 flex-shrink-0" />
                       <span>{item.title}</span>
-                      {item.badge && (
-                        <span className="ml-auto bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5 group-data-[collapsible=icon]:hidden">
-                          {item.badge}
-                        </span>
-                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -258,38 +297,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Help & Support Section */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider px-3 py-2">
-            Help & Support
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenu>
-                  {helpItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <Link
-                          to={item.url}
-                          className={cn(
-                            "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                            location.pathname === item.url && "bg-sidebar-accent text-sidebar-accent-foreground"
-                          )}
-                        >
-                          <item.icon className="w-4 h-4 flex-shrink-0" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Dynamic Modular Menu Sections */}
         {Object.entries(systemMenu).map(([groupName, items]) => (
           <SidebarGroup key={groupName}>
             <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider px-3 py-2">
@@ -311,6 +318,11 @@ export function AppSidebar() {
                         >
                           <Icon className="w-5 h-5 flex-shrink-0" />
                           <span>{item.menu_name}</span>
+                          {getMenuBadge(item.menu_path) && (
+                            <span className="ml-auto bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5 group-data-[collapsible=icon]:hidden">
+                              {getMenuBadge(item.menu_path)}
+                            </span>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -320,14 +332,7 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
-
-
-
-
-      </SidebarContent >
-
-
-
+      </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <div className="flex items-center space-x-3 mb-3 group-data-[collapsible=icon]:justify-center">
@@ -349,12 +354,6 @@ export function AppSidebar() {
             <p className="text-xs text-sidebar-foreground/70 truncate">
               {userProfile?.department_name || (user?.department_id ? `Dept ${user.department_id}` : '')}
             </p>
-            {userProfile?.superior_name && (
-              <p className="text-xs text-sidebar-foreground/60 truncate">
-                Reports to: {userProfile.superior_name}
-              </p>
-            )}
-
           </div>
         </div>
         <Button
@@ -372,7 +371,7 @@ export function AppSidebar() {
           onClose={() => setIsProfileModalOpen(false)}
         />
       </SidebarFooter>
-    </Sidebar >
+    </Sidebar>
   );
 }
 
@@ -389,18 +388,14 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         <SidebarInset className="flex-1 min-w-0 w-full relative">
           <header className="sticky top-0 z-50 w-full flex flex-col shadow-sm">
-            {/* Top Bar: Always visible */}
             <div className="flex backdrop-blur-md bg-background/95 border-b border-border px-4 py-3 sm:px-6 sm:py-4 justify-between items-center w-full">
               <div className="flex items-center space-x-3 sm:space-x-4">
                 <SidebarTrigger className="bg-secondary hover:bg-secondary/50" />
                 <div className="flex items-center space-x-3">
-                  {/* Web/Desktop: Show full organization name */}
                   <div className="hidden sm:block">
                     <h1 className="text-lg font-bold text-primary tracking-tight">PT INDOFOOD CBP SUKSES MAKMUR</h1>
                     <p className="text-xs font-medium text-primary/80">International Operations Division</p>
                   </div>
-
-                  {/* Mobile: Show HOTS Icon/Logo */}
                   <div className="flex sm:hidden items-center space-x-2">
                     <div className="w-8 h-8 bg-primary rounded flex items-center justify-center flex-shrink-0 shadow-sm">
                       <span className="text-primary-foreground font-bold text-[10px]">HOTS</span>
@@ -414,7 +409,6 @@ export function AppLayout({ children }: AppLayoutProps) {
               </div>
 
               <div className="flex items-center space-x-4">
-                {/* Desktop Search */}
                 {!shouldHideSearch && (
                   <div className="hidden sm:block relative">
                     <Input
@@ -429,12 +423,10 @@ export function AppLayout({ children }: AppLayoutProps) {
                     </div>
                   </div>
                 )}
-
                 <NotificationBell />
               </div>
             </div>
 
-            {/* Bottom Bar: Mobile Search (Hidden on Desktop) */}
             {!shouldHideSearch && (
               <div className="sm:hidden backdrop-blur-md bg-background/95 border-b border-border px-4 py-2 w-full">
                 <div className="relative w-full">

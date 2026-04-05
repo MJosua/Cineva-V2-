@@ -31,7 +31,7 @@ const RejectModal = ({ isOpen, onClose, onReject, taskId }: RejectModalProps) =>
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2 text-red-600">
             <X className="w-5 h-5" />

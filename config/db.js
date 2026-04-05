@@ -19,9 +19,15 @@ function production() {
 
 // =============================================================== //
 // 🔹 Dynamic Configuration
-const host_config = production() ? process.env.DB_HOST : process.env.DEV_DB_HOST;
-const user_config = production() ? process.env.DB_USER : process.env.DEV_DB_USER;
-const password_config = production() ? process.env.DB_PASSWORD : process.env.DEV_DB_PASSWORD;
+const localHost = process.env.LOCAL_DB_HOST;
+const localUser = process.env.LOCAL_DB_USER;
+const localPassword = process.env.LOCAL_DB_PASSWORD;
+const localName = process.env.LOCAL_DB_NAME;
+const localDbMode = Boolean(localHost || localUser || localPassword || localName);
+
+const host_config = localHost || (production() ? process.env.DB_HOST : process.env.DEV_DB_HOST);
+const user_config = localUser || (production() ? process.env.DB_USER : process.env.DEV_DB_USER);
+const password_config = localPassword || (production() ? process.env.DB_PASSWORD : process.env.DEV_DB_PASSWORD);
 
 console.log("@db - host:", host_config);
 console.log("@db - user:", user_config);
@@ -107,18 +113,21 @@ function createSafePool(dbName, connectionLimit = 20) {
 
 // =============================================================== //
 // 🔹 Database Pools
-const { pool: dbConf, query: dbQuery } = createSafePool(process.env.DB_NAME);
+const dbName_config = localName || process.env.DB_NAME;
+const resolveDbName = (name) => localDbMode ? dbName_config : name;
+
+const { pool: dbConf, query: dbQuery } = createSafePool(resolveDbName(dbName_config));
 // const { pool: dbTM, query: dbTMQuery } = createSafePool(process.env.DB_NAME_TM); // Decommissioned
-const { pool: dbIndomieku, query: dbQueryIndomieku } = createSafePool(process.env.DB_NAME_INDOMIEKU);
-const { pool: dbCardGenerator, query: dbQueryCardGenerator } = createSafePool(process.env.DB_NAME_CARD_GENERATOR);
-const { pool: dbHots, query: dbQueryHots } = createSafePool(process.env.DB_NAME_HT);
-const { pool: dbPMS, query: dbQueryPMS } = createSafePool(process.env.DB_NAME_PMS);
-const { pool: dbClick, query: dbQueryClick } = createSafePool(process.env.DB_NAME_Click);
-const { pool: dbSR, query: dbQuerySR } = createSafePool(process.env.DB_NAME_SR);
-const { pool: dbLinkShortener, query: dbQueryLinkShortener } = createSafePool("linkshortener");
+const { pool: dbIndomieku, query: dbQueryIndomieku } = createSafePool(resolveDbName(process.env.DB_NAME_INDOMIEKU));
+const { pool: dbCardGenerator, query: dbQueryCardGenerator } = createSafePool(resolveDbName(process.env.DB_NAME_CARD_GENERATOR));
+const { pool: dbHots, query: dbQueryHots } = createSafePool(resolveDbName(process.env.DB_NAME_HT));
+const { pool: dbPMS, query: dbQueryPMS } = createSafePool(resolveDbName(process.env.DB_NAME_PMS));
+const { pool: dbClick, query: dbQueryClick } = createSafePool(resolveDbName(process.env.DB_NAME_Click));
+const { pool: dbSR, query: dbQuerySR } = createSafePool(resolveDbName(process.env.DB_NAME_SR));
+const { pool: dbLinkShortener, query: dbQueryLinkShortener } = createSafePool(resolveDbName("linkshortener"));
 
 // MeetingBook (using safe factory now)
-const { pool: dbmeetingbookPool, query: dbmeetingbook } = createSafePool("meetingbook");
+const { pool: dbmeetingbookPool, query: dbmeetingbook } = createSafePool(resolveDbName("meetingbook"));
 
 // =============================================================== //
 // 🔹 SQL Logger

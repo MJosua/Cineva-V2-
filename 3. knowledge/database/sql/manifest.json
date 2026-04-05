@@ -1,9 +1,0 @@
-{
-  "tables_file": "tables.json",
-  "relations_file": "relations.json",
-  "analysis": "sql_analysis.md",
-  "included_sql_files": [
-    "dump-hots-202512041039.sql",
-    "dump-iod-202512041039.sql"
-  ]
-}

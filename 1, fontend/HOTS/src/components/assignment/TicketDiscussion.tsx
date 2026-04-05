@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Send, Paperclip, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { API_URL } from '@/config/sourceConfig';
@@ -277,6 +277,10 @@ const TicketDiscussion: React.FC<TicketDiscussionProps> = ({ ticketId, assignmen
             {/* Image Preview Modal */}
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden bg-black/90 border-none">
+                    <DialogTitle className="sr-only">Image Preview</DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Full-screen preview of the attached image.
+                    </DialogDescription>
                     <div className="relative w-full h-full flex items-center justify-center p-4">
                         <img
                             src={url}

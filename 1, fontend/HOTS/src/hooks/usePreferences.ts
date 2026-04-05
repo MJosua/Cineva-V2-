@@ -28,8 +28,10 @@ interface Preferences {
 
 // Module-level shared state (all hooks share this)
 let sharedPreferences: Preferences = {};
-let sharedLoading = true;
+let sharedLoading = false;
+let isFetching = false;
 let lastFetchTime = 0;
+let lastErrorTime = 0; // Added to track errors
 const listeners: Set<() => void> = new Set();
 
 const notifyListeners = () => {
@@ -50,12 +52,26 @@ export const usePreferences = () => {
 
     // Fetch all preferences
     const fetchPreferences = useCallback(async (force = false) => {
-        // Skip if recently fetched (within 2 seconds) unless forced
-        if (!force && Date.now() - lastFetchTime < 2000 && Object.keys(sharedPreferences).length > 0) {
+        // Skip if currently fetching
+        if (isFetching) return sharedPreferences;
+
+        const now = Date.now();
+
+        // 10-second backoff on error
+        if (!force && lastErrorTime > 0 && now - lastErrorTime < 10000) {
+            console.warn(`[usePreferences] Skipping fetch due to recent error. Waiting for 10s backoff... (${Math.round((10000 - (now - lastErrorTime)) / 1000)}s remaining)`);
             return sharedPreferences;
         }
 
+        // Standard cache (2 seconds)
+        if (!force && now - lastFetchTime < 2000 && Object.keys(sharedPreferences).length > 0) {
+            return sharedPreferences;
+        }
+
+        if (!token) return sharedPreferences;
+
         try {
+            isFetching = true;
             sharedLoading = true;
             notifyListeners();
 
@@ -63,19 +79,23 @@ export const usePreferences = () => {
             if (res.data.success) {
                 sharedPreferences = res.data.preferences || {};
                 lastFetchTime = Date.now();
+                lastErrorTime = 0; // Clear error status
             }
         } catch (err) {
             console.error('Error fetching preferences:', err);
+            lastErrorTime = Date.now(); // Start backoff timer
         } finally {
+            isFetching = false;
             sharedLoading = false;
             notifyListeners();
         }
         return sharedPreferences;
-    }, [headers]);
+    }, [headers, token]);
 
     // Initial fetch on mount
     useEffect(() => {
-        if (Object.keys(sharedPreferences).length === 0 || Date.now() - lastFetchTime > 60000) {
+        const shouldFetch = Object.keys(sharedPreferences).length === 0 || Date.now() - lastFetchTime > 60000;
+        if (shouldFetch && !isFetching) {
             fetchPreferences();
         }
     }, [fetchPreferences]);

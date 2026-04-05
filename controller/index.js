@@ -27,6 +27,7 @@ const hotsTps = require('./hots_controller/tps/controllers/tpsController'); // �
 const hotscustomfunctionController = require('./hots_controller/customfunction/controllers/customfunctionController'); // 🔧 Phase 5: Moved to module
 const hotsSRFController = require('./hots_controller/srf/controllers/srfController'); // 🔧 Phase 5: Moved to module
 const hotsPublicController = require('./hots_controller/public/controllers/publicController'); // 🔧 Phase 5: Moved to module
+const hotsJobMarketplace = require('./hots_controller/jobmarketplace/jobMarketplaceController');
 
 
 const shortenerController = require('./shortener/shortenerController')
@@ -85,6 +86,7 @@ module.exports = {
     hotsSystemUtility,
     hotsDashboardController,
     hotsPublicController,
+    hotsJobMarketplace,
     hotsSystemMeta,
     hotsCMS,
     hotsMedia,

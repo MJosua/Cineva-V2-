@@ -165,6 +165,67 @@ export const widgetRegistry: Record<string, ExtendedWidgetConfig> = {
     dataRequirements: ["ticketData"],
     category: "Tools"
   },
+
+  // Job Marketplace widgets
+  job_join_request: {
+    id: "job_join_request",
+    name: "Job Join Request",
+    description: "Talent request to join a campaign/job",
+    componentPath: "JobJoinRequestWidget",
+    applicableTo: ["form", "ticket_detail"],
+    dataRequirements: ["ticketData", "profileData"],
+    category: "Job Marketplace",
+    serviceIds: [30],
+    displayOrder: 1
+  },
+
+  job_campaign_summary: {
+    id: "job_campaign_summary",
+    name: "Campaign Summary",
+    description: "Campaign level summary for job listing",
+    componentPath: "JobCampaignSummaryWidget",
+    applicableTo: ["ticket_detail", "assignment_detail"],
+    dataRequirements: ["ticketData", "campaignData"],
+    category: "Job Marketplace",
+    serviceIds: [30, 31, 32],
+    displayOrder: 2
+  },
+
+  job_talent_timeline: {
+    id: "job_talent_timeline",
+    name: "Talent Timeline",
+    description: "Timeline for talent execution",
+    componentPath: "JobTalentTimelineWidget",
+    applicableTo: ["assignment_detail"],
+    dataRequirements: ["ticketData", "timelineData"],
+    category: "Job Marketplace",
+    serviceIds: [32],
+    displayOrder: 3
+  },
+
+  job_pic_kanban: {
+    id: "job_pic_kanban",
+    name: "PIC Kanban",
+    description: "Kanban board for PIC inspection and monitoring",
+    componentPath: "JobPICKanbanWidget",
+    applicableTo: ["assignment_detail"],
+    dataRequirements: ["ticketData", "kanbanData"],
+    category: "Job Marketplace",
+    serviceIds: [31],
+    displayOrder: 3
+  },
+
+  job_gantt_planner: {
+    id: "job_gantt_planner",
+    name: "Job Gantt Planner",
+    description: "Gantt board for campaign and batch planning",
+    componentPath: "JobGanttPlannerWidget",
+    applicableTo: ["assignment_detail"],
+    dataRequirements: ["ticketData", "ganttData"],
+    category: "Job Marketplace",
+    serviceIds: [30, 31],
+    displayOrder: 4
+  },
 };
 
 // Get widget by ID

@@ -27,6 +27,11 @@ const SERVICE_IDS = {
     // HR/Admin Services  
     USER_APPROVAL: 21,          // New User Approval Request
     MEETING_ROOM: 22,           // Meeting Room Booking
+
+    // Job Marketplace Pseudo Services
+    JOB_PAGE: 30,               // CMS/Page Builder for campaign/job authoring
+    JOB_PIC: 31,                 // PIC operational and inspection workflow
+    JOB_TALENT: 32,              // Talent-facing execution and join/request workflow
     
     // POSM & Assets
     POSM_REQUEST: 14,

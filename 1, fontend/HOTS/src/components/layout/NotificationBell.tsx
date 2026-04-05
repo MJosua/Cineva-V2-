@@ -42,6 +42,8 @@ const NotificationBell: React.FC = () => {
     });
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const isFetchingUnread = React.useRef(false);
+    const lastErrorTime = React.useRef(0);
     const navigate = useNavigate();
 
     const fetchNotifications = useCallback(async () => {
@@ -62,6 +64,12 @@ const NotificationBell: React.FC = () => {
     }, []);
 
     const fetchUnreadCount = useCallback(async () => {
+        if (isFetchingUnread.current) return;
+        
+        // Back-off: don't retry for 10 seconds after a 5xx error
+        if (Date.now() - lastErrorTime.current < 10000) return;
+
+        isFetchingUnread.current = true;
         try {
             const token = localStorage.getItem('hots_tokek');
             const response = await axios.get(`${API_URL}/hots_notifications/unread_count`, {
@@ -71,9 +79,15 @@ const NotificationBell: React.FC = () => {
                 const count = response.data.unread_count || 0;
                 setUnreadCount(count);
                 localStorage.setItem('notification_unread_count', count.toString());
+                lastErrorTime.current = 0; // Reset on success
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch unread count:', error);
+            if (error.response?.status >= 500) {
+                lastErrorTime.current = Date.now();
+            }
+        } finally {
+            isFetchingUnread.current = false;
         }
     }, []);
 

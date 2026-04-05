@@ -1,7 +1,8 @@
 const express = require("express");
 const route = express.Router();
 const { generateTokenHT, decodeTokenHT } = require('../../config/encrypts')
-const { hotsAdmin } = require('../../controller')
+const { hotsAdmin } = require('../../controller');
+const MaintenanceController = require('../../controller/hots_controller/admin/controllers/maintenanceController');
 
 //get data
 route.get("/account", decodeTokenHT, hotsAdmin.getAccount);
@@ -31,5 +32,8 @@ route.delete("/account/:user_id", decodeTokenHT, hotsAdmin.deleteAccount);
 
 
 
+
+// System maintenance
+route.get("/system/repair-db", decodeTokenHT, MaintenanceController.repairDatabase);
 
 module.exports = route;
