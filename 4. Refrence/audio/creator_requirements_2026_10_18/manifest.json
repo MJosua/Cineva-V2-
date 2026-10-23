@@ -1,0 +1,12 @@
+{
+  "original": "C:/Users/test/Downloads/WhatsApp Ptt 2026-10-13 at 10.03.42 PM.ogg",
+  "local": "4. Refrence/audio/creator_requirements_2026_10_18/requirements_reference.ogg",
+  "bytes": 373625,
+  "sha256": "1f151d450de59e5a6af88d2738c300b39e91bbb0cb6d8399441031fb12aa7048",
+  "duration": 152.4335,
+  "segments": 32,
+  "model": "Systran/faster-whisper-small",
+  "languageForced": "id",
+  "processing": "Local ASR; no user audio uploaded",
+  "rawTranscript": "3.Knowledge/reports/voice_requirements_2026_10_18/TRANSCRIPT.md"
+}

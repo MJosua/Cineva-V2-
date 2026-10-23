@@ -1,0 +1,23 @@
+{
+  "database": "hots",
+  "checks": [
+    "Kevin hots explicit subtree is exactly Indofood/IndoUSA/IndoCanada/IndoVietnam",
+    "Kevin overseas explicit subtree is exactly Indofood/IndoUSA/IndoCanada/IndoVietnam",
+    "Yosua global admin role alone does not create implicit new grants",
+    "stored login visible only to matching app/kind",
+    "login consumed once under row lock",
+    "consumed login cannot be resurrected",
+    "session revoke is soft with retained row",
+    "own-company ticket readable",
+    "cross-company, mismatched and unmapped tickets denied",
+    "COUNT and page use same company scope",
+    "unbounded page rejected",
+    "real session store + Kevin hierarchy bootstrap",
+    "real session/context/membership pipeline reads own ticket",
+    "persistent logout invalidates prior identity",
+    "transaction rollback removed all inserted test tickets and login state"
+  ],
+  "committedTestRows": 0,
+  "rollbackVerified": true,
+  "success": true
+}

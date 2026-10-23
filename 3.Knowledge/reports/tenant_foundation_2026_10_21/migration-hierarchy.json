@@ -1,0 +1,21 @@
+{
+  "database": "hots",
+  "authorized": "User 2026-10-21: additive HOTS changes; script connection allowed",
+  "mode": "apply",
+  "tables": [
+    {
+      "table": "t_tenant_company_relation",
+      "existed": false,
+      "created": true,
+      "ddl": "CREATE TABLE `t_tenant_company_relation` (\n  `child_company_id` int NOT NULL,\n  `parent_company_id` int NOT NULL,\n  `is_active` tinyint(1) NOT NULL DEFAULT '1',\n  PRIMARY KEY (`child_company_id`),\n  KEY `idx_tenant_company_parent` (`parent_company_id`),\n  CONSTRAINT `fk_tenant_child_company` FOREIGN KEY (`child_company_id`) REFERENCES `m_company` (`company_id`),\n  CONSTRAINT `fk_tenant_parent_company` FOREIGN KEY (`parent_company_id`) REFERENCES `m_company` (`company_id`),\n  CONSTRAINT `chk_tenant_company_relation` CHECK (((`child_company_id` <> `parent_company_id`) and (`child_company_id` > 0) and (`parent_company_id` > 0)))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    },
+    {
+      "table": "t_tenant_company_grant",
+      "existed": false,
+      "created": true,
+      "ddl": "CREATE TABLE `t_tenant_company_grant` (\n  `grant_id` bigint unsigned NOT NULL AUTO_INCREMENT,\n  `user_id` int NOT NULL,\n  `program_id` int NOT NULL,\n  `root_company_id` int NOT NULL,\n  `include_descendants` tinyint(1) NOT NULL DEFAULT '0',\n  `role_key` varchar(80) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,\n  `permissions` json NOT NULL,\n  `is_active` tinyint(1) NOT NULL DEFAULT '1',\n  `version` bigint unsigned NOT NULL DEFAULT '1',\n  `created_at` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),\n  PRIMARY KEY (`grant_id`),\n  UNIQUE KEY `uq_tenant_company_grant` (`user_id`,`program_id`,`root_company_id`),\n  KEY `idx_tenant_grant_program` (`program_id`),\n  KEY `idx_tenant_grant_root` (`root_company_id`),\n  CONSTRAINT `fk_tenant_grant_company` FOREIGN KEY (`root_company_id`) REFERENCES `m_company` (`company_id`),\n  CONSTRAINT `fk_tenant_grant_program` FOREIGN KEY (`program_id`) REFERENCES `m_company_program_list` (`program_id`),\n  CONSTRAINT `fk_tenant_grant_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`),\n  CONSTRAINT `chk_tenant_grant_permissions` CHECK ((json_type(`permissions`) = _utf8mb4'ARRAY'))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    }
+  ],
+  "existingDataWrites": 0,
+  "success": true
+}

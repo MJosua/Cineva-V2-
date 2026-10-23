@@ -1,0 +1,3 @@
+# Prompt untuk chat AI project Kantor
+
+Baca D:/Project/Cineva-V2-/3.Knowledge/handover/HOTS_ORIGINAL_HANDOVER_2026_10_14.md dan standar knowledge/AGENTS project Kantor. Audit ulang temuan R01–R10 terhadap source sekarang. Jelaskan prioritas, bukti, dampak arsitektur dan acceptance sebelum mengedit. Fokus awal R01 Escape cancel, R03 trigger client contract, R02 whitelist builder; audit R08 auth secara terpisah. Pisahkan bug terkonfirmasi dari gap desain dan rekomendasi. Handover ini belum merupakan instruksi deploy atau DB write. Jangan menyalin transport/auth/business rules Cineva secara otomatis. Laporkan patch yang diperlukan, consumer terdampak, pengujian dan gap tersisa; update knowledge dan Excel sesuai aturan project.

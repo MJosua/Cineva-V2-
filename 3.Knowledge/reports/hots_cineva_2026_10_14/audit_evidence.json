@@ -1,0 +1,3104 @@
+{
+  "asOf": "2026-10-14",
+  "scope": "static audit, generated/vendor/archive/public excluded",
+  "summary": [
+    [
+      "Tanggal audit",
+      "2026-10-14 Asia/Jakarta"
+    ],
+    [
+      "Tujuan",
+      "Upgrade fondasi Cineva ke model modular/package HOTS, pertahankan domain KOL marketplace"
+    ],
+    [
+      "Kesimpulan",
+      "Cineva tertinggal pada platform integration, bukan kosong fitur. Upgrade perlu port platform + adapter domain."
+    ],
+    [
+      "Batas verifikasi",
+      "Static source/knowledge/package/hash; tidak menjalankan app, DB, build, browser atau deployment"
+    ],
+    [
+      "Cineva FE source files",
+      473
+    ],
+    [
+      "HOTS FE source files",
+      582
+    ],
+    [
+      "FE relative-path Identical",
+      227
+    ],
+    [
+      "FE relative-path Changed",
+      207
+    ],
+    [
+      "FE relative-path HOTS only",
+      148
+    ],
+    [
+      "FE relative-path Cineva only",
+      39
+    ],
+    [
+      "Jumlah paket aktual",
+      14
+    ],
+    [
+      "Manifest modul aktual",
+      24
+    ],
+    [
+      "Knowledge Cineva baseline md/sql",
+      5
+    ],
+    [
+      "Makna hash",
+      "Same relative path + SHA256 bytes; file moved/refactored tidak otomatis sama; bukan ukuran kualitas/fungsi"
+    ],
+    [
+      "Gate implementasi",
+      "Physical schema Cineva, topology/auth contract, baseline release dan acceptance domain harus disiapkan"
+    ]
+  ],
+  "findings": [
+    [
+      "A01",
+      "Knowledge",
+      "P0",
+      "5 dokumen domain ditemukan pada awal audit; schema berlabel draft",
+      "Graph, manifest, FILE_MAP, registry paket, schema hots.md/json, domain docs",
+      "Tambahkan index Cineva + contract map; pisahkan draft, source-verified dan runtime-verified",
+      "D:/Project/Cineva-V2-/3. knowledge/jobmarketplace_schema.md; D:/Kantor/3.Knowledge/KNOWLEDGE_GRAPH.md",
+      "Verified static"
+    ],
+    [
+      "A02",
+      "Backend modules",
+      "P0",
+      "registerRoutes mengimpor agregat routers; minimal profile setelah import",
+      "Auto-discovery app/modules dan programs; module.json + depends_on + strict/disabled",
+      "Port loader/platform sebagai fondasi; programs/cineva/module.json dan adapter endpoint lama",
+      "D:/Project/Cineva-V2-/app/registerRoutes.js; D:/Kantor/2.Backend/Integrated-API/app/http/moduleLoader.js",
+      "Verified static"
+    ],
+    [
+      "A03",
+      "Shared packages",
+      "P0",
+      "Frontend package.json tidak mendeklarasikan @hots/*",
+      "13 paket frontend aktual termasuk dynamic-form/runtime; transaction-kit backend",
+      "Version-pin paket beserta dependencies; jangan pertahankan file: menuju D:/Kantor untuk rilis mandiri",
+      "D:/Project/Cineva-V2-/1, fontend/HOTS/package.json; D:/Kantor/3.Knowledge/packages/REGISTRY.md",
+      "Verified static"
+    ],
+    [
+      "A04",
+      "Form and visual editing",
+      "P1",
+      "DynamicForm/DynamicField/FieldEditor lokal; visual trigger juga tersedia",
+      "Shared dynamic-form dan service runtime; HOTS juga masih memiliki wrapper dan form lokal",
+      "Gunakan renderer/builder shared + registry widget Cineva; jangan anggap semua HOTS sudah shared",
+      "D:/Project/Cineva-V2-/1, fontend/HOTS/src/components/forms/DynamicForm.tsx; D:/Kantor/1.Frontend/dynamic-form/package.json",
+      "Verified static"
+    ],
+    [
+      "A05",
+      "Workflow",
+      "P1",
+      "workflow-engine dan form/workflow editor sudah ada",
+      "Engine berbeda; workflow-policy-kit + workflowGraphAdapter + focused test",
+      "Adopsi kontrak graph/policy; status marketplace melalui adapter dan config tanpa menambah approval yang tidak dibutuhkan",
+      "D:/Project/Cineva-V2-/core/workflow-engine.js; D:/Kantor/1.Frontend/HOTS/src/utils/workflowGraphAdapter.ts",
+      "Verified static"
+    ],
+    [
+      "A06",
+      "Triggers and documents",
+      "P1",
+      "trigger/document/reporting/resource engines sudah ada",
+      "Engine ditempatkan di infrastructure; form-engine, report-table-engine, PAR sebagai module terpisah",
+      "Reuse engine umum; trigger Cineva memakai plugin/config, bukan menyalin domain PAR",
+      "D:/Project/Cineva-V2-/core/document-engine.js; D:/Kantor/2.Backend/Integrated-API/app/infrastructure/engines/document-engine.js",
+      "Verified static"
+    ],
+    [
+      "A07",
+      "Marketplace domain",
+      "P0",
+      "Campaign, batch, location, talent assignment, content log, pickup, profile, applicants tersedia di routes/source",
+      "Platform HOTS adalah sumber fondasi; belum dibuktikan menyediakan padanan seluruh marketplace",
+      "Pertahankan controller/halaman marketplace sebagai domain Cineva; archive hanya sesudah pengganti lolos acceptance",
+      "D:/Project/Cineva-V2-/routers/hots/hotsJobMarketplace.js; D:/Project/Cineva-V2-/3. knowledge/jobmarketplace_knowledge.md",
+      "Source present; behavior untested"
+    ],
+    [
+      "A08",
+      "Atomicity claim",
+      "P0",
+      "takeJob menangkap engine error lalu commit pickup dan kemungkinan write parsial",
+      "Standar knowledge mewajibkan transaksi + rollback seluruh write",
+      "Satu transaction boundary untuk wajib sync; bila async disepakati perlu outbox/retry dan status eksplisit",
+      "D:/Project/Cineva-V2-/controller/hots_controller/jobmarketplace/JobClaimController.js:88",
+      "Verified control flow"
+    ],
+    [
+      "A09",
+      "Atomicity approval",
+      "P0",
+      "approveApplicant menangkap error Kanban lalu commit dan pesan sukses tasks generated",
+      "Transaction-kit tersedia tetapi registry menyebut not wired dan DDL prerequisite",
+      "Jangan menelan failure; commit hanya jika seluruh write wajib berhasil; fault injection sebelum release",
+      "D:/Project/Cineva-V2-/controller/hots_controller/jobmarketplace/JobPICController.js:125; D:/Kantor/3.Knowledge/packages/REGISTRY.md",
+      "Verified control flow"
+    ],
+    [
+      "A10",
+      "Applicant-ticket identity",
+      "P0",
+      "approveApplicant dan createContentLog cari ticket lewat job_id LIMIT 1",
+      "EAV ticket_detail tetap memakai cstm_col/lbl_col/value",
+      "Kontrak hubungan pickup/applicant ke ticket harus deterministik; verifikasi schema sebelum menentukan storage",
+      "D:/Project/Cineva-V2-/controller/hots_controller/jobmarketplace/JobPICController.js:130",
+      "Ambiguous selector verified; live impact untested"
+    ],
+    [
+      "A11",
+      "Concurrency and idempotency",
+      "P0",
+      "takeJob tidak terlihat lock/duplicate gate; ticket ID last+1; approval tidak cek transisi requested secara kondisional",
+      "transaction-kit menyediakan konsep locks/idempotency; belum otomatis dipakai",
+      "Audit unique index/current schema; uji double pickup, quota, repeat approve dan parallel ticket numbering",
+      "D:/Project/Cineva-V2-/controller/hots_controller/jobmarketplace/JobClaimController.js:35; D:/Project/Cineva-V2-/controller/hots_controller/jobmarketplace/JobPICController.js:114",
+      "Source risk; indexes unverified"
+    ],
+    [
+      "A12",
+      "Master writes",
+      "P0",
+      "createBatch/createLocation/createBrand/createCategory memakai pool.query write tanpa begin/commit/rollback",
+      "Standar knowledge transaction + rollback",
+      "Masukkan seluruh write ke scoped transaction; validasi payload dan audit pada boundary service",
+      "D:/Project/Cineva-V2-/controller/hots_controller/jobmarketplace/JobManagementController.js:378",
+      "Verified static"
+    ],
+    [
+      "A13",
+      "Database portability",
+      "P0",
+      "Query marketplace unqualified tetapi engine qualified hots.; service_id=19 hardcoded",
+      "Schema hots tersedia di knowledge; modul lintas program punya dependency",
+      "Putuskan isolated DB versus shared service dengan owner; tidak memakai DB kantor pada smoke test; schema Cineva fisik diperlukan",
+      "D:/Project/Cineva-V2-/controller/hots_controller/jobmarketplace/JobClaimController.js:90; D:/Kantor/3.Knowledge/schema/hots.md",
+      "Verified static; live topology unknown"
+    ],
+    [
+      "A14",
+      "Authorization",
+      "P0",
+      "authGuard decodeTokenHT atau LOCAL_DISABLE_AUTH; approval handler tidak menunjukkan ownership predicate",
+      "HOTS memiliki module auth/OIDC; belum membuktikan policy Cineva",
+      "Review decodeTokenHT dan role/company/PIC scope end-to-end; negative tests lintas role dan tenant",
+      "D:/Project/Cineva-V2-/routers/hots/hotsJobMarketplace.js:11; D:/Project/Cineva-V2-/controller/hots_controller/jobmarketplace/JobPICController.js:93",
+      "Router/handler observed; global gate unverified"
+    ],
+    [
+      "A15",
+      "Auth baseline discrepancy",
+      "P0",
+      "KeepLogin menulis localStorage token",
+      "authToken.ts komentar memory-only tetapi setter menulis dua localStorage key",
+      "Putuskan kontrak cookie/token dan session sharing sebelum port; source lebih kuat daripada komentar",
+      "D:/Project/Cineva-V2-/1, fontend/HOTS/src/action/KeepLogin.js:15; D:/Kantor/1.Frontend/HOTS/src/lib/authToken.ts:25",
+      "Verified contradiction in source"
+    ],
+    [
+      "A16",
+      "SSE and logging",
+      "P1",
+      "Logger SSE sudah ada; startup/controller masih console langsung",
+      "Logger shared juga broadcast SSE; app-core menawarkan SSE client",
+      "Reuse log parser per module + business events sesudah commit; jangan klaim SSE menjamin sync DB",
+      "D:/Project/Cineva-V2-/core/logger.js; D:/Project/Cineva-V2-/controller/hots_controller/jobmarketplace/JobPICController.js:196",
+      "Verified static"
+    ],
+    [
+      "A17",
+      "Uploads",
+      "P1",
+      "Multer/uploader legacy dan upload attachment",
+      "upload-engine + file-bridge-client + runtime-paths; storage local/both/bridge",
+      "Config adapter Cineva dan traceability; Bridge opsional sesuai deployment, migration additive setelah schema review",
+      "D:/Kantor/3.Knowledge/domains/shared-platform/integrated_api_modularization_2026_10_12.md",
+      "Knowledge + source path verified"
+    ],
+    [
+      "A18",
+      "MFE host",
+      "P1",
+      "Vite base /hots, satu app tanpa federation plugin",
+      "HOTS host federation form/CTO/inventory + React dedupe dan fs.allow shared roots",
+      "Shell Cineva konsumsi paket; aktifkan remote yang dibutuhkan saja dan konfigurasi base/remote URL per environment",
+      "D:/Project/Cineva-V2-/1, fontend/HOTS/vite.config.ts; D:/Kantor/1.Frontend/HOTS/vite.config.ts",
+      "Verified static"
+    ],
+    [
+      "A19",
+      "Package readiness",
+      "P0",
+      "Belum ada shared package dependency",
+      "Registry: table/app-core/ui-kit/engine-client not consumed; page-engine partial; app-template candidate",
+      "Full package model berarti reuse platform dengan acceptance; bukan semua paket otomatis production-ready",
+      "D:/Kantor/3.Knowledge/packages/REGISTRY.md",
+      "Registry claims; actual package metadata captured"
+    ],
+    [
+      "A20",
+      "Release and PM2",
+      "P1",
+      "pack_for_prod zip source; package build merujuk build.js; PM2 integrated-api/index.js",
+      "tools/build/build-secure.js; source/binary packaging; PM2 memilih executable jika ada",
+      "Rilis Cineva reproducible dengan bundle paket, env contract, health/smoke dan rollback; jangan jalankan packaging saat audit",
+      "D:/Project/Cineva-V2-/pack_for_prod.bat; D:/Kantor/2.Backend/Integrated-API/ecosystem.config.js",
+      "Verified static; deployment untested"
+    ],
+    [
+      "A21",
+      "Knowledge drift in HOTS",
+      "P1",
+      "Tidak ada platform index lengkap",
+      "Graph/overview masih menyebut beberapa path lama; hub punya old-current mapping; auth comment drift",
+      "Gunakan path/source aktual; import knowledge relevan dan tulis provenance/version, bukan copy semua knowledge domain",
+      "D:/Kantor/3.Knowledge/KNOWLEDGE_GRAPH.md; D:/Kantor/3.Knowledge/domains/shared-platform/integrated_api_modularization_2026_10_12.md",
+      "Verified documentation drift"
+    ]
+  ],
+  "phases": [
+    [
+      "0",
+      "Baseline dan kontrak",
+      "P0",
+      "Capture versi/hash, endpoints, role scope, form/workflow JSON, physical schema Cineva",
+      "Tidak ada perubahan aplikasi/DB; semua draft ditandai; snapshot dan rollback tersedia",
+      "Owner menetapkan topology DB/auth/upload"
+    ],
+    [
+      "1",
+      "Platform foundation",
+      "P0",
+      "Modular loader, infrastructure, config, shared package dependency, programs/cineva",
+      "Boot isolated tanpa cron/DB kantor; route lama tetap terpasang; dependency disabled/missing teruji",
+      "Phase 0"
+    ],
+    [
+      "2",
+      "Integrity marketplace",
+      "P0",
+      "Transaction semua write; mapping pickup-ticket; authorization; idempotency dan numbering",
+      "Forced failure rollback; dua applicant job sama terpisah; double approve/pickup aman; cross tenant ditolak",
+      "Physical schema + phase 1"
+    ],
+    [
+      "3",
+      "Editor dan runtime",
+      "P1",
+      "Shared dynamic-form/service runtime, table/client/UI adapters, widget registries",
+      "Edit-preview-save-reload konsisten; rule/order/value EAV kompatibel; JSON advanced only",
+      "Phase 1 + contract fixtures"
+    ],
+    [
+      "4",
+      "Workflow/upload/SSE/report",
+      "P1",
+      "Policy/trigger/document adapters; uploader; after-commit events; reporting",
+      "Campaign→pickup→PIC→Kanban→draft/revision/posting terbukti; file accessible; report sesuai EAV",
+      "Phase 2 dan 3"
+    ],
+    [
+      "5",
+      "Release dan archive",
+      "P1",
+      "Build independen, staging acceptance, PM2 smoke, deployment rollback; knowledge update",
+      "Clean install/build, runtime/browser acceptance, restore snapshot berhasil; archive legacy di knowledge",
+      "Seluruh acceptance sebelumnya"
+    ]
+  ],
+  "packages": [
+    [
+      "@hots/dynamic-form",
+      "0.1.0",
+      "D:/Kantor/1.Frontend/dynamic-form",
+      "./src/index.ts",
+      "private/local"
+    ],
+    [
+      "@hots/service-form-runtime",
+      "0.1.0",
+      "D:/Kantor/1.Frontend/service-form-runtime",
+      "./src/index.ts",
+      "private/local"
+    ],
+    [
+      "@hots/app-core",
+      "0.5.0",
+      "D:/Kantor/1.Frontend/packages/app-core",
+      "./src/index.ts",
+      "private/local"
+    ],
+    [
+      "@hots/calc-kit",
+      "0.5.1",
+      "D:/Kantor/1.Frontend/packages/calc-kit",
+      "./src/index.js",
+      "private/local"
+    ],
+    [
+      "@hots/engine-client",
+      "0.2.0",
+      "D:/Kantor/1.Frontend/packages/engine-client",
+      "./src/index.ts",
+      "private/local"
+    ],
+    [
+      "@hots/eslint-config",
+      "0.1.0",
+      "D:/Kantor/1.Frontend/packages/eslint-config",
+      "./index.js",
+      "private/local"
+    ],
+    [
+      "@hots/geo-kit",
+      "0.1.0",
+      "D:/Kantor/1.Frontend/packages/geo-kit",
+      "./src/index.ts",
+      "private/local"
+    ],
+    [
+      "@hots/import-kit",
+      "0.1.0",
+      "D:/Kantor/1.Frontend/packages/import-kit",
+      "./src/index.js",
+      "private/local"
+    ],
+    [
+      "@hots/page-engine",
+      "0.1.0",
+      "D:/Kantor/1.Frontend/packages/page-engine",
+      "./src/index.ts",
+      "private/local"
+    ],
+    [
+      "@hots/table-engine",
+      "0.2.0",
+      "D:/Kantor/1.Frontend/packages/table-engine",
+      "./src/index.ts",
+      "private/local"
+    ],
+    [
+      "@hots/tracking-kit",
+      "0.1.0",
+      "D:/Kantor/1.Frontend/packages/tracking-kit",
+      "./src/index.ts",
+      "private/local"
+    ],
+    [
+      "@hots/ui-kit",
+      "0.2.0",
+      "D:/Kantor/1.Frontend/packages/ui-kit",
+      "./src/index.ts",
+      "private/local"
+    ],
+    [
+      "@hots/workflow-policy-kit",
+      "0.2.0",
+      "D:/Kantor/1.Frontend/packages/workflow-policy-kit",
+      "./src/index.js",
+      "private/local"
+    ],
+    [
+      "@hots/transaction-kit",
+      "0.2.0",
+      "D:/Kantor/2.Backend/packages/transaction-kit",
+      "./src/index.js",
+      "private/local"
+    ]
+  ],
+  "modules": [
+    [
+      "e-order",
+      "programs/e-order/module.json",
+      "hots-core",
+      "/cart, /product, /order, /admin"
+    ],
+    [
+      "event-engine",
+      "programs/event-engine/module.json",
+      "hots-core",
+      "/api/event-engine/public, /api/event-engine/admin, /api/event-engine/auth"
+    ],
+    [
+      "event-old-do-not-delete",
+      "programs/event-old-do-not-delete/module.json",
+      "",
+      "/event"
+    ],
+    [
+      "freight-wave",
+      "programs/freight-wave/module.json",
+      "",
+      "/engine/freight-wave/auth, /engine/freight-wave"
+    ],
+    [
+      "hots-core",
+      "programs/hots/core/module.json",
+      "",
+      "/cms, /engine, /engine, /engine, /engine, /engine/project, /workflow-engine, /triggers, /user, /card_generator, /hots_auth, /hots_admin, /hots_ticket, /hots_settings, /hots_Tps, /hots_customfunction, /hots/public, /hotsprefs, /hots_profile, /hots_notifications, /hots/plugins"
+    ],
+    [
+      "cto",
+      "programs/hots/cto/module.json",
+      "",
+      "/cto"
+    ],
+    [
+      "hots-dashboard",
+      "programs/hots/dashboard/module.json",
+      "",
+      "/hotsdashboard, /hotsreporting"
+    ],
+    [
+      "enterprise",
+      "programs/hots/enterprise/module.json",
+      "",
+      "/enterprise"
+    ],
+    [
+      "hots-holiday",
+      "programs/hots/holiday/module.json",
+      "",
+      "/hots_holidays"
+    ],
+    [
+      "hris",
+      "programs/hots/hris/module.json",
+      "hots-core",
+      "/api/hris, /hris-backend"
+    ],
+    [
+      "inventory-replenishment",
+      "programs/hots/inventory-replenishment/module.json",
+      "cto",
+      "/api/inventory-replenishment,/hots/replenishment"
+    ],
+    [
+      "meetingbook",
+      "programs/hots/meetingbook/module.json",
+      "hots-core",
+      "/api/rooms, /api/bookings"
+    ],
+    [
+      "hots-pricing",
+      "programs/hots/pricing/module.json",
+      "",
+      "/hots/pricing"
+    ],
+    [
+      "hots-system-menu",
+      "programs/hots/system-menu/module.json",
+      "",
+      "/hots_system_menu"
+    ],
+    [
+      "hots-url-shortener",
+      "programs/hots/url-shortener/module.json",
+      "",
+      "/hots_url"
+    ],
+    [
+      "searates",
+      "programs/searates/module.json",
+      "",
+      "/searates"
+    ],
+    [
+      "auth",
+      "app/modules/auth/module.json",
+      "hots-core",
+      "/auth"
+    ],
+    [
+      "calculation",
+      "app/modules/calculation/module.json",
+      "",
+      "/api/v1/calculation"
+    ],
+    [
+      "debug",
+      "app/modules/debug/module.json",
+      "",
+      "/debugRouter"
+    ],
+    [
+      "form-engine",
+      "app/modules/form-engine/module.json",
+      "hots-core",
+      "/api/form-engine/admin, /api/form-engine/public"
+    ],
+    [
+      "par-document",
+      "app/modules/par-document/module.json",
+      "hots-core",
+      "/engine/par-document"
+    ],
+    [
+      "report-table",
+      "app/modules/report-table-engine/module.json",
+      "",
+      "/engine/report-table"
+    ],
+    [
+      "shipment-dashboard",
+      "app/modules/shipment-assignment-dashboard/module.json",
+      "hots-core",
+      "/engine/shipment-assignment-dashboard"
+    ],
+    [
+      "sse",
+      "app/modules/sse/module.json",
+      "hots-core",
+      "/sse"
+    ]
+  ],
+  "engineDiff": [
+    [
+      "workflow-engine.js",
+      "Changed",
+      "D:/Project/Cineva-V2-/core/workflow-engine.js",
+      "D:/Kantor/2.Backend/Integrated-API/app/infrastructure/engines/workflow-engine.js"
+    ],
+    [
+      "trigger-engine.js",
+      "Changed",
+      "D:/Project/Cineva-V2-/core/trigger-engine.js",
+      "D:/Kantor/2.Backend/Integrated-API/app/infrastructure/engines/trigger-engine.js"
+    ],
+    [
+      "resource-engine.js",
+      "Changed",
+      "D:/Project/Cineva-V2-/core/resource-engine.js",
+      "D:/Kantor/2.Backend/Integrated-API/app/infrastructure/engines/resource-engine.js"
+    ],
+    [
+      "reporting-engine.js",
+      "Changed",
+      "D:/Project/Cineva-V2-/core/reporting-engine.js",
+      "D:/Kantor/2.Backend/Integrated-API/app/infrastructure/engines/reporting-engine.js"
+    ],
+    [
+      "document-engine.js",
+      "Changed",
+      "D:/Project/Cineva-V2-/core/document-engine.js",
+      "D:/Kantor/2.Backend/Integrated-API/app/infrastructure/engines/document-engine.js"
+    ],
+    [
+      "engine-loader.js",
+      "Changed",
+      "D:/Project/Cineva-V2-/core/engine-loader.js",
+      "D:/Kantor/2.Backend/Integrated-API/app/infrastructure/engines/engine-loader.js"
+    ],
+    [
+      "init-engines.js",
+      "Changed",
+      "D:/Project/Cineva-V2-/core/init-engines.js",
+      "D:/Kantor/2.Backend/Integrated-API/app/infrastructure/engines/init-engines.js"
+    ]
+  ],
+  "frontendDiff": [
+    [
+      "App.test.js",
+      "Cineva only"
+    ],
+    [
+      "App.tsx",
+      "Changed"
+    ],
+    [
+      "BaseLayout/sidebarlayout.jsx",
+      "Changed"
+    ],
+    [
+      "JSONADDMOREEXAMPLE.js",
+      "Cineva only"
+    ],
+    [
+      "action/KeepLogin.js",
+      "Identical"
+    ],
+    [
+      "action/cartAction.js",
+      "Changed"
+    ],
+    [
+      "action/dump/userAction.js",
+      "Changed"
+    ],
+    [
+      "action/reqAction.js",
+      "Identical"
+    ],
+    [
+      "action/userAction.js",
+      "Changed"
+    ],
+    [
+      "api/cms.ts",
+      "Changed"
+    ],
+    [
+      "api/workflowAdmin.js",
+      "Changed"
+    ],
+    [
+      "app/AppProviders.tsx",
+      "HOTS only"
+    ],
+    [
+      "app/AppRouter.tsx",
+      "HOTS only"
+    ],
+    [
+      "app/routes/fallbackRoutes.tsx",
+      "HOTS only"
+    ],
+    [
+      "app/routes/protected/adminRoutes.tsx",
+      "HOTS only"
+    ],
+    [
+      "app/routes/protected/dashboardRoutes.tsx",
+      "HOTS only"
+    ],
+    [
+      "app/routes/protected/remoteRoutes.tsx",
+      "HOTS only"
+    ],
+    [
+      "app/routes/protected/serviceRoutes.tsx",
+      "HOTS only"
+    ],
+    [
+      "app/routes/protected/workRoutes.tsx",
+      "HOTS only"
+    ],
+    [
+      "app/routes/protectedRoutes.tsx",
+      "HOTS only"
+    ],
+    [
+      "app/routes/publicRoutes.tsx",
+      "HOTS only"
+    ],
+    [
+      "app/routes/routeHelpers.tsx",
+      "HOTS only"
+    ],
+    [
+      "blog/Event.jsx",
+      "Changed"
+    ],
+    [
+      "blog/News.jsx",
+      "Changed"
+    ],
+    [
+      "blog/addnew.jsx",
+      "Changed"
+    ],
+    [
+      "blog/draft.jsx",
+      "Changed"
+    ],
+    [
+      "blog/edit.jsx",
+      "Changed"
+    ],
+    [
+      "blog/index.jsx",
+      "Identical"
+    ],
+    [
+      "components/AddCommentComp.jsx",
+      "Identical"
+    ],
+    [
+      "components/BannerComponent.jsx",
+      "Identical"
+    ],
+    [
+      "components/BannerComponentGlobal.jsx",
+      "Identical"
+    ],
+    [
+      "components/Barproduct.jsx",
+      "Identical"
+    ],
+    [
+      "components/CheckToken/CheckToken.js",
+      "Changed"
+    ],
+    [
+      "components/CheckToken/FetchData/DataContext.js",
+      "Changed"
+    ],
+    [
+      "components/CheckToken/SessionModal.js",
+      "Identical"
+    ],
+    [
+      "components/DeliverToComponent.jsx",
+      "Identical"
+    ],
+    [
+      "components/ErrorBoundary.tsx",
+      "Identical"
+    ],
+    [
+      "components/ExcelPreview.tsx",
+      "Identical"
+    ],
+    [
+      "components/ExcelViewer/ExcelViewer.jsx",
+      "Identical"
+    ],
+    [
+      "components/HeaderBar.jsx",
+      "Identical"
+    ],
+    [
+      "components/LimiterComponent.jsx",
+      "Identical"
+    ],
+    [
+      "components/LogoBar.jsx",
+      "Identical"
+    ],
+    [
+      "components/OrderList.jsx",
+      "Identical"
+    ],
+    [
+      "components/PDFViewer/PdfViewer.jsx",
+      "Identical"
+    ],
+    [
+      "components/Product/Dairy.jsx",
+      "Identical"
+    ],
+    [
+      "components/Product/Healthypage.jsx",
+      "Identical"
+    ],
+    [
+      "components/Product/Noodle.jsx",
+      "Identical"
+    ],
+    [
+      "components/Product/Seasoning.jsx",
+      "Identical"
+    ],
+    [
+      "components/Product/Snack.jsx",
+      "Identical"
+    ],
+    [
+      "components/ProductCard.jsx",
+      "Identical"
+    ],
+    [
+      "components/ReadCatalogue.jsx",
+      "Identical"
+    ],
+    [
+      "components/ReportingDashboard.jsx/IncomingOrderComponent.jsx",
+      "Identical"
+    ],
+    [
+      "components/ReportingDashboard.jsx/IncomingOrderbyWeek.jsx",
+      "Identical"
+    ],
+    [
+      "components/ReportingDashboard.jsx/OrderVolumeByCountryComponent.jsx",
+      "Identical"
+    ],
+    [
+      "components/ReportingDashboard.jsx/OrderVolumeComponent.jsx",
+      "Identical"
+    ],
+    [
+      "components/ReportingDashboard.jsx/Top5DistributorComponent.jsx",
+      "Identical"
+    ],
+    [
+      "components/ReportingDashboard.jsx/Top5FlavourComponent.jsx",
+      "Identical"
+    ],
+    [
+      "components/ReportingDashboard.jsx/Truckperpackcomponent.jsx",
+      "Identical"
+    ],
+    [
+      "components/SearchBarComponent.jsx",
+      "Changed"
+    ],
+    [
+      "components/SearchFilterComponent.jsx",
+      "Identical"
+    ],
+    [
+      "components/admin/CreateAccount.jsx",
+      "Changed"
+    ],
+    [
+      "components/admin/CustomFunctionManager.tsx",
+      "Identical"
+    ],
+    [
+      "components/admin/DeleteServiceDialog.tsx",
+      "Identical"
+    ],
+    [
+      "components/admin/EditAccount.jsx",
+      "Changed"
+    ],
+    [
+      "components/admin/ExcelUploader.tsx",
+      "Identical"
+    ],
+    [
+      "components/admin/FunctionLogsViewer.tsx",
+      "Identical"
+    ],
+    [
+      "components/admin/ServiceCatalogHeader.tsx",
+      "Identical"
+    ],
+    [
+      "components/admin/ServiceCatalogSearch.tsx",
+      "Identical"
+    ],
+    [
+      "components/admin/ServiceCatalogTable.tsx",
+      "Identical"
+    ],
+    [
+      "components/admin/ServiceFunctionAssignment.tsx",
+      "Identical"
+    ],
+    [
+      "components/admin/ServiceFunctionTab.tsx",
+      "Identical"
+    ],
+    [
+      "components/admin/ServiceSettingsTab.tsx",
+      "Changed"
+    ],
+    [
+      "components/admin/ServiceWidgetManager.tsx",
+      "Changed"
+    ],
+    [
+      "components/admin/SidebarMenuSettings.tsx",
+      "Changed"
+    ],
+    [
+      "components/approval/ApprovalHistory.jsx",
+      "Identical"
+    ],
+    [
+      "components/approval/ApproveRejectModal.jsx",
+      "Changed"
+    ],
+    [
+      "components/approval/TicketApprovalSection.tsx",
+      "Changed"
+    ],
+    [
+      "components/approval/TicketFormPreview.jsx",
+      "Identical"
+    ],
+    [
+      "components/approval/TicketHistory.jsx",
+      "Identical"
+    ],
+    [
+      "components/approval/TicketRevisionCompare.jsx",
+      "Identical"
+    ],
+    [
+      "components/approval/TicketRevisionTimeline.jsx",
+      "Identical"
+    ],
+    [
+      "components/assignment/AssignmentTimeline.tsx",
+      "Changed"
+    ],
+    [
+      "components/assignment/CompactAssignmentCard.tsx",
+      "Changed"
+    ],
+    [
+      "components/assignment/GanttTaskModal.tsx",
+      "Changed"
+    ],
+    [
+      "components/assignment/SharedReportTimeline.tsx",
+      "Changed"
+    ],
+    [
+      "components/assignment/SharedTaskEditor.tsx",
+      "Changed"
+    ],
+    [
+      "components/assignment/TaskCard.tsx",
+      "Changed"
+    ],
+    [
+      "components/assignment/TaskFilterBar.tsx",
+      "Identical"
+    ],
+    [
+      "components/assignment/TaskGantt.tsx",
+      "Changed"
+    ],
+    [
+      "components/assignment/TaskKanban.tsx",
+      "Changed"
+    ],
+    [
+      "components/assignment/TicketDiscussion.tsx",
+      "Changed"
+    ],
+    [
+      "components/assignment/WorkloadBar.tsx",
+      "Identical"
+    ],
+    [
+      "components/auth/ProtectedRoute.tsx",
+      "Changed"
+    ],
+    [
+      "components/banner.jsx",
+      "Identical"
+    ],
+    [
+      "components/blog.jsx",
+      "Identical"
+    ],
+    [
+      "components/cms/BlockEditorComponents.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/cms/CmsContentRenderer.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/cms/FeedbackForm.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/common/FunctionPicker.tsx",
+      "Identical"
+    ],
+    [
+      "components/common/HotsScreenLoader.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/dialog/warningdialoguser.tsx",
+      "Identical"
+    ],
+    [
+      "components/filters/UserFilters.tsx",
+      "Changed"
+    ],
+    [
+      "components/footer.jsx",
+      "Identical"
+    ],
+    [
+      "components/forms/CatalogFormLoader.tsx",
+      "Changed"
+    ],
+    [
+      "components/forms/DynamicField.tsx",
+      "Changed"
+    ],
+    [
+      "components/forms/DynamicForm.tsx",
+      "Changed"
+    ],
+    [
+      "components/forms/DynamicSection.tsx",
+      "Changed"
+    ],
+    [
+      "components/forms/FieldEditor.tsx",
+      "Changed"
+    ],
+    [
+      "components/forms/FormLayoutPreview.tsx",
+      "Identical"
+    ],
+    [
+      "components/forms/Functioneditor.tsx",
+      "Changed"
+    ],
+    [
+      "components/forms/NumberField.tsx",
+      "Identical"
+    ],
+    [
+      "components/forms/RepeatingSection.tsx",
+      "Identical"
+    ],
+    [
+      "components/forms/RowGroupConfigurator.tsx",
+      "Changed"
+    ],
+    [
+      "components/forms/RowGroupField.tsx",
+      "Identical"
+    ],
+    [
+      "components/forms/StructuredRowGroup.tsx",
+      "Changed"
+    ],
+    [
+      "components/forms/SuggestionInsertInput.tsx",
+      "Changed"
+    ],
+    [
+      "components/forms/SuggestionInsertInputWrapper.tsx",
+      "Identical"
+    ],
+    [
+      "components/forms/UnifiedFormStructureEditor.tsx",
+      "Changed"
+    ],
+    [
+      "components/forms/builder/ComponentPalette.tsx",
+      "Identical"
+    ],
+    [
+      "components/forms/builder/PropertyInspector.tsx",
+      "Identical"
+    ],
+    [
+      "components/forms/builder/VisualFormCanvas.tsx",
+      "Identical"
+    ],
+    [
+      "components/forms/dashboard/DashboardFormLoader.tsx",
+      "Changed"
+    ],
+    [
+      "components/forms/dynamicFormSubmitHandlers.ts",
+      "HOTS only"
+    ],
+    [
+      "components/forms/dynamicFormUtils.ts",
+      "HOTS only"
+    ],
+    [
+      "components/forms/rowGroup/RowGroupActions.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/forms/rowGroup/RowGroupBasicSettings.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/forms/rowGroup/RowGroupRowsCard.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/forms/rowGroup/SystemVariableHelper.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/forms/specialFunc/DetailTableWidget.tsx",
+      "Changed"
+    ],
+    [
+      "components/forms/specialFunc/DiffWidget.tsx",
+      "Changed"
+    ],
+    [
+      "components/forms/specialFunc/SOOInvoicePickerWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/forms/specialFunc/SpecialFuncFactory.tsx",
+      "Changed"
+    ],
+    [
+      "components/forms/specialFunc/dcrContainerLoad/ContainerLoadFields.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/forms/specialFunc/dcrContainerLoad/LineItemsWithLoad.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/forms/specialFunc/dcrContainerLoad/completionNote.ts",
+      "HOTS only"
+    ],
+    [
+      "components/forms/specialFunc/dcrContainerLoad/useCompletionSizes.ts",
+      "HOTS only"
+    ],
+    [
+      "components/forms/specialFunc/eorderOrder/ContainerCard.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/forms/specialFunc/eorderOrder/EorderOrderWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/forms/specialFunc/eorderOrder/OrderChangeView.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/forms/specialFunc/eorderOrder/eorderOrderApi.ts",
+      "HOTS only"
+    ],
+    [
+      "components/forms/specialFunc/eorderOrder/orderState.ts",
+      "HOTS only"
+    ],
+    [
+      "components/forms/specialfunction/orderchangetable.tsx",
+      "Identical"
+    ],
+    [
+      "components/forms/specialfunction/skuchange.tsx",
+      "Identical"
+    ],
+    [
+      "components/glance.jsx",
+      "Identical"
+    ],
+    [
+      "components/header.jsx",
+      "Identical"
+    ],
+    [
+      "components/hero.jsx",
+      "Identical"
+    ],
+    [
+      "components/inventory/AssetDetailDrawer.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/inventory/AssetInstanceModal.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/inventory/InventoryModal.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/inventory/InventoryModule.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/inventory/InventorySummaryCards.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/inventory/InventoryTable.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/inventory/LocationDistributionPanel.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/inventory/LocationModal.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/inventory/QuickActionsPanel.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/inventory/StockTransactionModal.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/inventory/StockTransferModal.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/inventory/index.ts",
+      "Cineva only"
+    ],
+    [
+      "components/inventory/views/AssetRegistryView.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/inventory/views/BulkInventoryView.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/layout/AppLayout.tsx",
+      "Changed"
+    ],
+    [
+      "components/layout/AppSidebar.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/layout/NotificationBell.tsx",
+      "Changed"
+    ],
+    [
+      "components/layout/PublicCMSLayout.tsx",
+      "Changed"
+    ],
+    [
+      "components/meetingroom/MeetingInvitationInput.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/modals/ChangePasswordModal.tsx",
+      "Changed"
+    ],
+    [
+      "components/modals/CompletionModal.tsx",
+      "Changed"
+    ],
+    [
+      "components/modals/ConfirmationModal.tsx",
+      "Identical"
+    ],
+    [
+      "components/modals/DepartmentModal.tsx",
+      "Identical"
+    ],
+    [
+      "components/modals/DivisionModal.tsx",
+      "Identical"
+    ],
+    [
+      "components/modals/ImagePreviewModal.tsx",
+      "Changed"
+    ],
+    [
+      "components/modals/MediaLibraryModal.tsx",
+      "Changed"
+    ],
+    [
+      "components/modals/ProfileModal.tsx",
+      "Changed"
+    ],
+    [
+      "components/modals/RejectModal.tsx",
+      "Changed"
+    ],
+    [
+      "components/modals/RoleModal.tsx",
+      "Identical"
+    ],
+    [
+      "components/modals/TeamCoverageModal.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/modals/TeamModal.tsx",
+      "Changed"
+    ],
+    [
+      "components/modals/TokenExpiredModal.tsx",
+      "Changed"
+    ],
+    [
+      "components/modals/TokenExpiredModalWrapper.tsx",
+      "Changed"
+    ],
+    [
+      "components/modals/UserModal.tsx",
+      "Changed"
+    ],
+    [
+      "components/modals/WorkflowGroupModal.tsx",
+      "Identical"
+    ],
+    [
+      "components/modals/WorkflowTeamModal.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/report/DataTableReport.tsx",
+      "Changed"
+    ],
+    [
+      "components/report/DataToolbar.tsx",
+      "Identical"
+    ],
+    [
+      "components/report/ReportDiscussion.tsx",
+      "Changed"
+    ],
+    [
+      "components/report/ReusableTableEngine.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/routing/DynamicDashboardRoutes.tsx",
+      "Changed"
+    ],
+    [
+      "components/routing/DynamicServiceRoutes.tsx",
+      "Cineva only"
+    ],
+    [
+      "components/rules/FormRuleEditor.tsx",
+      "Identical"
+    ],
+    [
+      "components/rules/RuleBuilder.tsx",
+      "Identical"
+    ],
+    [
+      "components/rules/RuleBuilderInline.tsx",
+      "Identical"
+    ],
+    [
+      "components/rules/RuleGroupComponent.tsx",
+      "Identical"
+    ],
+    [
+      "components/rules/RuleRow.tsx",
+      "Identical"
+    ],
+    [
+      "components/searchBar/searchBarUtils.js",
+      "HOTS only"
+    ],
+    [
+      "components/theme-provider.tsx",
+      "Identical"
+    ],
+    [
+      "components/trigger/visual/TriggerActionCard.tsx",
+      "Identical"
+    ],
+    [
+      "components/trigger/visual/TriggerActionInspector.tsx",
+      "Identical"
+    ],
+    [
+      "components/trigger/visual/TriggerActionPalette.tsx",
+      "Identical"
+    ],
+    [
+      "components/trigger/visual/VisualTriggerBuilder.tsx",
+      "Identical"
+    ],
+    [
+      "components/tutorial/TutorialManager.tsx",
+      "Identical"
+    ],
+    [
+      "components/tutorial/tutorialSteps.ts",
+      "Identical"
+    ],
+    [
+      "components/ui/CardCollapsible.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/FilePreview.tsx",
+      "Changed"
+    ],
+    [
+      "components/ui/FormSkeleton.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/ProgressionBar.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/RatingWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/ui/RichTextEditor.tsx",
+      "Changed"
+    ],
+    [
+      "components/ui/TaskApprovalActionssimple.tsx",
+      "Changed"
+    ],
+    [
+      "components/ui/TaskListBadge.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/TicketPagination.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/UserStatusBadge.tsx",
+      "Changed"
+    ],
+    [
+      "components/ui/accordion.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/alert-dialog.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/alert.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/aspect-ratio.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/avatar.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/badge.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/breadcrumb.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/button.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/calendar.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/card.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/carousel.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/chart.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/checkbox.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/collapsible.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/combobox.tsx",
+      "Changed"
+    ],
+    [
+      "components/ui/command.tsx",
+      "Changed"
+    ],
+    [
+      "components/ui/context-menu.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/date-range-picker.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/ui/dialog.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/drawer.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/dropdown-menu.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/form.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/hots-suggestion-select.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/ui/hover-card.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/input-otp.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/input.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/label.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/loading-spinner.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/menubar.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/multi-combobox.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/ui/navigation-menu.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/pagination.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/popover.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/progress.tsx",
+      "Changed"
+    ],
+    [
+      "components/ui/radio-group.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/resizable.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/scroll-area.tsx",
+      "Changed"
+    ],
+    [
+      "components/ui/select.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/separator.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/sheet.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/sidebar.tsx",
+      "Changed"
+    ],
+    [
+      "components/ui/skeleton.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/slider.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/sonner.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/switch.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/table.tsx",
+      "Changed"
+    ],
+    [
+      "components/ui/tabs.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/textarea.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/time-picker.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/ui/toast.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/toaster.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/toggle-group.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/toggle.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/tooltip.tsx",
+      "Identical"
+    ],
+    [
+      "components/ui/use-toast.ts",
+      "Identical"
+    ],
+    [
+      "components/widgets/DataViewWidget.tsx",
+      "Identical"
+    ],
+    [
+      "components/workflow/ServiceSelector.jsx",
+      "Identical"
+    ],
+    [
+      "components/workflow/WorkflowAdminPage.jsx",
+      "Identical"
+    ],
+    [
+      "components/workflow/WorkflowFlowchart.jsx",
+      "Identical"
+    ],
+    [
+      "components/workflow/WorkflowFormModal.jsx",
+      "Identical"
+    ],
+    [
+      "components/workflow/WorkflowParamsModal.jsx",
+      "Identical"
+    ],
+    [
+      "components/workflow/WorkflowStepsManager.tsx",
+      "Identical"
+    ],
+    [
+      "components/workflow/WorkflowTable.jsx",
+      "Identical"
+    ],
+    [
+      "components/workflow/visual/VisualWorkflowEditor.tsx",
+      "Changed"
+    ],
+    [
+      "components/workflow/visual/WorkflowNodeInspector.tsx",
+      "Changed"
+    ],
+    [
+      "components/workflow/visual/WorkflowNodePalette.tsx",
+      "Changed"
+    ],
+    [
+      "components/workflow/visual/WorkflowSimulator.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/workflow/visual/nodes/ApprovalNode.tsx",
+      "Identical"
+    ],
+    [
+      "components/workflow/visual/nodes/ConditionNode.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/workflow/visual/nodes/EndNode.tsx",
+      "Identical"
+    ],
+    [
+      "components/workflow/visual/nodes/MergeNode.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/workflow/visual/nodes/ParallelNode.tsx",
+      "HOTS only"
+    ],
+    [
+      "components/workflow/visual/nodes/StartNode.tsx",
+      "Identical"
+    ],
+    [
+      "components/workflow/visual/nodes/TaskNode.tsx",
+      "Identical"
+    ],
+    [
+      "config.js",
+      "HOTS only"
+    ],
+    [
+      "config/formRemote.ts",
+      "HOTS only"
+    ],
+    [
+      "config/sourceConfig.jsx",
+      "Identical"
+    ],
+    [
+      "config/widgetDataConfigurations.ts",
+      "Changed"
+    ],
+    [
+      "contexts/BrandingContext.tsx",
+      "HOTS only"
+    ],
+    [
+      "contexts/HeaderContext.tsx",
+      "Identical"
+    ],
+    [
+      "controllers/customFunctionController.js",
+      "Identical"
+    ],
+    [
+      "controllers/ticketController.js",
+      "Cineva only"
+    ],
+    [
+      "function/function.jsx",
+      "Identical"
+    ],
+    [
+      "hooks/use-cms-anchor.ts",
+      "HOTS only"
+    ],
+    [
+      "hooks/use-mobile.tsx",
+      "Identical"
+    ],
+    [
+      "hooks/use-toast.ts",
+      "Identical"
+    ],
+    [
+      "hooks/useActivityTracker.ts",
+      "HOTS only"
+    ],
+    [
+      "hooks/useAppDispatch.ts",
+      "Identical"
+    ],
+    [
+      "hooks/useAppSelector.ts",
+      "Identical"
+    ],
+    [
+      "hooks/useAuthCheck.ts",
+      "Changed"
+    ],
+    [
+      "hooks/useCatalogData.ts",
+      "Changed"
+    ],
+    [
+      "hooks/usePreferences.ts",
+      "Changed"
+    ],
+    [
+      "hooks/useSSE.tsx",
+      "Changed"
+    ],
+    [
+      "hooks/useServiceWidgetData.ts",
+      "Changed"
+    ],
+    [
+      "hooks/useTokenExpiration.ts",
+      "Changed"
+    ],
+    [
+      "hooks/useTriggerFunction.ts",
+      "Changed"
+    ],
+    [
+      "hooks/useWidgetData.ts",
+      "Changed"
+    ],
+    [
+      "index.js",
+      "Cineva only"
+    ],
+    [
+      "lib/authToken.ts",
+      "HOTS only"
+    ],
+    [
+      "lib/excelUtils.ts",
+      "HOTS only"
+    ],
+    [
+      "lib/httpClient.ts",
+      "HOTS only"
+    ],
+    [
+      "lib/utils.ts",
+      "Identical"
+    ],
+    [
+      "main.tsx",
+      "Changed"
+    ],
+    [
+      "models/widgets.ts",
+      "Identical"
+    ],
+    [
+      "pages/CardGeneratorPage.tsx",
+      "Identical"
+    ],
+    [
+      "pages/EngineModuleAdminPage.tsx",
+      "Identical"
+    ],
+    [
+      "pages/EngineModulePage.tsx",
+      "Identical"
+    ],
+    [
+      "pages/Error/MaintenancePage.jsx",
+      "Identical"
+    ],
+    [
+      "pages/Error/NotFoundPage.jsx",
+      "Changed"
+    ],
+    [
+      "pages/GoodsRequest.tsx",
+      "Identical"
+    ],
+    [
+      "pages/HelpCenter.tsx",
+      "Changed"
+    ],
+    [
+      "pages/Index.tsx",
+      "Cineva only"
+    ],
+    [
+      "pages/IntakePage.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/JobMarketplace.tsx",
+      "Changed"
+    ],
+    [
+      "pages/MyAssignments.tsx",
+      "Changed"
+    ],
+    [
+      "pages/MyTickets.tsx",
+      "Changed"
+    ],
+    [
+      "pages/NotFound.tsx",
+      "Identical"
+    ],
+    [
+      "pages/PluginMarketplace.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/QuickApprovePage.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/ServiceCatalog.tsx",
+      "Changed"
+    ],
+    [
+      "pages/TaskList.tsx",
+      "Changed"
+    ],
+    [
+      "pages/TicketApprovalPage.jsx",
+      "Identical"
+    ],
+    [
+      "pages/TicketDetail.tsx",
+      "Changed"
+    ],
+    [
+      "pages/TravelWorkspace.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/UserGuide.tsx",
+      "Changed"
+    ],
+    [
+      "pages/WorkflowAdminPage.jsx",
+      "Changed"
+    ],
+    [
+      "pages/WorkflowParamEditorPage.jsx",
+      "Identical"
+    ],
+    [
+      "pages/admin/AccountManagementPage.jsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/AdminGuide.tsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/BannerSettings.jsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/BrandingPage.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/admin/CreateAccount.jsx",
+      "Identical"
+    ],
+    [
+      "pages/admin/CustomFunctionManagement.tsx",
+      "Identical"
+    ],
+    [
+      "pages/admin/DepartmentManagement.tsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/EmailTemplateCreatorPage.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/admin/EventAuditPage.jsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/FeedbackAdmin.jsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/FunctionLogsManagement.tsx",
+      "Identical"
+    ],
+    [
+      "pages/admin/IntakeDashboardPage.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/admin/ItemConfig.jsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/JobTitleManagement.tsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/LogData/LogData.jsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/OrderReport.jsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/ReportingDashboard.jsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/ServiceCatalogAdmin.tsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/ServiceFormEditor.tsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/StudioLanding.tsx",
+      "Identical"
+    ],
+    [
+      "pages/admin/StudioPage.tsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/SystemSettings.tsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/TeamManagement.tsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/TriggerFunctionManager.tsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/UserManagement.tsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/WorkflowTeamManagement.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/admin/account/AccountManagementModals.jsx",
+      "HOTS only"
+    ],
+    [
+      "pages/admin/account/AccountTable.jsx",
+      "HOTS only"
+    ],
+    [
+      "pages/admin/dashboard/DashboardAdmin.jsx",
+      "Changed"
+    ],
+    [
+      "pages/admin/serviceForm/ServiceFormEditorTabs.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/admin/studio/StudioLayout.tsx",
+      "Identical"
+    ],
+    [
+      "pages/admin/systemSettings/SystemInventoryTemplatesTab.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/admin/systemSettings/SystemLoginBadgeTab.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/cms/BankDocumentPage.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/cms/CmsAdminEditor.tsx",
+      "Changed"
+    ],
+    [
+      "pages/cms/CmsAdminList.tsx",
+      "Changed"
+    ],
+    [
+      "pages/cms/CmsFeedbackDashboard.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/cms/CmsPublicPage.tsx",
+      "Changed"
+    ],
+    [
+      "pages/cms/bankDocument/BankDocumentFormDialog.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/cms/bankDocument/bankDocumentTypes.ts",
+      "HOTS only"
+    ],
+    [
+      "pages/cost-analyst/PricingMasterPage.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/cost-analyst/components/CogsUploadModal.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/AssignmentDetailPage.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/DashboardCard.tsx",
+      "Identical"
+    ],
+    [
+      "pages/dashboard/DashboardCardEnhanced.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/DashboardPage.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/DashboardPanelRenderer.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/DashboardView.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/LinkShortenerPage.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/PanelContent.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/PortalPage.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/QRGeneratorPage.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/ServiceAnalyticsView.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/TrademarkPage.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/index.tsx",
+      "Identical"
+    ],
+    [
+      "pages/dashboard/panels/AnalyticsCardsPanel.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/panels/AnalyticsPanel.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/panels/CMSPanel.tsx",
+      "Identical"
+    ],
+    [
+      "pages/dashboard/panels/ChartPanel.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/panels/GenericReportPanel.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/panels/SummaryCardsPanel.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/report/CardNameGenerator.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/report/DefaultDashboard.tsx",
+      "Identical"
+    ],
+    [
+      "pages/dashboard/report/EOrderReporting.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/report/FMCGAnalyticsDashboard.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/report/InventoryReplenishmentDashboard.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/report/JobListPage.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/report/LaporanCuti.tsx",
+      "Identical"
+    ],
+    [
+      "pages/dashboard/report/LaporanIzin.tsx",
+      "Identical"
+    ],
+    [
+      "pages/dashboard/report/LaporanKoreksi.tsx",
+      "Identical"
+    ],
+    [
+      "pages/dashboard/report/LaporanLembur.tsx",
+      "Identical"
+    ],
+    [
+      "pages/dashboard/report/ProjectDashboard.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/report/ReportPublic.tsx",
+      "Identical"
+    ],
+    [
+      "pages/dashboard/report/ReportService.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/report/SRFDashboardWorkbench.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/report/SRFUserSummaryReport.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/report/SeaRatesHistoryDashboard.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/report/ShipmentReport.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/report/UniversalReportPage.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/report/WorkflowSummary.tsx",
+      "Identical"
+    ],
+    [
+      "pages/dashboard/report/cardNameGeneratorTypes.ts",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/report/projectDashboardUtils.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/report/report.tsx",
+      "Identical"
+    ],
+    [
+      "pages/dashboard/report/srfUserSummaryTypes.ts",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/report/srf_report.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/report/srf_report2.tsx",
+      "Changed"
+    ],
+    [
+      "pages/dashboard/shipment-assignment/ShipmentAssignmentActionDialog.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/shipment-assignment/ShipmentAssignmentBulkActionDialog.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/shipment-assignment/ShipmentAssignmentQueueWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/shipment-assignment/ShipmentAssignmentSummaryWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/shipment-assignment/api.ts",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/shipment-assignment/types.ts",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/trademark/TrademarkFormDialog.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/dashboard/trademark/TrademarkHistoryDialog.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/inventory/AssetAuditPage.tsx",
+      "Cineva only"
+    ],
+    [
+      "pages/inventory/ITInventoryPage.tsx",
+      "Cineva only"
+    ],
+    [
+      "pages/inventory/POSMInventoryPage.tsx",
+      "Cineva only"
+    ],
+    [
+      "pages/inventory/RequestTrackingPage.tsx",
+      "Cineva only"
+    ],
+    [
+      "pages/inventory/StorageManagementPage.tsx",
+      "Cineva only"
+    ],
+    [
+      "pages/inventory/WarehouseInventoryPage.tsx",
+      "Cineva only"
+    ],
+    [
+      "pages/inventory/index.ts",
+      "Cineva only"
+    ],
+    [
+      "pages/jobmarketplace/JobMarketplaceAdminCreate.tsx",
+      "Cineva only"
+    ],
+    [
+      "pages/jobmarketplace/JobMarketplaceBatches.tsx",
+      "Cineva only"
+    ],
+    [
+      "pages/jobmarketplace/JobMarketplaceCampaigns.tsx",
+      "Cineva only"
+    ],
+    [
+      "pages/jobmarketplace/JobMarketplaceContentWorkflow.tsx",
+      "Cineva only"
+    ],
+    [
+      "pages/jobmarketplace/JobMarketplaceDetail.tsx",
+      "Cineva only"
+    ],
+    [
+      "pages/jobmarketplace/JobMarketplaceLocations.tsx",
+      "Cineva only"
+    ],
+    [
+      "pages/jobmarketplace/JobMarketplaceTalentAssignments.tsx",
+      "Cineva only"
+    ],
+    [
+      "pages/login/LoginNoticeSidebar.tsx",
+      "Changed"
+    ],
+    [
+      "pages/login/Loginpage.tsx",
+      "Changed"
+    ],
+    [
+      "pages/login/Registerpage.tsx",
+      "Changed"
+    ],
+    [
+      "pages/login/ResetPasswordPage.tsx",
+      "Identical"
+    ],
+    [
+      "pages/login/SsoCallbackPage.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/login/form/Forgotpassform.tsx",
+      "Identical"
+    ],
+    [
+      "pages/login/form/Lockedaccount.tsx",
+      "Identical"
+    ],
+    [
+      "pages/login/form/Loginform.tsx",
+      "Changed"
+    ],
+    [
+      "pages/login/form/Recoveryform.tsx",
+      "Identical"
+    ],
+    [
+      "pages/login/form/SsoConfirmAccount.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/module/admin/TicketDetailPage.jsx",
+      "Changed"
+    ],
+    [
+      "pages/module/admin/TicketListPage.jsx",
+      "Changed"
+    ],
+    [
+      "pages/module/view/TicketListViewPage.jsx",
+      "Changed"
+    ],
+    [
+      "pages/module/view/TicketViewPage.jsx",
+      "Changed"
+    ],
+    [
+      "pages/ticket-detail-widgets/WidgetSlot.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/ticket-detail-widgets/dcrWidgets.ts",
+      "HOTS only"
+    ],
+    [
+      "pages/ticket-detail-widgets/resolveTicketWidgets.ts",
+      "HOTS only"
+    ],
+    [
+      "pages/ticket-detail-widgets/widgetSlots.ts",
+      "HOTS only"
+    ],
+    [
+      "pages/ticket-detail/parts/admin/AdminDiagnosticPanel.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/ticket-detail/parts/admin/AdminTabsWrapper.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/ticket-detail/parts/approval/ApprovalProgressCard.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/ticket-detail/parts/attachments/AttachedFilesCard.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/ticket-detail/parts/details/TicketDetailsCard.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/ticket-detail/parts/details/renderPreview.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/ticket-detail/parts/discussion/DiscussionCard.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/ticket-detail/parts/info/RequestInformationCard.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/ticket-detail/parts/modals/TicketDialogs.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/ticket-detail/parts/service/TicketServiceCard.tsx",
+      "HOTS only"
+    ],
+    [
+      "pages/ticket-detail/utils/ticketFormat.ts",
+      "HOTS only"
+    ],
+    [
+      "pages/tools/QRDashboard.tsx",
+      "Changed"
+    ],
+    [
+      "pages/tools/ShortRedirect.tsx",
+      "Changed"
+    ],
+    [
+      "pages/verify/VerifyRegister.tsx",
+      "Identical"
+    ],
+    [
+      "reducer/index.js",
+      "Identical"
+    ],
+    [
+      "reducer/orderReducer.js",
+      "Identical"
+    ],
+    [
+      "reducer/userReducer.js",
+      "Identical"
+    ],
+    [
+      "registry/dynamicFormRegistry.ts",
+      "HOTS only"
+    ],
+    [
+      "registry/widgetRegistry.ts",
+      "Changed"
+    ],
+    [
+      "remotes/CTORemotePage.tsx",
+      "HOTS only"
+    ],
+    [
+      "remotes/FormRemotePage.tsx",
+      "HOTS only"
+    ],
+    [
+      "remotes/HRRemotePage.tsx",
+      "HOTS only"
+    ],
+    [
+      "remotes/InventoryRemotePage.tsx",
+      "HOTS only"
+    ],
+    [
+      "remotes/RemoteBoundary.tsx",
+      "HOTS only"
+    ],
+    [
+      "remotes/index.ts",
+      "HOTS only"
+    ],
+    [
+      "reportWebVitals.js",
+      "Cineva only"
+    ],
+    [
+      "services/jobMarketplaceService.ts",
+      "Cineva only"
+    ],
+    [
+      "services/oidc.ts",
+      "HOTS only"
+    ],
+    [
+      "setupTests.js",
+      "Cineva only"
+    ],
+    [
+      "standalone/meetingbook/MeetingRoomStandalone.tsx",
+      "Changed"
+    ],
+    [
+      "store/index.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/SKUslice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/analystslice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/assignmentSlice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/authSlice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/catalogSlice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/countryslice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/customFunctionSlice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/dashboardSlice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/inventorySlice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/meetingroom_slice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/pricing_slice.ts",
+      "HOTS only"
+    ],
+    [
+      "store/slices/sidebarSlice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/srf_po_slice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/srf_purpose.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/srf_slice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/srf_todaysweekSlice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/ticketsSlice.ts",
+      "Changed"
+    ],
+    [
+      "store/slices/userManagementSlice.ts",
+      "Changed"
+    ],
+    [
+      "transfer/AccountManagementPage.jsx",
+      "Identical"
+    ],
+    [
+      "types/analysttype.ts",
+      "Identical"
+    ],
+    [
+      "types/countrytype.ts",
+      "Identical"
+    ],
+    [
+      "types/customFunctionTypes.ts",
+      "Changed"
+    ],
+    [
+      "types/form-engine-remote.d.ts",
+      "HOTS only"
+    ],
+    [
+      "types/formTypes.ts",
+      "Changed"
+    ],
+    [
+      "types/hots-calc-kit.d.ts",
+      "HOTS only"
+    ],
+    [
+      "types/hots-workflow-policy-kit.d.ts",
+      "HOTS only"
+    ],
+    [
+      "types/hotsDashboard.d.ts",
+      "Changed"
+    ],
+    [
+      "types/loginTypes.ts",
+      "Changed"
+    ],
+    [
+      "types/microfrontend-remotes.d.ts",
+      "HOTS only"
+    ],
+    [
+      "types/sku_types.ts",
+      "Changed"
+    ],
+    [
+      "types/srf_po_type.ts",
+      "Identical"
+    ],
+    [
+      "types/srf_purpose_type.ts",
+      "Identical"
+    ],
+    [
+      "types/srf_types.ts",
+      "Identical"
+    ],
+    [
+      "types/ticketTypes.ts",
+      "Changed"
+    ],
+    [
+      "types/todaysweektype.ts",
+      "Identical"
+    ],
+    [
+      "types/unifiedFormTypes.ts",
+      "Identical"
+    ],
+    [
+      "types/userTypes.ts",
+      "Changed"
+    ],
+    [
+      "types/widgetDataTypes.ts",
+      "Identical"
+    ],
+    [
+      "types/widgetTypes.ts",
+      "Changed"
+    ],
+    [
+      "utils/DateFormatter.js",
+      "Identical"
+    ],
+    [
+      "utils/amountToWords.ts",
+      "HOTS only"
+    ],
+    [
+      "utils/apiResolver.ts",
+      "Changed"
+    ],
+    [
+      "utils/authInterceptor.ts",
+      "HOTS only"
+    ],
+    [
+      "utils/chainlinksystem/ChainFilterUtils.ts",
+      "Identical"
+    ],
+    [
+      "utils/customFunctionMapper.js",
+      "Cineva only"
+    ],
+    [
+      "utils/dataTransformers.ts",
+      "Identical"
+    ],
+    [
+      "utils/databaseSetup.js",
+      "Identical"
+    ],
+    [
+      "utils/dateformater.ts",
+      "Identical"
+    ],
+    [
+      "utils/dependencyResolver.ts",
+      "Identical"
+    ],
+    [
+      "utils/documentGenerator.js",
+      "Identical"
+    ],
+    [
+      "utils/formFieldMapping.ts",
+      "Changed"
+    ],
+    [
+      "utils/formPrefill.ts",
+      "Identical"
+    ],
+    [
+      "utils/formRuleTypes.ts",
+      "Identical"
+    ],
+    [
+      "utils/formrules/submitcheck.ts",
+      "Identical"
+    ],
+    [
+      "utils/loadWidgetComponent.ts",
+      "Changed"
+    ],
+    [
+      "utils/mfeHealth.ts",
+      "HOTS only"
+    ],
+    [
+      "utils/readExcelFromURL.ts",
+      "Changed"
+    ],
+    [
+      "utils/renderhighlight.ts",
+      "Identical"
+    ],
+    [
+      "utils/ruleBuilderTypes.ts",
+      "Identical"
+    ],
+    [
+      "utils/rulingSystem/applyFieldRules.ts",
+      "Changed"
+    ],
+    [
+      "utils/rulingSystem/ruleActions/autoSelectFirst.ts",
+      "Identical"
+    ],
+    [
+      "utils/rulingSystem/ruleActions/handleAPI.ts",
+      "Changed"
+    ],
+    [
+      "utils/rulingSystem/ruleActions/handleDateDiff.ts",
+      "HOTS only"
+    ],
+    [
+      "utils/rulingSystem/ruleActions/handleMath.ts",
+      "HOTS only"
+    ],
+    [
+      "utils/rulingSystem/ruleActions/handleMax.ts",
+      "Identical"
+    ],
+    [
+      "utils/rulingSystem/ruleActions/handleRounding.ts",
+      "Identical"
+    ],
+    [
+      "utils/rulingSystem/ruleActions/handleTimeDiff.ts",
+      "HOTS only"
+    ],
+    [
+      "utils/rulingSystem/ruleActions/index.ts",
+      "Changed"
+    ],
+    [
+      "utils/rulingSystem/ruleoperator/ruleoperators.ts",
+      "Changed"
+    ],
+    [
+      "utils/rulingSystem/schemaNormalizer.ts",
+      "Changed"
+    ],
+    [
+      "utils/searchUtils.ts",
+      "Identical"
+    ],
+    [
+      "utils/sqlSafetyValidator.ts",
+      "Identical"
+    ],
+    [
+      "utils/systemVariableDefinitions/systemVariableDefinitions.ts",
+      "Changed"
+    ],
+    [
+      "utils/systemVariableResolver.ts",
+      "Identical"
+    ],
+    [
+      "utils/ticketDetailApi.js",
+      "Identical"
+    ],
+    [
+      "utils/ticketUtils.ts",
+      "Changed"
+    ],
+    [
+      "utils/triggerAdapter.ts",
+      "Identical"
+    ],
+    [
+      "utils/unifiedFormMapping.ts",
+      "Changed"
+    ],
+    [
+      "utils/validation.ts",
+      "Identical"
+    ],
+    [
+      "utils/workflowGraphAdapter.ts",
+      "Changed"
+    ],
+    [
+      "vite-env.d.ts",
+      "Identical"
+    ],
+    [
+      "widgets/AIChatWidget.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/CardNameGenerator.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/CostAnalystStatsWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/DataExecutionTools.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/Default_item_download.tsx",
+      "Identical"
+    ],
+    [
+      "widgets/DocumentSignatureWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/FetchInventoryData.tsx",
+      "Identical"
+    ],
+    [
+      "widgets/FetchPricingData.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/Fetchsrfdata.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/GAItemSelectionWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/GAOrderFulfillmentWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/GanttRoomUsage.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/GanttRoomUsageStatic.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/GeneratedDocumentsWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/GuestInfoWidget.tsx",
+      "Identical"
+    ],
+    [
+      "widgets/HolidaySyncWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/JobApplicantsTable.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/MapitProjectWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/MyTicketsWidget.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/OrderItemsWidget.tsx",
+      "Identical"
+    ],
+    [
+      "widgets/PARFormDataWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/POSMDocumentSignatureWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/POSMOrderFulfillmentWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/POSMRequestCatalog.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/PendingApprovalsWidget.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/PricingMaintenanceWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/QRCodeDesignWidget.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/QRCodePreviewWidget.tsx",
+      "Identical"
+    ],
+    [
+      "widgets/QuickLinksWidget.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/ReceiptsGridWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/RoomMonitoringPanel.tsx",
+      "Identical"
+    ],
+    [
+      "widgets/SRFFactorySelector.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/SRFInvoiceInput.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/SRFWorkflowContainer.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/StockOverview.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/SupportingDocumentsWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/TaskCompletionButton.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/TicketManualStepper.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/TravelComparisonWidget.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/WidgetCard.tsx",
+      "Identical"
+    ],
+    [
+      "widgets/WidgetRenderer.tsx",
+      "Changed"
+    ],
+    [
+      "widgets/par/PARFieldDisplay.tsx",
+      "HOTS only"
+    ],
+    [
+      "widgets/parFormDataTypes.ts",
+      "HOTS only"
+    ],
+    [
+      "widgets/qr/QRCodeDesignWidgetConfig.ts",
+      "HOTS only"
+    ],
+    [
+      "widgets/qr/QRCoreEngine.tsx",
+      "Identical"
+    ]
+  ]
+}

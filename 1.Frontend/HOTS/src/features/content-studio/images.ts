@@ -1,0 +1,5 @@
+/** Decode and resize before storing. No remote fetch or SVG acceptance. */
+export async function importRaster(file:File,logo=false):Promise<string>{
+  if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>10000000)throw new Error('Gunakan PNG, JPEG atau WebP maksimal 10 MB.');
+  const url=URL.createObjectURL(file);try{const image=new Image();await new Promise<void>((resolve,reject)=>{image.onload=()=>resolve();image.onerror=()=>reject(new Error('Gambar tidak dapat dibaca.'));image.src=url;});if(image.naturalWidth*image.naturalHeight>60000000)throw new Error('Resolusi gambar terlalu besar.');const canvas=document.createElement('canvas'),scale=Math.min(1,(logo?256:1080)/Math.max(image.naturalWidth,image.naturalHeight));canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));canvas.getContext('2d')!.drawImage(image,0,0,canvas.width,canvas.height);const result=canvas.toDataURL(logo?'image/png':'image/jpeg',0.8);if(result.length>(logo?400000:1500000))throw new Error('Gambar terlalu besar setelah diproses.');return result;}finally{URL.revokeObjectURL(url);}
+}

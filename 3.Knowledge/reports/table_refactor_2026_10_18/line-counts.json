@@ -1,0 +1,78 @@
+[
+  {
+    "file": "state/useTableEngine.ts",
+    "lines": 674
+  },
+  {
+    "file": "parts/toolbar/Toolbar.tsx",
+    "lines": 542
+  },
+  {
+    "file": "parts/table/TableSection.tsx",
+    "lines": 399
+  },
+  {
+    "file": "parts/menus/CellContextMenu.tsx",
+    "lines": 217
+  },
+  {
+    "file": "parts/header/HeaderBar.tsx",
+    "lines": 190
+  },
+  {
+    "file": "controls/HexRoundColorPicker.tsx",
+    "lines": 125
+  },
+  {
+    "file": "types.ts",
+    "lines": 116
+  },
+  {
+    "file": "parts/menus/ViewContextMenu.tsx",
+    "lines": 114
+  },
+  {
+    "file": "controls/ColumnFilterInput.tsx",
+    "lines": 113
+  },
+  {
+    "file": "parts/footer/PaginationBar.tsx",
+    "lines": 99
+  },
+  {
+    "file": "parts/menus/RenameViewDialog.tsx",
+    "lines": 87
+  },
+  {
+    "file": "controls/ColumnSelectFilterInput.tsx",
+    "lines": 77
+  },
+  {
+    "file": "state/useTableSelection.ts",
+    "lines": 71
+  },
+  {
+    "file": "cells/EditableCell.tsx",
+    "lines": 71
+  },
+  {
+    "file": "state/useColumnOrder.ts",
+    "lines": 70
+  },
+  {
+    "file": "state/useTableGrouping.ts",
+    "lines": 58
+  },
+  {
+    "file": "ReusableTableEngine.tsx",
+    "lines": 53
+  },
+  {
+    "file": "export.ts",
+    "lines": 22
+  },
+  {
+    "file": "index.ts",
+    "lines": 3
+  }
+]

@@ -1,0 +1,1 @@
+Historical E2E attempt artifacts: initial cold Vite load exceeded 12 seconds; later resolved-mode locator expected exact text and omitted the retained agent badge. Current production suite passes all 15 scenarios; current evidence is reports/cineva_service_flow_2026_10_18/e2e-results.json.

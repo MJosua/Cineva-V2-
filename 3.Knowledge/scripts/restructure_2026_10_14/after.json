@@ -1,0 +1,17 @@
+{
+  "capturedFiles": 1651,
+  "unchangedFiles": 1644,
+  "changedFiles": [
+    "2.Backend/Integrated-API/ecosystem.config.js",
+    "2.Backend/Integrated-API/pack_for_prod.bat",
+    "1.Frontend/HOTS/build_and_pack.bat",
+    "1.Frontend/HOTS/package-lock.json",
+    "1.Frontend/HOTS/package.json",
+    "3.Knowledge/scripts/legacy/fix_schema.js",
+    "3.Knowledge/scripts/legacy/tmp-repair-dash.js"
+  ],
+  "missingFiles": [],
+  "relativeRequireChecks": 586,
+  "baselineUnresolved": 56,
+  "relativeRequireRegressions": []
+}

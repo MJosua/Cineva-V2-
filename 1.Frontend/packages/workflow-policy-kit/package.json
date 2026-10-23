@@ -1,0 +1,21 @@
+{
+  "name": "@hots/workflow-policy-kit",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./react": "./src/react/index.ts"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": true }
+  },
+  "scripts": {
+    "sync": "node ../../../3.Knowledge/sync_workflow_policy_kit.js",
+    "test": "node --test test/policy.test.js"
+  }
+}

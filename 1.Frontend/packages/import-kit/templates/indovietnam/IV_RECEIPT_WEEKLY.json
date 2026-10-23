@@ -1,0 +1,145 @@
+{
+  "template_code": "IV_RECEIPT_WEEKLY",
+  "target": "staging.iv_receipt_weekly",
+  "description": "IndoVietnam containers received per week (CARTONS — verified 2026-10-06 against opening-stock movement; convert with pcs-per-carton from order realization) by block: buyer / stock point (column A, first row), port and year (column A, next rows), SKU in column B, weeks 1-52 in C:BB. 'Recent Stock' and daily columns are not imported. Port/year appear on the 2nd/3rd row of a block → carry_backfill fills them onto the block; stock-point blocks have no year row → year from context $reportYear.",
+  "scope": {
+    "program": "cto",
+    "distributor_company_id": 216,
+    "division_id": 1,
+    "hots_company_id": 4
+  },
+  "fingerprint": {
+    "file_name": [
+      "*Master_Data*Order_Realization*.xlsx",
+      "*Order Realization*.xlsx"
+    ],
+    "sheets_all": [
+      "Received Container"
+    ],
+    "header_tokens": [
+      {
+        "sheet": "Received Container",
+        "rows": "1:4",
+        "contains": [
+          "Description",
+          "SKU",
+          "Recent"
+        ]
+      }
+    ],
+    "min_score": 0.66
+  },
+  "sheets": [
+    {
+      "match": "Received Container",
+      "mode": "unpivot",
+      "header": {
+        "row": 3
+      },
+      "carry": [
+        {
+          "field": "port",
+          "column": "A",
+          "when": {
+            "op": "in",
+            "value": [
+              "CAT LAI",
+              "HAI PHONG"
+            ]
+          }
+        },
+        {
+          "field": "year",
+          "column": "A",
+          "match": "^(\\d{4})$"
+        },
+        {
+          "field": "block_label",
+          "column": "A",
+          "match": "^(?!CAT LAI$|HAI PHONG$|Total$|Container$|Description$|\\d+$)(.+)$"
+        }
+      ],
+      "carry_reset_when": {
+        "field": "row_label",
+        "op": "in",
+        "value": [
+          "Total",
+          "Container"
+        ]
+      },
+      "unpivot": {
+        "id_columns": {
+          "sku_name": {
+            "from": "B",
+            "transform": [
+              "string"
+            ]
+          },
+          "row_label": {
+            "from": "A",
+            "transform": [
+              "string"
+            ]
+          }
+        },
+        "key_row": 4,
+        "value_columns": "C:BB",
+        "key_field": "week",
+        "value_field": "qty_ctn"
+      },
+      "skip_when": {
+        "any": [
+          {
+            "field": "sku_name",
+            "op": "in",
+            "value": [
+              "",
+              "0",
+              "SKU"
+            ]
+          },
+          {
+            "field": "row_label",
+            "op": "in",
+            "value": [
+              "Total",
+              "Container",
+              "Description"
+            ]
+          }
+        ]
+      },
+      "carry_backfill": true,
+      "constants": {
+        "uom": "CTN",
+        "year": "$reportYear"
+      }
+    }
+  ],
+  "required": [
+    "sku_name",
+    "week",
+    "block_label"
+  ],
+  "rules": [
+    {
+      "when": {
+        "field": "year",
+        "op": "empty"
+      },
+      "then": {
+        "warning": "YEAR_MISSING_FOR_BLOCK"
+      }
+    },
+    {
+      "when": {
+        "field": "qty_ctn",
+        "op": "<",
+        "value": 0
+      },
+      "then": {
+        "warning": "NEGATIVE_QTY"
+      }
+    }
+  ]
+}

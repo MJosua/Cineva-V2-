@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-22T06:55:30.187Z",
+  "file": "Cineva-Content-Studio-Demo.html",
+  "sha256": "9033c22951ccc755c0d7bcea821bb898c4af7e2860c2459939fd92e87f40f703",
+  "sizes": {
+    "html": 1009782,
+    "zip": 258054
+  },
+  "source": "Existing ContentStudio + content-kit with isolated seeded preview storage",
+  "synthetic": true,
+  "externalRequestsRequired": false,
+  "templateCount": 8,
+  "workspaces": 2,
+  "server": false
+}

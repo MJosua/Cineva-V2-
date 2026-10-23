@@ -1,0 +1,6 @@
+{
+  "name": "tenant-platform",
+  "version": "0.1.0-cineva.1",
+  "description": "Additive tenant/company bootstrap and context APIs; persistence/SSO adapters must be explicitly configured",
+  "mount": "/api/tenant/v1"
+}

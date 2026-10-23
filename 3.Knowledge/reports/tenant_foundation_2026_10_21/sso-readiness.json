@@ -1,0 +1,10 @@
+{
+  "source": "HOTS existing configuration",
+  "client_id": "hots-web",
+  "clientSecretConfigured": true,
+  "discoveryVerified": false,
+  "issuerSource": "candidate from confirmed HOTS origin and existing provider mount; metadata must verify",
+  "issuer": "https://www.indofoodinternational.com/oauth",
+  "httpStatus": 200,
+  "error": "SSO_DISCOVERY_CHECK_FAILED"
+}

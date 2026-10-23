@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-18",
+  "scope": "Frontend component compatibility only; DB excluded by user",
+  "contractTests": 17,
+  "e2ePassed": 16,
+  "e2eFailed": 0,
+  "lintErrors": 0,
+  "lintWarnings": 1,
+  "changedTypeDiagnostics": [],
+  "totalTypeDiagnostics": 101,
+  "backendChanges": [],
+  "sourceHashes": {
+    "1.Frontend/packages/engine-client/src/hots/trigger.ts": "aba10bd0b4f52939658dcdbfb074331fe40f47acf0bc354b98d5e901e7a4726d",
+    "1.Frontend/packages/engine-client/src/core/request.ts": "8eb8a0bd4a68f547e445d762f4289b7b23e4b4dd4df0bc47e69168c50d6217e0",
+    "1.Frontend/packages/engine-client/src/index.ts": "80570b46f244474c1a4badaec83d3c13ae1f9e67a0d645fd29447b7ca9568f14",
+    "1.Frontend/dynamic-form/src/UnifiedFormStructureBuilder.tsx": "fadacf191068a37439da0f1f069110158df26e3ff3d8818983390102692129f4",
+    "1.Frontend/HOTS/src/hooks/useTriggerFunction.ts": "ba6163a9f055d564ba108e11940117fc62ac59094471bbb911ac89fc61e5c043",
+    "1.Frontend/HOTS/src/components/forms/UnifiedFormStructureEditor.tsx": "afe5dbf68f70963b1fdc7e887a240f9f4c2bfc545b5c45f03a9c172c41c98dd3"
+  },
+  "database": "Not used",
+  "externalRequests": 0
+}

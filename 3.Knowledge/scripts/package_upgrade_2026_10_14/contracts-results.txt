@@ -1,0 +1,25 @@
+✔ Builder roundtrip retains item identity and unknown EAV/domain settings (1.5817ms)
+✔ Section field edit changes only the selected field and retains siblings/metadata (0.2149ms)
+✔ Preview normalization cannot mutate persisted form items (0.4243ms)
+✔ Legacy exact filters do not match substrings and preserve multi-select OR (0.3088ms)
+✔ Search/sort runs across all rows before a page is sliced (18.296ms)
+✔ Shared include/exclude tags combine OR per field and AND across fields (0.4439ms)
+✔ Report save keeps legacy and custom endpoint payload contracts (0.3291ms)
+✔ Report updates isolate detail rows that share a ticket ID (0.3001ms)
+✔ Report business rejection on HTTP 200 cannot become a successful cell save (4.0801ms)
+✔ Injected transport resolves new URL/token on each request and never sends a null Bearer (1.0883ms)
+✔ App transport rejects third-party credential destinations before the adapter executes (0.5991ms)
+✔ Workflow adapter preserves response.data and cleans optional service_id (1.2558ms)
+✔ Engine client errors keep status/message and do not return false success (0.5471ms)
+✔ Trigger list/execution preserve Cineva query and payload contracts (1.0056ms)
+✔ Trigger deprecated alias normalizes once; canonical key wins without mutating caller (0.6892ms)
+✔ Trigger categories unwrap structured category counts and business failures reject (0.5218ms)
+✔ Preference client preserves category/value and card settings payloads (0.5993ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 194.8379

@@ -1,0 +1,155 @@
+{
+  "apiBase": "http://localhost:9999",
+  "account": "yosua.gultom",
+  "fixture": false,
+  "interception": false,
+  "checks": [
+    {
+      "endpoint": "/api/tenant/v1/bootstrap",
+      "status": 404,
+      "json": false,
+      "contentType": "text/html; charset=utf-8",
+      "code": null
+    },
+    {
+      "endpoint": "/oauth/.well-known/openid-configuration",
+      "status": 200,
+      "json": true,
+      "contentType": "application/json; charset=utf-8",
+      "code": null
+    },
+    {
+      "endpoint": "/engine/par-document/tickets?limit=1&page=1",
+      "status": 401,
+      "json": true,
+      "contentType": "application/json; charset=utf-8",
+      "code": null
+    }
+  ],
+  "companies": [
+    {
+      "company": "indousa",
+      "requestedCompany": 2,
+      "user_id": 1004,
+      "role_id": 4,
+      "claims": {
+        "login_company_id": 2,
+        "login_country_id": 704,
+        "program_id": null
+      },
+      "reads": [
+        {
+          "endpoint": "/engine/par-document/tickets?limit=20&page=1",
+          "status": 200,
+          "total": 47,
+          "rowCount": 20,
+          "companyIds": [
+            2
+          ],
+          "rowSetFingerprint": "09fc3a9c052a790bdd5586de6d0c7964e4ddb8cef0e1ae5e6029710ff3ba9710"
+        },
+        {
+          "endpoint": "/engine/par-document/tickets?limit=20&page=1&company_id=2",
+          "status": 200,
+          "total": 47,
+          "rowCount": 20,
+          "companyIds": [
+            2
+          ],
+          "rowSetFingerprint": "09fc3a9c052a790bdd5586de6d0c7964e4ddb8cef0e1ae5e6029710ff3ba9710"
+        },
+        {
+          "endpoint": "/engine/par-document/tickets?limit=20&page=1&company_id=3",
+          "status": 200,
+          "total": 0,
+          "rowCount": 0,
+          "companyIds": [],
+          "rowSetFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      ],
+      "refreshClaims": {
+        "login_company_id": 2,
+        "login_country_id": 704
+      },
+      "dashboard": {
+        "status": 200,
+        "keys": [
+          "metrics",
+          "chart"
+        ],
+        "counts": {
+          "week_to_today_total": 0,
+          "week_to_today_paid_total": 0,
+          "month_to_today_total": 47,
+          "month_to_today_paid_total": 0,
+          "approval_needed_attention": 0,
+          "year_total": 47,
+          "year_paid_total": 0,
+          "all_time_total": 47,
+          "current_year": 2026
+        }
+      }
+    },
+    {
+      "company": "indocanada",
+      "requestedCompany": 3,
+      "user_id": 1004,
+      "role_id": 4,
+      "claims": {
+        "login_company_id": 3,
+        "login_country_id": 716,
+        "program_id": null
+      },
+      "reads": [
+        {
+          "endpoint": "/engine/par-document/tickets?limit=20&page=1",
+          "status": 200,
+          "total": 0,
+          "rowCount": 0,
+          "companyIds": [],
+          "rowSetFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        {
+          "endpoint": "/engine/par-document/tickets?limit=20&page=1&company_id=3",
+          "status": 200,
+          "total": 0,
+          "rowCount": 0,
+          "companyIds": [],
+          "rowSetFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        {
+          "endpoint": "/engine/par-document/tickets?limit=20&page=1&company_id=2",
+          "status": 200,
+          "total": 47,
+          "rowCount": 20,
+          "companyIds": [
+            2
+          ],
+          "rowSetFingerprint": "09fc3a9c052a790bdd5586de6d0c7964e4ddb8cef0e1ae5e6029710ff3ba9710"
+        }
+      ],
+      "refreshClaims": {
+        "login_company_id": 3,
+        "login_country_id": 716
+      },
+      "dashboard": {
+        "status": 200,
+        "keys": [
+          "metrics",
+          "chart"
+        ],
+        "counts": {
+          "week_to_today_total": 0,
+          "week_to_today_paid_total": 0,
+          "month_to_today_total": 0,
+          "month_to_today_paid_total": 0,
+          "approval_needed_attention": 0,
+          "year_total": 0,
+          "year_paid_total": 0,
+          "all_time_total": 0,
+          "current_year": 2026
+        }
+      }
+    }
+  ]
+}

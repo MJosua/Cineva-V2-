@@ -1,0 +1,5 @@
+
+D:\Project\Cineva-V2-\1.Frontend\dynamic-form\src\UnifiedFormStructureBuilder.tsx
+  168:44  warning  Arrow function has too many lines (180). Maximum allowed is 150  max-lines-per-function
+
+✖ 1 problem (0 errors, 1 warning)

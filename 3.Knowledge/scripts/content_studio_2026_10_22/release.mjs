@@ -1,0 +1,13 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {createRequire,builtinModules} from 'node:module';
+import assert from 'node:assert/strict';
+const root=path.resolve(import.meta.dirname,'../../..'),require=createRequire(path.join(root,'1.Frontend/HOTS/package.json')),esbuild=require('esbuild');
+const out=path.join(root,'3.Knowledge/reports/content_studio_2026_10_22/release');await fs.mkdir(out,{recursive:true});
+const file=path.join(out,'content-studio.cjs');const build=await esbuild.build({entryPoints:[path.join(root,'2.Backend/Integrated-API/app/modules/content-studio/release.mjs')],bundle:true,platform:'node',target:'node20',format:'cjs',outfile:file,metafile:true});
+const api=require(file);for(const name of ['createContentRuntime','createMysqlDocumentStore','createPublishWorker','createVirtualMedia','createOAuthCodeAdapter','createOllamaGenerator'])assert.equal(typeof api[name],'function');
+const source=await fs.readFile(file,'utf8');assert(!source.includes('D:/Kantor'));assert(!source.includes('C:/Users/test'));
+const externalImports=[...new Set(Object.values(build.metafile.outputs).flatMap(output=>output.imports.filter(i=>i.external).map(i=>i.path)))];assert(externalImports.every(name=>name.startsWith('node:')||builtinModules.includes(name)));
+const report={bundle:'content-studio.cjs',sha256:crypto.createHash('sha256').update(source).digest('hex'),exports:Object.keys(api),isolatedLoad:true,builtinOnly:true,externalImports,deployment:false};
+await fs.writeFile(path.join(out,'release.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));

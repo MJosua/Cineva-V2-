@@ -1,0 +1,80 @@
+/* Cineva vendor adapter: additive semantic tokens; do not copy into HOTS core. */
+html[data-hots-vendor="cineva"] {
+  --background: 40 38% 98%;
+  --foreground: 27 30% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 27 30% 20%;
+  --popover: 40 38% 99%;
+  --popover-foreground: 27 30% 20%;
+  /* Deeper antique gold for readable text/white CTA labels. */
+  --primary: 37 62% 31%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 38 35% 93%;
+  --secondary-foreground: 27 30% 24%;
+  --muted: 38 28% 94%;
+  --muted-foreground: 28 19% 38%;
+  --accent: 39 53% 90%;
+  --accent-foreground: 28 39% 25%;
+  --border: 35 29% 82%;
+  --input: 35 20% 50%;
+  --ring: 37 62% 31%;
+  --sidebar-background: 26 29% 18%;
+  --sidebar-foreground: 40 43% 94%;
+  --sidebar-primary: 42 69% 72%;
+  --sidebar-primary-foreground: 27 30% 18%;
+  --sidebar-accent: 30 35% 26%;
+  --sidebar-accent-foreground: 42 69% 83%;
+  --sidebar-border: 28 23% 35%;
+  --sidebar-ring: 42 69% 72%;
+  --button-primary: 37 62% 31%;
+  --hover-gray: 38 28% 90%;
+  --text-link: 37 62% 31%;
+  --destructive: 0 65% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --cineva-gold: #cd9a36;
+  --cineva-gold-hover: #b0842e;
+}
+
+html.dark[data-hots-vendor="cineva"] {
+  --background: 26 20% 10%;
+  --foreground: 40 35% 93%;
+  --card: 26 20% 14%;
+  --card-foreground: 40 35% 93%;
+  --popover: 26 20% 14%;
+  --popover-foreground: 40 35% 93%;
+  --primary: 42 69% 72%;
+  --primary-foreground: 27 30% 18%;
+  --secondary: 27 22% 21%;
+  --secondary-foreground: 40 35% 93%;
+  --muted: 27 19% 20%;
+  --muted-foreground: 37 24% 71%;
+  --accent: 30 30% 25%;
+  --accent-foreground: 42 69% 83%;
+  --border: 29 20% 34%;
+  --input: 29 20% 40%;
+  --ring: 42 69% 72%;
+  --sidebar-background: 26 23% 12%;
+  --sidebar-foreground: 40 35% 93%;
+  --sidebar-primary: 42 69% 72%;
+  --sidebar-primary-foreground: 27 30% 18%;
+  --sidebar-accent: 30 30% 25%;
+  --sidebar-accent-foreground: 42 69% 83%;
+  --sidebar-border: 29 20% 34%;
+  --sidebar-ring: 42 69% 72%;
+  --button-primary: 42 69% 72%;
+  --hover-gray: 27 19% 25%;
+  --text-link: 42 69% 72%;
+  --destructive: 0 75% 73%;
+  --destructive-foreground: 26 20% 10%;
+}
+
+/* Decorative brand accents only: no font/spacing/radius or engine behavior overrides. */
+html[data-hots-vendor="cineva"] [data-cineva-surface="summary"] > div {
+  border-top: 2px solid var(--cineva-gold);
+}
+html[data-hots-vendor="cineva"] [data-cineva-surface="job"] {
+  border-top-color: var(--cineva-gold);
+}
+html[data-hots-vendor="cineva"] [data-sidebar="sidebar"][data-mobile="true"] > div {
+  background-color: hsl(var(--sidebar-background));
+}

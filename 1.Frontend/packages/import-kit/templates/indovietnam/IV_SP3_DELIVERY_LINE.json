@@ -1,0 +1,83 @@
+{
+  "template_code": "IV_SP3_DELIVERY_LINE",
+  "target": "staging.iv_sp3_delivery_line",
+  "description": "IndoVietnam stock point SP3 delivery log (Trial Template Vehicle workbook, sheet 'SP3'): smallest recorded unit = delivery order (PO Received) × shop × product group. Sales columns (IIP…PGSS, cartons) and Promotion columns (IIP - P…PGSS2, qty) are unpivoted into one record per non-empty cell. Product group is the finest product level in this file (no SKU). Reconciles per row to 'Total - S' / 'Total - P'. Sales agent kept raw + normalised key until worker master data exists (decision V13).",
+  "scope": { "program": "cto", "distributor_company_id": 216, "division_id": 1, "hots_company_id": 4, "stock_point": "SP3" },
+  "fingerprint": {
+    "file_name": ["*Template Vehicle*SP3*.xlsx", "*Vehicle*.xlsx"],
+    "sheets_all": ["SP3"],
+    "header_tokens": [{ "sheet": "SP3", "rows": "1:5", "contains": ["PO Received", "Sales Agent", "Delivery Date", "Total Ctn", "Vehicle"] }],
+    "min_score": 0.66
+  },
+  "sheets": [
+    {
+      "match": "SP3",
+      "mode": "unpivot",
+      "header": { "detect": { "contains": ["PO Received", "Sales Agent", "Delivery Date"], "maxScan": 6 } },
+      "unpivot": {
+        "id_columns": {
+          "line_no": { "from": "No.", "transform": ["int"] },
+          "stock_point": { "from": "Stock Point", "transform": ["string", "upper"] },
+          "delivery_order_no": { "from": "PO Received", "transform": ["string", "upper"] },
+          "sales_agent_raw": { "from": "Sales Agent", "transform": ["string"] },
+          "sales_agent_key": { "from": "Sales Agent", "transform": ["trim", "regex_extract:^'?\\s*(.*?)\\s*$", "upper"] },
+          "delivery_plan_date": { "from": "Delivery Plan", "transform": ["excel_date"] },
+          "delivery_date": { "from": "Delivery Date", "transform": ["excel_date"] },
+          "week": { "from": "Week", "transform": ["int"] },
+          "shop_name": { "from": "Shop Name", "transform": ["trim"] },
+          "address": { "from": "Address", "transform": ["trim"] },
+          "district": { "from": "District", "transform": ["string"] },
+          "vehicle_code": { "from": "Vehicle", "transform": ["string"] },
+          "channel": { "from": "Channel", "transform": ["string"] },
+          "row_total_ctn": { "from": "Total Ctn", "transform": ["number"] }
+        },
+        "value_columns_where": { "in": ["IIP", "GSS", "GRS", "GPD", "IHAG", "PGSS", "Column1"] },
+        "key_field": "product_group",
+        "key_transform": ["string", "upper", "regex_extract:^(COLUMN|[A-Z]+)"],
+        "value_field": "qty_ctn"
+      },
+      "skip_when": { "field": "line_no", "op": "empty" },
+      "constants": { "line_type": "SALES", "uom": "CTN" }
+    },
+    {
+      "match": "SP3",
+      "mode": "unpivot",
+      "header": { "detect": { "contains": ["PO Received", "Sales Agent", "Delivery Date"], "maxScan": 6 } },
+      "unpivot": {
+        "id_columns": {
+          "line_no": { "from": "No.", "transform": ["int"] },
+          "stock_point": { "from": "Stock Point", "transform": ["string", "upper"] },
+          "delivery_order_no": { "from": "PO Received", "transform": ["string", "upper"] },
+          "sales_agent_raw": { "from": "Sales Agent", "transform": ["string"] },
+          "sales_agent_key": { "from": "Sales Agent", "transform": ["trim", "regex_extract:^'?\\s*(.*?)\\s*$", "upper"] },
+          "delivery_plan_date": { "from": "Delivery Plan", "transform": ["excel_date"] },
+          "delivery_date": { "from": "Delivery Date", "transform": ["excel_date"] },
+          "week": { "from": "Week", "transform": ["int"] },
+          "shop_name": { "from": "Shop Name", "transform": ["trim"] },
+          "address": { "from": "Address", "transform": ["trim"] },
+          "district": { "from": "District", "transform": ["string"] },
+          "vehicle_code": { "from": "Vehicle", "transform": ["string"] },
+          "channel": { "from": "Channel", "transform": ["string"] },
+          "row_total_ctn": { "from": "Total Ctn", "transform": ["number"] }
+        },
+        "value_columns_where": { "in": ["IIP - P", "GSS - P", "GRS - P", "GPD - P", "IHAG - P", "PGSS2", "Column2"] },
+        "key_field": "product_group",
+        "key_transform": ["string", "upper", "regex_extract:^(COLUMN|[A-Z]+?)(?:\\d| - P)?$"],
+        "value_field": "qty_ctn"
+      },
+      "skip_when": { "field": "line_no", "op": "empty" },
+      "constants": { "line_type": "PROMO", "uom": "CTN" }
+    }
+  ],
+  "required": ["delivery_date", "product_group"],
+  "rules": [
+    { "when": { "field": "product_group", "op": "=", "value": "COLUMN" }, "then": { "set": { "product_group": "UNLABELED" }, "warning": "UNLABELED_PRODUCT_COLUMN" } },
+    { "when": { "field": "delivery_order_no", "op": "empty" }, "then": { "warning": "DELIVERY_ORDER_MISSING" } },
+    { "when": { "field": "shop_name", "op": "empty" }, "then": { "warning": "SHOP_MISSING" } },
+    { "when": { "field": "sales_agent_key", "op": "empty" }, "then": { "warning": "AGENT_MISSING" } },
+    { "when": { "field": "sales_agent_key", "op": "matches", "value": "^(NHẬP|XUẤT|PO:)|\\+" }, "then": { "warning": "AGENT_NOT_A_PERSON" } },
+    { "when": { "field": "vehicle_code", "op": "empty" }, "then": { "warning": "VEHICLE_MISSING" } },
+    { "when": { "field": "qty_ctn", "op": "<", "value": 0 }, "then": { "warning": "NEGATIVE_QTY" } },
+    { "when": { "field": "qty_ctn", "op": "=", "value": 0 }, "then": { "skip": true } }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "cleanInstall": "Passed",
+  "build": "Passed",
+  "contracts": 15,
+  "lint": "New adapter scope passed",
+  "editedTypeErrors": 0,
+  "wholeTypeDiagnostics": 101,
+  "referenceUnchangedFiles": 271,
+  "backendSourceChanges": 0,
+  "browser": "Mock fixture only",
+  "filteredExportRows": 11,
+  "liveBackendAcceptance": "Not run"
+}

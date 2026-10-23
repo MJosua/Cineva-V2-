@@ -1,0 +1,33 @@
+{
+  "template_code": "IV_VEHICLE_MASTER",
+  "target": "staging.iv_vehicle_master",
+  "description": "IndoVietnam vehicle list (Trial Template Vehicle workbook, sheet 'Note', columns Vehicle / Capacity in ctn / Shift / Total Cap per Day). Daily capacity = capacity × shift; the SP3 sheet's 'Cap Utl' = delivered cartons ÷ daily capacity. Master-data candidate (V13) — staged only until the vehicle master table is designed.",
+  "scope": { "program": "cto", "distributor_company_id": 216, "division_id": 1, "hots_company_id": 4 },
+  "fingerprint": {
+    "file_name": ["*Template Vehicle*.xlsx"],
+    "sheets_all": ["Note"],
+    "header_tokens": [{ "sheet": "Note", "rows": "1:2", "contains": ["Vehicle", "Shift"] }],
+    "min_score": 0.66
+  },
+  "sheets": [
+    {
+      "match": "Note",
+      "mode": "rows",
+      "header": { "row": 1 },
+      "columns": {
+        "vehicle_code": { "from": "Vehicle", "transform": ["string"] },
+        "capacity_ctn": { "from": "col:I", "transform": ["number"] },
+        "shift_count": { "from": "Shift", "transform": ["int"] },
+        "daily_capacity_ctn": { "from": "col:K", "transform": ["number"] }
+      },
+      "skip_when": { "field": "vehicle_code", "op": "empty" },
+      "constants": { "uom": "CTN" }
+    }
+  ],
+  "required": ["vehicle_code", "capacity_ctn"],
+  "rules": [
+    { "when": { "field": "vehicle_code", "op": "matches", "value": "^3PL" }, "then": { "set": { "vehicle_type": "THIRD_PARTY" } } },
+    { "when": { "field": "vehicle_code", "op": "matches", "value": "^(DB|Truck)" }, "then": { "set": { "vehicle_type": "OWN" } } },
+    { "when": { "field": "vehicle_code", "op": "=", "value": "Sales" }, "then": { "set": { "vehicle_type": "SALES_CARRY" } } }
+  ]
+}

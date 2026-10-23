@@ -1,0 +1,24 @@
+✔ Half-open intervals allow adjacent meetings but detect contained and cross-window overlap (1.9144ms)
+✔ Meeting availability rejects overlap and permits adjacency (2.8985ms)
+✔ Crew and gear candidate allocations are checked together without mutating any input (1.1125ms)
+✔ Hotel type inventory counts concurrent rooms rather than summing disjoint reservations (2.7485ms)
+✔ Overlapping candidate requests consume capacity collectively (0.9967ms)
+✔ Existing overcapacity outside requested windows does not reject unrelated availability (0.3805ms)
+✔ Expired holds release at exact expiry while confirmed reservations keep occupying (1.557ms)
+✔ Cancellation releases capacity and update exclusion omits only the named reservation (0.5041ms)
+✔ Blackouts reject overlap but allow adjacency, including buffered preparation (0.7203ms)
+✔ Buffers expand existing and requested occupied intervals with exact gap adjacency (1.4496ms)
+✔ Strict date-only hotel stays use ordinal days and exclusive checkout through leap/month/year changes (3.5863ms)
+✔ Invalid hotel dates, equal/reverse checkout and non date-only values are rejected (1.4377ms)
+✔ Duplicate resource and reservation IDs are rejected even when reservations are excluded (1.7163ms)
+✔ Quantity and capacity require positive safe integers; unknown resources are rejected (0.6623ms)
+✔ Invalid intervals, expiry, clock, blackouts and buffers return validation issues (0.8091ms)
+✔ Buffer numeric overflow is rejected and high integer capacities remain exact (0.87ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 310.5812

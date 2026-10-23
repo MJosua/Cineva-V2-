@@ -1,0 +1,357 @@
+{
+  "date": "2026-10-21",
+  "scope": "Static source + isolated VM stubs. No DB/network/application imports; no live exploit proof.",
+  "findings": [
+    [
+      "A01",
+      "P0",
+      "Isolasi marketplace",
+      "Belum siap",
+      "listJobs tanpa predicate company/tenant; detail hanya job_id.",
+      "Tenant repository wajib untuk list/detail/mutasi dan relasi anak.",
+      "2.Backend/Integrated-API/controller/hots_controller/jobmarketplace/JobManagementController.js",
+      "async listJobs"
+    ],
+    [
+      "A02",
+      "P0",
+      "Scope billing",
+      "Belum siap",
+      "query company_id mengungguli token; jika kosong report tanpa scope.",
+      "Validasi membership dan scope tenant server; filter client hanya mempersempit.",
+      "2.Backend/Integrated-API/controller/hots_controller/jobmarketplace/CinevaBillingController.js",
+      "const companyId = req.query.company_id"
+    ],
+    [
+      "A03",
+      "P0",
+      "Identitas tenant",
+      "Parsial",
+      "JWT diverifikasi tetapi guard ini tidak memvalidasi membership tenant.",
+      "TenantContext dari host terdaftar + identitas terverifikasi + membership; default deny.",
+      "2.Backend/Integrated-API/config/encrypts.js",
+      "decodeTokenHT:"
+    ],
+    [
+      "A04",
+      "P0",
+      "Identitas create ticket",
+      "Belum siap",
+      "company_id dari body didahulukan; token fallback ke 1.",
+      "Turunkan pemilik tenant di server; validasi company/creator dan semua parent.",
+      "2.Backend/Integrated-API/controller/hots_controller/engine/engineTicket.js",
+      "let { company_id, creator_id"
+    ],
+    [
+      "A05",
+      "P0",
+      "Mode lokal",
+      "Perlu hardening",
+      "LOCAL_DISABLE_AUTH dapat membuat actor/company 1.",
+      "Tolak startup production jika bypass aktif; verifikasi konfigurasi deployment.",
+      "2.Backend/Integrated-API/routers/hots/saasRouter.js",
+      "LOCAL_DISABLE_AUTH"
+    ],
+    [
+      "A06",
+      "P1",
+      "Subscription",
+      "Prototipe",
+      "Invoice dan transaksi ada; payment token/callback masih mock.",
+      "Webhook provider terverifikasi, idempotensi, lock, entitlement/quota server.",
+      "2.Backend/Integrated-API/controller/hots_controller/jobmarketplace/CinevaSubscriptionController.js",
+      "Mock Upgrade Plan"
+    ],
+    [
+      "A07",
+      "P1",
+      "Theme Cineva",
+      "Adapter statis",
+      "Scope vendor cineva dan token CSS ada; identitas vendor ditulis di source.",
+      "Branding resolver JSON terversi ke semantic tokens; default HOTS dipertahankan.",
+      "1.Frontend/HOTS/src/features/cineva-shared/CinevaVendorTheme.tsx",
+      "root.dataset.hotsVendor = 'cineva'"
+    ],
+    [
+      "A08",
+      "P1",
+      "Theme JSON engine",
+      "Parsial",
+      "Loader parse theme_json tetapi lookup/cache hanya module_key.",
+      "Audit consumer aktif; pisahkan config tenant/product, namespace cache.",
+      "2.Backend/Integrated-API/core/loader.js",
+      "async function loadModule"
+    ],
+    [
+      "A09",
+      "P1",
+      "Mode warna",
+      "Statis",
+      "ThemeProvider selalu memasang light.",
+      "Renderer theme menerapkan preference yang diizinkan konfigurasi tenant.",
+      "1.Frontend/HOTS/src/components/theme-provider.tsx",
+      "root.classList.add"
+    ],
+    [
+      "A10",
+      "P1",
+      "Cache frontend",
+      "Belum tenant-aware",
+      "Key widget endpoint + params; identitas tidak otomatis ada.",
+      "Key tenant/product/user/permission/version dan clear pada switch/logout.",
+      "1.Frontend/HOTS/src/hooks/useWidgetData.ts",
+      "source.cacheKey ||"
+    ],
+    [
+      "A11",
+      "P0",
+      "File privat",
+      "Perlu klasifikasi",
+      "Public mount mencakup files dan generateddocuments tanpa guard pada mount.",
+      "Pisahkan aset brand public dari dokumen private melalui authorized download.",
+      "2.Backend/Integrated-API/app/registerRoutes.js",
+      "App.use('/public', express.static"
+    ],
+    [
+      "A12",
+      "P1",
+      "SSE",
+      "User scoped",
+      "Koneksi SSE dikelompokkan userId saja.",
+      "Namespace tenant/user/channel; revalidasi switch/revoke dan policy broadcast.",
+      "2.Backend/Integrated-API/core/sse-manager.js",
+      "addConnection(userId, res)"
+    ],
+    [
+      "A13",
+      "P1",
+      "Transaksi config",
+      "Belum konsisten",
+      "Module admin menulis lewat query helper tanpa explicit transaction.",
+      "Gunakan transaction-kit setelah audit consumer; commit/rollback dan event setelah commit.",
+      "2.Backend/Integrated-API/controller/hots_controller/engine/moduleController.js",
+      "'INSERT INTO m_engine_modules"
+    ],
+    [
+      "A14",
+      "P1",
+      "Overseas frontend",
+      "Multi-company",
+      "Header OV/Overseas Portal statis; nama company berasal dari session.",
+      "Product adapter Overseas memakai contract branding yang sama.",
+      "D:/Kantor/1.Frontend/overseas_base/src/components/OverseasHeader.tsx",
+      "Overseas Portal"
+    ],
+    [
+      "A15",
+      "P0",
+      "Overseas PAR",
+      "Company authorization",
+      "Detail memeriksa participant/company permission; role 4 memiliki jalur admin.",
+      "Pertahankan policy PAR di dalam tenant gate; admin tenant tidak boleh global lintas tenant.",
+      "D:/Kantor/2.Backend/Integrated-API/app/modules/par-document/parDocument.service.parts/access/can-read-par-ticket.js",
+      "reason: 'admin'"
+    ],
+    [
+      "A16",
+      "P0",
+      "Schema fisik Cineva",
+      "Belum tersedia",
+      "Knowledge hanya menyediakan jobmarketplace_schema.md yang dinyatakan draft.",
+      "Minta export DDL fisik terbaru sebelum migration, FK/index/backfill dan SQL.",
+      "3.Knowledge/KNOWLEDGE_INDEX.md",
+      "Schema draft"
+    ],
+    [
+      "A17",
+      "P1",
+      "Logo existing",
+      "Parsial",
+      "LogoBar lama mengimpor aset Indofood langsung; belum membuktikan komponen ini aktif.",
+      "Inventaris semua consumer aktif: shell/login/favicon/email/PDF; pakai brand asset contract.",
+      "1.Frontend/HOTS/src/components/LogoBar.jsx",
+      "logo_indofoodCBP_white.png"
+    ]
+  ],
+  "evidence": [
+    {
+      "id": "A01",
+      "file": "2.Backend/Integrated-API/controller/hots_controller/jobmarketplace/JobManagementController.js",
+      "line": 174,
+      "sha256": "615472edd80813d5f4bbd0208cbcaa26675713e5427e61eee4f3686e2f8d7bfc"
+    },
+    {
+      "id": "A02",
+      "file": "2.Backend/Integrated-API/controller/hots_controller/jobmarketplace/CinevaBillingController.js",
+      "line": 36,
+      "sha256": "bfd08c3b382bdb10e12a5b97d3b1cd93700eb3d472153422f0c05f0ff77ecc9d"
+    },
+    {
+      "id": "A03",
+      "file": "2.Backend/Integrated-API/config/encrypts.js",
+      "line": 114,
+      "sha256": "645ddeee8c2282949295c2d448445f8fa0938e9642afb04f241166ba22bcc027"
+    },
+    {
+      "id": "A04",
+      "file": "2.Backend/Integrated-API/controller/hots_controller/engine/engineTicket.js",
+      "line": 387,
+      "sha256": "4c8f715054363ff67349d78f58c9ae8625f9999c8aca3c580d2151a023df6715"
+    },
+    {
+      "id": "A05",
+      "file": "2.Backend/Integrated-API/routers/hots/saasRouter.js",
+      "line": 6,
+      "sha256": "7b926595ed3d23e690d1065cd3410dbadfbe41a022db18e3d883ec9f0188681d"
+    },
+    {
+      "id": "A06",
+      "file": "2.Backend/Integrated-API/controller/hots_controller/jobmarketplace/CinevaSubscriptionController.js",
+      "line": 77,
+      "sha256": "8df4315879ec74c6c678d9c5eddddb2e3af7b398072140367b9b16c61f6950a4"
+    },
+    {
+      "id": "A07",
+      "file": "1.Frontend/HOTS/src/features/cineva-shared/CinevaVendorTheme.tsx",
+      "line": 9,
+      "sha256": "71a259dd82c7f8bd209d76254e674a136380a07caace67fe27d9e4ce96f0303d"
+    },
+    {
+      "id": "A08",
+      "file": "2.Backend/Integrated-API/core/loader.js",
+      "line": 5,
+      "sha256": "d23bdd2e3ac17cd73a2915d20dc06914549f7682ccfdfbc74ee8571f262b13ed"
+    },
+    {
+      "id": "A09",
+      "file": "1.Frontend/HOTS/src/components/theme-provider.tsx",
+      "line": 40,
+      "sha256": "b91cfb1a9bedc8dfdd2f02a60ea09eb74baf0399e490b968d0a5832a0bfc61e3"
+    },
+    {
+      "id": "A10",
+      "file": "1.Frontend/HOTS/src/hooks/useWidgetData.ts",
+      "line": 48,
+      "sha256": "7ffc967d37c28a8488be2fb5b18703f896e19615d6a3b5c38e1994a5ba77cbfd"
+    },
+    {
+      "id": "A11",
+      "file": "2.Backend/Integrated-API/app/registerRoutes.js",
+      "line": 85,
+      "sha256": "cb0685eb6aa5141eb258878519e1f82167fb80cb4356f6db362c9c6df8bdfb9a"
+    },
+    {
+      "id": "A12",
+      "file": "2.Backend/Integrated-API/core/sse-manager.js",
+      "line": 53,
+      "sha256": "9d734d3cdc8f45597084fdd0d4754ab5e73c7e45de114d881a0334951a37866e"
+    },
+    {
+      "id": "A13",
+      "file": "2.Backend/Integrated-API/controller/hots_controller/engine/moduleController.js",
+      "line": 11,
+      "sha256": "4780be0752366fc3155435b7200e7c63b2ee680328c65d9b81965ba3df43077b"
+    },
+    {
+      "id": "A14",
+      "file": "D:/Kantor/1.Frontend/overseas_base/src/components/OverseasHeader.tsx",
+      "line": 28,
+      "sha256": "fd931eba066f12942e319faaabb8c06347911fb7546bef5cc5038c58f6bd7b1c"
+    },
+    {
+      "id": "A15",
+      "file": "D:/Kantor/2.Backend/Integrated-API/app/modules/par-document/parDocument.service.parts/access/can-read-par-ticket.js",
+      "line": 22,
+      "sha256": "5164c061b66e48969e1fb5d2511294e95e33d7054aedbf486192e5c3136bab1d"
+    },
+    {
+      "id": "A16",
+      "file": "3.Knowledge/KNOWLEDGE_INDEX.md",
+      "line": 63,
+      "sha256": "81910abce1b87a374c81ab903da14872d412b69523d618df4073ab0992bf2b63"
+    },
+    {
+      "id": "A17",
+      "file": "1.Frontend/HOTS/src/components/LogoBar.jsx",
+      "line": 19,
+      "sha256": "4adbd03f393d68ce85cb2633b72af3ace84a25ebb559a8c1b73faa21078acd80"
+    }
+  ],
+  "checks": [
+    {
+      "id": "T01",
+      "observation": "listJobs tanpa filter company/tenant walaupun token company 11",
+      "result": "REPRODUCED",
+      "calls": [
+        {
+          "sql": "SELECT\n          j.job_id, j.job_code, j.title, j.description, j.objective, j.job_status, j.visibility,\n          j.budget_min, j.budget_max, j.quota, j.deadline_at, j.published_at, j.created_at,\n          c.campaign_id, c.campaign_name, c.project_name, c.brand_name, c.content_type, c.incentive, c.cms_page_id,\n          cat.category_name,\n          p.platform_name,\n          (SELECT COUNT(*) FROM data_job_talent_assignment a WHERE a.campaign_id = c.campaign_id) AS assignment_count\n        FROM t_job_list j\n        LEFT JOIN data_job_campaign c ON c.job_id = j.job_id\n        LEFT JOIN data_m_job_category cat ON cat.category_id = j.category_id\n        LEFT JOIN data_m_job_platform p ON p.platform_id = j.platform_id\n        \n        ORDER BY j.created_at DESC\n        LIMIT ? OFFSET ?",
+          "args": [
+            50,
+            0
+          ]
+        }
+      ],
+      "status": 200
+    },
+    {
+      "id": "T02",
+      "observation": "billing menerima query company 22 mengungguli token company 11",
+      "result": "REPRODUCED",
+      "calls": [
+        {
+          "sql": "SELECT b.*, j.title as job_title, j.job_code\n         FROM t_billing b\n         LEFT JOIN t_job_list j ON j.job_id = b.job_id\n         WHERE b.company_id = ?\n         ORDER BY b.created_at DESC\n         LIMIT ? OFFSET ?",
+          "args": [
+            22,
+            50,
+            0
+          ]
+        }
+      ],
+      "status": 200
+    },
+    {
+      "id": "T03",
+      "observation": "report tanpa company menghasilkan query tanpa scope company",
+      "result": "REPRODUCED",
+      "calls": [
+        {
+          "sql": "SELECT \n          COUNT(*) as invoices,\n          SUM(total_amount) as revenue,\n          SUM(platform_fee_amount) as platform_fees,\n          SUM(talent_share_amount) as talent_payments,\n          SUM(talent_count) as talents\n         FROM t_billing\n         ",
+          "args": []
+        },
+        {
+          "sql": "SELECT \n          tier, billing_status,\n          COUNT(*) as total_invoices,\n          SUM(total_amount) as total_revenue,\n          SUM(platform_fee_amount) as total_platform_fees,\n          SUM(talent_share_amount) as total_talent_payments\n         FROM t_billing\n         \n         GROUP BY tier, billing_status",
+          "args": []
+        }
+      ],
+      "status": 200
+    },
+    {
+      "id": "T04",
+      "observation": "subscription tanpa company jatuh ke company 1",
+      "result": "REPRODUCED",
+      "calls": [
+        {
+          "sql": "SELECT s.*, p.plan_name, p.price_monthly, p.features_json\n         FROM t_subscription s\n         LEFT JOIN m_plan p ON p.plan_code = s.plan_code\n         WHERE s.company_id = ?\n         LIMIT 1",
+          "args": [
+            1
+          ]
+        }
+      ],
+      "status": 200
+    },
+    {
+      "id": "T05",
+      "observation": "lookup detail job hanya memakai job_id sebelum pemeriksaan tenant",
+      "result": "REPRODUCED",
+      "calls": [
+        {
+          "sql": "SELECT j.*, c.*, cat.category_name, p.platform_name\n         FROM t_job_list j \n         LEFT JOIN data_job_campaign c ON c.job_id = j.job_id \n         LEFT JOIN data_m_job_category cat ON cat.category_id = j.category_id\n         LEFT JOIN data_m_job_platform p ON p.platform_id = j.platform_id\n         WHERE j.job_id = ? LIMIT 1",
+          "args": [
+            202
+          ]
+        }
+      ],
+      "status": 404
+    }
+  ]
+}

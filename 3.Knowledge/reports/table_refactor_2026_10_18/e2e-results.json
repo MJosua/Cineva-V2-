@@ -1,0 +1,154 @@
+{
+  "date": "2026-10-18",
+  "scope": "Component E2E with intercepted dummy API; database excluded by user",
+  "checks": [
+    {
+      "name": "Trigger hook: legacy alias + default active + structured categories",
+      "status": "passed"
+    },
+    {
+      "name": "Trigger hook: canonical wins, false/search serialized over HTTP",
+      "status": "passed"
+    },
+    {
+      "name": "Inspector whitelist matches create policy",
+      "status": "passed"
+    },
+    {
+      "name": "Unsupported existing field stays selected and preserves unknown metadata/rules",
+      "status": "passed"
+    },
+    {
+      "name": "Empty whitelist prevents root and section field creation",
+      "status": "passed"
+    },
+    {
+      "name": "Whitelist without text: root and section additions use allowed default",
+      "status": "passed"
+    },
+    {
+      "name": "Custom inspector receives policy; undefined whitelist retains old catalog",
+      "status": "passed"
+    },
+    {
+      "name": "Dummy draft reload preserves metadata and legacy type",
+      "status": "passed"
+    },
+    {
+      "name": "Host builder uses package policy without registry workaround",
+      "status": "passed"
+    },
+    {
+      "name": "Report Escape cancels without any request",
+      "status": "passed"
+    },
+    {
+      "name": "Report Enter saves once and isolates detail rows",
+      "status": "passed"
+    },
+    {
+      "name": "HTTP 200 business rejection restores value and flags invalid",
+      "status": "passed"
+    },
+    {
+      "name": "Cross-page search and parent-owned search stay compatible",
+      "status": "passed"
+    },
+    {
+      "name": "XLSX export uses filtered dummy dataset",
+      "status": "passed"
+    },
+    {
+      "name": "Exact filter and XLSX include all 11 matching rows across pages",
+      "status": "passed"
+    },
+    {
+      "name": "Table selection preserves off-page keys and partial selection",
+      "status": "passed"
+    },
+    {
+      "name": "Table grouping collapses locally and delegates controlled groups",
+      "status": "passed"
+    },
+    {
+      "name": "Table drag order persists by report and survives remount",
+      "status": "passed"
+    },
+    {
+      "name": "No browser exceptions or external destinations",
+      "status": "passed"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/hots_settings/trigger-functions",
+      "query": {
+        "category": "dummy",
+        "function_type": "sql",
+        "is_active": "true"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/hots_settings/trigger-functions/categories",
+      "query": {}
+    },
+    {
+      "method": "GET",
+      "path": "/hots_settings/trigger-functions",
+      "query": {
+        "category": "dummy",
+        "search": "dummy handler",
+        "function_type": "handler",
+        "is_active": "false"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/hots_settings/trigger-functions/categories",
+      "query": {}
+    },
+    {
+      "method": "POST",
+      "path": "/hotsdashboard/report_detail/upsert",
+      "body": {
+        "ticket_id": "dummy-42",
+        "detail_id": "1",
+        "lbl_col": "Remarks",
+        "cstm_col": "Saved dummy",
+        "color_code": null,
+        "visible_to": "admin"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/hotsdashboard/report_detail/upsert",
+      "body": {
+        "ticket_id": "dummy-42",
+        "detail_id": "1",
+        "lbl_col": "Remarks",
+        "cstm_col": "Rejected dummy",
+        "color_code": null,
+        "visible_to": "admin"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/hots_settings/trigger-functions",
+      "query": {
+        "category": "dummy",
+        "function_type": "sql",
+        "is_active": "true"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/hots_settings/trigger-functions/categories",
+      "query": {}
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "logs": "[PACKAGE-PREVIEW][INFO] : Mock-only component fixture listening on http://127.0.0.1:48173\n"
+}

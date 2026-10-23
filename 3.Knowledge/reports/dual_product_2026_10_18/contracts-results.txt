@@ -1,0 +1,17 @@
+✔ Cash and barter remain distinct, including archived agreements (1.6632ms)
+✔ Payment allows partial/full, rejects zero/negative/overpayment without changing input (1.1031ms)
+✔ Schedule rejects true resource overlap, permits adjacent and independent bookings (18.6236ms)
+✔ Workspace rejects unknown clients/resources, invalid dates and negative fee (0.66ms)
+✔ Starter counts only active jobs; Pro permits additional synthetic jobs (0.5726ms)
+✔ Estimator calculates dummy crew/day/gear rates and rejects invalid counts (0.1984ms)
+✔ Assistant handles Indonesian and English amounts, WIB tomorrow and AM/PM (1.0852ms)
+✔ Assistant ambiguity and invalid hour never produce a job (0.3247ms)
+✔ Dummy repository partitions products and clones data across load/save (0.6468ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 111.6282

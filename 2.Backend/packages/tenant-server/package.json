@@ -1,0 +1,6 @@
+{
+  "name": "@hots/tenant-server", "version": "0.1.0-cineva.1", "private": true,
+  "main": "src/index.js", "exports": { ".": "./src/index.js", "./oidc": "./src/oidc.js", "./session": "./src/session.js", "./transaction": "./src/transaction.js", "./mysql-memberships": "./src/mysqlMemberships.js", "./registry": "./src/registry.js", "./mysql-stores": "./src/mysqlStores.js", "./mysql-tickets": "./src/mysqlTickets.js", "./company-scope": "./src/companyScope.js", "./mysql-company-scopes": "./src/mysqlCompanyScopes.js" },
+  "engines": {"node": ">=18"}, "scripts": {"test": "node --test test/*.test.cjs"},
+  "dependencies": {"@hots/tenant-contracts": "file:../../../1.Frontend/packages/tenant-contracts"}
+}

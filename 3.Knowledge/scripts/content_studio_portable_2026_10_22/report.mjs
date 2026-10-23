@@ -1,0 +1,18 @@
+import fs from 'node:fs/promises';
+import {Workbook,SpreadsheetFile} from '@oai/artifact-tool';
+const root='D:/Project/Cineva-V2-', evidence=`${root}/3.Knowledge/reports/content_studio_portable_2026_10_22`, out=`${root}/outputs/content_studio_portable_2026_10_22`;
+const build=JSON.parse(await fs.readFile(`${evidence}/build.json`,'utf8')), tests=JSON.parse(await fs.readFile(`${evidence}/e2e.json`,'utf8'));
+await fs.mkdir(out,{recursive:true});
+const wb=Workbook.create(),s=wb.worksheets.add('Demo');s.showGridLines=false;
+s.getRange('A2').values=[['Cineva | Portable Content Studio Demo']];
+s.getRange('A3').values=[['22 Oktober 2026 | Offline HTML untuk dibagikan sebagai dokumen WhatsApp']];
+const rows=[['HTML bytes',build.sizes.html,'Build final'],['ZIP bytes',build.sizes.zip,'HTML + CARA-DEMO.txt'],['Template',build.templateCount,'Shared content-kit'],['Workspace',build.workspaces,'HQ / Creator'],...tests.checks.map((c,i)=>[`E2E ${i+1}`,c.status,c.name]),['Batas','Simulasi','AI, publish, akun dan metrik memakai data sintetis.'],['Perangkat','Belum diuji','WhatsApp native viewer / ponsel fisik; buka unduhan melalui browser.'],['Integrasi','Tidak dilakukan','Tanpa server, MySQL atau provider sosial nyata.'],['Sumber','build.json / e2e.json','3.Knowledge/reports/content_studio_portable_2026_10_22']];
+const end=6+rows.length;s.getRange('A6:C6').values=[['Item','Hasil','Bukti / batas']];s.getRange(`A7:C${end}`).values=rows;
+s.getRange(`A2:C${end}`).format.font={name:'Arial',size:11};s.getRange('A2').format.font={bold:true,size:17,color:'#654431'};
+s.getRange('A6:C6').format={fill:'#654431',font:{bold:true,color:'#FFFFFF'},rowHeight:30};s.getRange(`A7:C${end}`).format.wrapText=true;s.getRange(`A7:C${end}`).format.rowHeight=45;
+for(const [c,w]of [['A',25],['B',25],['C',100]])s.getRange(`${c}:${c}`).format.columnWidth=w;
+s.freezePanes.freezeRows(6);wb.recalculate();
+const scan=await wb.inspect({kind:'match',searchTerm:'#REF!|#DIV/0!|#VALUE!|#NAME\\?',options:{useRegex:true,maxResults:10}});await fs.writeFile(`${out}/error-scan.ndjson`,scan.ndjson);
+await(await SpreadsheetFile.exportXlsx(wb)).save(`${out}/Cineva_Portable_Demo_Report.xlsx`);
+const preview=await wb.render({sheetName:'Demo',range:'A6:C13',scale:1,format:'png'});await fs.writeFile(`${out}/preview.png`,new Uint8Array(await preview.arrayBuffer()));
+console.log(JSON.stringify({checks:tests.checks.length,scan:scan.ndjson}));

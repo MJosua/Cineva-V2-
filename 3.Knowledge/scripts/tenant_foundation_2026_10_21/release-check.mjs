@@ -1,0 +1,17 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+import assert from 'node:assert/strict';
+const root = path.resolve(import.meta.dirname, '../../..');
+const require = createRequire(path.join(root, '1.Frontend/HOTS/package.json'));
+const esbuild = require('esbuild');
+const output = path.join(root, '3.Knowledge/reports/tenant_foundation_2026_10_21/release/tenant-platform.cjs');
+await fs.mkdir(path.dirname(output), {recursive: true});
+const result = await esbuild.build({entryPoints: [path.join(root, '2.Backend/Integrated-API/app/modules/tenant-platform/release.js')], outfile: output, bundle: true, platform: 'node', format: 'cjs', metafile: true, logLevel: 'warning'});
+const api = require(output);
+const names = ['createTenantEngine', 'createOidcBridge', 'createAppSessionManager', 'createRegistrationService', 'createMysqlMemberships', 'createUnitOfWork', 'createTenantRouter', 'createTenantRuntime', 'createRegisteredTenantRuntime', 'createProgramRegistry', 'createMysqlRuntimeStore', 'createMysqlTicketReads', 'resolveCompanyScopes', 'createMysqlCompanyScopes', 'createPersistentTenantRuntime'];
+for (const name of names) assert.equal(typeof api[name], 'function');
+const imports = Object.values(result.metafile.outputs).flatMap(v => v.imports).map(v => v.path);
+assert(imports.every(p => p.startsWith('node:')));
+await fs.writeFile(path.join(root, '3.Knowledge/reports/tenant_foundation_2026_10_21/release.json'), JSON.stringify({exports: names, externalImports: imports, sourceFiles: Object.keys(result.metafile.inputs).length, scope: 'Isolated backend feature bundle. Not a full API release/deployment.'}, null, 2));
+process.stdout.write('[TENANT-RELEASE][INFO] : portable bundle loaded without source-relative or third-party runtime dependencies\n');

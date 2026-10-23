@@ -1,0 +1,14 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+import {spawnSync} from 'node:child_process';
+const root=path.resolve(import.meta.dirname,'../../..'),out=path.join(root,'3.Knowledge/reports/content_studio_2026_10_22');await fs.mkdir(out,{recursive:true});
+const files=['1.Frontend/packages/content-kit/test/content.test.mjs','3.Knowledge/scripts/content_studio_2026_10_22/service.test.mjs','3.Knowledge/scripts/content_studio_2026_10_22/store.test.mjs','3.Knowledge/scripts/content_studio_2026_10_22/client.test.mjs'];
+const run=spawnSync(process.execPath,['--test',...files.map(f=>path.join(root,f))],{encoding:'utf8'});await fs.writeFile(path.join(out,'tests.txt'),run.stdout+run.stderr);process.stdout.write(run.stdout+run.stderr);
+const require=createRequire(path.join(root,'1.Frontend/HOTS/package.json')),ts=require('typescript'),configFile=path.join(root,'1.Frontend/HOTS/tsconfig.app.json');
+const config=ts.readConfigFile(configFile,ts.sys.readFile),parsed=ts.parseJsonConfigFileContent(config.config,ts.sys,path.dirname(configFile));
+const program=ts.createProgram(parsed.fileNames,{...parsed.options,noEmit:true});
+const all=ts.getPreEmitDiagnostics(program),relevant=all.filter(d=>/content-studio|content-kit|engine-client[\\/]src[\\/]content|tenant-platform[\\/]WorkspacePage/.test(d.file?.fileName??''));
+const diagnostics=relevant.map(d=>({file:d.file.fileName.replaceAll('\\','/').replace(root+'/',''),line:d.file.getLineAndCharacterOfPosition(d.start??0).line+1,message:ts.flattenDiagnosticMessageText(d.messageText,' ')}));
+const report={date:new Date().toISOString(),exit:run.status,tests:Number(run.stdout.match(/tests\s+(\d+)/)?.[1]??0),passed:Number(run.stdout.match(/pass\s+(\d+)/)?.[1]??0),failed:Number(run.stdout.match(/fail\s+(\d+)/)?.[1]??0),diagnostics,fullAppDiagnostics:all.length,liveMySQL:false,liveSocialProviders:false,liveAI:false};
+await fs.writeFile(path.join(out,'validation.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));if(run.status||diagnostics.length)process.exitCode=1;

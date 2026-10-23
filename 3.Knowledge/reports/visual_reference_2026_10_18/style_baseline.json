@@ -1,0 +1,7 @@
+{
+  "1.Frontend/HOTS/src/index.css": "c4dad24d1af52a9fee7d55eef43cb6516d538e976414a172164948b31aff983c",
+  "1.Frontend/HOTS/src/App.css": "0609e600c047e7dcdae1491e88883d41c3746c53865120aa58a3fa60b69cbe40",
+  "1.Frontend/HOTS/tailwind.config.ts": "77698441f60a0bc2ec098f0a1c78985f43e8cd993be88a8e57395e01b10de438",
+  "1.Frontend/HOTS/src/components/layout/AppLayout.tsx": "b8ab7a0b13846b1b980ce439c0d3fced9ad219322caba53d7c8ba69682a85cfb",
+  "1.Frontend/packages/ui-kit/tailwind-preset.cjs": "47e46d2e5bfd3be2902e4e1c916c27871ea17c77ec438867e1ef500942a24ce7"
+}

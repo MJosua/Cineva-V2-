@@ -1,0 +1,111 @@
+{
+  "date": "2026-10-21",
+  "database": "hots",
+  "readOnly": true,
+  "scope": "Bounded aggregate samples; no PII, no repair, not a consistent transaction snapshot.",
+  "checks": [
+    {
+      "key": "ticket_ownership_sample",
+      "sql": "SELECT COUNT(*) AS sample_rows, SUM(t.company_id IS NULL) AS null_company, SUM(t.company_id = 0) AS zero_company, SUM(t.company_id IS NOT NULL AND c.company_id IS NULL) AS missing_company, SUM(CHAR_LENGTH(t.ticket_id) > 32) AS ids_over_root_capacity FROM (SELECT ticket_id, company_id FROM t_ticket ORDER BY ticket_id DESC LIMIT 1000) t LEFT JOIN m_company c ON c.company_id = t.company_id LIMIT 1",
+      "rows": [
+        {
+          "sample_rows": 1000,
+          "null_company": "0",
+          "zero_company": "993",
+          "missing_company": "993",
+          "ids_over_root_capacity": "0"
+        }
+      ]
+    },
+    {
+      "key": "work_parent_sample",
+      "sql": "SELECT COUNT(*) AS sample_rows, SUM(w.ticket_id IS NULL) AS null_ticket, SUM(w.ticket_id IS NOT NULL AND t.ticket_id IS NULL) AS missing_ticket, SUM(t.ticket_id IS NOT NULL AND NOT (w.company_id <=> t.company_id)) AS company_mismatch, SUM(w.assignment_id IS NOT NULL AND a.id IS NULL) AS missing_assignment, SUM(a.id IS NOT NULL AND NOT (a.ticket_id <=> w.ticket_id)) AS assignment_ticket_mismatch FROM (SELECT id, ticket_id, company_id, assignment_id FROM t_ticket_work_data ORDER BY id DESC LIMIT 1000) w LEFT JOIN t_ticket t ON t.ticket_id = w.ticket_id LEFT JOIN t_ticket_assignment a ON a.id = w.assignment_id LIMIT 1",
+      "rows": [
+        {
+          "sample_rows": 1000,
+          "null_ticket": "0",
+          "missing_ticket": "0",
+          "company_mismatch": "905",
+          "missing_assignment": "20",
+          "assignment_ticket_mismatch": "0"
+        }
+      ]
+    },
+    {
+      "key": "program_access_sample",
+      "sql": "SELECT COUNT(*) AS sampled_groups, SUM(g.n > 1) AS duplicate_groups FROM (SELECT user_id, company_id, program_id, COUNT(*) AS n FROM (SELECT user_id, company_id, program_id FROM user_t_program_access ORDER BY access_id DESC LIMIT 2000) a GROUP BY user_id, company_id, program_id) g LIMIT 1",
+      "rows": [
+        {
+          "sampled_groups": 0,
+          "duplicate_groups": null
+        }
+      ]
+    },
+    {
+      "key": "config_scope_sample",
+      "sql": "SELECT COUNT(*) AS sample_rows, SUM(company_id IS NULL) AS null_company, SUM(config_value IS NOT NULL AND JSON_VALID(config_value)) AS json_valid_values FROM (SELECT company_id, config_value FROM m_company_configuration ORDER BY config_id DESC LIMIT 1000) c LIMIT 1",
+      "rows": [
+        {
+          "sample_rows": 11,
+          "null_company": "0",
+          "json_valid_values": "2"
+        }
+      ]
+    },
+    {
+      "key": "user_company_sample",
+      "sql": "SELECT COUNT(*) AS sample_rows, SUM(u.company_id IS NULL) AS null_company, SUM(u.company_id IS NOT NULL AND c.company_id IS NULL) AS missing_company, SUM(u.user_uuid IS NULL) AS null_uuid FROM (SELECT user_id, company_id, user_uuid FROM user ORDER BY user_id DESC LIMIT 1000) u LEFT JOIN m_company c ON c.company_id = u.company_id LIMIT 1",
+      "rows": [
+        {
+          "sample_rows": 258,
+          "null_company": "0",
+          "missing_company": "0",
+          "null_uuid": "5"
+        }
+      ]
+    },
+    {
+      "key": "work_company_pairs",
+      "sql": "SELECT w.company_id AS work_company_id, t.company_id AS ticket_company_id, COUNT(*) AS sample_rows FROM (SELECT company_id, ticket_id FROM t_ticket_work_data ORDER BY id DESC LIMIT 1000) w LEFT JOIN t_ticket t ON t.ticket_id=w.ticket_id GROUP BY w.company_id,t.company_id ORDER BY sample_rows DESC LIMIT 20",
+      "rows": [
+        {
+          "work_company_id": 1,
+          "ticket_company_id": 0,
+          "sample_rows": 827
+        },
+        {
+          "work_company_id": 1,
+          "ticket_company_id": 1,
+          "sample_rows": 95
+        },
+        {
+          "work_company_id": 1,
+          "ticket_company_id": 2,
+          "sample_rows": 78
+        }
+      ]
+    },
+    {
+      "key": "assignment_sentinels",
+      "sql": "SELECT COUNT(*) AS sample_rows, SUM(w.assignment_id = 0) AS assignment_zero, SUM(w.assignment_id > 0 AND a.id IS NULL) AS missing_positive_assignment FROM (SELECT assignment_id FROM t_ticket_work_data ORDER BY id DESC LIMIT 1000) w LEFT JOIN t_ticket_assignment a ON a.id=w.assignment_id LIMIT 1",
+      "rows": [
+        {
+          "sample_rows": 1000,
+          "assignment_zero": "20",
+          "missing_positive_assignment": "0"
+        }
+      ]
+    },
+    {
+      "key": "ticket_parent_sample",
+      "sql": "SELECT COUNT(*) AS sample_rows, SUM(t.parent_ticket_id IS NOT NULL AND t.parent_ticket_id <> '' AND p.ticket_id IS NULL) AS missing_parent, SUM(p.ticket_id IS NOT NULL AND NOT (t.company_id <=> p.company_id)) AS parent_company_mismatch FROM (SELECT parent_ticket_id,company_id FROM t_ticket ORDER BY ticket_id DESC LIMIT 1000) t LEFT JOIN t_ticket p ON p.ticket_id=t.parent_ticket_id LIMIT 1",
+      "rows": [
+        {
+          "sample_rows": 1000,
+          "missing_parent": "0",
+          "parent_company_mismatch": "0"
+        }
+      ]
+    }
+  ]
+}

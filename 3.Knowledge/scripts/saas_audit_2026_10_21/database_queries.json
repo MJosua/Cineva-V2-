@@ -1,0 +1,59 @@
+{
+  "metadata": [
+    {
+      "key": "tables",
+      "sql": "SELECT TABLE_NAME, TABLE_TYPE, ENGINE, TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME LIMIT 500"
+    },
+    {
+      "key": "columns",
+      "sql": "SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLUMN_KEY, EXTRA, COLLATION_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME, ORDINAL_POSITION LIMIT 5000"
+    },
+    {
+      "key": "indexes",
+      "sql": "SELECT TABLE_NAME, INDEX_NAME, NON_UNIQUE, SEQ_IN_INDEX, COLUMN_NAME, SUB_PART, INDEX_TYPE FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX LIMIT 5000"
+    },
+    {
+      "key": "constraints",
+      "sql": "SELECT TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() ORDER BY TABLE_NAME, CONSTRAINT_NAME LIMIT 3000"
+    },
+    {
+      "key": "foreign_keys",
+      "sql": "SELECT TABLE_NAME, COLUMN_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_SCHEMA, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME, ORDINAL_POSITION FROM information_schema.KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME IS NOT NULL ORDER BY TABLE_NAME, CONSTRAINT_NAME, ORDINAL_POSITION LIMIT 3000"
+    }
+  ],
+  "dataChecks": [
+    {
+      "key": "ticket_ownership_sample",
+      "sql": "SELECT COUNT(*) AS sample_rows, SUM(t.company_id IS NULL) AS null_company, SUM(t.company_id = 0) AS zero_company, SUM(t.company_id IS NOT NULL AND c.company_id IS NULL) AS missing_company, SUM(CHAR_LENGTH(t.ticket_id) > 32) AS ids_over_root_capacity FROM (SELECT ticket_id, company_id FROM t_ticket ORDER BY ticket_id DESC LIMIT 1000) t LEFT JOIN m_company c ON c.company_id = t.company_id LIMIT 1"
+    },
+    {
+      "key": "work_parent_sample",
+      "sql": "SELECT COUNT(*) AS sample_rows, SUM(w.ticket_id IS NULL) AS null_ticket, SUM(w.ticket_id IS NOT NULL AND t.ticket_id IS NULL) AS missing_ticket, SUM(t.ticket_id IS NOT NULL AND NOT (w.company_id <=> t.company_id)) AS company_mismatch, SUM(w.assignment_id IS NOT NULL AND a.id IS NULL) AS missing_assignment, SUM(a.id IS NOT NULL AND NOT (a.ticket_id <=> w.ticket_id)) AS assignment_ticket_mismatch FROM (SELECT id, ticket_id, company_id, assignment_id FROM t_ticket_work_data ORDER BY id DESC LIMIT 1000) w LEFT JOIN t_ticket t ON t.ticket_id = w.ticket_id LEFT JOIN t_ticket_assignment a ON a.id = w.assignment_id LIMIT 1"
+    },
+    {
+      "key": "program_access_sample",
+      "sql": "SELECT COUNT(*) AS sampled_groups, SUM(g.n > 1) AS duplicate_groups FROM (SELECT user_id, company_id, program_id, COUNT(*) AS n FROM (SELECT user_id, company_id, program_id FROM user_t_program_access ORDER BY access_id DESC LIMIT 2000) a GROUP BY user_id, company_id, program_id) g LIMIT 1"
+    },
+    {
+      "key": "config_scope_sample",
+      "sql": "SELECT COUNT(*) AS sample_rows, SUM(company_id IS NULL) AS null_company, SUM(config_value IS NOT NULL AND JSON_VALID(config_value)) AS json_valid_values FROM (SELECT company_id, config_value FROM m_company_configuration ORDER BY config_id DESC LIMIT 1000) c LIMIT 1"
+    },
+    {
+      "key": "user_company_sample",
+      "sql": "SELECT COUNT(*) AS sample_rows, SUM(u.company_id IS NULL) AS null_company, SUM(u.company_id IS NOT NULL AND c.company_id IS NULL) AS missing_company, SUM(u.user_uuid IS NULL) AS null_uuid FROM (SELECT user_id, company_id, user_uuid FROM user ORDER BY user_id DESC LIMIT 1000) u LEFT JOIN m_company c ON c.company_id = u.company_id LIMIT 1"
+    },
+    {
+      "key": "work_company_pairs",
+      "sql": "SELECT w.company_id AS work_company_id, t.company_id AS ticket_company_id, COUNT(*) AS sample_rows FROM (SELECT company_id, ticket_id FROM t_ticket_work_data ORDER BY id DESC LIMIT 1000) w LEFT JOIN t_ticket t ON t.ticket_id=w.ticket_id GROUP BY w.company_id,t.company_id ORDER BY sample_rows DESC LIMIT 20"
+    },
+    {
+      "key": "assignment_sentinels",
+      "sql": "SELECT COUNT(*) AS sample_rows, SUM(w.assignment_id = 0) AS assignment_zero, SUM(w.assignment_id > 0 AND a.id IS NULL) AS missing_positive_assignment FROM (SELECT assignment_id FROM t_ticket_work_data ORDER BY id DESC LIMIT 1000) w LEFT JOIN t_ticket_assignment a ON a.id=w.assignment_id LIMIT 1"
+    },
+    {
+      "key": "ticket_parent_sample",
+      "sql": "SELECT COUNT(*) AS sample_rows, SUM(t.parent_ticket_id IS NOT NULL AND t.parent_ticket_id <> '' AND p.ticket_id IS NULL) AS missing_parent, SUM(p.ticket_id IS NOT NULL AND NOT (t.company_id <=> p.company_id)) AS parent_company_mismatch FROM (SELECT parent_ticket_id,company_id FROM t_ticket ORDER BY ticket_id DESC LIMIT 1000) t LEFT JOIN t_ticket p ON p.ticket_id=t.parent_ticket_id LIMIT 1"
+    }
+  ],
+  "instructions": "Read-only audit. Data checks based on schema/hots_saas_baseline_2026_10_21.json. Never import application runtime, run repair/cron, or mutate DB. Refresh physical metadata before future rerun."
+}

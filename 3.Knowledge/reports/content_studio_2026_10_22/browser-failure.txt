@@ -1,0 +1,105 @@
+TimeoutError: locator.click: Timeout 15000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('button', { name: 'Golden Hour', exact: true })[22m
+
+Tema gelap
+Cineva.
+
+Production house workspace
+
+Preview · data dummy
+Workspace
+Content Studio
+Campaign operations
+Layanan & inquiry
+Inbox CS
+Dashboard HQ
+Brand & clients
+Projects
+Budget estimator
+Crew & schedule
+Pembayaran
+Arsip
+
+BERALIH PRODUK
+
+Cineva HQ
+Creator Space
+
+HOTS / CMS foundation
+
+Toggle Sidebar
+Cineva HQ
+
+HOTS / CMS · Preview workspace
+
+Preview interaktif · data dummy di browser · tidak terhubung database, pembayaran atau AI nyata.
+
+Reset dummy
+
+A · INTERNAL OPERATIONS
+
+Content Studio
+
+CINEVA / CONTENT STUDIO
+
+Ide yang siap menjadi cerita.
+
+Buat konten, rapikan bersama tim, lalu kelola publikasinya.
+
+Konten baru
+Preview lokal · tanpa posting nyata
+1 konten · AI 0/50 · Ekspor 0/100 · Publikasi 0/100
+
+Penyusunan teks, akun, publikasi dan metrik pada preview adalah simulasi. Scheduler server tetap berjalan saat browser ditutup setelah runtime nyata diaktifkan.
+
+Studio
+Jadwal
+Analitik
+Brand kit
+Akun sosial
+Riwayat konten
+1
+Konten Uji Client
+Draft · 3 slide · r2
+Draftr2
+Simpan
+Ekspor PNG
+Judul dokumen
+Format
+4:5
+9:16
+Bahasa
+Indonesia
+Melayu
+English
+Template · Editorial
+1
+2
+3
+Judul slide
+Isi slide
+Foto slide
+Hapus slide
+Caption
+Hashtag
+Susun teks menjadi slide
+Link
+Teks
+Ide
+Susun teks demo
+Review & persetujuan
+Ajukan QC
+Riwayat versi (2)
+Pilih template
+Semua
+Berita
+Bersih
+Tegas
+Gelap
+Sosial
+Favorit
+Golden Hour
+☆
+Jadikan default
+Close

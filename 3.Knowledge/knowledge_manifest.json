@@ -1,0 +1,3884 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-22T06:59:40.227Z",
+  "documents": [
+    {
+      "path": "1.Frontend/HOTS/docs/CHANGELOG.md",
+      "sha256": "04e4aa80d901a60ac407a8d4ba5b5bfd1da634d0864af4aaeb06f471310304ab",
+      "title": "Changelog",
+      "headings": [
+        {
+          "heading": "Changelog",
+          "line": 1
+        },
+        {
+          "heading": "2026-10-14",
+          "line": 3
+        },
+        {
+          "heading": "2026-10-19 — Local reusable domain and scheduling packages",
+          "line": 10
+        },
+        {
+          "heading": "Content Studio — 2026-10-22",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/docs/CINEVA_PRODUCTS.md",
+      "sha256": "ada74b0bf6cfe6fb3673fcfa58a0d07cdf803b42f39ceb86859aec31418983f8",
+      "title": "Cineva product compositions",
+      "headings": [
+        {
+          "heading": "Cineva product compositions",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/docs/README.md",
+      "sha256": "57efea10b62a65451741be5c9185dc34fce2d9d15e6bc2025ce95e5cf98c4be5",
+      "title": "Cineva HOTS app",
+      "headings": [
+        {
+          "heading": "Cineva HOTS app",
+          "line": 1
+        },
+        {
+          "heading": "Dependency and implementation ownership",
+          "line": 5
+        },
+        {
+          "heading": "Verification",
+          "line": 20
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/dynamic-form/docs/CHANGELOG.md",
+      "sha256": "766db4bcf113ede2fe2c64fe53ed3086f215b881ebc7be36627665713cb53b81",
+      "title": "Changelog",
+      "headings": [
+        {
+          "heading": "Changelog",
+          "line": 1
+        },
+        {
+          "heading": "0.1.0-cineva.2 — 2026-10-18",
+          "line": 3
+        },
+        {
+          "heading": "0.1.0-cineva.1 — 2026-10-18",
+          "line": 7
+        },
+        {
+          "heading": "2026-10-14",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/dynamic-form/docs/README.md",
+      "sha256": "d5867e0c7c8e43a0943529ada69eecf28085b58e285e585ca955cef0e0ad099a",
+      "title": "@hots/dynamic-form — Cineva snapshot",
+      "headings": [
+        {
+          "heading": "@hots/dynamic-form — Cineva snapshot",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/app-core/docs/API.md",
+      "sha256": "770d05d35d10c515cf3f4fa1d6fe2338b04fd2dbc2bae3f5b663e4c51903a99d",
+      "title": "API — @hots/app-core",
+      "headings": [
+        {
+          "heading": "API — @hots/app-core",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/app-core/docs/CHANGELOG.md",
+      "sha256": "bb4cc5bf3f9d5467457c24e031cc3060f7152beee33d361b9d37a44110cd475a",
+      "title": "Changelog — @hots/app-core",
+      "headings": [
+        {
+          "heading": "Changelog — @hots/app-core",
+          "line": 1
+        },
+        {
+          "heading": "[Unreleased]",
+          "line": 5
+        },
+        {
+          "heading": "[0.6.0-cineva.1] - 2026-10-19",
+          "line": 7
+        },
+        {
+          "heading": "[0.5.0] - 2026-10-06",
+          "line": 13
+        },
+        {
+          "heading": "Added",
+          "line": 14
+        },
+        {
+          "heading": "Changed",
+          "line": 17
+        },
+        {
+          "heading": "[0.4.0] - 2026-10-06",
+          "line": 20
+        },
+        {
+          "heading": "Added",
+          "line": 21
+        },
+        {
+          "heading": "[0.3.0] - 2026-10-06",
+          "line": 24
+        },
+        {
+          "heading": "Added",
+          "line": 25
+        },
+        {
+          "heading": "Changed",
+          "line": 27
+        },
+        {
+          "heading": "[0.2.0] - 2026-10-06",
+          "line": 30
+        },
+        {
+          "heading": "Added",
+          "line": 31
+        },
+        {
+          "heading": "[0.1.0] - 2026-10-05",
+          "line": 35
+        },
+        {
+          "heading": "Added",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/app-core/docs/DECISIONS/001-cookie-only-auth.md",
+      "sha256": "b523e2beb1a4d0c7d4cb174684f6724f4bb9930e62a9ab5681a37d0e88f53af7",
+      "title": "001 — Auth tokens only in httpOnly cookies",
+      "headings": [
+        {
+          "heading": "001 — Auth tokens only in httpOnly cookies",
+          "line": 1
+        },
+        {
+          "heading": "Context",
+          "line": 5
+        },
+        {
+          "heading": "Decision",
+          "line": 8
+        },
+        {
+          "heading": "Consequences",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/app-core/docs/NOTIFICATIONS.md",
+      "sha256": "dc884d146c468cd1668cbd6f2b3c21ad84cb8a4c52815464db8cbbde784c15d0",
+      "title": "Modular notification client and SSE",
+      "headings": [
+        {
+          "heading": "Modular notification client and SSE",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/app-core/docs/README.md",
+      "sha256": "aea6449756d2b6bc2b81979f6b509f65da9292aabb7029ab4eeefb49f537c309",
+      "title": "@hots/app-core",
+      "headings": [
+        {
+          "heading": "@hots/app-core",
+          "line": 19
+        },
+        {
+          "heading": "Install",
+          "line": 25
+        },
+        {
+          "heading": "Usage",
+          "line": 30
+        },
+        {
+          "heading": "Rules enforced",
+          "line": 49
+        },
+        {
+          "heading": "Backend contract still to implement (Integrated-API)",
+          "line": 55
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/calc-kit/docs/CHANGELOG.md",
+      "sha256": "1162eb54139ab1e98df74c9b5c4101aec1f844fafeac07a37e614c64e91d0e12",
+      "title": "Changelog — @hots/calc-kit",
+      "headings": [
+        {
+          "heading": "Changelog — @hots/calc-kit",
+          "line": 1
+        },
+        {
+          "heading": "[Unreleased]",
+          "line": 5
+        },
+        {
+          "heading": "[0.5.1] - 2026-10-13",
+          "line": 7
+        },
+        {
+          "heading": "Changed",
+          "line": 8
+        },
+        {
+          "heading": "[0.5.0] - 2026-10-13",
+          "line": 11
+        },
+        {
+          "heading": "Added (additive)",
+          "line": 12
+        },
+        {
+          "heading": "[0.4.0] - 2026-10-13",
+          "line": 16
+        },
+        {
+          "heading": "Added (additive)",
+          "line": 17
+        },
+        {
+          "heading": "[0.3.0] - 2026-10-13",
+          "line": 22
+        },
+        {
+          "heading": "Added (additive, no existing export changed)",
+          "line": 23
+        },
+        {
+          "heading": "[0.2.0] - 2026-10-06",
+          "line": 28
+        },
+        {
+          "heading": "Added",
+          "line": 29
+        },
+        {
+          "heading": "[0.1.0] - 2026-10-06",
+          "line": 32
+        },
+        {
+          "heading": "Added",
+          "line": 33
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/calc-kit/docs/README.md",
+      "sha256": "99015e4a005ae6659687674acd5bd270e6e07fd46051f3fc2a726e7664e10a53",
+      "title": "@hots/calc-kit",
+      "headings": [
+        {
+          "heading": "@hots/calc-kit",
+          "line": 19
+        },
+        {
+          "heading": "Exports",
+          "line": 25
+        },
+        {
+          "heading": "Used by",
+          "line": 38
+        },
+        {
+          "heading": "Tests",
+          "line": 41
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/domain-kit/docs/CHANGELOG.md",
+      "sha256": "220b4d9968ef2ec17635d2972e6ceba267a2490eb4cb0feb87ee4dfb51f8fb9e",
+      "title": "0.1.0-cineva.2 — 2026-10-19",
+      "headings": [
+        {
+          "heading": "0.1.0-cineva.2 — 2026-10-19",
+          "line": 1
+        },
+        {
+          "heading": "Changelog",
+          "line": 7
+        },
+        {
+          "heading": "0.1.0-cineva.1 — 2026-10-19",
+          "line": 9
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/domain-kit/docs/README.md",
+      "sha256": "9b3a54e3d9944d52d6370cd5a2aceac962d051a49e2dff2395e572be07f40997",
+      "title": "@hots/domain-kit",
+      "headings": [
+        {
+          "heading": "@hots/domain-kit",
+          "line": 3
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/domain-kit/docs/runtime.md",
+      "sha256": "0651467936d447826c8b03c76d1bf67a8a455157cc1e2b8422ccfcaaefbb76a5",
+      "title": "Policy-driven runtime contracts",
+      "headings": [
+        {
+          "heading": "Policy-driven runtime contracts",
+          "line": 1
+        },
+        {
+          "heading": "Commands and AI proposals",
+          "line": 5
+        },
+        {
+          "heading": "Events and transaction/outbox ports",
+          "line": 27
+        },
+        {
+          "heading": "Configuration and projections",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/domain-kit/docs/validation.md",
+      "sha256": "e472044ff247fef570b9c3585d30e776be35def2ca8a4b418eb9932109c32686",
+      "title": "Generic document validation",
+      "headings": [
+        {
+          "heading": "Generic document validation",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/engine-client/docs/CHANGELOG.md",
+      "sha256": "b59335fbd74f344842f67097101ec015320ea8de3cf6b002cb72f7a3cf7a8031",
+      "title": "Changelog — @hots/engine-client",
+      "headings": [
+        {
+          "heading": "Changelog — @hots/engine-client",
+          "line": 1
+        },
+        {
+          "heading": "[Unreleased]",
+          "line": 5
+        },
+        {
+          "heading": "[0.2.0-cineva.2] - 2026-10-22",
+          "line": 7
+        },
+        {
+          "heading": "[0.2.0-cineva.1] - 2026-10-18",
+          "line": 11
+        },
+        {
+          "heading": "[0.2.0] - 2026-10-06",
+          "line": 17
+        },
+        {
+          "heading": "Added",
+          "line": 18
+        },
+        {
+          "heading": "Changed",
+          "line": 20
+        },
+        {
+          "heading": "[0.1.0] - 2026-10-06",
+          "line": 23
+        },
+        {
+          "heading": "Added",
+          "line": 24
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/engine-client/docs/README.md",
+      "sha256": "b7e196c3b73c7fcfb9955cde1cc113ffdfb104ddbfab9cc11fd96419e59c0e1a",
+      "title": "@hots/engine-client",
+      "headings": [
+        {
+          "heading": "@hots/engine-client",
+          "line": 19
+        },
+        {
+          "heading": "Usage",
+          "line": 27
+        },
+        {
+          "heading": "Where each client came from",
+          "line": 41
+        },
+        {
+          "heading": "Errors",
+          "line": 50
+        },
+        {
+          "heading": "Behavior differences to know",
+          "line": 53
+        },
+        {
+          "heading": "Not collected yet (no clean client exists in any app)",
+          "line": 57
+        },
+        {
+          "heading": "Structure",
+          "line": 60
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/eslint-config/docs/CHANGELOG.md",
+      "sha256": "f53d4c751d944cf6248dbe2994c64133b1e751d6e4e607b21c4761721d25f0bb",
+      "title": "Changelog — @hots/eslint-config",
+      "headings": [
+        {
+          "heading": "Changelog — @hots/eslint-config",
+          "line": 1
+        },
+        {
+          "heading": "[Unreleased]",
+          "line": 5
+        },
+        {
+          "heading": "[0.1.0] - 2026-10-06",
+          "line": 7
+        },
+        {
+          "heading": "Added",
+          "line": 8
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/eslint-config/docs/README.md",
+      "sha256": "dbf7e33db51b04a3b1df50916d24dffac86380f6e4f75df2313b678909aaefb2",
+      "title": "@hots/eslint-config",
+      "headings": [
+        {
+          "heading": "@hots/eslint-config",
+          "line": 19
+        },
+        {
+          "heading": "Usage",
+          "line": 25
+        },
+        {
+          "heading": "Rules",
+          "line": 34
+        },
+        {
+          "heading": "Verified (2026-10-06)",
+          "line": 44
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/geo-kit/docs/CHANGELOG.md",
+      "sha256": "8146331e4f5947a6336f9cef691710a458222968b8786cdc03216a61c5f8d8ba",
+      "title": "Changelog — @hots/geo-kit",
+      "headings": [
+        {
+          "heading": "Changelog — @hots/geo-kit",
+          "line": 1
+        },
+        {
+          "heading": "[Unreleased]",
+          "line": 5
+        },
+        {
+          "heading": "[0.1.0] - 2026-10-06",
+          "line": 7
+        },
+        {
+          "heading": "Added",
+          "line": 8
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/geo-kit/docs/README.md",
+      "sha256": "4a6d99b8e7006d55ad90e8901e1303d24df37d14540d7799b3b0aa7570d1cca2",
+      "title": "@hots/geo-kit",
+      "headings": [
+        {
+          "heading": "@hots/geo-kit",
+          "line": 19
+        },
+        {
+          "heading": "Usage",
+          "line": 25
+        },
+        {
+          "heading": "Data notes",
+          "line": 34
+        },
+        {
+          "heading": "Not collected",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/import-kit/docs/CHANGELOG.md",
+      "sha256": "42237c48d6f110b686b4f622926860ea60423b195d8a40d409d7854f446016c1",
+      "title": "Changelog — @hots/import-kit",
+      "headings": [
+        {
+          "heading": "Changelog — @hots/import-kit",
+          "line": 1
+        },
+        {
+          "heading": "[Unreleased]",
+          "line": 5
+        },
+        {
+          "heading": "Added",
+          "line": 6
+        },
+        {
+          "heading": "Fixed",
+          "line": 15
+        },
+        {
+          "heading": "[0.1.0] - 2026-10-06",
+          "line": 19
+        },
+        {
+          "heading": "Added",
+          "line": 20
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/import-kit/docs/README.md",
+      "sha256": "999238bbd2a350a1c83a3255530bcb1166ec6d8693f6de11c6b31bafb04aaa29",
+      "title": "@hots/import-kit",
+      "headings": [
+        {
+          "heading": "@hots/import-kit",
+          "line": 19
+        },
+        {
+          "heading": "Usage",
+          "line": 25
+        },
+        {
+          "heading": "Template features",
+          "line": 34
+        },
+        {
+          "heading": "Verified on real files (2026-10-06, `npm run test:real`)",
+          "line": 48
+        },
+        {
+          "heading": "Tests",
+          "line": 58
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/page-engine/docs/CHANGELOG.md",
+      "sha256": "a3c785efdb7ee87d9656fb6f9bec0ed7a29be25cff0c781b3ed993c4de206c18",
+      "title": "Changelog — @hots/page-engine",
+      "headings": [
+        {
+          "heading": "Changelog — @hots/page-engine",
+          "line": 1
+        },
+        {
+          "heading": "[Unreleased]",
+          "line": 5
+        },
+        {
+          "heading": "[0.1.0] - 2026-10-06",
+          "line": 7
+        },
+        {
+          "heading": "Added",
+          "line": 8
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/page-engine/docs/README.md",
+      "sha256": "899212f18a9c23ef4e7995709c87ff39fd9dd7b8776d3bb11f092a26e2e0d601",
+      "title": "@hots/page-engine",
+      "headings": [
+        {
+          "heading": "@hots/page-engine",
+          "line": 19
+        },
+        {
+          "heading": "Exports",
+          "line": 25
+        },
+        {
+          "heading": "Security difference from Event",
+          "line": 33
+        },
+        {
+          "heading": "Not extracted yet",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/scheduling-kit/docs/CHANGELOG.md",
+      "sha256": "9f87cd327466465a446d8ef740f1346a31ef66da9135518a1f2f2db085d776e9",
+      "title": "0.1.0-cineva.2 — 2026-10-19",
+      "headings": [
+        {
+          "heading": "0.1.0-cineva.2 — 2026-10-19",
+          "line": 1
+        },
+        {
+          "heading": "Changelog",
+          "line": 7
+        },
+        {
+          "heading": "0.1.0-cineva.1 — 2026-10-19",
+          "line": 9
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/scheduling-kit/docs/README.md",
+      "sha256": "2f0dfed4b0b1605b44d9ef47457b27a9582be49eba00705ad4b01f3372dc0f13",
+      "title": "@hots/scheduling-kit",
+      "headings": [
+        {
+          "heading": "@hots/scheduling-kit",
+          "line": 3
+        },
+        {
+          "heading": "Intervals and availability",
+          "line": 9
+        },
+        {
+          "heading": "Hotel date-only adapter",
+          "line": 45
+        },
+        {
+          "heading": "Safety and acceptance limits",
+          "line": 56
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/table-engine/docs/CHANGELOG.md",
+      "sha256": "d2e00aa471b2201cf07bacd0f8ba1eae73ce7e268d82d1e85eb689048173c2c3",
+      "title": "Changelog — @hots/table-engine",
+      "headings": [
+        {
+          "heading": "Changelog — @hots/table-engine",
+          "line": 1
+        },
+        {
+          "heading": "[Unreleased]",
+          "line": 5
+        },
+        {
+          "heading": "[0.2.0-cineva.2] - 2026-10-18",
+          "line": 7
+        },
+        {
+          "heading": "[0.2.0] - 2026-10-06",
+          "line": 11
+        },
+        {
+          "heading": "Changed",
+          "line": 12
+        },
+        {
+          "heading": "Added",
+          "line": 14
+        },
+        {
+          "heading": "[0.1.0] - 2026-10-05",
+          "line": 17
+        },
+        {
+          "heading": "Added",
+          "line": 18
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/table-engine/docs/CINEVA.md",
+      "sha256": "1ec5efcb4b961544b28df2c8dd1286a3424870423d36ae1632cf9bd5904cb325",
+      "title": "Cineva fork 0.2.0-cineva.1",
+      "headings": [
+        {
+          "heading": "Cineva fork 0.2.0-cineva.1",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/table-engine/docs/README.md",
+      "sha256": "76f1a9fc926ec1d665c4113df0fa6f9a3a0eb66d3e06a0ebbe402775d4749a35",
+      "title": "@hots/table-engine",
+      "headings": [
+        {
+          "heading": "@hots/table-engine",
+          "line": 19
+        },
+        {
+          "heading": "Usage",
+          "line": 26
+        },
+        {
+          "heading": "Differences from the HOTS original",
+          "line": 43
+        },
+        {
+          "heading": "File structure (0.2.0)",
+          "line": 53
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/tenant-client/docs/CHANGELOG.md",
+      "sha256": "6e2242fd5700dd86322d373a1bc3072c7eb913cce581f1cf4ed34ca405379164",
+      "title": "Changelog",
+      "headings": [
+        {
+          "heading": "Changelog",
+          "line": 1
+        },
+        {
+          "heading": "0.1.0-cineva.1 — 2026-10-21",
+          "line": 3
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/tenant-client/docs/README.md",
+      "sha256": "6b5193477ef82babc2f288ebb5c1b18b54d3ab6a5789e7acdc83a8130e6b6e18",
+      "title": "@hots/tenant-client 0.1.0-cineva.1",
+      "headings": [
+        {
+          "heading": "@hots/tenant-client 0.1.0-cineva.1",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/tenant-contracts/docs/CHANGELOG.md",
+      "sha256": "9f68272ca31084fcf7f00e836b1a4c41b60dd840d8201cb13c9e86773b6f4b57",
+      "title": "Changelog",
+      "headings": [
+        {
+          "heading": "Changelog",
+          "line": 1
+        },
+        {
+          "heading": "0.1.0-cineva.1 — 2026-10-21",
+          "line": 3
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/tenant-contracts/docs/README.md",
+      "sha256": "db3a6f3d3a8639ceab8dddf6dc5de4188574f9903ef8f7c45087d002dd9df790",
+      "title": "@hots/tenant-contracts 0.1.0-cineva.1",
+      "headings": [
+        {
+          "heading": "@hots/tenant-contracts 0.1.0-cineva.1",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/tracking-kit/docs/CHANGELOG.md",
+      "sha256": "95100924a3d41eb42a8cd424087253dd1f406a4660a904d92771cbe97d866796",
+      "title": "Changelog — @hots/tracking-kit",
+      "headings": [
+        {
+          "heading": "Changelog — @hots/tracking-kit",
+          "line": 1
+        },
+        {
+          "heading": "[Unreleased]",
+          "line": 5
+        },
+        {
+          "heading": "[0.1.0] - 2026-10-06",
+          "line": 7
+        },
+        {
+          "heading": "Added",
+          "line": 8
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/tracking-kit/docs/README.md",
+      "sha256": "5e12233b0dec56ddd42079056f75edc8acde5457f5dcfef46b7a2dfe5437a714",
+      "title": "@hots/tracking-kit",
+      "headings": [
+        {
+          "heading": "@hots/tracking-kit",
+          "line": 19
+        },
+        {
+          "heading": "Usage",
+          "line": 26
+        },
+        {
+          "heading": "Exports",
+          "line": 37
+        },
+        {
+          "heading": "Notes",
+          "line": 46
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/ui-kit/docs/CHANGELOG.md",
+      "sha256": "ec01f92216b49d5c06ce436c0c9cfa9038116a70e121640e1fdf357d420c068f",
+      "title": "Changelog — @hots/ui-kit",
+      "headings": [
+        {
+          "heading": "Changelog — @hots/ui-kit",
+          "line": 1
+        },
+        {
+          "heading": "[Unreleased]",
+          "line": 5
+        },
+        {
+          "heading": "[0.2.0] - 2026-10-06",
+          "line": 7
+        },
+        {
+          "heading": "Added",
+          "line": 8
+        },
+        {
+          "heading": "[0.1.0] - 2026-10-05",
+          "line": 11
+        },
+        {
+          "heading": "Added",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/ui-kit/docs/CINEVA.md",
+      "sha256": "9730ec37e25400630eba26f69cf39688760aeb6589f33bac12dac1c2c800e845",
+      "title": "Cineva fork 0.2.0-cineva.1",
+      "headings": [
+        {
+          "heading": "Cineva fork 0.2.0-cineva.1",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/ui-kit/docs/DECISIONS/001-tailwind-standard.md",
+      "sha256": "abdb3dbd609688d85cc924c7c595760181d90d90338e5e333635c89483f77d2c",
+      "title": "001 — Tailwind + shadcn as the standard styling",
+      "headings": [
+        {
+          "heading": "001 — Tailwind + shadcn as the standard styling",
+          "line": 1
+        },
+        {
+          "heading": "Context",
+          "line": 5
+        },
+        {
+          "heading": "Decision",
+          "line": 8
+        },
+        {
+          "heading": "Consequences",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/ui-kit/docs/README.md",
+      "sha256": "a152f143fe7f9c5292842640845d1df7f729365a969d9445ad1dbde406e0fcad",
+      "title": "@hots/ui-kit",
+      "headings": [
+        {
+          "heading": "@hots/ui-kit",
+          "line": 19
+        },
+        {
+          "heading": "Setup",
+          "line": 25
+        },
+        {
+          "heading": "What was copied / left out",
+          "line": 42
+        },
+        {
+          "heading": "Re-syncing from HOTS",
+          "line": 48
+        },
+        {
+          "heading": "Media subpath (`@hots/ui-kit/media`, 0.2.0)",
+          "line": 51
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/workflow-policy-kit/docs/CHANGELOG.md",
+      "sha256": "85536d5438c8ea36ac6de113b5c8aa96e3647883abf481cc9ae9d59d9d4032a5",
+      "title": "Changelog — @hots/workflow-policy-kit",
+      "headings": [
+        {
+          "heading": "Changelog — @hots/workflow-policy-kit",
+          "line": 1
+        },
+        {
+          "heading": "[Unreleased]",
+          "line": 5
+        },
+        {
+          "heading": "[0.2.0] - 2026-10-14",
+          "line": 7
+        },
+        {
+          "heading": "Added",
+          "line": 8
+        },
+        {
+          "heading": "Fixed",
+          "line": 10
+        },
+        {
+          "heading": "[0.1.0] - 2026-10-14",
+          "line": 13
+        },
+        {
+          "heading": "Added",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/packages/workflow-policy-kit/docs/README.md",
+      "sha256": "02734163eab6c54bed83c13fb4c6d32fcfa464c3394a2b1ec965810f5becd380",
+      "title": "@hots/workflow-policy-kit",
+      "headings": [
+        {
+          "heading": "@hots/workflow-policy-kit",
+          "line": 12
+        },
+        {
+          "heading": "Single source of truth",
+          "line": 16
+        },
+        {
+          "heading": "What is in it",
+          "line": 21
+        },
+        {
+          "heading": "Policy shape",
+          "line": 30
+        },
+        {
+          "heading": "Consuming it (HOTS example)",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/service-form-runtime/docs/CHANGELOG.md",
+      "sha256": "17986ab28c4cca2f7957818fbe1b5a6bd43658c5d94aab097f6e63e801196c28",
+      "title": "Changelog",
+      "headings": [
+        {
+          "heading": "Changelog",
+          "line": 1
+        },
+        {
+          "heading": "2026-10-14",
+          "line": 3
+        }
+      ]
+    },
+    {
+      "path": "1.Frontend/service-form-runtime/docs/README.md",
+      "sha256": "e202c1e0ace4d744824678a6f6371a2cb0be4d0ae6e1a27dc5d76fefbba46994",
+      "title": "@hots/service-form-runtime — Cineva snapshot",
+      "headings": [
+        {
+          "heading": "@hots/service-form-runtime — Cineva snapshot",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "2.Backend/packages/notification-kit/docs/CHANGELOG.md",
+      "sha256": "850f72f57601bc12a64e9fc6fa8f68ede54a2ad63304694935159f575da0a24f",
+      "title": "Changelog",
+      "headings": [
+        {
+          "heading": "Changelog",
+          "line": 1
+        },
+        {
+          "heading": "0.1.0-cineva.1 — 2026-10-19",
+          "line": 3
+        }
+      ]
+    },
+    {
+      "path": "2.Backend/packages/notification-kit/docs/README.md",
+      "sha256": "079e22f5cf1fc16ad96c4abfeac0a3acdf19b096035ac392f59c09f8315db396",
+      "title": "@hots/notification-kit 0.1.0-cineva.1",
+      "headings": [
+        {
+          "heading": "@hots/notification-kit 0.1.0-cineva.1",
+          "line": 1
+        },
+        {
+          "heading": "Transport",
+          "line": 5
+        },
+        {
+          "heading": "Notification engine",
+          "line": 13
+        },
+        {
+          "heading": "Cineva adoption",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "path": "2.Backend/packages/tenant-server/docs/CHANGELOG.md",
+      "sha256": "bc1453175732ae70fc5aa69da32ed077d4de0689139d1102ac3ceef1ea9dd226",
+      "title": "Changelog",
+      "headings": [
+        {
+          "heading": "Changelog",
+          "line": 1
+        },
+        {
+          "heading": "0.1.0-cineva.1 — 2026-10-21",
+          "line": 3
+        }
+      ]
+    },
+    {
+      "path": "2.Backend/packages/tenant-server/docs/README.md",
+      "sha256": "b4cf9334cefa974a67b09194d710e4890cc68aeaa02edc879ffca754cdb79365",
+      "title": "@hots/tenant-server 0.1.0-cineva.1",
+      "headings": [
+        {
+          "heading": "@hots/tenant-server 0.1.0-cineva.1",
+          "line": 1
+        },
+        {
+          "heading": "APIs and trusted adapters",
+          "line": 5
+        },
+        {
+          "heading": "Composition",
+          "line": 15
+        }
+      ]
+    },
+    {
+      "path": "2.Backend/packages/transaction-kit/docs/CHANGELOG.md",
+      "sha256": "7cbb37bb9ffe1fa382fb2ec8fde0821f8e804392fce88df3d0d4077c4e9056ae",
+      "title": "Changelog — @hots/transaction-kit",
+      "headings": [
+        {
+          "heading": "Changelog — @hots/transaction-kit",
+          "line": 1
+        },
+        {
+          "heading": "[Unreleased]",
+          "line": 5
+        },
+        {
+          "heading": "[0.2.0] - 2026-10-06",
+          "line": 7
+        },
+        {
+          "heading": "Added",
+          "line": 8
+        },
+        {
+          "heading": "Changed",
+          "line": 10
+        },
+        {
+          "heading": "[0.1.0] - 2026-10-06",
+          "line": 13
+        },
+        {
+          "heading": "Added",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "path": "2.Backend/packages/transaction-kit/docs/README.md",
+      "sha256": "856ce93dd8ecfd57452b90927923f023f3a75d3c736af14f1349ee1aa3f127b3",
+      "title": "@hots/transaction-kit",
+      "headings": [
+        {
+          "heading": "@hots/transaction-kit",
+          "line": 19
+        },
+        {
+          "heading": "Run a transaction",
+          "line": 26
+        },
+        {
+          "heading": "What `run()` does",
+          "line": 41
+        },
+        {
+          "heading": "Program types (examples = real cases)",
+          "line": 54
+        },
+        {
+          "heading": "Errors as RFC 9457 Problem Details (0.2.0)",
+          "line": 65
+        },
+        {
+          "heading": "Building blocks (usable alone)",
+          "line": 72
+        },
+        {
+          "heading": "Verification (2026-10-06)",
+          "line": 75
+        },
+        {
+          "heading": "Known limits",
+          "line": 80
+        },
+        {
+          "heading": "Structure",
+          "line": 84
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/KNOWLEDGE_INDEX.md",
+      "sha256": "1b68af0995cbec15bfaa384ba73a6aa61030b284f83e694fd5ca2194768b0547",
+      "title": "Cineva knowledge entry point",
+      "headings": [
+        {
+          "heading": "Cineva knowledge entry point",
+          "line": 1
+        },
+        {
+          "heading": "Read first",
+          "line": 7
+        },
+        {
+          "heading": "Upgrade decisions to preserve",
+          "line": 89
+        },
+        {
+          "heading": "Verification boundaries",
+          "line": 100
+        },
+        {
+          "heading": "Reproduce audit",
+          "line": 104
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/account_reference_2026_10_18.md",
+      "sha256": "92351aa9d5242d4b368bdf66be37295f639911979e6e80934cd4a86810b63f59",
+      "title": "Preview tiga akun referensi Excel",
+      "headings": [
+        {
+          "heading": "Preview tiga akun referensi Excel",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/cineva_campaign_operations_2026_10_18.md",
+      "sha256": "d19e779dc5f80f8c8198656bb195e19a48d84a2ab0c7bb59892ba1d6586aa682",
+      "title": "Cineva Campaign Operations",
+      "headings": [
+        {
+          "heading": "Cineva Campaign Operations",
+          "line": 1
+        },
+        {
+          "heading": "Scope dan batas arsitektur",
+          "line": 3
+        },
+        {
+          "heading": "Grup implementasi",
+          "line": 11
+        },
+        {
+          "heading": "Validasi dan kelanjutan",
+          "line": 17
+        },
+        {
+          "heading": "Kontrak implementasi",
+          "line": 23
+        },
+        {
+          "heading": "Cara verifikasi",
+          "line": 33
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/cineva_dual_product_direction_2026_10_18.md",
+      "sha256": "c85d3bed61cca9d64d01f906ccc5da6f3bc5b2314118e9d2ab709819e0c89811",
+      "title": "Arah produk Cineva HQ dan Creator Space",
+      "headings": [
+        {
+          "heading": "Arah produk Cineva HQ dan Creator Space",
+          "line": 1
+        },
+        {
+          "heading": "Fondasi yang dipertahankan",
+          "line": 11
+        },
+        {
+          "heading": "Pemetaan kebutuhan",
+          "line": 17
+        },
+        {
+          "heading": "Folder target, bukan direktori implementasi baru",
+          "line": 31
+        },
+        {
+          "heading": "Kontrak controller AI yang harus diselesaikan sebelum implementasi",
+          "line": 60
+        },
+        {
+          "heading": "Mengapa belum ada SQL/Prisma migration",
+          "line": 68
+        },
+        {
+          "heading": "Acceptance nanti dengan dummy DB",
+          "line": 72
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/cineva_maturity_2026_10_18.md",
+      "sha256": "b460ff3ff2807b7d20b28a70c8d40eb88ea82b2306d374eac129af3afd45014c",
+      "title": "Pemantapan Cineva: workflow, penawaran, CS dan booking",
+      "headings": [
+        {
+          "heading": "Pemantapan Cineva: workflow, penawaran, CS dan booking",
+          "line": 1
+        },
+        {
+          "heading": "Perilaku baru",
+          "line": 5
+        },
+        {
+          "heading": "Brief dan workflow per layanan",
+          "line": 7
+        },
+        {
+          "heading": "Penawaran, revisi dan persetujuan versi",
+          "line": 15
+        },
+        {
+          "heading": "Antrean dan riwayat CS",
+          "line": 25
+        },
+        {
+          "heading": "Alokasi dan booking eksplisit",
+          "line": 33
+        },
+        {
+          "heading": "Lokasi integrasi",
+          "line": 41
+        },
+        {
+          "heading": "Menjalankan dan bukti",
+          "line": 56
+        },
+        {
+          "heading": "Batas lanjutan",
+          "line": 75
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/cineva_service_flow_2026_10_18.md",
+      "sha256": "866fd0fdd5f6391603c29c0fe736a07e67946fe1a0e35e06b0d1fd195c09ec08",
+      "title": "Cineva layanan, inquiry dan CS — implementasi frontend dummy",
+      "headings": [
+        {
+          "heading": "Cineva layanan, inquiry dan CS — implementasi frontend dummy",
+          "line": 1
+        },
+        {
+          "heading": "Cara mencoba",
+          "line": 7
+        },
+        {
+          "heading": "Modul dan reuse",
+          "line": 15
+        },
+        {
+          "heading": "Aturan domain dan penyimpanan",
+          "line": 33
+        },
+        {
+          "heading": "Verifikasi",
+          "line": 45
+        },
+        {
+          "heading": "Batas lanjutan",
+          "line": 64
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/cineva_vendor_theme_2026_10_18.md",
+      "sha256": "4ed42489975fc87492e543ad2f4622cdb501d2a3089d15e07d5710d526bc6987",
+      "title": "Theme vendor Cineva — coklat, emas dan putih",
+      "headings": [
+        {
+          "heading": "Theme vendor Cineva — coklat, emas dan putih",
+          "line": 1
+        },
+        {
+          "heading": "Lapisan implementasi",
+          "line": 5
+        },
+        {
+          "heading": "Palette dan keterbacaan",
+          "line": 14
+        },
+        {
+          "heading": "Batas arsitektur",
+          "line": 22
+        },
+        {
+          "heading": "Validasi",
+          "line": 26
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/client_demo_melin_2026_10_18.md",
+      "sha256": "6c4abd5f753e37db6333559d54c47c0a59fbf7600cac0da30d31e1a882f014bb",
+      "title": "Paket demo client: dokumen Melin dan HTML mandiri",
+      "headings": [
+        {
+          "heading": "Paket demo client: dokumen Melin dan HTML mandiri",
+          "line": 1
+        },
+        {
+          "heading": "Komposisi modular",
+          "line": 5
+        },
+        {
+          "heading": "Mapping sumber dan ketidakpastian",
+          "line": 11
+        },
+        {
+          "heading": "Persistensi dan export",
+          "line": 22
+        },
+        {
+          "heading": "Bukti verifikasi",
+          "line": 30
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/client_reference_instadeck_2026_10_22.md",
+      "sha256": "89fb268ff007c4490faf2a87f46be0b7100cfcb0bcfab5ec4fe6ee2e379b0ffc",
+      "title": "Audit referensi client InstaDeck — 22 Oktober 2026",
+      "headings": [
+        {
+          "heading": "Audit referensi client InstaDeck — 22 Oktober 2026",
+          "line": 1
+        },
+        {
+          "heading": "Kesimpulan",
+          "line": 5
+        },
+        {
+          "heading": "Bukti source",
+          "line": 9
+        },
+        {
+          "heading": "Dampak arsitektur dan urutan yang disarankan",
+          "line": 19
+        },
+        {
+          "heading": "Batas validasi dan laporan",
+          "line": 25
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/component_compatibility_2026_10_18.md",
+      "sha256": "20ebf1fae69553b5f1a88d59ec8613bd75b4e991f59ee638dcdcb4b8734c7def",
+      "title": "Kompatibilitas komponen Cineva — 18 Oktober 2026",
+      "headings": [
+        {
+          "heading": "Kompatibilitas komponen Cineva — 18 Oktober 2026",
+          "line": 1
+        },
+        {
+          "heading": "Scope dan keputusan",
+          "line": 3
+        },
+        {
+          "heading": "Dampak arsitektur dan implementasi",
+          "line": 7
+        },
+        {
+          "heading": "Validasi",
+          "line": 16
+        },
+        {
+          "heading": "Sisa pekerjaan",
+          "line": 38
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/content_studio_implementation_2026_10_22.md",
+      "sha256": "398bc83674667df352e6529957107b87ca59309ba426074111b4ce941821496e",
+      "title": "Implementasi Content Studio Cineva — 22 Oktober 2026",
+      "headings": [
+        {
+          "heading": "Implementasi Content Studio Cineva — 22 Oktober 2026",
+          "line": 1
+        },
+        {
+          "heading": "Yang tersedia untuk dicoba",
+          "line": 5
+        },
+        {
+          "heading": "Arsitektur/package",
+          "line": 13
+        },
+        {
+          "heading": "Persistence dan perubahan dari rencana",
+          "line": 21
+        },
+        {
+          "heading": "Publikasi, akun dan keamanan",
+          "line": 29
+        },
+        {
+          "heading": "AI, insight dan entitlement",
+          "line": 41
+        },
+        {
+          "heading": "Aktivasi dan release",
+          "line": 51
+        },
+        {
+          "heading": "Validasi sesi ini",
+          "line": 57
+        },
+        {
+          "heading": "Gate yang tetap pending",
+          "line": 69
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/content_studio_implementation_plan_2026_10_22.md",
+      "sha256": "ac9eaec7f7df5c2a2b429d3fceca34cd72272be838c90d8118dd9e920395efd2",
+      "title": "Rencana implementasi Cineva Content Studio dan cakupan package HOTS",
+      "headings": [
+        {
+          "heading": "Rencana implementasi Cineva Content Studio dan cakupan package HOTS",
+          "line": 1
+        },
+        {
+          "heading": "Keputusan arsitektur",
+          "line": 7
+        },
+        {
+          "heading": "Cakupan package dan batas yang ditemukan",
+          "line": 17
+        },
+        {
+          "heading": "Modul baru yang diperlukan",
+          "line": 37
+        },
+        {
+          "heading": "Tahapan implementasi dan acceptance",
+          "line": 49
+        },
+        {
+          "heading": "P0 — Baseline kontrak, package dan akses server",
+          "line": 51
+        },
+        {
+          "heading": "P1 — Dokumen slide, template, brand kit dan renderer",
+          "line": 59
+        },
+        {
+          "heading": "P2 — Ingestion link/teks/ide dan AI generation",
+          "line": 67
+        },
+        {
+          "heading": "P3 — Workflow QC, kalender dan antrean publikasi tahan restart",
+          "line": 75
+        },
+        {
+          "heading": "P4 — Akun sosial dan provider live",
+          "line": 85
+        },
+        {
+          "heading": "P5 — Analytics otomatis dan insight",
+          "line": 93
+        },
+        {
+          "heading": "P6 — Paket/kuota, hardening dan release acceptance",
+          "line": 101
+        },
+        {
+          "heading": "Traceability fitur client",
+          "line": 109
+        },
+        {
+          "heading": "Milestone delivery dan validasi package",
+          "line": 130
+        },
+        {
+          "heading": "Dependency provider yang diverifikasi dan batasnya",
+          "line": 143
+        },
+        {
+          "heading": "Laporan dan reproduksi",
+          "line": 149
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/content_studio_portable_2026_10_22.md",
+      "sha256": "6163a3fa7fd2021cc2e075b2a9ca500ce54bf6cf6fe9e05dbfba06804a98d01d",
+      "title": "Content Studio: HTML mandiri untuk demo kirim dokumen",
+      "headings": [
+        {
+          "heading": "Content Studio: HTML mandiri untuk demo kirim dokumen",
+          "line": 1
+        },
+        {
+          "heading": "Deliverable",
+          "line": 5
+        },
+        {
+          "heading": "Dampak arsitektur",
+          "line": 11
+        },
+        {
+          "heading": "Edit, storage dan export",
+          "line": 19
+        },
+        {
+          "heading": "Verifikasi",
+          "line": 27
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/database_saas_audit_2026_10_21.md",
+      "sha256": "73c4d6a7aa2b9a2d85faafe252a63842260516f8faa5276c03fa10427734dd2f",
+      "title": "Audit struktur dan semantik database untuk SaaS",
+      "headings": [
+        {
+          "heading": "Audit struktur dan semantik database untuk SaaS",
+          "line": 1
+        },
+        {
+          "heading": "Scope, sumber dan batas",
+          "line": 7
+        },
+        {
+          "heading": "Yang sudah baik dan bisa dipertahankan",
+          "line": 15
+        },
+        {
+          "heading": "Blocker ownership dari struktur dan data aktual",
+          "line": 23
+        },
+        {
+          "heading": "1. Company belum bisa langsung dijadikan tenant",
+          "line": 25
+        },
+        {
+          "heading": "2. Ticket punya ownership yang dapat kosong/invalid",
+          "line": 31
+        },
+        {
+          "heading": "3. Ownership work-data berbeda dari parent",
+          "line": 37
+        },
+        {
+          "heading": "4. Assignment dan hierarchy perlu kontrak yang lebih kuat",
+          "line": 51
+        },
+        {
+          "heading": "Semantik identity dan authorization",
+          "line": 57
+        },
+        {
+          "heading": "Semantik Cineva saat mengikuti HOTS",
+          "line": 66
+        },
+        {
+          "heading": "Profil talent tidak boleh seluruhnya global",
+          "line": 68
+        },
+        {
+          "heading": "Job, workflow ticket dan talent assignment berbeda",
+          "line": 74
+        },
+        {
+          "heading": "Status dan uang tidak boleh disatukan",
+          "line": 84
+        },
+        {
+          "heading": "Configuration, brand dan namespace",
+          "line": 88
+        },
+        {
+          "heading": "Integritas, event dan index",
+          "line": 98
+        },
+        {
+          "heading": "Keputusan arsitektur dan urutan perbaikan",
+          "line": 106
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/dual_product_preview_2026_10_18.md",
+      "sha256": "568266217d8a24b8fdad64a5929830b3ece23fa5596f86671b32e17734ccf76c",
+      "title": "Cineva A/B interactive preview — 18 Oktober 2026",
+      "headings": [
+        {
+          "heading": "Cineva A/B interactive preview — 18 Oktober 2026",
+          "line": 1
+        },
+        {
+          "heading": "Implementasi dan batasnya",
+          "line": 9
+        },
+        {
+          "heading": "Entry dan router",
+          "line": 13
+        },
+        {
+          "heading": "Boundary modular",
+          "line": 20
+        },
+        {
+          "heading": "App A — Cineva HQ",
+          "line": 41
+        },
+        {
+          "heading": "App B — Creator Space",
+          "line": 47
+        },
+        {
+          "heading": "State, penyimpanan dan isolation",
+          "line": 58
+        },
+        {
+          "heading": "Tes dan menjalankan preview",
+          "line": 64
+        },
+        {
+          "heading": "Buka http://127.0.0.1:48174/hots/cineva-preview.html#/hq/dashboard",
+          "line": 68
+        },
+        {
+          "heading": "Atau http://127.0.0.1:48174/hots/cineva-preview.html#/creator/dashboard",
+          "line": 69
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/folder_restructure_2026_10_14.md",
+      "sha256": "29b4575a5c72cdd6e56be3d93654958faa37c97c889af565b427e61250333247",
+      "title": "Cineva folder separation and retrieval index",
+      "headings": [
+        {
+          "heading": "Cineva folder separation and retrieval index",
+          "line": 1
+        },
+        {
+          "heading": "Architectural impact",
+          "line": 5
+        },
+        {
+          "heading": "Old to current path mapping",
+          "line": 24
+        },
+        {
+          "heading": "Launch and packaging contracts",
+          "line": 36
+        },
+        {
+          "heading": "Index and retrieval architecture",
+          "line": 46
+        },
+        {
+          "heading": "Verification and rollback",
+          "line": 67
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/generic_packages_2026_10_19.md",
+      "sha256": "dd1b16c2d765bbf76458f6875a5ae849e109538e51c6fb100b3ffe33392c123b",
+      "title": "Generic domain and scheduling packages — 19 October 2026",
+      "headings": [
+        {
+          "heading": "Generic domain and scheduling packages — 19 October 2026",
+          "line": 1
+        },
+        {
+          "heading": "Architecture and provenance",
+          "line": 3
+        },
+        {
+          "heading": "Capability and adoption",
+          "line": 11
+        },
+        {
+          "heading": "Consumer locations",
+          "line": 26
+        },
+        {
+          "heading": "Verification and remaining work",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/hots_cineva_capability_review_2026_10_19.md",
+      "sha256": "d8a322119a45ea5904328271a6f42a71bd593b0712a59c2b93fb1db5a81db8b3",
+      "title": "HOTS dan Cineva: fondasi, kandidat upstream, dan batas kesiapan",
+      "headings": [
+        {
+          "heading": "HOTS dan Cineva: fondasi, kandidat upstream, dan batas kesiapan",
+          "line": 1
+        },
+        {
+          "heading": "Koreksi catatan historis",
+          "line": 5
+        },
+        {
+          "heading": "Pemisahan kemampuan",
+          "line": 9
+        },
+        {
+          "heading": "Gap yang tetap harus dibuktikan",
+          "line": 24
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/hots_reference_followups_2026_10_14.md",
+      "sha256": "124cef3e566907917a65905d89166f677ca810f8c8f0160262689678cdcb0851",
+      "title": "HOTS Kantor follow-ups — notes only",
+      "headings": [
+        {
+          "heading": "HOTS Kantor follow-ups — notes only",
+          "line": 1
+        },
+        {
+          "heading": "Priority findings",
+          "line": 7
+        },
+        {
+          "heading": "Ownership and validation",
+          "line": 20
+        },
+        {
+          "heading": "Additional Cineva finding, 18 October 2026",
+          "line": 22
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/implementation_plan_voice_2026_10_18.md",
+      "sha256": "e2eb84d98990d24e07ba9e26e1c01ab30d09cb9fbb5502e940735bf64ae883e2",
+      "title": "Rencana pemenuhan requirement Cineva A/B dari voice note",
+      "headings": [
+        {
+          "heading": "Rencana pemenuhan requirement Cineva A/B dari voice note",
+          "line": 1
+        },
+        {
+          "heading": "Hasil yang dituju",
+          "line": 6
+        },
+        {
+          "heading": "Batas dan dampak arsitektur",
+          "line": 12
+        },
+        {
+          "heading": "Paket 1 — Katalog, brief dan estimator dalam satu pekerjaan",
+          "line": 21
+        },
+        {
+          "heading": "Paket 2 — Permintaan Creator/client, queue HQ dan konversi project",
+          "line": 33
+        },
+        {
+          "heading": "Paket 3 — CS manusia dan assistant melalui adapter",
+          "line": 47
+        },
+        {
+          "heading": "Paket 4 — Integrasi A/B dan regresi menyeluruh",
+          "line": 59
+        },
+        {
+          "heading": "Paket 5 — Integrasi nyata, ditunda sesuai instruksi database",
+          "line": 71
+        },
+        {
+          "heading": "Definition of done",
+          "line": 81
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/live_excel_reference_2026_10_18.md",
+      "sha256": "f53b01d79cef6de8481b5f05db954e1ad413b69402f7ab57bf4552b374794862",
+      "title": "Crosscheck Excel live lokal",
+      "headings": [
+        {
+          "heading": "Crosscheck Excel live lokal",
+          "line": 1
+        },
+        {
+          "heading": "Batas arsitektur",
+          "line": 5
+        },
+        {
+          "heading": "Nilai sumber dan maknanya",
+          "line": 13
+        },
+        {
+          "heading": "Klarifikasi pengguna: followers dan niche",
+          "line": 19
+        },
+        {
+          "heading": "Pengujian dan operasi",
+          "line": 27
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/local_live_e2e_2026_10_21.md",
+      "sha256": "f9c6f37820b8c4ab8ddd1cd9c5d67b6f5f61f65d91f85a5b7ab4ff7aa777c859",
+      "title": "E2E lokal nyata: HOTS, Overseas, Integrated-API",
+      "headings": [
+        {
+          "heading": "E2E lokal nyata: HOTS, Overseas, Integrated-API",
+          "line": 1
+        },
+        {
+          "heading": "Verified behavior",
+          "line": 11
+        },
+        {
+          "heading": "F01: dashboard aggregate crosses company authorization (high priority)",
+          "line": 19
+        },
+        {
+          "heading": "Remaining SaaS integration gaps",
+          "line": 40
+        },
+        {
+          "heading": "Outcome and next work",
+          "line": 47
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/notification_package_2026_10_19.md",
+      "sha256": "46d59ae00faa7f1e823aa1ba91445156c9da19b6fcaabf5c96b9fb13be6202bd",
+      "title": "Notification/SSE package extraction and adoption — 19 October 2026",
+      "headings": [
+        {
+          "heading": "Notification/SSE package extraction and adoption — 19 October 2026",
+          "line": 1
+        },
+        {
+          "heading": "Scope and user authorization",
+          "line": 3
+        },
+        {
+          "heading": "Architecture",
+          "line": 7
+        },
+        {
+          "heading": "Cineva frontend adoption",
+          "line": 21
+        },
+        {
+          "heading": "Boundaries",
+          "line": 29
+        },
+        {
+          "heading": "Verification",
+          "line": 37
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/online_order_flavour_2026_10_22.md",
+      "sha256": "48e32a0150b87269e6b21142480e30df0bef07eaa9412c42f7f9d86bffc421dd",
+      "title": "Online Order Kantor: Flavour 2 tersangkut",
+      "headings": [
+        {
+          "heading": "Online Order Kantor: Flavour 2 tersangkut",
+          "line": 1
+        },
+        {
+          "heading": "Implementasi setelah persetujuan pengguna",
+          "line": 3
+        },
+        {
+          "heading": "Klarifikasi lanjutan",
+          "line": 16
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/package_promotion_2026_10_19.md",
+      "sha256": "e80fcb4a096410bc6e087293aea42e4fc6bfa231ee87d6809ce7e0d27bf71cdd",
+      "title": "Promote domain and scheduling packages to HOTS — 19 October 2026",
+      "headings": [
+        {
+          "heading": "Promote domain and scheduling packages to HOTS — 19 October 2026",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/par_approval_pic_2026_10_22.md",
+      "sha256": "d8537cd187e8015af34151bcd69cc25f3cb08d82a76ec2de2ea888a4b050c93a",
+      "title": "Upgrade approval remark dan Latest PIC PAR",
+      "headings": [
+        {
+          "heading": "Upgrade approval remark dan Latest PIC PAR",
+          "line": 11
+        },
+        {
+          "heading": "Follow-up: desain Email Activity",
+          "line": 13
+        },
+        {
+          "heading": "Izin dan cakupan",
+          "line": 19
+        },
+        {
+          "heading": "Perilaku yang disepakati",
+          "line": 23
+        },
+        {
+          "heading": "Arsitektur dan kontrak",
+          "line": 32
+        },
+        {
+          "heading": "Verifikasi",
+          "line": 38
+        },
+        {
+          "heading": "File dan rollback",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/reusable_module_backlog_2026_10_19.md",
+      "sha256": "e6eca205968a2f0ba8b2e545ac907c98f0609c4c214319ff3d6bf9b4e1e5bf50",
+      "title": "Backlog capability reusable HOTS dari Cineva dan Meetingbook",
+      "headings": [
+        {
+          "heading": "Backlog capability reusable HOTS dari Cineva dan Meetingbook",
+          "line": 1
+        },
+        {
+          "heading": "Bukti fondasi existing",
+          "line": 5
+        },
+        {
+          "heading": "Daftar capability",
+          "line": 9
+        },
+        {
+          "heading": "Kalender bukan reservasi",
+          "line": 30
+        },
+        {
+          "heading": "Urutan dan acceptance",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/reusable_packages_2026_10_14.md",
+      "sha256": "106130ccb518919f16f02723ed9426e24aad4bbe68c142b115d6fd648dd8cb8b",
+      "title": "Cineva reusable package integration",
+      "headings": [
+        {
+          "heading": "Cineva reusable package integration",
+          "line": 1
+        },
+        {
+          "heading": "Architectural impact",
+          "line": 5
+        },
+        {
+          "heading": "Changes implemented",
+          "line": 11
+        },
+        {
+          "heading": "Explicit local forks",
+          "line": 21
+        },
+        {
+          "heading": "Installation, indexing and retention",
+          "line": 25
+        },
+        {
+          "heading": "Remaining work",
+          "line": 37
+        },
+        {
+          "heading": "Verification boundary",
+          "line": 43
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/saas_pilot_activation_2026_10_21.md",
+      "sha256": "4b2864402bda03d05bd0307527454d6125571cbe34fec300de7b4536e4651e34",
+      "title": "SaaS pilot: database additive, hierarchy and HOTS ticket isolation",
+      "headings": [
+        {
+          "heading": "SaaS pilot: database additive, hierarchy and HOTS ticket isolation",
+          "line": 1
+        },
+        {
+          "heading": "Confirmed business decisions",
+          "line": 5
+        },
+        {
+          "heading": "Physical database changes, applied and verified",
+          "line": 14
+        },
+        {
+          "heading": "Modular implementation and limits",
+          "line": 27
+        },
+        {
+          "heading": "Production inspection, read-only SSH",
+          "line": 39
+        },
+        {
+          "heading": "Validation and next activation gates",
+          "line": 49
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/saas_readiness_2026_10_21.md",
+      "sha256": "b6e4f049b1f7423b8de1f06517e71188ffe8c5d562fbaeb1caaeb4485ab7818a",
+      "title": "Audit kesiapan SaaS Cineva dan Overseas",
+      "headings": [
+        {
+          "heading": "Audit kesiapan SaaS Cineva dan Overseas",
+          "line": 1
+        },
+        {
+          "heading": "Ruang lingkup dan dampak arsitektur",
+          "line": 9
+        },
+        {
+          "heading": "Ringkasan kesiapan",
+          "line": 15
+        },
+        {
+          "heading": "Bukti dan temuan",
+          "line": 29
+        },
+        {
+          "heading": "Kontrak package isolasi yang diwajibkan",
+          "line": 44
+        },
+        {
+          "heading": "Pemisahan tenant, company, product dan brand",
+          "line": 69
+        },
+        {
+          "heading": "Pilihan database",
+          "line": 96
+        },
+        {
+          "heading": "Kontrak desain dan logo JSON yang diusulkan",
+          "line": 110
+        },
+        {
+          "heading": "Tahapan dan acceptance sebelum implementasi produksi",
+          "line": 148
+        },
+        {
+          "heading": "Validasi audit dan file hasil",
+          "line": 161
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/saas_standards_sso_2026_10_21.md",
+      "sha256": "38f635277683e9b8d6f794d46511511eba6ec3c25924646c3485d7e35513ff9a",
+      "title": "Standar utama SaaS dan SSO",
+      "headings": [
+        {
+          "heading": "Standar utama SaaS dan SSO",
+          "line": 1
+        },
+        {
+          "heading": "Definisi authoritative dari pengguna",
+          "line": 7
+        },
+        {
+          "heading": "Standar wajib dan acceptance",
+          "line": 17
+        },
+        {
+          "heading": "Rancangan SSO yang direkomendasikan",
+          "line": 36
+        },
+        {
+          "heading": "Source existing yang diperiksa read-only",
+          "line": 55
+        },
+        {
+          "heading": "Referensi protokol",
+          "line": 66
+        },
+        {
+          "heading": "Urutan pelaksanaan",
+          "line": 71
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/table_refactor_2026_10_18.md",
+      "sha256": "36a5cef12dd536f83663f03545c3b2f0ed239c5850ec8d31ef2dbeb9e39d2c6a",
+      "title": "Cineva table engine decomposition — 18 October 2026",
+      "headings": [
+        {
+          "heading": "Cineva table engine decomposition — 18 October 2026",
+          "line": 1
+        },
+        {
+          "heading": "Scope and compatibility",
+          "line": 3
+        },
+        {
+          "heading": "Validation and maintenance",
+          "line": 18
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/tenant_foundation_2026_10_21.md",
+      "sha256": "4a861e4a8f33da3b0f2bef6b81104312e86f4beddeada4a0cda3cfdab47056de",
+      "title": "Implementasi fondasi tenant/company, SSO dan onboarding",
+      "headings": [
+        {
+          "heading": "Implementasi fondasi tenant/company, SSO dan onboarding",
+          "line": 1
+        },
+        {
+          "heading": "Keputusan pengguna yang diterapkan",
+          "line": 7
+        },
+        {
+          "heading": "Package dan perubahan source",
+          "line": 15
+        },
+        {
+          "heading": "Contract API baru",
+          "line": 29
+        },
+        {
+          "heading": "Security/persistence boundaries",
+          "line": 44
+        },
+        {
+          "heading": "Validasi yang dilakukan",
+          "line": 56
+        },
+        {
+          "heading": "Yang belum boleh dinyatakan selesai",
+          "line": 67
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/theme_source_audit_2026_10_18.md",
+      "sha256": "c5cae43308dd20549e9cf0c6c9b206edaa4a51d521aabf9597f1ce34cdb4b4d6",
+      "title": "Audit sumber style Cineva — 18 Oktober 2026",
+      "headings": [
+        {
+          "heading": "Audit sumber style Cineva — 18 Oktober 2026",
+          "line": 1
+        },
+        {
+          "heading": "Koreksi acuan branding",
+          "line": 5
+        },
+        {
+          "heading": "Bukti source yang diverifikasi",
+          "line": 9
+        },
+        {
+          "heading": "Tindak lanjut implementasi yang benar",
+          "line": 21
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/video_audio_requirements_2026_10_18.md",
+      "sha256": "50c47cde1b46b9ae4990b45624740705353038f56a608cc4e06129acc32ea564",
+      "title": "Pemeriksaan audio video dan sumber requirement A/B",
+      "headings": [
+        {
+          "heading": "Pemeriksaan audio video dan sumber requirement A/B",
+          "line": 1
+        },
+        {
+          "heading": "Hasil pemeriksaan 18 Oktober 2026",
+          "line": 5
+        },
+        {
+          "heading": "Requirement yang tetap dapat dibaca dari sumber sebelumnya",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/visual_reference_creator_space_2026_10_18.md",
+      "sha256": "e96f87a2cd83e53ce0851c5b45556a469398a6ca1ae60a726769091eb27c9e88",
+      "title": "Referensi visual Creator Space — 18 Oktober 2026",
+      "headings": [
+        {
+          "heading": "Referensi visual Creator Space — 18 Oktober 2026",
+          "line": 1
+        },
+        {
+          "heading": "Arahan pengguna dan batas perubahan",
+          "line": 5
+        },
+        {
+          "heading": "Aset yang disimpan",
+          "line": 11
+        },
+        {
+          "heading": "Pola yang dapat diadaptasi nanti",
+          "line": 18
+        },
+        {
+          "heading": "Sumber style yang tetap authoritative",
+          "line": 33
+        },
+        {
+          "heading": "Hubungan dengan arah produk",
+          "line": 43
+        },
+        {
+          "heading": "Validasi dan acceptance",
+          "line": 47
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/voice_requirements_2026_10_18.md",
+      "sha256": "b937735513ba81e6f3abf4a1b71826acfc1adcc767acbec29ae400f62d36176e",
+      "title": "Requirement Cineva dari voice note pengguna",
+      "headings": [
+        {
+          "heading": "Requirement Cineva dari voice note pengguna",
+          "line": 1
+        },
+        {
+          "heading": "Transkrip dan provenance",
+          "line": 7
+        },
+        {
+          "heading": "Makna narasi",
+          "line": 15
+        },
+        {
+          "heading": "Pemetaan requirement A dan B",
+          "line": 21
+        },
+        {
+          "heading": "Perbandingan dengan implementasi Cineva sekarang",
+          "line": 35
+        },
+        {
+          "heading": "Kata yang belum pasti dan batas bukti",
+          "line": 44
+        },
+        {
+          "heading": "Dampak arsitektur dan urutan implementasi berikutnya",
+          "line": 50
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/workbook_reference_2026_10_18.md",
+      "sha256": "49a6e71a38740025b56e2d926f378d079c541d7dd0d339098ab41f79e7374f29",
+      "title": "Workbook operasional asli sebagai referensi Cineva",
+      "headings": [
+        {
+          "heading": "Workbook operasional asli sebagai referensi Cineva",
+          "line": 1
+        },
+        {
+          "heading": "Sumber dan granularitas",
+          "line": 5
+        },
+        {
+          "heading": "Mapping requirement dan gap",
+          "line": 18
+        },
+        {
+          "heading": "Definisi metrik yang benar-benar terlihat",
+          "line": 39
+        },
+        {
+          "heading": "Temuan kualitas data sebelum import",
+          "line": 47
+        },
+        {
+          "heading": "Tahap berikut yang didukung referensi ini",
+          "line": 64
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/handover/HOTS_ORIGINAL_HANDOVER_2026_10_14.md",
+      "sha256": "373982cdd22dd91bdffc896ab36ad81545058546a313ce66d25b5aa51cae3678",
+      "title": "Handover HOTS original — reusable platform",
+      "headings": [
+        {
+          "heading": "Handover HOTS original — reusable platform",
+          "line": 1
+        },
+        {
+          "heading": "Batas tugas dan dampak arsitektur",
+          "line": 5
+        },
+        {
+          "heading": "Knowledge retrieval wajib sebelum implementasi",
+          "line": 11
+        },
+        {
+          "heading": "Urutan kerja",
+          "line": 15
+        },
+        {
+          "heading": "Daftar pekerjaan dan acceptance",
+          "line": 23
+        },
+        {
+          "heading": "R01 — P0 — table-engine Escape saves cancelled edits",
+          "line": 25
+        },
+        {
+          "heading": "R02 — P1 — Builder allowed field types not enforced in inspector",
+          "line": 39
+        },
+        {
+          "heading": "R03 — P1 — Trigger client query/types differ from backend",
+          "line": 53
+        },
+        {
+          "heading": "R04 — P1 — UI package optional peers and entry points",
+          "line": 67
+        },
+        {
+          "heading": "R05 — P2 — Package docs/version/status drift",
+          "line": 81
+        },
+        {
+          "heading": "R06 — P1 — Shared engine-client surface incomplete",
+          "line": 95
+        },
+        {
+          "heading": "R07 — P1 — Builder domain extension gaps",
+          "line": 109
+        },
+        {
+          "heading": "R08 — P0 — Auth documentation contradicts current implementation",
+          "line": 123
+        },
+        {
+          "heading": "R09 — P1 — HOTS reference itself only partly adopts packages",
+          "line": 137
+        },
+        {
+          "heading": "R10 — P2 — page-engine and app-template readiness",
+          "line": 151
+        },
+        {
+          "heading": "Yang boleh dijadikan kandidat upstream dari Cineva",
+          "line": 165
+        },
+        {
+          "heading": "Bukti uji dan batas verifikasi",
+          "line": 173
+        },
+        {
+          "heading": "Prosedur implementasi dan rollback untuk AI Kantor",
+          "line": 179
+        },
+        {
+          "heading": "Deliverables yang diharapkan dari AI Kantor",
+          "line": 188
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/handover/KANTOR_PAR_ORCHESTRATOR_TEST_2026_10_19.md",
+      "sha256": "bfdf8c726908cd7bfa28e040b1955cf6c852bca64967f1a8037707ed7f69825b",
+      "title": "Handover to Kantor: PAR title and Claude/Codex Kanban trial",
+      "headings": [
+        {
+          "heading": "Handover to Kantor: PAR title and Claude/Codex Kanban trial",
+          "line": 1
+        },
+        {
+          "heading": "Copy this prompt into the Kantor chat",
+          "line": 5
+        },
+        {
+          "heading": "Claude implementation prompt",
+          "line": 29
+        },
+        {
+          "heading": "Codex reviewer prompt",
+          "line": 33
+        },
+        {
+          "heading": "Verified source findings and entry points",
+          "line": 37
+        },
+        {
+          "heading": "Comparison evidence to collect",
+          "line": 67
+        },
+        {
+          "heading": "Pending and boundaries",
+          "line": 71
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/handover/PROMPT_AI_KANTOR.md",
+      "sha256": "0e2812fc4c4acac7d54d1ae2f90691694a382971ab8158b9a1f290c07e3672ce",
+      "title": "Prompt untuk chat AI project Kantor",
+      "headings": [
+        {
+          "heading": "Prompt untuk chat AI project Kantor",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/handover/PROMPT_PERBAIKAN_CINEVA.md",
+      "sha256": "5b0d6e85c0efd2871f539c8197ae9e42926f9fcdea306cb270d6c8db4db84648",
+      "title": "Status dan prompt perbaikan Cineva",
+      "headings": [
+        {
+          "heading": "Status dan prompt perbaikan Cineva",
+          "line": 1
+        },
+        {
+          "heading": "Status terhadap temuan HOTS original",
+          "line": 7
+        },
+        {
+          "heading": "Prompt siap salin untuk AI project Cineva",
+          "line": 22
+        },
+        {
+          "heading": "Laporan existing",
+          "line": 44
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/job_marketplace_kanban_logic.md",
+      "sha256": "8d50f0a4b93ed8c8f1c4ac8eab5c497ffd0261809b8403528eaa9a5646eca680",
+      "title": "Knowledge Base - Job Marketplace Kanban & Timeline Integration",
+      "headings": [
+        {
+          "heading": "Knowledge Base - Job Marketplace Kanban & Timeline Integration",
+          "line": 1
+        },
+        {
+          "heading": "1. Skema Database Utama",
+          "line": 5
+        },
+        {
+          "heading": "a. Marketplace (DB: `job_marketplace_hots`)",
+          "line": 7
+        },
+        {
+          "heading": "b. HOTS Core (DB: `hots`)",
+          "line": 12
+        },
+        {
+          "heading": "2. Alur Automasi (PIC Approval)",
+          "line": 17
+        },
+        {
+          "heading": "3. Catatan Implementasi untuk Developer/Model",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/jobmarketplace_endpoint_mapping.md",
+      "sha256": "fe9fe143062c7be66beaedd3ec727ba5210bb21d615454d6daf9fb5418668476",
+      "title": "Endpoint Mapping - HOTS to Job Marketplace",
+      "headings": [
+        {
+          "heading": "Endpoint Mapping - HOTS to Job Marketplace",
+          "line": 1
+        },
+        {
+          "heading": "1. Prinsip Mapping",
+          "line": 7
+        },
+        {
+          "heading": "2. Ticketing / Workflow",
+          "line": 16
+        },
+        {
+          "heading": "Existing",
+          "line": 18
+        },
+        {
+          "heading": "Marketplace Target",
+          "line": 27
+        },
+        {
+          "heading": "Catatan",
+          "line": 36
+        },
+        {
+          "heading": "3. Assignment",
+          "line": 42
+        },
+        {
+          "heading": "Existing",
+          "line": 44
+        },
+        {
+          "heading": "Marketplace Target",
+          "line": 49
+        },
+        {
+          "heading": "Catatan",
+          "line": 57
+        },
+        {
+          "heading": "4. CMS",
+          "line": 63
+        },
+        {
+          "heading": "Existing",
+          "line": 65
+        },
+        {
+          "heading": "Marketplace Target",
+          "line": 69
+        },
+        {
+          "heading": "Catatan",
+          "line": 79
+        },
+        {
+          "heading": "5. Public Marketplace",
+          "line": 84
+        },
+        {
+          "heading": "Existing",
+          "line": 86
+        },
+        {
+          "heading": "Marketplace Target",
+          "line": 89
+        },
+        {
+          "heading": "Catatan",
+          "line": 97
+        },
+        {
+          "heading": "6. Pickup Flow",
+          "line": 103
+        },
+        {
+          "heading": "New Endpoint Set",
+          "line": 105
+        },
+        {
+          "heading": "Catatan",
+          "line": 111
+        },
+        {
+          "heading": "7. Reporting",
+          "line": 117
+        },
+        {
+          "heading": "Existing",
+          "line": 119
+        },
+        {
+          "heading": "Marketplace Target",
+          "line": 123
+        },
+        {
+          "heading": "Catatan",
+          "line": 130
+        },
+        {
+          "heading": "8. Authentication dan Role",
+          "line": 135
+        },
+        {
+          "heading": "Existing",
+          "line": 137
+        },
+        {
+          "heading": "Marketplace Target",
+          "line": 141
+        },
+        {
+          "heading": "Catatan",
+          "line": 148
+        },
+        {
+          "heading": "9. Recommended Naming Convention",
+          "line": 153
+        },
+        {
+          "heading": "10. Migration Strategy",
+          "line": 164
+        },
+        {
+          "heading": "11. Prioritas Endpoint MVP",
+          "line": 175
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/jobmarketplace_knowledge.md",
+      "sha256": "13858ccb97bb768bbd97b41fe7e97ab0a738d7890db8f85653c68ed22a3cb8c9",
+      "title": "Job Marketplace Knowledge Base",
+      "headings": [
+        {
+          "heading": "Job Marketplace Knowledge Base",
+          "line": 1
+        },
+        {
+          "heading": "1. Gambaran Project",
+          "line": 14
+        },
+        {
+          "heading": "2. Prinsip Transformasi Dari HOTS Ke Job Marketplace",
+          "line": 33
+        },
+        {
+          "heading": "3. Struktur Domain Inti",
+          "line": 67
+        },
+        {
+          "heading": "3.1 Job",
+          "line": 69
+        },
+        {
+          "heading": "3.2 Ticket",
+          "line": 93
+        },
+        {
+          "heading": "3.3 Assignment",
+          "line": 103
+        },
+        {
+          "heading": "3.4 Pseudo Account",
+          "line": 114
+        },
+        {
+          "heading": "3.5 Talent / KOL Specialist",
+          "line": 123
+        },
+        {
+          "heading": "3.6 Workbook Reference Reality",
+          "line": 145
+        },
+        {
+          "heading": "4. Basis Data Konseptual",
+          "line": 175
+        },
+        {
+          "heading": "4.1 Master Tables",
+          "line": 179
+        },
+        {
+          "heading": "`data_m_job_category`",
+          "line": 181
+        },
+        {
+          "heading": "`data_m_job_platform`",
+          "line": 190
+        },
+        {
+          "heading": "`data_m_job_template`",
+          "line": 198
+        },
+        {
+          "heading": "`user_profile`",
+          "line": 208
+        },
+        {
+          "heading": "`data_m_job_role`",
+          "line": 235
+        },
+        {
+          "heading": "4.2 Transaction Tables",
+          "line": 244
+        },
+        {
+          "heading": "`t_job_list`",
+          "line": 246
+        },
+        {
+          "heading": "`data_t_job_pickup`",
+          "line": 255
+        },
+        {
+          "heading": "`data_job_campaign`",
+          "line": 266
+        },
+        {
+          "heading": "`data_job_batch`",
+          "line": 286
+        },
+        {
+          "heading": "`data_job_location`",
+          "line": 300
+        },
+        {
+          "heading": "`data_job_talent_assignment`",
+          "line": 314
+        },
+        {
+          "heading": "`data_job_content_log`",
+          "line": 335
+        },
+        {
+          "heading": "`t_ticket`",
+          "line": 351
+        },
+        {
+          "heading": "`t_ticket_assignment`",
+          "line": 358
+        },
+        {
+          "heading": "`t_ticket_work_data`",
+          "line": 369
+        },
+        {
+          "heading": "`t_ticket_file`",
+          "line": 372
+        },
+        {
+          "heading": "`t_ticket_file_temp`",
+          "line": 375
+        },
+        {
+          "heading": "`data_t_job_form_response`",
+          "line": 378
+        },
+        {
+          "heading": "`data_t_job_reporting`",
+          "line": 403
+        },
+        {
+          "heading": "`data_t_job_audit_log`",
+          "line": 406
+        },
+        {
+          "heading": "5. Relasi Data Yang Disarankan",
+          "line": 419
+        },
+        {
+          "heading": "5.1 Catatan Final Kecukupan Data",
+          "line": 443
+        },
+        {
+          "heading": "6. Flow Baru Sistem",
+          "line": 462
+        },
+        {
+          "heading": "6.1 Flow Admin",
+          "line": 464
+        },
+        {
+          "heading": "6.2 Flow User Ambil Job",
+          "line": 476
+        },
+        {
+          "heading": "6.3 Flow Client Create Job",
+          "line": 485
+        },
+        {
+          "heading": "6.4 Flow PIC Work Tools",
+          "line": 493
+        },
+        {
+          "heading": "7. Menu Baru Yang Disarankan",
+          "line": 503
+        },
+        {
+          "heading": "7.1 Menu Public / Marketplace",
+          "line": 505
+        },
+        {
+          "heading": "7.2 Menu Client",
+          "line": 513
+        },
+        {
+          "heading": "7.3 Menu PIC",
+          "line": 520
+        },
+        {
+          "heading": "7.4 Menu Admin / CMS",
+          "line": 528
+        },
+        {
+          "heading": "7.5 Menu System",
+          "line": 537
+        },
+        {
+          "heading": "8. Halaman Baru Yang Disarankan",
+          "line": 546
+        },
+        {
+          "heading": "8.1 Marketplace Pages",
+          "line": 548
+        },
+        {
+          "heading": "8.2 CMS Pages",
+          "line": 555
+        },
+        {
+          "heading": "8.3 PIC Pages",
+          "line": 562
+        },
+        {
+          "heading": "8.4 Reporting Pages",
+          "line": 569
+        },
+        {
+          "heading": "8.5 Ticket Pages",
+          "line": 576
+        },
+        {
+          "heading": "9. Fungsi Baru Yang Perlu Disiapkan",
+          "line": 585
+        },
+        {
+          "heading": "9.1 Job Functions",
+          "line": 587
+        },
+        {
+          "heading": "9.2 Assignment Functions",
+          "line": 596
+        },
+        {
+          "heading": "9.3 Ticket Functions",
+          "line": 605
+        },
+        {
+          "heading": "9.4 CMS Functions",
+          "line": 612
+        },
+        {
+          "heading": "9.5 Reporting Functions",
+          "line": 620
+        },
+        {
+          "heading": "9.6 Utility Functions",
+          "line": 627
+        },
+        {
+          "heading": "10. Ide Kreatif Untuk UI / UX",
+          "line": 636
+        },
+        {
+          "heading": "10.1 Ticketing",
+          "line": 638
+        },
+        {
+          "heading": "10.2 Job Marketplace",
+          "line": 645
+        },
+        {
+          "heading": "10.3 CMS Job Page",
+          "line": 651
+        },
+        {
+          "heading": "10.4 PIC Work Tools",
+          "line": 662
+        },
+        {
+          "heading": "10.5 Reporting",
+          "line": 668
+        },
+        {
+          "heading": "11. Relevansi Modul Existing",
+          "line": 676
+        },
+        {
+          "heading": "12. Roadmap Pengerjaan",
+          "line": 704
+        },
+        {
+          "heading": "Phase 1 - Foundation",
+          "line": 706
+        },
+        {
+          "heading": "Phase 2 - Assignment Core",
+          "line": 713
+        },
+        {
+          "heading": "Phase 3 - Marketplace Flow",
+          "line": 720
+        },
+        {
+          "heading": "Phase 4 - Talent System",
+          "line": 727
+        },
+        {
+          "heading": "Phase 5 - Advanced Analytics",
+          "line": 733
+        },
+        {
+          "heading": "13. Risiko Dan Catatan Penting",
+          "line": 742
+        },
+        {
+          "heading": "14. Kesimpulan",
+          "line": 753
+        },
+        {
+          "heading": "15. Mapping Workbook Ke Schema",
+          "line": 772
+        },
+        {
+          "heading": "15.1 Campaign / Project",
+          "line": 776
+        },
+        {
+          "heading": "15.2 Scope Pekerjaan",
+          "line": 785
+        },
+        {
+          "heading": "15.3 Batch Dan Lokasi",
+          "line": 795
+        },
+        {
+          "heading": "15.4 Talent / KOL",
+          "line": 804
+        },
+        {
+          "heading": "15.5 Workflow Konten",
+          "line": 817
+        },
+        {
+          "heading": "15.6 Form Intake",
+          "line": 827
+        },
+        {
+          "heading": "16. Gap Analysis Dan Catatan Yang Masih Janggal",
+          "line": 841
+        },
+        {
+          "heading": "16.1 Sudah Ter-cover",
+          "line": 843
+        },
+        {
+          "heading": "16.2 Masih Perlu Ditegaskan",
+          "line": 856
+        },
+        {
+          "heading": "16.3 Yang Sebaiknya Jangan Dicampur",
+          "line": 864
+        },
+        {
+          "heading": "16.4 Prinsip Data Final",
+          "line": 871
+        },
+        {
+          "heading": "17. Flow Frontend Sebagai Acuan",
+          "line": 881
+        },
+        {
+          "heading": "17.1 Public / Marketplace",
+          "line": 883
+        },
+        {
+          "heading": "17.2 Client",
+          "line": 896
+        },
+        {
+          "heading": "17.3 PIC / Internal Operations",
+          "line": 912
+        },
+        {
+          "heading": "17.4 Admin / CMS",
+          "line": 926
+        },
+        {
+          "heading": "18. Flow Backend Sebagai Acuan",
+          "line": 942
+        },
+        {
+          "heading": "18.1 Inisiasi Campaign",
+          "line": 944
+        },
+        {
+          "heading": "18.2 Batch Dan Lokasi",
+          "line": 951
+        },
+        {
+          "heading": "18.3 Talent Assignment",
+          "line": 957
+        },
+        {
+          "heading": "18.4 Workflow Konten",
+          "line": 963
+        },
+        {
+          "heading": "18.5 Intake Form",
+          "line": 971
+        },
+        {
+          "heading": "18.6 Reporting Dan Audit",
+          "line": 977
+        },
+        {
+          "heading": "19. Catatan Tentang `t_job_list`",
+          "line": 984
+        },
+        {
+          "heading": "19.1 Batas Semantik",
+          "line": 1000
+        },
+        {
+          "heading": "19.2 Implikasi Implementasi",
+          "line": 1007
+        },
+        {
+          "heading": "20. Flow Backend Endpoint Sebagai Acuan",
+          "line": 1014
+        },
+        {
+          "heading": "20.1 Campaign",
+          "line": 1018
+        },
+        {
+          "heading": "20.2 Batch",
+          "line": 1025
+        },
+        {
+          "heading": "20.3 Location",
+          "line": 1031
+        },
+        {
+          "heading": "20.4 Talent Assignment",
+          "line": 1037
+        },
+        {
+          "heading": "20.5 Content Workflow",
+          "line": 1043
+        },
+        {
+          "heading": "20.6 Form Intake",
+          "line": 1049
+        },
+        {
+          "heading": "20.7 Master Support",
+          "line": 1055
+        },
+        {
+          "heading": "20.8 Reporting",
+          "line": 1065
+        },
+        {
+          "heading": "21. Final Flow Decision",
+          "line": 1079
+        },
+        {
+          "heading": "21.1 Job Bot Pattern",
+          "line": 1090
+        },
+        {
+          "heading": "21.2 Talent Ticket Visibility",
+          "line": 1098
+        },
+        {
+          "heading": "21.3 Admin / Internal Visibility",
+          "line": 1110
+        },
+        {
+          "heading": "21.4 Visibility Matrix",
+          "line": 1120
+        },
+        {
+          "heading": "21.5 Implementation Rule",
+          "line": 1128
+        },
+        {
+          "heading": "21.6 Pseudo Service Strategy",
+          "line": 1134
+        },
+        {
+          "heading": "21.7 Service ID Configuration Final",
+          "line": 1145
+        },
+        {
+          "heading": "21.8 Why Backend First",
+          "line": 1157
+        },
+        {
+          "heading": "22. Widget Context Model",
+          "line": 1173
+        },
+        {
+          "heading": "22.1 Widget Pada Ticket Detail",
+          "line": 1177
+        },
+        {
+          "heading": "22.2 Widget Pada Service Form",
+          "line": 1182
+        },
+        {
+          "heading": "22.3 Widget Pada Assignment",
+          "line": 1187
+        },
+        {
+          "heading": "22.4 Prinsip Final",
+          "line": 1193
+        },
+        {
+          "heading": "22.5 Implikasi Job Marketplace",
+          "line": 1199
+        },
+        {
+          "heading": "22.6 Widget Registry Final Mapping",
+          "line": 1205
+        },
+        {
+          "heading": "Form Context",
+          "line": 1208
+        },
+        {
+          "heading": "Ticket Detail Context",
+          "line": 1214
+        },
+        {
+          "heading": "Assignment Context - Talent",
+          "line": 1223
+        },
+        {
+          "heading": "Assignment Context - PIC",
+          "line": 1231
+        },
+        {
+          "heading": "22.7 Registry Rules",
+          "line": 1240
+        },
+        {
+          "heading": "23. Final Frontend Structure",
+          "line": 1249
+        },
+        {
+          "heading": "23.1 Talent Facing",
+          "line": 1253
+        },
+        {
+          "heading": "23.2 Internal / PIC Facing",
+          "line": 1265
+        },
+        {
+          "heading": "23.3 Admin Facing",
+          "line": 1280
+        },
+        {
+          "heading": "23.4 Route Map Final",
+          "line": 1293
+        },
+        {
+          "heading": "23.5 Menu Map Final",
+          "line": 1302
+        },
+        {
+          "heading": "23.6 Final Flow Job Page",
+          "line": 1319
+        },
+        {
+          "heading": "23.7 Final Flow PIC",
+          "line": 1327
+        },
+        {
+          "heading": "23.8 Final Flow Talent",
+          "line": 1334
+        },
+        {
+          "heading": "23.9 Visibility by Context",
+          "line": 1341
+        },
+        {
+          "heading": "24. Final Backend Endpoint Matrix",
+          "line": 1356
+        },
+        {
+          "heading": "23.1 Job Marketplace Core",
+          "line": 1360
+        },
+        {
+          "heading": "23.2 Campaign",
+          "line": 1365
+        },
+        {
+          "heading": "23.3 Batch",
+          "line": 1371
+        },
+        {
+          "heading": "23.4 Location",
+          "line": 1377
+        },
+        {
+          "heading": "23.5 Talent Assignment",
+          "line": 1383
+        },
+        {
+          "heading": "23.6 Content Workflow",
+          "line": 1389
+        },
+        {
+          "heading": "23.7 Form Intake",
+          "line": 1395
+        },
+        {
+          "heading": "23.8 Rules",
+          "line": 1401
+        },
+        {
+          "heading": "24. Assignment Planning, Timeline, Kanban, Dan Gantt",
+          "line": 1409
+        },
+        {
+          "heading": "24.1 Tujuan",
+          "line": 1413
+        },
+        {
+          "heading": "24.2 Tampilan Yang Wajib Didukung",
+          "line": 1419
+        },
+        {
+          "heading": "24.3 Pemakaian Untuk Talent",
+          "line": 1425
+        },
+        {
+          "heading": "24.4 Pemakaian Untuk PIC",
+          "line": 1431
+        },
+        {
+          "heading": "24.5 Data Yang Harus Disiapkan",
+          "line": 1437
+        },
+        {
+          "heading": "24.6 Implementasi UI",
+          "line": 1449
+        },
+        {
+          "heading": "24.7 Implementasi Backend",
+          "line": 1455
+        },
+        {
+          "heading": "24.8 Prinsip Final",
+          "line": 1461
+        },
+        {
+          "heading": "25. Assignment Data Contract",
+          "line": 1469
+        },
+        {
+          "heading": "25.1 Field Minimum",
+          "line": 1473
+        },
+        {
+          "heading": "25.2 Field Pendukung Kanban",
+          "line": 1495
+        },
+        {
+          "heading": "25.3 Field Pendukung Gantt",
+          "line": 1503
+        },
+        {
+          "heading": "25.4 Field Timeline Umum",
+          "line": 1510
+        },
+        {
+          "heading": "25.5 Prinsip Data",
+          "line": 1517
+        },
+        {
+          "heading": "26. Final Assignment Page Design",
+          "line": 1525
+        },
+        {
+          "heading": "26.1 Assignment List - Talent",
+          "line": 1529
+        },
+        {
+          "heading": "26.2 Assignment List - PIC",
+          "line": 1546
+        },
+        {
+          "heading": "26.3 Assignment Detail - Talent",
+          "line": 1562
+        },
+        {
+          "heading": "26.4 Assignment Detail - PIC",
+          "line": 1575
+        },
+        {
+          "heading": "26.5 Panel Yang Perlu Dipisah",
+          "line": 1589
+        },
+        {
+          "heading": "26.6 Prinsip UX",
+          "line": 1597
+        },
+        {
+          "heading": "27. Modular HOTS Reuse Strategy",
+          "line": 1606
+        },
+        {
+          "heading": "27.1 Assignment As Modular Container",
+          "line": 1610
+        },
+        {
+          "heading": "27.2 Work Data Widget Pattern",
+          "line": 1615
+        },
+        {
+          "heading": "27.3 Reuse Rules",
+          "line": 1621
+        },
+        {
+          "heading": "27.4 Benefit Reuse",
+          "line": 1629
+        },
+        {
+          "heading": "27.5 Implementation Principle",
+          "line": 1635
+        },
+        {
+          "heading": "28. Assignment Widget Map",
+          "line": 1643
+        },
+        {
+          "heading": "28.1 Widget Inti Untuk Talent",
+          "line": 1647
+        },
+        {
+          "heading": "28.2 Widget Inti Untuk PIC",
+          "line": 1657
+        },
+        {
+          "heading": "28.3 Widget Tambahan Berdasarkan Service",
+          "line": 1669
+        },
+        {
+          "heading": "28.4 Widget Selection Rules",
+          "line": 1679
+        },
+        {
+          "heading": "28.5 Widget Registry Principle",
+          "line": 1686
+        },
+        {
+          "heading": "29. Service To Widget Configuration",
+          "line": 1694
+        },
+        {
+          "heading": "29.1 Default Mapping",
+          "line": 1698
+        },
+        {
+          "heading": "29.2 Job Marketplace Mapping",
+          "line": 1703
+        },
+        {
+          "heading": "29.3 Configuration Fields",
+          "line": 1711
+        },
+        {
+          "heading": "29.4 Data Source Rules",
+          "line": 1721
+        },
+        {
+          "heading": "29.5 Final Principle",
+          "line": 1726
+        },
+        {
+          "heading": "29.6 Job Marketplace Widget-Service Mapping",
+          "line": 1731
+        },
+        {
+          "heading": "29.7 Execution Priority",
+          "line": 1736
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/jobmarketplace_roadmap.md",
+      "sha256": "36c60930fdf5422a5a947a6c2a97a620e77e082e5c846988e5d205272052f832",
+      "title": "Job Marketplace Roadmap",
+      "headings": [
+        {
+          "heading": "Job Marketplace Roadmap",
+          "line": 1
+        },
+        {
+          "heading": "Phase 0 - Alignment",
+          "line": 7
+        },
+        {
+          "heading": "Phase 1 - Foundation",
+          "line": 24
+        },
+        {
+          "heading": "Phase 2 - Assignment Core",
+          "line": 48
+        },
+        {
+          "heading": "Phase 3 - Marketplace Flow",
+          "line": 73
+        },
+        {
+          "heading": "Phase 4 - CMS Expansion",
+          "line": 97
+        },
+        {
+          "heading": "Phase 5 - Reporting",
+          "line": 123
+        },
+        {
+          "heading": "Phase 6 - Talent System",
+          "line": 148
+        },
+        {
+          "heading": "Phase 7 - Client Self-Service",
+          "line": 171
+        },
+        {
+          "heading": "8. Urutan Implementasi Yang Disarankan",
+          "line": 193
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/jobmarketplace_schema.md",
+      "sha256": "7aefc274c73b278c1dbe1a43eb3b1e15d671b5fc6ea93a127fe5a2a49b7b0572",
+      "title": "Job Marketplace Schema Draft",
+      "headings": [
+        {
+          "heading": "Job Marketplace Schema Draft",
+          "line": 1
+        },
+        {
+          "heading": "1. Prinsip Schema",
+          "line": 13
+        },
+        {
+          "heading": "2. Entitas Inti",
+          "line": 23
+        },
+        {
+          "heading": "2.1 `user`",
+          "line": 25
+        },
+        {
+          "heading": "2.2 `m_role`",
+          "line": 37
+        },
+        {
+          "heading": "2.3 `m_company`",
+          "line": 48
+        },
+        {
+          "heading": "2.4 `data_m_job_category`",
+          "line": 57
+        },
+        {
+          "heading": "2.5 `data_m_job_platform`",
+          "line": 67
+        },
+        {
+          "heading": "2.6 `data_m_job_template`",
+          "line": 75
+        },
+        {
+          "heading": "2.7 `user_profile`",
+          "line": 86
+        },
+        {
+          "heading": "3. Transaction Tables",
+          "line": 116
+        },
+        {
+          "heading": "3.1 `t_job_list`",
+          "line": 118
+        },
+        {
+          "heading": "3.1.1 `data_job_campaign`",
+          "line": 150
+        },
+        {
+          "heading": "3.1.2 `data_job_batch`",
+          "line": 170
+        },
+        {
+          "heading": "3.1.3 `data_job_location`",
+          "line": 184
+        },
+        {
+          "heading": "3.1.4 `data_job_talent_assignment`",
+          "line": 198
+        },
+        {
+          "heading": "3.1.5 `data_job_content_log`",
+          "line": 219
+        },
+        {
+          "heading": "3.2 `data_t_job_pickup`",
+          "line": 235
+        },
+        {
+          "heading": "3.2.1 `data_t_job_form_response`",
+          "line": 247
+        },
+        {
+          "heading": "3.3 `t_ticket`",
+          "line": 279
+        },
+        {
+          "heading": "3.4 `t_ticket_assignment`",
+          "line": 295
+        },
+        {
+          "heading": "3.5 `t_ticket_work_data`",
+          "line": 321
+        },
+        {
+          "heading": "3.6 `t_ticket_file`",
+          "line": 340
+        },
+        {
+          "heading": "3.7 `t_ticket_file_temp`",
+          "line": 356
+        },
+        {
+          "heading": "3.8 `data_t_job_audit_log`",
+          "line": 368
+        },
+        {
+          "heading": "3.9 `data_t_job_reporting`",
+          "line": 385
+        },
+        {
+          "heading": "4. Relasi Utama",
+          "line": 405
+        },
+        {
+          "heading": "5. Mapping Status",
+          "line": 425
+        },
+        {
+          "heading": "5.1 Job Status",
+          "line": 427
+        },
+        {
+          "heading": "5.2 Ticket Status",
+          "line": 438
+        },
+        {
+          "heading": "5.3 Assignment Status",
+          "line": 446
+        },
+        {
+          "heading": "5.4 Pickup Status",
+          "line": 452
+        },
+        {
+          "heading": "6. Pseudo Account Pattern",
+          "line": 461
+        },
+        {
+          "heading": "7. Minimal Field Yang Harus Ada Di MVP",
+          "line": 478
+        },
+        {
+          "heading": "8. Catatan Implementasi",
+          "line": 500
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/packages/COMPATIBILITY.md",
+      "sha256": "512c525a27255520ed5c1ce00d06ab254c2fa4a7ab248386dde39f20d6dd09f1",
+      "title": "Cineva compatibility boundary",
+      "headings": [
+        {
+          "heading": "Cineva compatibility boundary",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/packages/REGISTRY.md",
+      "sha256": "d38db139b46802e3a8a17934d4643ef0aac57e029276b1e2d4e16fed877b919e",
+      "title": "Cineva shared package registry",
+      "headings": [
+        {
+          "heading": "Cineva shared package registry",
+          "line": 1
+        },
+        {
+          "heading": "Tenant adoption boundary",
+          "line": 31
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/reports/hots_cineva_2026_10_14/AUDIT_HOTS_CINEVA.md",
+      "sha256": "f44233ee50a2c3e1a3584325f28240941177189e1b83e4a3eeea5704f65ac8ab",
+      "title": "Audit HOTS Kantor → Cineva",
+      "headings": [
+        {
+          "heading": "Audit HOTS Kantor → Cineva",
+          "line": 1
+        },
+        {
+          "heading": "Kesimpulan dan dampak arsitektur",
+          "line": 5
+        },
+        {
+          "heading": "Arsitektur target (usulan, belum diimplementasikan)",
+          "line": 11
+        },
+        {
+          "heading": "Bukti inventaris",
+          "line": 15
+        },
+        {
+          "heading": "Temuan dan perbandingan",
+          "line": 35
+        },
+        {
+          "heading": "A01 — Knowledge (P0)",
+          "line": 37
+        },
+        {
+          "heading": "A02 — Backend modules (P0)",
+          "line": 45
+        },
+        {
+          "heading": "A03 — Shared packages (P0)",
+          "line": 53
+        },
+        {
+          "heading": "A04 — Form and visual editing (P1)",
+          "line": 61
+        },
+        {
+          "heading": "A05 — Workflow (P1)",
+          "line": 69
+        },
+        {
+          "heading": "A06 — Triggers and documents (P1)",
+          "line": 77
+        },
+        {
+          "heading": "A07 — Marketplace domain (P0)",
+          "line": 85
+        },
+        {
+          "heading": "A08 — Atomicity claim (P0)",
+          "line": 93
+        },
+        {
+          "heading": "A09 — Atomicity approval (P0)",
+          "line": 101
+        },
+        {
+          "heading": "A10 — Applicant-ticket identity (P0)",
+          "line": 109
+        },
+        {
+          "heading": "A11 — Concurrency and idempotency (P0)",
+          "line": 117
+        },
+        {
+          "heading": "A12 — Master writes (P0)",
+          "line": 125
+        },
+        {
+          "heading": "A13 — Database portability (P0)",
+          "line": 133
+        },
+        {
+          "heading": "A14 — Authorization (P0)",
+          "line": 141
+        },
+        {
+          "heading": "A15 — Auth baseline discrepancy (P0)",
+          "line": 149
+        },
+        {
+          "heading": "A16 — SSE and logging (P1)",
+          "line": 157
+        },
+        {
+          "heading": "A17 — Uploads (P1)",
+          "line": 165
+        },
+        {
+          "heading": "A18 — MFE host (P1)",
+          "line": 173
+        },
+        {
+          "heading": "A19 — Package readiness (P0)",
+          "line": 181
+        },
+        {
+          "heading": "A20 — Release and PM2 (P1)",
+          "line": 189
+        },
+        {
+          "heading": "A21 — Knowledge drift in HOTS (P1)",
+          "line": 197
+        },
+        {
+          "heading": "Roadmap dan acceptance",
+          "line": 206
+        },
+        {
+          "heading": "Phase 0 — Baseline dan kontrak",
+          "line": 208
+        },
+        {
+          "heading": "Phase 1 — Platform foundation",
+          "line": 216
+        },
+        {
+          "heading": "Phase 2 — Integrity marketplace",
+          "line": 224
+        },
+        {
+          "heading": "Phase 3 — Editor dan runtime",
+          "line": 232
+        },
+        {
+          "heading": "Phase 4 — Workflow/upload/SSE/report",
+          "line": 240
+        },
+        {
+          "heading": "Phase 5 — Release dan archive",
+          "line": 248
+        },
+        {
+          "heading": "Knowledge dan schema",
+          "line": 257
+        },
+        {
+          "heading": "Batas audit",
+          "line": 261
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/reports/voice_requirements_2026_10_18/TRANSCRIPT.md",
+      "sha256": "7af63148053dbaafb1937b0033feb7d5b642b8a736daee7e15cb5636e20145d1",
+      "title": "Transkrip otomatis voice note Cineva",
+      "headings": [
+        {
+          "heading": "Transkrip otomatis voice note Cineva",
+          "line": 1
+        }
+      ]
+    }
+  ]
+}

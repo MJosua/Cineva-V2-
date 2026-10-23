@@ -1,0 +1,16 @@
+{
+  "source": "4. Refrence\\audio\\creator_requirements_2026_10_18\\requirements_reference.ogg",
+  "sha256": "1f151d450de59e5a6af88d2738c300b39e91bbb0cb6d8399441031fb12aa7048",
+  "duration_seconds": 152.4335,
+  "decoded_float_peak": 1.0882421731948853,
+  "decoded_float_rms": 0.12114094942808151,
+  "peak_dbfs": 0.7345110465589312,
+  "pcm16_peak": 1.0,
+  "vad_speech_segments": [
+    {
+      "start": 10496,
+      "end": 2438936
+    }
+  ],
+  "scope": "Local audio assessment only; no application or database changes"
+}

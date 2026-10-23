@@ -1,0 +1,109 @@
+
+> cineva-workspace@1.0.0 build:frontend
+> npm --prefix 1.Frontend run build
+
+
+> cineva-frontend-workspace@1.0.0 build
+> npm run build --workspace HOTS
+
+
+> vite_react_shadcn_ts@0.0.0 build
+> vite build
+
+vite v5.4.10 building for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 24 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+node_modules/pdfjs-dist/build/pdf.js (1982:23): Use of eval in "node_modules/pdfjs-dist/build/pdf.js" is strongly discouraged as it poses security risks and may cause issues with minification.
+✓ 4901 modules transformed.
+rendering chunks...
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) D:/Project/Cineva-V2-/1.Frontend/HOTS/src/widgets/WidgetRenderer.tsx is dynamically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/utils/loadWidgetComponent.ts, D:/Project/Cineva-V2-/1.Frontend/HOTS/src/utils/loadWidgetComponent.ts but also statically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/components/forms/DynamicForm.tsx, D:/Project/Cineva-V2-/1.Frontend/HOTS/src/pages/TicketDetail.tsx, D:/Project/Cineva-V2-/1.Frontend/HOTS/src/pages/dashboard/AssignmentDetailPage.tsx, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) D:/Project/Cineva-V2-/1.Frontend/node_modules/xlsx/xlsx.mjs is dynamically imported by D:/Project/Cineva-V2-/1.Frontend/packages/table-engine/src/export.ts but also statically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/utils/readExcelFromURL.ts, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) D:/Project/Cineva-V2-/1.Frontend/HOTS/src/widgets/QRCodeDesignWidget.tsx is dynamically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/utils/loadWidgetComponent.ts, D:/Project/Cineva-V2-/1.Frontend/HOTS/src/utils/loadWidgetComponent.ts but also statically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/components/forms/DynamicField.tsx, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) D:/Project/Cineva-V2-/1.Frontend/HOTS/src/components/forms/specialFunc/DiffWidget.tsx is dynamically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/utils/loadWidgetComponent.ts but also statically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/components/forms/specialFunc/SpecialFuncFactory.tsx, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) D:/Project/Cineva-V2-/1.Frontend/HOTS/src/components/forms/specialFunc/DetailTableWidget.tsx is dynamically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/utils/loadWidgetComponent.ts but also statically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/components/forms/specialFunc/SpecialFuncFactory.tsx, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) D:/Project/Cineva-V2-/1.Frontend/HOTS/src/components/forms/specialFunc/SpecialFuncFactory.tsx is dynamically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/utils/loadWidgetComponent.ts but also statically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/components/forms/DynamicForm.tsx, D:/Project/Cineva-V2-/1.Frontend/HOTS/src/components/forms/DynamicSection.tsx, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) D:/Project/Cineva-V2-/1.Frontend/HOTS/src/widgets/GanttRoomUsage.tsx is dynamically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/pages/dashboard/PanelContent.tsx, D:/Project/Cineva-V2-/1.Frontend/HOTS/src/utils/loadWidgetComponent.ts, D:/Project/Cineva-V2-/1.Frontend/HOTS/src/utils/loadWidgetComponent.ts but also statically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/standalone/meetingbook/MeetingRoomStandalone.tsx, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) D:/Project/Cineva-V2-/1.Frontend/HOTS/src/pages/dashboard/report/JobListPage.tsx is dynamically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/pages/dashboard/PanelContent.tsx but also statically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/App.tsx, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) D:/Project/Cineva-V2-/1.Frontend/HOTS/src/pages/dashboard/report/ProjectDashboard.tsx is dynamically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/pages/dashboard/PanelContent.tsx but also statically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/App.tsx, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) D:/Project/Cineva-V2-/1.Frontend/HOTS/src/widgets/CardNameGenerator.tsx is dynamically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/utils/loadWidgetComponent.ts, D:/Project/Cineva-V2-/1.Frontend/HOTS/src/utils/loadWidgetComponent.ts but also statically imported by D:/Project/Cineva-V2-/1.Frontend/HOTS/src/pages/CardGeneratorPage.tsx, dynamic import will not move module into another chunk.
+
+computing gzip size...
+dist/index.html                                     1.07 kB │ gzip:     0.49 kB
+dist/assets/indofood_CBP_logo-D0T7ohVz.png         11.38 kB
+dist/assets/flavour_logo-ByQ4HHxi.png              83.38 kB
+dist/assets/DataViewWidget-DhYFMEeF.css             2.92 kB │ gzip:     1.01 kB
+dist/assets/index-B-WdT6xz.css                    251.64 kB │ gzip:    40.00 kB
+dist/assets/DefaultDashboard-BduDYgPg.js            0.16 kB │ gzip:     0.16 kB
+dist/assets/WorkflowSummary-C8to5lyz.js             0.18 kB │ gzip:     0.17 kB
+dist/assets/LaporanCuti-BlJr0YQK.js                 0.22 kB │ gzip:     0.20 kB
+dist/assets/LaporanIzin-DCkgQvde.js                 0.22 kB │ gzip:     0.20 kB
+dist/assets/LaporanKoreksi-CH-Enwt4.js              0.23 kB │ gzip:     0.20 kB
+dist/assets/LaporanLembur-DFrFqw8F.js               0.23 kB │ gzip:     0.20 kB
+dist/assets/BarChart-mLZ4rVvT.js                    0.30 kB │ gzip:     0.22 kB
+dist/assets/FetchInventoryData-DkJ96cx6.js          0.32 kB │ gzip:     0.23 kB
+dist/assets/Fetchsrfdata-krRWjpV2.js                0.36 kB │ gzip:     0.28 kB
+dist/assets/ReportPublic-C-QBbj9e.js                0.38 kB │ gzip:     0.28 kB
+dist/assets/CMSPanel-CP9wapJC.js                    0.47 kB │ gzip:     0.31 kB
+dist/assets/GuestInfoWidget-BuyChKhT.js             1.23 kB │ gzip:     0.55 kB
+dist/assets/WidgetCard-D9WrMJrD.js                  1.28 kB │ gzip:     0.60 kB
+dist/assets/ReportService-D-4p62vr.js               1.43 kB │ gzip:     0.63 kB
+dist/assets/GenericReportPanel-CA5FUEmM.js          1.61 kB │ gzip:     0.88 kB
+dist/assets/TaskCompletionButton-BhMpE6ve.js        1.83 kB │ gzip:     0.96 kB
+dist/assets/QuickLinksWidget-D4stf2ZI.js            1.90 kB │ gzip:     0.97 kB
+dist/assets/MyTicketsWidget-QH-fNgU_.js             1.92 kB │ gzip:     0.93 kB
+dist/assets/SummaryCardsPanel-CTaJKT2H.js           2.12 kB │ gzip:     1.06 kB
+dist/assets/formatDistanceToNow-B0Uz_2AM.js         2.15 kB │ gzip:     0.91 kB
+dist/assets/Default_item_download-FFCJKHVa.js       2.21 kB │ gzip:     0.95 kB
+dist/assets/PendingApprovalsWidget-D7rCW3xF.js      2.28 kB │ gzip:     1.03 kB
+dist/assets/AnalyticsPanel-DIlIi1UY.js              2.33 kB │ gzip:     1.01 kB
+dist/assets/ChartPanel-ps5C-H_b.js                  2.34 kB │ gzip:     1.08 kB
+dist/assets/OrderItemsWidget-BXzQNS-0.js            2.63 kB │ gzip:     0.96 kB
+dist/assets/SRFInvoiceInput-BMH9HEgK.js             2.82 kB │ gzip:     1.22 kB
+dist/assets/DataViewWidget-BA8WtyZH.js              3.05 kB │ gzip:     1.34 kB
+dist/assets/AIChatWidget-DOMP4-RD.js                3.18 kB │ gzip:     1.56 kB
+dist/assets/srf_report2-D19BKy3H.js                 3.30 kB │ gzip:     1.52 kB
+dist/assets/StockOverview-vx9IqbJc.js               3.33 kB │ gzip:     1.45 kB
+dist/assets/JobApplicantsTable-DS7A_TZm.js          3.76 kB │ gzip:     1.40 kB
+dist/assets/RoomMonitoringPanel-BRx0VvGZ.js         3.98 kB │ gzip:     1.42 kB
+dist/assets/QRCodePreviewWidget-B39hswVx.js         4.57 kB │ gzip:     2.00 kB
+dist/assets/AnalyticsCardsPanel-BGF50Iq7.js         5.46 kB │ gzip:     1.96 kB
+dist/assets/GanttRoomUsageStatic-iVFVV5oU.js        6.24 kB │ gzip:     2.57 kB
+dist/assets/SRFFactorySelector-C75voi2i.js          6.29 kB │ gzip:     2.01 kB
+dist/assets/EOrderReporting-CrsA5b42.js             7.37 kB │ gzip:     2.10 kB
+dist/assets/srf_report-vmd7o3G6.js                  8.73 kB │ gzip:     2.93 kB
+dist/assets/CardNameGenerator-P8ywoyHE.js           9.99 kB │ gzip:     3.06 kB
+dist/assets/SRFWorkflowContainer-wenZnhAo.js       11.12 kB │ gzip:     3.52 kB
+dist/assets/LineChart-CfCg0LwW.js                  11.12 kB │ gzip:     4.31 kB
+dist/assets/DataExecutionTools-ClbefbTF.js         18.93 kB │ gzip:     4.64 kB
+dist/assets/purify.es-sOfw8HaZ.js                  22.67 kB │ gzip:     8.79 kB
+dist/assets/ShipmentReport-CvOmrO8S.js             51.05 kB │ gzip:    10.79 kB
+dist/assets/index.es-BuE7mB5E.js                  150.12 kB │ gzip:    51.37 kB
+dist/assets/html2canvas.esm-CBrSDip1.js           201.42 kB │ gzip:    48.03 kB
+dist/assets/index-Cklkl1Ty.js                   6,336.95 kB │ gzip: 1,591.35 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 34.10s

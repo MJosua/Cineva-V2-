@@ -1,0 +1,10 @@
+{
+  "status": 200,
+  "issuer": "http://localhost:9999/oauth",
+  "authorization_endpoint": "http://localhost:9999/oauth/authorize",
+  "token_endpoint": "http://localhost:9999/oauth/token",
+  "jwks_uri": "http://localhost:9999/oauth/jwks",
+  "code_challenge_methods_supported": [
+    "S256"
+  ]
+}

@@ -1,0 +1,12 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {spawnSync} from 'node:child_process';
+const root = path.resolve(import.meta.dirname, '../../..');
+const out = path.join(root, '3.Knowledge/reports/tenant_foundation_2026_10_21');
+await fs.mkdir(out, {recursive: true});
+const files = ['1.Frontend/packages/tenant-contracts/test/contracts.test.cjs', '1.Frontend/packages/tenant-client/test/client.test.mjs', ...['isolation', 'oidc', 'session', 'invitations', 'registry', 'mysqlStores', 'companyScope'].map(name => `2.Backend/packages/tenant-server/test/${name}.test.cjs`), '3.Knowledge/scripts/tenant_foundation_2026_10_21/http.test.cjs'];
+const run = spawnSync(process.execPath, ['--test', ...files.map(f => path.join(root, f))], {encoding: 'utf8'});
+await fs.writeFile(path.join(out, 'tests.txt'), run.stdout + run.stderr);
+const result = {date: '2026-10-21',exit: run.status, tests: Number(run.stdout.match(/tests\s+(\d+)/)?.[1]), passed: Number(run.stdout.match(/pass\s+(\d+)/)?.[1]),failed: Number(run.stdout.match(/fail\s+(\d+)/)?.[1]), databaseWrites: 0, liveIdentityProvider: false, scope: 'Package contracts + localhost HTTP + synthetic cryptographic OIDC. No application DB/runtime imports.'};
+await fs.writeFile(path.join(out, 'checks.json'), JSON.stringify(result, null, 2));
+process.stdout.write(run.stdout + run.stderr);if (run.status) process.exitCode = 1;

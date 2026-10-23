@@ -1,0 +1,238 @@
+{
+  "source": "4. Refrence\\audio\\creator_requirements_2026_10_18\\requirements_reference.ogg",
+  "sha256": "1f151d450de59e5a6af88d2738c300b39e91bbb0cb6d8399441031fb12aa7048",
+  "model": "Systran/faster-whisper-small",
+  "device": "cpu",
+  "compute_type": "int8",
+  "language": "id",
+  "language_probability": 1,
+  "language_forced": "id",
+  "duration": 152.4335,
+  "segments": [
+    {
+      "start": 0.66,
+      "end": 7.12,
+      "text": "Halo Yos, selamat malam ya, sorry baru bales whatsapp",
+      "avg_logprob": -0.42213755091534383,
+      "no_speech_prob": 0.320491224527359
+    },
+    {
+      "start": 7.12,
+      "end": 12.04,
+      "text": "Jadi sebenarnya si Neva itu kurang lebihnya seperti ini ya",
+      "avg_logprob": -0.42213755091534383,
+      "no_speech_prob": 0.320491224527359
+    },
+    {
+      "start": 12.04,
+      "end": 17.42,
+      "text": "Ini aku iseng banget lah lihat orang gitu ya",
+      "avg_logprob": -0.42213755091534383,
+      "no_speech_prob": 0.320491224527359
+    },
+    {
+      "start": 17.42,
+      "end": 22.58,
+      "text": "Terus ternyata dia itu kayak jualin ininya gitu",
+      "avg_logprob": -0.42213755091534383,
+      "no_speech_prob": 0.320491224527359
+    },
+    {
+      "start": 22.58,
+      "end": 27.2,
+      "text": "Website yang seperti yang aku rencana kan waktu itu",
+      "avg_logprob": -0.42213755091534383,
+      "no_speech_prob": 0.320491224527359
+    },
+    {
+      "start": 27.2,
+      "end": 31.2,
+      "text": "karena kita telat garap lah tapi it's okay lah ya",
+      "avg_logprob": -0.2645133664733485,
+      "no_speech_prob": 0.3869042694568634
+    },
+    {
+      "start": 32.2,
+      "end": 35.2,
+      "text": "ini ada dia ngasih tampilannya ya",
+      "avg_logprob": -0.2645133664733485,
+      "no_speech_prob": 0.3869042694568634
+    },
+    {
+      "start": 35.2,
+      "end": 37.2,
+      "text": "dia juga ngefideoin gitu ya",
+      "avg_logprob": -0.2645133664733485,
+      "no_speech_prob": 0.3869042694568634
+    },
+    {
+      "start": 37.2,
+      "end": 40.2,
+      "text": "websitenya yang dia bikin",
+      "avg_logprob": -0.2645133664733485,
+      "no_speech_prob": 0.3869042694568634
+    },
+    {
+      "start": 40.2,
+      "end": 42.2,
+      "text": "itu ini untuk",
+      "avg_logprob": -0.2645133664733485,
+      "no_speech_prob": 0.3869042694568634
+    },
+    {
+      "start": 42.2,
+      "end": 45.2,
+      "text": "QOL gitu",
+      "avg_logprob": -0.2645133664733485,
+      "no_speech_prob": 0.3869042694568634
+    },
+    {
+      "start": 45.2,
+      "end": 46.2,
+      "text": "nah",
+      "avg_logprob": -0.2645133664733485,
+      "no_speech_prob": 0.3869042694568634
+    },
+    {
+      "start": 46.2,
+      "end": 49.2,
+      "text": "maksud tentujuan aku",
+      "avg_logprob": -0.2645133664733485,
+      "no_speech_prob": 0.3869042694568634
+    },
+    {
+      "start": 49.2,
+      "end": 51.2,
+      "text": "sebenernya sinefa itu lebih ke",
+      "avg_logprob": -0.2645133664733485,
+      "no_speech_prob": 0.3869042694568634
+    },
+    {
+      "start": 51.2,
+      "end": 54.2,
+      "text": "lebih kompleks dari ini gitu",
+      "avg_logprob": -0.2645133664733485,
+      "no_speech_prob": 0.3869042694568634
+    },
+    {
+      "start": 54.2,
+      "end": 56.2,
+      "text": "karena kan kita production house",
+      "avg_logprob": -0.2645133664733485,
+      "no_speech_prob": 0.3869042694568634
+    },
+    {
+      "start": 56.2,
+      "end": 72.92,
+      "text": "Jadi misalnya, misalnya namanya siapa, dari brand atau dari klienya siapa, terus ada rencana buat pembuatan campaign.",
+      "avg_logprob": -0.42031905386183,
+      "no_speech_prob": 0.05659709870815277
+    },
+    {
+      "start": 72.92,
+      "end": 84.52,
+      "text": "Nah, kalau misalkan ada fitur ini sih, fitur assistant AI situ juga, atau nanti ada CS,",
+      "avg_logprob": -0.42031905386183,
+      "no_speech_prob": 0.05659709870815277
+    },
+    {
+      "start": 84.52,
+      "end": 89.52,
+      "text": "jadi CES yang AI nya, ada yang non-AI nya gitu",
+      "avg_logprob": -0.37608421842257184,
+      "no_speech_prob": 0.34095361828804016
+    },
+    {
+      "start": 89.52,
+      "end": 93.52,
+      "text": "nah termasuk kayak misalkan estimasi budget untuk production",
+      "avg_logprob": -0.37608421842257184,
+      "no_speech_prob": 0.34095361828804016
+    },
+    {
+      "start": 93.52,
+      "end": 98.52,
+      "text": "kayak mungkin nge-video, graduation contoh lah",
+      "avg_logprob": -0.37608421842257184,
+      "no_speech_prob": 0.34095361828804016
+    },
+    {
+      "start": 98.52,
+      "end": 100.52,
+      "text": "nge-shoot graduation",
+      "avg_logprob": -0.37608421842257184,
+      "no_speech_prob": 0.34095361828804016
+    },
+    {
+      "start": 100.52,
+      "end": 106.52,
+      "text": "terus juga divisi-divisi bahkan iklan lah",
+      "avg_logprob": -0.37608421842257184,
+      "no_speech_prob": 0.34095361828804016
+    },
+    {
+      "start": 106.52,
+      "end": 111.52,
+      "text": "terus juga ada photoshoot ya cuman sekedar birthday gitu deh",
+      "avg_logprob": -0.37608421842257184,
+      "no_speech_prob": 0.34095361828804016
+    },
+    {
+      "start": 111.52,
+      "end": 119.28,
+      "text": "Nah, webnya tuh lebih kompleks gitu dibandingkan yang contoh ini gitu, kalau ini kan khusus untuk KIOE lah",
+      "avg_logprob": -0.4148636855436175,
+      "no_speech_prob": 0.0788637027144432
+    },
+    {
+      "start": 119.28,
+      "end": 123.2,
+      "text": "Nah nanti disitu ada fitur, ada 3 fitur gitu, nah",
+      "avg_logprob": -0.4148636855436175,
+      "no_speech_prob": 0.0788637027144432
+    },
+    {
+      "start": 123.2,
+      "end": 130.88,
+      "text": "Disitu membuka untuk campaign, membuka campaign, terus projek",
+      "avg_logprob": -0.4148636855436175,
+      "no_speech_prob": 0.0788637027144432
+    },
+    {
+      "start": 130.88,
+      "end": 139.08,
+      "text": "Projek kayak production gitu, keperluan, sama untuk shoot content biasa",
+      "avg_logprob": -0.4148636855436175,
+      "no_speech_prob": 0.0788637027144432
+    },
+    {
+      "start": 139.08,
+      "end": 144.5,
+      "text": "Karena kan ada juga kreator itu butuh jasa pake videografer sama fotografer",
+      "avg_logprob": -0.41316196152142115,
+      "no_speech_prob": 0.12599501013755798
+    },
+    {
+      "start": 144.5,
+      "end": 146.66,
+      "text": "Nah, kita kan lebih kompleks banget gitu",
+      "avg_logprob": -0.41316196152142115,
+      "no_speech_prob": 0.12599501013755798
+    },
+    {
+      "start": 146.66,
+      "end": 149.7,
+      "text": "Seperti itu sih, nah kurang lebihnya kan mirip-mirip nih",
+      "avg_logprob": -0.41316196152142115,
+      "no_speech_prob": 0.12599501013755798
+    },
+    {
+      "start": 149.7,
+      "end": 151.7,
+      "text": "Kayak yang punya kamu kemaren ya kan",
+      "avg_logprob": -0.41316196152142115,
+      "no_speech_prob": 0.12599501013755798
+    }
+  ],
+  "warning": "Automatic transcript. Review uncertain words; forced language is not language detection proof."
+}

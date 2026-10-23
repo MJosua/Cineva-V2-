@@ -1,0 +1,34 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
+const root=path.resolve(import.meta.dirname,'../../..'),app=path.join(root,'1.Frontend/HOTS'),require=createRequire(path.join(app,'package.json')),esbuild=require('esbuild');
+const out=path.join(root,'5.Client-Demo/Content-Studio'),report=path.join(root,'3.Knowledge/reports/content_studio_portable_2026_10_22');
+await fs.mkdir(out,{recursive:true});await fs.mkdir(report,{recursive:true});
+const aliases={'@':path.join(app,'src')};
+for(const name of ['react','react-dom','axios','framer-motion','next-themes','react-hook-form','recharts']){let directory=path.dirname(require.resolve(name));for(;;){try{if(JSON.parse(await fs.readFile(path.join(directory,'package.json'),'utf8')).name===name){aliases[name]=directory;break;}}catch{}const parent=path.dirname(directory);if(parent===directory)throw new Error(`Dependency not found: ${name}`);directory=parent;}}
+for(const name of ['content-kit','ui-kit','app-core','domain-kit'])aliases[`@hots/${name}`]=path.join(root,'1.Frontend/packages',name);
+aliases['@hots/ui-kit/components']=path.join(root,'1.Frontend/packages/ui-kit/src/components');
+aliases['@hots/ui-kit/utils']=path.join(root,'1.Frontend/packages/ui-kit/src/lib/utils.ts');
+aliases['@hots/ui-kit/hooks']=path.join(root,'1.Frontend/packages/ui-kit/src/hooks');
+aliases['@hots/dynamic-form']=path.join(root,'1.Frontend/dynamic-form');
+const seedBundle=await esbuild.build({entryPoints:[path.join(app,'src/features/content-studio/offline/seed.ts')],write:false,bundle:true,platform:'node',format:'esm',alias:aliases,target:'node20',logLevel:'silent'});
+const seedModule=path.join(report,'seed-builder.mjs');await fs.writeFile(seedModule,seedBundle.outputFiles[0].text);
+const {createPortableSeed}=await import(pathToFileURL(seedModule).href),data=createPortableSeed();
+const build=await esbuild.build({entryPoints:[path.join(app,'src/features/content-studio/offline/entry.tsx')],outfile:'cineva-portable.js',write:false,bundle:true,platform:'browser',format:'iife',target:'es2022',jsx:'automatic',alias:aliases,minify:true,define:{'process.env.NODE_ENV':'"production"','import.meta.env':'{}'},metafile:true,logLevel:'warning'});
+const js=build.outputFiles.find(f=>f.path.endsWith('.js')).text.replace(/<\/script/gi,'<\\/script');
+const assetRoot=path.join(app,'dist/assets'),cssFiles=(await fs.readdir(assetRoot)).filter(f=>f.endsWith('.css'));
+if(!cssFiles.length)throw new Error('Frontend CSS build missing. Run npm.cmd run build:frontend first.');
+const css=([(await Promise.all(cssFiles.map(f=>fs.readFile(path.join(assetRoot,f),'utf8')))).join('\n'),...build.outputFiles.filter(f=>f.path.endsWith('.css')).map(f=>f.text)].join('\n')).replace(/@import\s+[^;]+;/g,'').replace(/url\((?!["']?data:|["']?#)[^)]*\)/g,'none').replace(/<\/style/gi,'<\\/style');
+const json=JSON.stringify(data).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029'),storageId=crypto.createHash('sha256').update(json).digest('hex').slice(0,24);
+// Fully inlined IIFE: no import/module/CDN/server dependency when opened through file://.
+const html=`<!doctype html><html lang="id" data-hots-vendor="cineva"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="referrer" content="no-referrer"><title>Cineva — Content Studio Demo</title><style>${css}</style></head><body><div id="root"></div><noscript>Aktifkan JavaScript dan buka file ini dengan browser untuk menjalankan demo Cineva.</noscript><script id="cineva-studio-seed" type="application/json" data-storage-id="${storageId}">${json}</script><script>${js}</script></body></html>`;
+const filename='Cineva-Content-Studio-Demo.html';await fs.writeFile(path.join(out,filename),html);
+const readme=`CINEVA CONTENT STUDIO — DEMO OFFLINE\n\n1. Kirim Cineva-Content-Studio-Demo.html sebagai dokumen melalui WhatsApp. ZIP juga disediakan sebagai paket alternatif.\n2. Penerima mengunduh file, lalu membukanya dengan browser yang mendukung JavaScript. Tidak perlu login, server, atau internet.\n3. Klik Cara demo untuk urutan presentasi. Coba workspace HQ dan Creator Space.\n4. Editor, foto/logo, template, Brand Kit dan ekspor PNG berjalan di browser. Akun, AI/parser, publish, dan metrik menggunakan data simulasi. Tidak ada posting ke internet.\n5. Setelah mengedit, klik Simpan pada konten. Klik Unduh HTML terbaru untuk mengirim versi yang sudah diedit ke orang lain. Menyalin file awal tidak otomatis menyalin isi localStorage.\n6. Bila penyimpanan browser diblokir, perubahan sesi tetap dapat dicoba. Unduh HTML terbaru sebelum menutup browser.\n\nData contoh sintetis. Tidak ada data akun client, password, token, atau koneksi database.\nWarna mengikuti theme adapter Cineva existing (emas/putih/gelap).\nKompatibilitas aplikasi pembuka lampiran pada perangkat penerima perlu diperiksa; file ini ditujukan untuk dijalankan di browser, bukan preview dokumen statis.\n`;
+await fs.writeFile(path.join(out,'CARA-DEMO.txt'),readme);
+const backendRequire=createRequire(path.join(root,'2.Backend/Integrated-API/package.json')),archiver=backendRequire('archiver'),{createWriteStream}=await import('node:fs');
+const zipName='Cineva-Content-Studio-Demo.zip';await new Promise((resolve,reject)=>{const output=createWriteStream(path.join(out,zipName)),archive=archiver('zip',{zlib:{level:9}});output.on('close',resolve);output.on('error',reject);archive.on('error',reject);archive.pipe(output);archive.file(path.join(out,filename),{name:filename});archive.file(path.join(out,'CARA-DEMO.txt'),{name:'CARA-DEMO.txt'});archive.finalize();});
+const sizes={html:Buffer.byteLength(html),zip:(await fs.stat(path.join(out,zipName))).size};
+const manifest={date:new Date().toISOString(),file:filename,sha256:crypto.createHash('sha256').update(html).digest('hex'),sizes,source:'Existing ContentStudio + content-kit with isolated seeded preview storage',synthetic:true,externalRequestsRequired:false,templateCount:8,workspaces:2,server:false};
+await fs.writeFile(path.join(report,'build.json'),JSON.stringify(manifest,null,2));console.log(JSON.stringify(manifest));

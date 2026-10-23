@@ -1,0 +1,150 @@
+[
+  {
+    "file": "cineva-shared/model.ts",
+    "lines": 105
+  },
+  {
+    "file": "cineva-inquiries/repository.ts",
+    "lines": 79
+  },
+  {
+    "file": "cineva-shared/CinevaProgram.tsx",
+    "lines": 73
+  },
+  {
+    "file": "cineva-services/workflow.ts",
+    "lines": 71
+  },
+  {
+    "file": "cineva-shared/WorkspaceContext.tsx",
+    "lines": 69
+  },
+  {
+    "file": "cineva-inquiries/domain.ts",
+    "lines": 65
+  },
+  {
+    "file": "cineva-inquiries/quotes.ts",
+    "lines": 50
+  },
+  {
+    "file": "cineva-hq/ResourceScheduler.tsx",
+    "lines": 50
+  },
+  {
+    "file": "cineva-support/assignment.ts",
+    "lines": 46
+  },
+  {
+    "file": "cineva-shared/JobEditor.tsx",
+    "lines": 46
+  },
+  {
+    "file": "cineva-services/catalog.ts",
+    "lines": 43
+  },
+  {
+    "file": "cineva-hq/booking.ts",
+    "lines": 42
+  },
+  {
+    "file": "cineva-inquiries/QuoteNegotiation.tsx",
+    "lines": 40
+  },
+  {
+    "file": "cineva-services/ServiceWorkflow.tsx",
+    "lines": 39
+  },
+  {
+    "file": "cineva-inquiries/ServiceDesk.tsx",
+    "lines": 38
+  },
+  {
+    "file": "cineva-support/support.ts",
+    "lines": 34
+  },
+  {
+    "file": "cineva-shared/dummyRepository.ts",
+    "lines": 34
+  },
+  {
+    "file": "cineva-shared/JobDetail.tsx",
+    "lines": 34
+  },
+  {
+    "file": "creator-space/CreatorViews.tsx",
+    "lines": 31
+  },
+  {
+    "file": "cineva-support/ConversationPanel.tsx",
+    "lines": 30
+  },
+  {
+    "file": "cineva-shared/JobCards.tsx",
+    "lines": 29
+  },
+  {
+    "file": "cineva-services/ServiceBriefForm.tsx",
+    "lines": 27
+  },
+  {
+    "file": "cineva-support/SupportQueue.tsx",
+    "lines": 25
+  },
+  {
+    "file": "cineva-shared/HotsForm.tsx",
+    "lines": 25
+  },
+  {
+    "file": "cineva-inquiries/InquiryDetail.tsx",
+    "lines": 25
+  },
+  {
+    "file": "cineva-shared/assistant.ts",
+    "lines": 24
+  },
+  {
+    "file": "cineva-hq/BookingConfirmation.tsx",
+    "lines": 23
+  },
+  {
+    "file": "cineva-shared/CalendarView.tsx",
+    "lines": 19
+  },
+  {
+    "file": "cineva-services/pricing.ts",
+    "lines": 18
+  },
+  {
+    "file": "cineva-hq/ClientsView.tsx",
+    "lines": 18
+  },
+  {
+    "file": "cineva-hq/EstimatorView.tsx",
+    "lines": 18
+  },
+  {
+    "file": "cineva-shared/CinevaVendorTheme.tsx",
+    "lines": 17
+  },
+  {
+    "file": "cineva-shared/SummaryCards.tsx",
+    "lines": 10
+  },
+  {
+    "file": "cineva-services/RateCardEditor.tsx",
+    "lines": 10
+  },
+  {
+    "file": "cineva-shared/ProductSidebar.tsx",
+    "lines": 9
+  },
+  {
+    "file": "cineva-services/QuoteBreakdown.tsx",
+    "lines": 9
+  },
+  {
+    "file": "cineva-shared/navigation.ts",
+    "lines": 5
+  }
+]

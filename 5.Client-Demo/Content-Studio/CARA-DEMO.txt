@@ -1,0 +1,12 @@
+CINEVA CONTENT STUDIO — DEMO OFFLINE
+
+1. Kirim Cineva-Content-Studio-Demo.html sebagai dokumen melalui WhatsApp. ZIP juga disediakan sebagai paket alternatif.
+2. Penerima mengunduh file, lalu membukanya dengan browser yang mendukung JavaScript. Tidak perlu login, server, atau internet.
+3. Klik Cara demo untuk urutan presentasi. Coba workspace HQ dan Creator Space.
+4. Editor, foto/logo, template, Brand Kit dan ekspor PNG berjalan di browser. Akun, AI/parser, publish, dan metrik menggunakan data simulasi. Tidak ada posting ke internet.
+5. Setelah mengedit, klik Simpan pada konten. Klik Unduh HTML terbaru untuk mengirim versi yang sudah diedit ke orang lain. Menyalin file awal tidak otomatis menyalin isi localStorage.
+6. Bila penyimpanan browser diblokir, perubahan sesi tetap dapat dicoba. Unduh HTML terbaru sebelum menutup browser.
+
+Data contoh sintetis. Tidak ada data akun client, password, token, atau koneksi database.
+Warna mengikuti theme adapter Cineva existing (emas/putih/gelap).
+Kompatibilitas aplikasi pembuka lampiran pada perangkat penerima perlu diperiksa; file ini ditujukan untuk dijalankan di browser, bukan preview dokumen statis.

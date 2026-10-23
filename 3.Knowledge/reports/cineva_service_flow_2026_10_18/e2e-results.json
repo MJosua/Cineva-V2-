@@ -1,0 +1,68 @@
+{
+  "checks": [
+    {
+      "name": "Three brief schemas preserve common inputs and reject incomplete submit",
+      "status": "passed"
+    },
+    {
+      "name": "Creator submits selected brief; excluded fields never leak",
+      "status": "passed"
+    },
+    {
+      "name": "AI and human handover preserve conversation context",
+      "status": "passed"
+    },
+    {
+      "name": "Second HQ has no access to first HQ request queue",
+      "status": "passed"
+    },
+    {
+      "name": "HQ rate update preserves snapshot; explicit revision updates quote",
+      "status": "passed"
+    },
+    {
+      "name": "Other Creator cannot see the inquiry; owner accepts the quote",
+      "status": "passed"
+    },
+    {
+      "name": "Accepted request converts to one HOTS-compatible dummy project",
+      "status": "passed"
+    },
+    {
+      "name": "Reload retains requests, quote and support messages",
+      "status": "passed"
+    },
+    {
+      "name": "Second HQ project dataset excludes converted projects from the first HQ",
+      "status": "passed"
+    },
+    {
+      "name": "Converted project continues through resource scheduling, delivery, payment and archive",
+      "status": "passed"
+    },
+    {
+      "name": "Direct HQ client request can be cancelled without a project",
+      "status": "passed"
+    },
+    {
+      "name": "Unsent draft survives reload with type and common values",
+      "status": "passed"
+    },
+    {
+      "name": "Storage failure keeps previous support state and shows an actionable error",
+      "status": "passed"
+    },
+    {
+      "name": "Reset workspace can recover the accepted project without a second inquiry",
+      "status": "passed"
+    },
+    {
+      "name": "Mobile service layout has no horizontal page overflow and keeps vendor theme",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "origin": "http://127.0.0.1:48175",
+  "databaseUsed": false
+}

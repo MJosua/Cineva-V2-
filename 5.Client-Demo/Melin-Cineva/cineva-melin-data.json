@@ -1,0 +1,690 @@
+{
+  "version": 1,
+  "datasetId": "cineva-melin-simply-juun-3-v1",
+  "editedAt": null,
+  "user": {
+    "id": "creator-1",
+    "name": "Melin Riswana Putri",
+    "instagram": "zbvlynn_",
+    "followers": 1542.0,
+    "niches": [],
+    "phone": "83132409676.0",
+    "address": "Bandung"
+  },
+  "campaign": {
+    "id": "campaign-simply-3",
+    "title": "Simply Juun · Campaign 3",
+    "brand": "Simply Juun",
+    "brief": "Brand fashion wanita asal Bandung yang percaya pada gaya timeless, minimalis, dan autentik, terutama di kalangan anak muda.",
+    "objective": "KOL dapat merasakan langsung produk Simply Juun dan berbagi pengalaman tersebut secara genuine kepada komunitas / audience mereka.",
+    "audience": "Wanita Remaja dan Dewasa (16 - 38 Tahun)",
+    "messaging": "Menunjukkan Produk Simply Juun kekinian gaya minimalis melalui sosial media + awareness di akun shopee official Simply juun",
+    "sow": "1x Reviews Di shopee\n1x Reels (owning)\n1x Checkout Product (payment by Brand)",
+    "overviewPeriod": "25 Mei  - 17 Juni 2026 ",
+    "feeAmount": 100000,
+    "barterValue": 300000,
+    "productRetailValue": 213000,
+    "paymentStatus": "Diajukan",
+    "paidAmount": null,
+    "selectedProduct": "GLEE"
+  },
+  "insights": {
+    "likes": 64.0,
+    "comments": 1.0,
+    "shares": 0.0,
+    "saves": 0.0,
+    "reposts": 0.0,
+    "views": 1428.0,
+    "sourceCategory": "Baik"
+  },
+  "deliverables": [
+    {
+      "id": "output-1",
+      "title": "Review Shopee",
+      "platform": "Shopee",
+      "sourceUrl": "https://drive.google.com/file/d/1CiQ8pnIGjQ6SqxIvKiLAp953Nwv35qoQ/view?usp=drivesdk",
+      "status": "Referensi tersedia"
+    },
+    {
+      "id": "output-2",
+      "title": "Draft / drive",
+      "platform": "Brand asset",
+      "sourceUrl": "https://drive.google.com/drive/folders/1qxictCxubBgKsgWI6YS-8BqCGQzv0Qel",
+      "status": "Referensi tersedia"
+    },
+    {
+      "id": "output-3",
+      "title": "Reels owning",
+      "platform": "Instagram",
+      "sourceUrl": "https://www.instagram.com/reel/DcVNYV0tNtW/?igsi=MTFnejMycWY3czJ2MQ==",
+      "status": "Referensi tersedia"
+    }
+  ],
+  "events": [
+    {
+      "id": "event-1",
+      "title": "Listing",
+      "kind": "milestone",
+      "startDate": "2026-08-08",
+      "endDate": null,
+      "allDay": true,
+      "rawDate": "8 Agustus 2026",
+      "sourceCell": "S24:T24 line 1",
+      "requiresReview": false,
+      "note": "Mapping tanggal detail Excel; jam tidak disebutkan."
+    },
+    {
+      "id": "event-2",
+      "title": "Info Lolos",
+      "kind": "milestone",
+      "startDate": "2026-08-10",
+      "endDate": null,
+      "allDay": true,
+      "rawDate": "10 Agustus  2026",
+      "sourceCell": "S24:T24 line 2",
+      "requiresReview": false,
+      "note": "Mapping tanggal detail Excel; jam tidak disebutkan."
+    },
+    {
+      "id": "event-3",
+      "title": "CO / pengiriman product",
+      "kind": "milestone",
+      "startDate": "2026-08-10",
+      "endDate": null,
+      "allDay": true,
+      "rawDate": "10 Agustus 2026",
+      "sourceCell": "S24:T24 line 3",
+      "requiresReview": false,
+      "note": "Mapping tanggal detail Excel; jam tidak disebutkan."
+    },
+    {
+      "id": "event-4",
+      "title": "Drafting",
+      "kind": "milestone",
+      "startDate": "2026-08-15",
+      "endDate": "2026-09-01",
+      "allDay": true,
+      "rawDate": "15 Agustus - 1 September 2026",
+      "sourceCell": "S24:T24 line 4",
+      "requiresReview": false,
+      "note": "Mapping tanggal detail Excel; jam tidak disebutkan."
+    },
+    {
+      "id": "event-5",
+      "title": "Posting",
+      "kind": "milestone",
+      "startDate": null,
+      "endDate": null,
+      "allDay": true,
+      "rawDate": "20 Agustus  1 September 2026",
+      "sourceCell": "S24:T24 line 5",
+      "requiresReview": true,
+      "note": "Perlu konfirmasi tanggal sumber."
+    },
+    {
+      "id": "event-6",
+      "title": "Insight H+7",
+      "kind": "milestone",
+      "startDate": "2026-08-27",
+      "endDate": "2026-09-02",
+      "allDay": true,
+      "rawDate": "27 Agustus - 2 September 2026",
+      "sourceCell": "S24:T24 line 6",
+      "requiresReview": false,
+      "note": "Mapping tanggal detail Excel; jam tidak disebutkan."
+    },
+    {
+      "id": "event-7",
+      "title": "Payment Serentak",
+      "kind": "milestone",
+      "startDate": "2026-08-08",
+      "endDate": null,
+      "allDay": true,
+      "rawDate": "8 Agustus 2026",
+      "sourceCell": "S24:T24 line 7",
+      "requiresReview": true,
+      "note": "Perlu konfirmasi tanggal sumber."
+    }
+  ],
+  "payments": [],
+  "source": {
+    "file": "SIMPLY JUUN.xlsx",
+    "sheet": "Assesment Simply Juun 3",
+    "rosterRow": 36,
+    "insightRow": 61,
+    "sha256": "06f5d020bffe959da2b8e869fb35d0601f6309a1927da299a59833c21ff999e4"
+  },
+  "notes": [
+    "Periode ringkasan S17 (Mei–Juni) berbeda dari timeline detail S24:T24 (Agustus–September). Keduanya dipertahankan untuk review.",
+    "Tanggal Payment Serentak T24 tertulis 8 Agustus 2026, sebelum produksi/posting. Ditandai perlu review, tidak dikoreksi otomatis.",
+    "Tanggal Posting T24 tidak memiliki pemisah range yang jelas. Belum dimasukkan sebagai tanggal pasti; edit manual setelah konfirmasi.",
+    "Tidak ada jadwal visit atau jam kunjungan spesifik pada sumber. Kalender berisi milestone all-day; visit baru dapat ditambahkan sebagai simulasi.",
+    "Fee Rp100.000 memakai brief per creator S19/S21, bukan nominal kontrak personal terverifikasi. Benefit Rp300.000 mengikuti S21; harga retail Glee Rp213.000 dari T16 tetap terpisah.",
+    "Diajukan pada AA36 bukan bukti kas diterima. paidAmount asli null; payments kosong sampai demo mencatat simulasi.",
+    "Link draft/review/post tersedia di Excel, tetapi QC approved dan tanggal publikasi aktual tidak dibuktikan oleh ketersediaan link.",
+    "Kategori niche campaign bukan niche pribadi Melin yang sudah terverifikasi. Profil niche pribadi dibiarkan kosong."
+  ],
+  "rawSource": [
+    {
+      "title": "Roster talent",
+      "fields": [
+        {
+          "label": "NAMA LENGKAP",
+          "cell": "Q36",
+          "value": "Melin Riswana Putri",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "USERNAME INSTAGRAM",
+          "cell": "R36",
+          "value": "zbvlynn_",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "LINK INSTAGRAM",
+          "cell": "S36",
+          "value": "https://www.instagram.com/zbvlynn_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "FOLLOWERS",
+          "cell": "T36",
+          "value": 1542.0,
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "n"
+        },
+        {
+          "label": "NO WHATSAPP",
+          "cell": "U36",
+          "value": 83132409676.0,
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "n"
+        },
+        {
+          "label": "DOMISILI",
+          "cell": "V36",
+          "value": "Bandung",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "PRODUCT ",
+          "cell": "W36",
+          "value": "GLEE",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "REVIEW SHOPEE",
+          "cell": "X36",
+          "value": "https://drive.google.com/file/d/1CiQ8pnIGjQ6SqxIvKiLAp953Nwv35qoQ/view?usp=drivesdk",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "LINK DRIVE",
+          "cell": "Y36",
+          "value": "https://drive.google.com/drive/folders/1qxictCxubBgKsgWI6YS-8BqCGQzv0Qel",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "LINK POST",
+          "cell": "Z36",
+          "value": "https://www.instagram.com/reel/DcVNYV0tNtW/?igsi=MTFnejMycWY3czJ2MQ==",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "STATUS PAYMENT",
+          "cell": "AA36",
+          "value": "Diajukan",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        }
+      ]
+    },
+    {
+      "title": "ENGAGEMENT DASBOARD [UPDATE 7 SEPTEMBER 2026]",
+      "fields": [
+        {
+          "label": "NAMA LENGKAP",
+          "cell": "Q61",
+          "value": "Melin Riswana Putri",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "USERNAME INSTAGRAM",
+          "cell": "R61",
+          "value": "zbvlynn_",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "LINK INSTAGRAM",
+          "cell": "S61",
+          "value": "https://www.instagram.com/zbvlynn_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "FOLLOWERS",
+          "cell": "T61",
+          "value": 1542.0,
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "n"
+        },
+        {
+          "label": "POST KONTEN",
+          "cell": "U61",
+          "value": "https://www.instagram.com/reel/DcVNYV0tNtW/?igsi=MTFnejMycWY3czJ2MQ==",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "LIKE",
+          "cell": "V61",
+          "value": 64.0,
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "n"
+        },
+        {
+          "label": "COMMENT",
+          "cell": "W61",
+          "value": 1.0,
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "n"
+        },
+        {
+          "label": "SHARE",
+          "cell": "X61",
+          "value": 0.0,
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "n"
+        },
+        {
+          "label": "SAVE",
+          "cell": "Y61",
+          "value": 0.0,
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "n"
+        },
+        {
+          "label": "REPOST",
+          "cell": "Z61",
+          "value": 0.0,
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "n"
+        },
+        {
+          "label": "VIEWS",
+          "cell": "AA61",
+          "value": 1428.0,
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "n"
+        },
+        {
+          "label": "RANGE ENGAGEMENT",
+          "cell": "AB61",
+          "value": 4.551820728,
+          "formula": "=SUM(V61:Z61)/AA61*100",
+          "numberFormat": "General",
+          "cellType": "n"
+        },
+        {
+          "label": "ENGAGEMENT CATEGORIES",
+          "cell": "AC61",
+          "value": "Baik",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        }
+      ]
+    },
+    {
+      "title": "Brief, budget dan timeline campaign (bukan nominal pribadi otomatis)",
+      "fields": [
+        {
+          "label": "Nama Brand / Perusahaan",
+          "cell": "S5",
+          "value": "Simply Juun",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "About Brand ",
+          "cell": "S6",
+          "value": "Brand fashion wanita asal Bandung yang percaya pada gaya timeless, minimalis, dan autentik, terutama di kalangan anak muda.",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Penanggung Jawab Brand",
+          "cell": "S7",
+          "value": "Irvan [ +6281224385200‬]",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Kategori Creator",
+          "cell": "S8",
+          "value": "Fashion, OOTD , Lifestyle , Place To Go",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Lokasi Brand",
+          "cell": "S9",
+          "value": "Kota Bandung",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Key campaign objective",
+          "cell": "S10",
+          "value": "KOL dapat merasakan langsung produk Simply Juun dan berbagi pengalaman tersebut secara genuine kepada komunitas / audience mereka.",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Target audience",
+          "cell": "S11",
+          "value": "Wanita Remaja dan Dewasa (16 - 38 Tahun)",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Key messaging",
+          "cell": "S12",
+          "value": "Menunjukkan Produk Simply Juun kekinian gaya minimalis melalui sosial media + awareness di akun shopee official Simply juun",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Nama Product Kategori",
+          "cell": "S13",
+          "value": "Bloom Shirt",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Nama Product Kategori",
+          "cell": "T13",
+          "value": "IDR 223.000,-",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Nama Product Kategori",
+          "cell": "U13",
+          "value": "PASTEL PINK , PASTEL YELLOW & VANILLA WHITE",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Baris 14",
+          "cell": "S14",
+          "value": "Drape",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Baris 14",
+          "cell": "T14",
+          "value": "IDR 173.000,-",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Baris 14",
+          "cell": "U14",
+          "value": "ASH GREY & JET BLACK",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Baris 15",
+          "cell": "S15",
+          "value": "Alir Shirt",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Baris 15",
+          "cell": "T15",
+          "value": "IDR 217.000,-",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Baris 15",
+          "cell": "U15",
+          "value": "JET BLACK, VANILLA WHITE, OAT LATTE",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Baris 16",
+          "cell": "S16",
+          "value": "Glee Shirt",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Baris 16",
+          "cell": "T16",
+          "value": "IDR 213.000,-",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Baris 16",
+          "cell": "U16",
+          "value": "PASTEL PINK , PASTEL YELLOW & VANILLA WHITE",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Timeline Campaign ",
+          "cell": "S17",
+          "value": "25 Mei  - 17 Juni 2026 ",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Platform yang digunakan",
+          "cell": "S18",
+          "value": "Akun Shopee [tanpa min. follower] dan Akun Instagram [minimal followers 1000]",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Budget KOL",
+          "cell": "S19",
+          "value": "IDR 100.000,- / Creator",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Budget Marketing",
+          "cell": "S20",
+          "value": "IDR 20.000,- / Creator",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Benefit Creator",
+          "cell": "S21",
+          "value": "1 pcs  Free Outfit Pilihan (Product Value 300.000,-)\nFee 100.000,-  (Content Production + Post)",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "SOW [Scope Of Work]",
+          "cell": "S22",
+          "value": "1x Reviews Di shopee\n1x Reels (owning)\n1x Checkout Product (payment by Brand)",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Status Campaign",
+          "cell": "S23",
+          "value": "1 orang On Going Insight and payment",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Timeline Campaign ",
+          "cell": "S24",
+          "value": "Listing        \nInfo Lolos      \nCO / pengiriman product        \nDrafting        \nPosting      \nInsight H+7        \nPayment Serentak        ",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Timeline Campaign ",
+          "cell": "T24",
+          "value": "8 Agustus 2026\n10 Agustus  2026\n10 Agustus 2026\n15 Agustus - 1 September 2026\n20 Agustus  1 September 2026\n27 Agustus - 2 September 2026\n8 Agustus 2026",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "Sheet Data Progress",
+          "cell": "S25",
+          "value": "Simply Juun Campaign 3 Progress ",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        },
+        {
+          "label": "File Rekapan",
+          "cell": "S26",
+          "value": "Rekap Data Keseluruhan",
+          "formula": null,
+          "numberFormat": "General",
+          "cellType": "s"
+        }
+      ]
+    }
+  ],
+  "collections": {
+    "workspaces": [
+      {
+        "id": "hq-1",
+        "name": "Cineva HQ",
+        "product": "hq"
+      },
+      {
+        "id": "creator-1",
+        "name": "Melin Riswana Putri",
+        "product": "creator"
+      }
+    ],
+    "brands": [
+      {
+        "id": "brand-simply",
+        "name": "Simply Juun",
+        "contact": "Irvan [ +6281224385200‬]"
+      }
+    ],
+    "batches": [
+      {
+        "id": "batch-3",
+        "campaignId": "campaign-simply-3",
+        "name": "Campaign 3 · cohort sumber"
+      }
+    ],
+    "tickets": [
+      {
+        "id": "ticket-melin-3",
+        "module": "hots:cineva",
+        "status": "wait_pay",
+        "fields": [
+          {
+            "cstm_col": "campaign_id",
+            "lbl_col": "Campaign",
+            "value": "campaign-simply-3"
+          },
+          {
+            "cstm_col": "fee_amount",
+            "lbl_col": "Fee brief creator",
+            "value": 100000
+          },
+          {
+            "cstm_col": "paid_amount",
+            "lbl_col": "Kas diterima terverifikasi",
+            "value": null
+          },
+          {
+            "cstm_col": "payment_status",
+            "lbl_col": "Status payment sumber",
+            "value": "Diajukan"
+          }
+        ]
+      }
+    ],
+    "assignments": [
+      {
+        "id": "assignment-melin-3",
+        "ticketId": "ticket-melin-3",
+        "campaignId": "campaign-simply-3",
+        "batchId": "batch-3",
+        "userId": "creator-1"
+      }
+    ]
+  }
+}

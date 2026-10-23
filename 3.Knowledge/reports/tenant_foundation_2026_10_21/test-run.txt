@@ -1,0 +1,60 @@
+
+> cineva-workspace@1.0.0 test:tenant
+> node 3.Knowledge/scripts/tenant_foundation_2026_10_21/check.mjs
+
+✔ parallel app instances do not share active company (3.1728ms)
+✔ late response from company A cannot populate company B (4.101ms)
+✔ out of order context selections do not restore older company (0.4376ms)
+✔ switch closes SSE subscriptions and resets context even when next company denied (0.4889ms)
+✔ cached reads still revalidate server membership and clear on revoke (0.72ms)
+✔ context cannot leak through absolute paths or mismatched response ownership (1.6672ms)
+✔ disposed client cannot be reused (0.7272ms)
+✔ context forbids company sentinel and coerced ids (2.0462ms)
+✔ context requires membership/user/tenant/version (0.4159ms)
+✔ context and cache namespaces separate user tenant company and version (0.5846ms)
+✔ ownership rejects cross program and company (0.4301ms)
+✔ branding rejects CSS injection and invalid HSL (1.2906ms)
+✔ brand logo requires matching ownership/id, safe HTTPS and supported MIME (2.201ms)
+✔ invite stores only token hash and grants only the intended program/company/user (3.8833ms)
+✔ invite cannot be accepted by another user or tenant (0.6054ms)
+✔ issuer permission must remain delegatable at acceptance (1.2709ms)
+✔ personal active user sees no companies without invitation membership (3.2482ms)
+✔ missing identity and default company are rejected (0.4241ms)
+✔ server tenant selection ignores client supplied program/company owner (0.5927ms)
+✔ opaque context is bound to user session program and expiry (0.6483ms)
+✔ membership revoke and permission version changes invalidate prior contexts (0.3582ms)
+✔ role names and global admin numbers do not confer wildcard grants (0.6269ms)
+✔ repository refuses forged context and cross-tenant/company rows (1.0175ms)
+✔ previously issued server context cannot bypass a later membership revoke (0.2933ms)
+✔ repository list rejects adapter returning a foreign resource (0.4213ms)
+✔ read-authorized context cannot write when membership lacks write permission (0.6487ms)
+✔ transaction-kit rollback/release when scoped update fails (1.5292ms)
+✔ owner mutation denied before transaction; successful update commits (1.3105ms)
+✔ self registration forces active personal client; body roles/company ignored (0.6768ms)
+✔ self registration cannot trust caller verified flag (0.3292ms)
+✔ actual-schema membership adapter denies duplicate access instead of selecting one (0.5952ms)
+✔ membership adapter does not elevate global role; hashes authority changes (1.5428ms)
+✔ SSO uses server-owned state nonce and PKCE; returns opaque identity without token (5.4436ms)
+✔ SSO rejects invalid issuer (1.4231ms)
+✔ SSO rejects invalid audience (1.139ms)
+✔ SSO rejects invalid nonce (1.1257ms)
+✔ SSO rejects invalid expired (1.7896ms)
+✔ SSO rejects invalid future (2.2007ms)
+✔ SSO rejects invalid multiAudience (1.095ms)
+✔ SSO rejects another browser session and invalid signature (1.3124ms)
+✔ SSO returnTo cannot navigate to another origin (0.4162ms)
+✔ BFF session uses HttpOnly Secure host cookie without exposing token to browser JS (4.0092ms)
+✔ BFF mutations require exact origin and CSRF even with valid cookie (1.6427ms)
+✔ BFF revalidates user suspension and expiry (0.48ms)
+✔ app logout revokes server session and rejects old cookie (0.5294ms)
+✔ duplicate/tossed session cookie is rejected (0.4991ms)
+✔ unconfigured platform fails closed with no-store response (64.9658ms)
+✔ HTTP bootstrap context and branding enforce session scope and CSRF (55.6363ms)
+ℹ tests 48
+ℹ suites 0
+ℹ pass 48
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 503.322

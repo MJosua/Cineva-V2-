@@ -1,0 +1,20 @@
+{
+  "openapi":"3.1.0",
+  "info":{"title":"Cineva Content Studio","version":"0.1.0-cineva.1","description":"Injected tenant auth and CSRF. Disabled deployment returns 503. Public media only via expiring signed capability."},
+  "servers":[{"url":"/api/content/v1"}],
+  "security":[{"sessionCookie":[]}],
+  "paths":{
+    "/workspace":{"get":{"operationId":"contentWorkspace","responses":{"200":{"description":"Scoped snapshot with redacted accounts and server entitlement"},"403":{"description":"Context or permission denied"},"503":{"description":"Runtime not configured"}}}},
+    "/commands":{"post":{"operationId":"contentCommand","parameters":[{"$ref":"#/components/parameters/context"},{"$ref":"#/components/parameters/csrf"}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["command","input","key"],"properties":{"command":{"enum":["document.create","document.edit","document.review","brand.save","settings.save","publish.schedule","publish.cancel","publish.reschedule","account.disconnect"]},"input":{"type":"object"},"key":{"type":"string","maxLength":80}}}}}},"responses":{"200":{"description":"Committed command receipt"},"409":{"description":"Version/idempotency/quota/state conflict"}}}},
+    "/generate":{"post":{"operationId":"generateContent","responses":{"200":{"description":"Validated draft. Never automatically approved or published"},"503":{"description":"AI or source adapter not configured"}}}},
+    "/render":{"post":{"operationId":"renderContent","responses":{"200":{"description":"On-demand SVG manifest for exact saved revision"},"409":{"description":"Revision conflict or quota"}}}},
+    "/analytics":{"get":{"operationId":"contentAnalytics","responses":{"200":{"description":"Latest lifetime metrics and supported-null definitions"}}}},
+    "/insights/sync":{"post":{"operationId":"syncSocialInsights","responses":{"200":{"description":"Per-target sync outcome"}}}},
+    "/insights/ai":{"post":{"operationId":"generateEvidenceInsight","responses":{"200":{"description":"Grounded observation with target IDs and filter"},"503":{"description":"Insight model not configured"}}}},
+    "/accounts/begin":{"post":{"operationId":"beginSocialOAuth","responses":{"200":{"description":"Provider consent URL bound to authenticated principal"},"503":{"description":"OAuth adapter not configured"}}}},
+    "/accounts/finish":{"post":{"operationId":"finishSocialOAuth","responses":{"200":{"description":"Verified account with encrypted server token"},"403":{"description":"OAuth state/binding/replay rejected"}}}},
+    "/reconcile":{"post":{"operationId":"reconcilePublish","responses":{"200":{"description":"Provider-confirmed state or still unknown"},"409":{"description":"Manual reconciliation required"}}}},
+    "/media/{token}":{"get":{"operationId":"downloadVirtualSocialMedia","security":[],"parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"On-demand PNG","content":{"image/png":{"schema":{"type":"string","format":"binary"}}}},"403":{"description":"Expired or invalid capability"}}}}
+  },
+  "components":{"securitySchemes":{"sessionCookie":{"type":"apiKey","in":"cookie","name":"__Host-cineva_session"}},"parameters":{"context":{"name":"X-Workspace-Context","in":"header","required":true,"schema":{"type":"string"}},"csrf":{"name":"X-CSRF-Token","in":"header","required":true,"schema":{"type":"string"}}}}
+}

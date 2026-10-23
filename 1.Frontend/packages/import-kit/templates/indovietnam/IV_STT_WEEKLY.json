@@ -1,0 +1,176 @@
+{
+  "template_code": "IV_STT_WEEKLY",
+  "target": "staging.iv_stt_weekly",
+  "description": "IndoVietnam weekly STT (goods out, PCS) per SKU and block. Two layouts in one template: STT 2026+ (column B, weeks C:BB) and STT 2024/2025 (column A, weeks B:BA). Raw staging: block label kept as segment_label.",
+  "scope": {
+    "program": "cto",
+    "distributor_company_id": 216,
+    "division_id": 1,
+    "hots_company_id": 4
+  },
+  "fingerprint": {
+    "file_name": [
+      "*By WH*.xlsx"
+    ],
+    "sheets_any": [
+      "STT 2026",
+      "STT 2025",
+      "STT 2024"
+    ],
+    "header_tokens": [
+      {
+        "sheet": "STT 2026",
+        "rows": "2:3",
+        "contains": [
+          "STT 2026",
+          "Stock Movement"
+        ]
+      }
+    ],
+    "min_score": 0.66
+  },
+  "sheets": [
+    {
+      "match_regex": "^STT (2026|20[3-9]d)$",
+      "mode": "unpivot",
+      "header": {
+        "row": 3
+      },
+      "constants_from_sheet_name": {
+        "year": "(\\d{4})"
+      },
+      "constants": {
+        "uom": "PCS",
+        "segment_label": "Stock Movement (Vietnam)"
+      },
+      "carry": [
+        {
+          "field": "segment_label",
+          "column": "B",
+          "row_when": {
+            "column": "C",
+            "op": "=",
+            "value": 1
+          },
+          "skip_row": true
+        }
+      ],
+      "unpivot": {
+        "id_columns": {
+          "sku_name": {
+            "from": "B",
+            "transform": [
+              "string"
+            ]
+          }
+        },
+        "key_row": 3,
+        "key_field": "week",
+        "value_field": "qty_pcs",
+        "value_columns": "C:BB",
+        "note": "Explicit week range: the header row also holds YTD columns (BD=38, BE=40 / BC, BD) whose numbers fall in 1..53 — never use value_columns_where here."
+      },
+      "skip_when": {
+        "field": "sku_name",
+        "op": "in",
+        "value": [
+          "",
+          "Total",
+          "0",
+          "SKU"
+        ]
+      },
+      "layout_note": "2026+ layout: labels/SKU in column B, weeks C:BB, Total BC"
+    },
+    {
+      "match_regex": "^STT 202[45]$",
+      "mode": "unpivot",
+      "header": {
+        "row": 3
+      },
+      "constants_from_sheet_name": {
+        "year": "(\\d{4})"
+      },
+      "constants": {
+        "uom": "PCS",
+        "segment_label": "Stock Movement (Vietnam)"
+      },
+      "carry": [
+        {
+          "field": "segment_label",
+          "column": "A",
+          "row_when": {
+            "column": "B",
+            "op": "=",
+            "value": 1
+          },
+          "skip_row": true
+        }
+      ],
+      "unpivot": {
+        "id_columns": {
+          "sku_name": {
+            "from": "A",
+            "transform": [
+              "string"
+            ]
+          }
+        },
+        "key_row": 3,
+        "key_field": "week",
+        "value_field": "qty_pcs",
+        "value_columns": "B:BA",
+        "note": "Explicit week range: the header row also holds YTD columns (BD=38, BE=40 / BC, BD) whose numbers fall in 1..53 — never use value_columns_where here."
+      },
+      "skip_when": {
+        "field": "sku_name",
+        "op": "in",
+        "value": [
+          "",
+          "Total",
+          "0",
+          "SKU"
+        ]
+      },
+      "layout_note": "2024/2025 layout: labels/SKU in column A, weeks B:BA (2025 has extra monthly summary columns on the right, not imported)"
+    }
+  ],
+  "required": [
+    "sku_name",
+    "week",
+    "year"
+  ],
+  "rules": [
+    {
+      "when": {
+        "all": [
+          {
+            "field": "year",
+            "op": "=",
+            "value": "$currentYear"
+          },
+          {
+            "field": "week",
+            "op": ">",
+            "value": "$cutoffWeek"
+          }
+        ]
+      },
+      "then": {
+        "set": {
+          "is_forecast": true
+        }
+      }
+    },
+    {
+      "when": {
+        "field": "qty_pcs",
+        "op": "<",
+        "value": 0
+      },
+      "then": {
+        "warning": "NEGATIVE_QTY"
+      }
+    }
+  ]
+}

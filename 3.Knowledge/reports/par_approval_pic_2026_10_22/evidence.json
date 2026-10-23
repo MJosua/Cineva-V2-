@@ -1,0 +1,52 @@
+{
+  "observed_at": "2026-10-22",
+  "authorization": "Kantor edit permission for this session, PAR changes only",
+  "files": [
+    {
+      "file": "D:/Kantor/1.Frontend/overseas_module/par/src/views/ApprovalFlowSection.tsx",
+      "sha256": "5b39d1aa76f173c15367b0c76363a91b2c7bdc84144aeac6f214387c8184c62c"
+    },
+    {
+      "file": "D:/Kantor/1.Frontend/overseas_module/par/src/styles/approval-flow.css",
+      "sha256": "abb4a4df957846484e5edaf406c67005516380b5253e2b10dd28d4f57093d18a"
+    },
+    {
+      "file": "D:/Kantor/1.Frontend/overseas_module/par/src/views/ParListViews.tsx",
+      "sha256": "3d3801356bed2535384b1c3970798c642aabc536da977946509910226adbc5db"
+    },
+    {
+      "file": "D:/Kantor/1.Frontend/overseas_module/par/src/types/par.ts",
+      "sha256": "caf573cded00e58cfa87c663eaf3ad82d220cc3f3dfb1eeb3efc747618a7e152"
+    },
+    {
+      "file": "D:/Kantor/1.Frontend/overseas_module/par/src/views/ParEmailStatus.tsx",
+      "sha256": "7823f222a9a5058cb87f707dcd5bafd9627681cb6d7ccb625a1821a2167101b1"
+    },
+    {
+      "file": "D:/Kantor/1.Frontend/overseas_module/par/src/styles/detail-feedback.css",
+      "sha256": "c6b9108877d0c68e145c87bee17c720450e1ce0fabab2e31555f3ba4b1d8314b"
+    },
+    {
+      "file": "D:/Kantor/2.Backend/Integrated-API/app/modules/par-document/parDocument.service.js",
+      "sha256": "f67dfb93a547b25f882cf00919aba2cc59baa87d89dc2dfc0a3b00df51149483"
+    },
+    {
+      "file": "D:/Kantor/2.Backend/Integrated-API/app/modules/par-document/parDocument.service.parts/support/attach-par-business-columns.js",
+      "sha256": "b8c4e887e7d408ab267efa535f973ea8c14dcc8a7d0d27bba33916b4d398f9a9"
+    },
+    {
+      "file": "D:/Kantor/2.Backend/Integrated-API/app/modules/par-document/parDocument.service.parts/support/resolve-latest-pic.js",
+      "sha256": "a860575746d5d46af9a6cc767ccdc0748d0dafd2a6498358ef5cf7dd9cf8e1b1"
+    }
+  ],
+  "verification": {
+    "new_isolated_tests": 9,
+    "existing_scope_tests": 16,
+    "typecheck": "pass",
+    "build_modules": 1645,
+    "actual_hydration_read_only_db_rows": 5,
+    "production_deployment": false,
+    "authenticated_browser_workflow": false,
+    "db_writes": false
+  }
+}

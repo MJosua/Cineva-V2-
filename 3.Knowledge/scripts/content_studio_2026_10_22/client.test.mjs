@@ -1,0 +1,11 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+const root=path.resolve(import.meta.dirname,'../../..'),require=createRequire(path.join(root,'1.Frontend/HOTS/package.json')),esbuild=require('esbuild');
+const target=path.join(import.meta.dirname,'compiled-content-client.cjs');
+const built=esbuild.buildSync({entryPoints:[path.join(root,'1.Frontend/packages/engine-client/src/content.ts')],bundle:true,platform:'node',format:'cjs',write:false});await fs.writeFile(target,built.outputFiles[0].contents);const {createContentClient}=require(target);
+test('content client uses injected transport, context and envelope without changing legacy factory',async()=>{const seen=[];const client=createContentClient({request:async request=>{seen.push(request);return {status:200,data:{success:true,data:{saved:true}}};}},{context:()=> 'context-a'});assert.deepEqual(await client.command({command:'document.create'}),{saved:true});assert.equal(seen[0].url,'/api/content/v1/commands');assert.equal(seen[0].headers['X-Workspace-Context'],'context-a');assert.equal(seen[0].headers.Authorization,undefined);});
+test('late responses cannot populate a new content workspace',async()=>{let context='a',resolve;const client=createContentClient({request:()=>new Promise(r=>resolve=r)},{context:()=>context});const pending=client.read();context='b';resolve({status:200,data:{success:true,data:{company:'a'}}});await assert.rejects(()=>pending,error=>error.code==='STALE_CONTENT_CONTEXT');});
+test('unselected context and URL-shaped content base path are rejected before network',async()=>{let count=0;const http={request:async()=>count++};await assert.rejects(()=>createContentClient(http,{context:()=>null}).read(),e=>e.code==='CONTENT_CONTEXT_REQUIRED');assert.throws(()=>createContentClient(http,{context:()=> 'x',basePath:'https://evil.example'}),/Invalid content API path/);assert.equal(count,0);});

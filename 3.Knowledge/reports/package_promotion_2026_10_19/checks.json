@@ -1,0 +1,114 @@
+{
+  "results": [
+    {
+      "package": "@hots/domain-kit",
+      "upstreamVersion": "0.1.0",
+      "cinevaVersion": "0.1.0-cineva.2",
+      "tests": 16,
+      "exit": 0,
+      "diagnostics": [],
+      "files": [
+        {
+          "path": "src/attributes.ts",
+          "sha256": "43bcf9ab4376d8b77fb8daf1e846c6e9267d1469f51e58ca8ac74566f8ebbd9e",
+          "identical": true,
+          "lines": 27
+        },
+        {
+          "path": "src/commands.ts",
+          "sha256": "0d3098e8a072af940704504817f1609b2c2de41b0aa1dbb3cac593807239577a",
+          "identical": true,
+          "lines": 85
+        },
+        {
+          "path": "src/configuration.ts",
+          "sha256": "e019dee1b6326981cdc50a25249754d587c023d6354c35484655a92c55698da8",
+          "identical": true,
+          "lines": 51
+        },
+        {
+          "path": "src/events.ts",
+          "sha256": "6baf7ee1413f07e7436d1a0245d45a33e1f95b0999237264e4f3214b9c9862b2",
+          "identical": true,
+          "lines": 56
+        },
+        {
+          "path": "src/index.ts",
+          "sha256": "dba82e9e6b3d436de4e8675e16ac3ceeadaa97d6ebc557ae828add798cc6442b",
+          "identical": true,
+          "lines": 7
+        },
+        {
+          "path": "src/projections.ts",
+          "sha256": "de422d5bdacbbe737e69931c6e66c367a61fce7b59bfea5cd2ae5e0352d91122",
+          "identical": true,
+          "lines": 27
+        },
+        {
+          "path": "src/relations.ts",
+          "sha256": "c59ea29b87d990a6643932c51665732b0398564394f513813d218ce83504a239",
+          "identical": true,
+          "lines": 62
+        },
+        {
+          "path": "src/validation.ts",
+          "sha256": "2b1567e859bdb19f2bb4786256d6c0431c93cf4ecc1acdb6a1f1c9b1caf10a99",
+          "identical": true,
+          "lines": 60
+        },
+        {
+          "path": "test/domain.test.ts",
+          "sha256": "7f457b1c91a0a85d5e9a3b9629ec7c70d02ec9ee8ba50a8fe8bdcb3a0151a1ca",
+          "identical": true,
+          "lines": 79
+        },
+        {
+          "path": "test/runtime.test.ts",
+          "sha256": "6362abf86337e434b73a70e9347593b2479b403c98a4730561334609ec337fc5",
+          "identical": true,
+          "lines": 135
+        }
+      ]
+    },
+    {
+      "package": "@hots/scheduling-kit",
+      "upstreamVersion": "0.1.0",
+      "cinevaVersion": "0.1.0-cineva.2",
+      "tests": 16,
+      "exit": 0,
+      "diagnostics": [],
+      "files": [
+        {
+          "path": "src/availability.ts",
+          "sha256": "3e37a5741e75f5253128ccb6c259e515e66d0980350a1a88aaeee5ae8a93a396",
+          "identical": true,
+          "lines": 82
+        },
+        {
+          "path": "src/index.ts",
+          "sha256": "c11c46b2562bcdace858923852f0bcdb6ceae6fdd6f98037279e11fa44c27a7d",
+          "identical": true,
+          "lines": 3
+        },
+        {
+          "path": "src/stay.ts",
+          "sha256": "0018d8878cd304114fba143f985ba9b0812f6272e9630e92084321e2d17c73aa",
+          "identical": true,
+          "lines": 13
+        },
+        {
+          "path": "src/types.ts",
+          "sha256": "bb521105214ba8ce29408fe2437707285c0e0b3ec7e29a9048b9eabe24de8db8",
+          "identical": true,
+          "lines": 15
+        },
+        {
+          "path": "test/scheduling.test.ts",
+          "sha256": "a4d90965a4fc21cdb243686c55cf7b6560e5047e7803b81ec5224b9501476451",
+          "identical": true,
+          "lines": 94
+        }
+      ]
+    }
+  ]
+}

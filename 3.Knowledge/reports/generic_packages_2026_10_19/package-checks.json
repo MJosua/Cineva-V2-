@@ -1,0 +1,55 @@
+{
+  "tests": 44,
+  "testExit": 0,
+  "diagnostics": [],
+  "counts": [
+    {
+      "file": "1.Frontend/packages/domain-kit/src/commands.ts",
+      "lines": 85
+    },
+    {
+      "file": "1.Frontend/packages/scheduling-kit/src/availability.ts",
+      "lines": 82
+    },
+    {
+      "file": "1.Frontend/packages/domain-kit/src/relations.ts",
+      "lines": 62
+    },
+    {
+      "file": "1.Frontend/packages/domain-kit/src/validation.ts",
+      "lines": 60
+    },
+    {
+      "file": "1.Frontend/packages/domain-kit/src/events.ts",
+      "lines": 56
+    },
+    {
+      "file": "1.Frontend/packages/domain-kit/src/configuration.ts",
+      "lines": 51
+    },
+    {
+      "file": "1.Frontend/packages/domain-kit/src/attributes.ts",
+      "lines": 27
+    },
+    {
+      "file": "1.Frontend/packages/domain-kit/src/projections.ts",
+      "lines": 27
+    },
+    {
+      "file": "1.Frontend/packages/scheduling-kit/src/types.ts",
+      "lines": 15
+    },
+    {
+      "file": "1.Frontend/packages/scheduling-kit/src/stay.ts",
+      "lines": 13
+    },
+    {
+      "file": "1.Frontend/packages/domain-kit/src/index.ts",
+      "lines": 7
+    },
+    {
+      "file": "1.Frontend/packages/scheduling-kit/src/index.ts",
+      "lines": 3
+    }
+  ]
+}

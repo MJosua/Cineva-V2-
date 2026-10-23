@@ -1,0 +1,56 @@
+{
+  "results": [
+    {
+      "name": "cineva",
+      "passed": 3,
+      "exit": 0,
+      "diagnostics": []
+    },
+    {
+      "name": "kantor",
+      "passed": 3,
+      "exit": 0,
+      "diagnostics": []
+    },
+    {
+      "name": "backend-and-legacy",
+      "passed": 14,
+      "exit": 0,
+      "diagnostics": []
+    }
+  ],
+  "lines": [
+    {
+      "path": "D:\\Project\\Cineva-V2-\\2.Backend\\packages\\notification-kit\\src\\engine.js",
+      "lines": 46
+    },
+    {
+      "path": "D:\\Project\\Cineva-V2-\\2.Backend\\packages\\notification-kit\\src\\index.js",
+      "lines": 2
+    },
+    {
+      "path": "D:\\Project\\Cineva-V2-\\2.Backend\\packages\\notification-kit\\src\\scope.js",
+      "lines": 13
+    },
+    {
+      "path": "D:\\Project\\Cineva-V2-\\2.Backend\\packages\\notification-kit\\src\\transport.js",
+      "lines": 75
+    },
+    {
+      "path": "D:\\Project\\Cineva-V2-\\1.Frontend\\packages\\app-core\\src\\notifications.ts",
+      "lines": 46
+    },
+    {
+      "path": "D:\\Kantor\\1.Frontend\\packages\\app-core\\src\\notifications.ts",
+      "lines": 46
+    },
+    {
+      "path": "D:\\Project\\Cineva-V2-\\2.Backend\\Integrated-API\\core\\sse-manager.js",
+      "lines": 287
+    },
+    {
+      "path": "D:\\Project\\Cineva-V2-\\1.Frontend\\HOTS\\src\\hooks\\notificationAdapter.ts",
+      "lines": 26
+    }
+  ]
+}

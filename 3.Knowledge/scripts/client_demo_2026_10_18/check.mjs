@@ -1,0 +1,12 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import { spawnSync } from 'node:child_process';
+const root = path.resolve(import.meta.dirname, '../../..'), require = createRequire(path.join(root, '1.Frontend/HOTS/package.json'));
+const esbuild = require('esbuild'), out = path.join(root, '3.Knowledge/reports/client_demo_2026_10_18');
+await fs.mkdir(out, { recursive: true });
+await esbuild.build({ entryPoints: [path.join(import.meta.dirname, 'contracts.test.ts')], outfile: path.join(import.meta.dirname, 'contracts.bundle.cjs'), bundle: true, platform: 'node', format: 'cjs', logLevel: 'warning' });
+esbuild.stop();
+const result = spawnSync(process.execPath, ['--test', path.join(import.meta.dirname, 'contracts.bundle.cjs')], { encoding: 'utf8' });
+await fs.writeFile(path.join(out, 'contracts-results.txt'), result.stdout + result.stderr);
+process.stdout.write(result.stdout + result.stderr); if (result.status) process.exitCode = 1;

@@ -1,0 +1,11 @@
+✔ Notification client uses injected routes, decoders and encoded IDs without auth/storage defaults (7.4442ms)
+✔ Client rejects malformed counts/lists and propagates failed writes without optimistic success (2.6542ms)
+✔ Named SSE subscription preserves other listeners, deduplicates and cleans up (112.1832ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 494.2516

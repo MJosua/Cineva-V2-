@@ -1,0 +1,44 @@
+{
+  "checks": [
+    {
+      "name": "active personal account has invitation-only empty state",
+      "status": "passed"
+    },
+    {
+      "name": "invalid invitation does not activate company",
+      "status": "passed"
+    },
+    {
+      "name": "invitation acceptance refreshes company list",
+      "status": "passed"
+    },
+    {
+      "name": "company selection uses scoped header and JSON branding",
+      "status": "passed"
+    },
+    {
+      "name": "switch company restores old brand and applies new config",
+      "status": "passed"
+    },
+    {
+      "name": "unauthenticated bootstrap offers SSO without exposing company data",
+      "status": "passed"
+    },
+    {
+      "name": "BFF workspace does not start legacy SSE or send legacy bearer token",
+      "status": "passed"
+    },
+    {
+      "name": "HOTS ticket pilot uses selected company scope",
+      "status": "passed"
+    },
+    {
+      "name": "HOTS company switch replaces prior ticket list",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blockedExternalOrigins": [],
+  "liveBackend": false,
+  "scope": "Production frontend + intercepted synthetic API; separate localhost HTTP tests exercise backend router."
+}

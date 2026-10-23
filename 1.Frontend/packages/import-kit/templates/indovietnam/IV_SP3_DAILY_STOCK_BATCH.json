@@ -1,0 +1,47 @@
+{
+  "template_code": "IV_SP3_DAILY_STOCK_BATCH",
+  "target": "staging.iv_sp3_daily_stock_batch",
+  "description": "IndoVietnam stock point SP3 daily inventory (Daily Inventory workbook, sheets 'DAY n'): smallest stock unit = report date × movement (OPENING / IN / OUT / CLOSING) × expiry date (batch) × product group, in cartons. Report date from cell 'Date :' (B1 in parsed rows). IN and OUT are the facts; OPENING / CLOSING are balances kept for reconciliation (opening + in − out = closing; closing(d) = opening(d+1)). Rows after 'AVG SALES' and 'Total' rows are not imported.",
+  "scope": { "program": "cto", "distributor_company_id": 216, "division_id": 1, "hots_company_id": 4, "stock_point": "SP3" },
+  "fingerprint": {
+    "file_name": ["*Daily Inventory*SP3*.xlsx", "*Daily Inventory*.xlsx"],
+    "sheets_all": ["DAY 1"],
+    "header_tokens": [{ "sheet": "DAY 1", "rows": "1:4", "contains": ["DAILY INVENTORY REPORT", "Exp Date", "IIP", "GSS"] }],
+    "min_score": 0.66
+  },
+  "sheets": [
+    {
+      "match_regex": "^DAY \\d+$",
+      "mode": "unpivot",
+      "header": { "row": 3 },
+      "constants_from_cells": { "report_date": { "cell": "B1", "transform": ["excel_date"] } },
+      "constants_from_sheet_name": { "day_no": "DAY (\\d+)" },
+      "carry": [
+        { "field": "movement_label", "column": "col:A", "match": "(Opening stock|Stock in|Daily stock out|Closing Stock|AVG SALES)", "skip_row": true }
+      ],
+      "unpivot": {
+        "id_columns": {
+          "expiry_date": { "from": "col:A", "transform": ["excel_date"] },
+          "shelf_life_days": { "from": "col:J", "transform": ["number"] },
+          "row_total_ctn": { "from": "col:I", "transform": ["number"] }
+        },
+        "value_columns": "B:G",
+        "key_field": "product_group",
+        "key_transform": ["string", "regex_extract:([A-Z]+)\\s*$"],
+        "value_field": "qty_ctn"
+      },
+      "skip_when": { "any": [{ "field": "expiry_date", "op": "empty" }, { "field": "movement_label", "op": "=", "value": "AVG SALES" }] },
+      "constants": { "stock_point": "SP3", "uom": "CTN" }
+    }
+  ],
+  "required": ["report_date", "movement_label", "expiry_date", "product_group"],
+  "rules": [
+    { "when": { "field": "qty_ctn", "op": "=", "value": 0 }, "then": { "skip": true } },
+    { "when": { "field": "movement_label", "op": "=", "value": "Opening stock" }, "then": { "set": { "movement": "OPENING" } } },
+    { "when": { "field": "movement_label", "op": "=", "value": "Stock in" }, "then": { "set": { "movement": "IN" } } },
+    { "when": { "field": "movement_label", "op": "=", "value": "Daily stock out" }, "then": { "set": { "movement": "OUT" } } },
+    { "when": { "field": "movement_label", "op": "=", "value": "Closing Stock" }, "then": { "set": { "movement": "CLOSING" } } },
+    { "when": { "field": "qty_ctn", "op": "<", "value": 0 }, "then": { "warning": "NEGATIVE_QTY" } },
+    { "when": { "field": "shelf_life_days", "op": "<", "value": 90 }, "then": { "warning": "SHELF_LIFE_UNDER_90_DAYS" } }
+  ]
+}

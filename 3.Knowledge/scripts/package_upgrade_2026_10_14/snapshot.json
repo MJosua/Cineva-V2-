@@ -1,0 +1,2440 @@
+{
+  "reference": "D:/Kantor",
+  "packages": [
+    {
+      "name": "@hots/dynamic-form",
+      "version": "0.1.0",
+      "source": "D:/Kantor/1.Frontend/dynamic-form",
+      "local": "1.Frontend/dynamic-form",
+      "files": [
+        {
+          "path": ".app_index.json",
+          "sha256": "c8e5cfeda60596374cddfa8640ceb1e3d0c42c0ecbcc1866a517580fc558480b"
+        },
+        {
+          "path": ".gitignore",
+          "sha256": "ebe8c2d7cd1cfe046bdda807799d6dd1a0b4f120dfb06c14b38f2bcf82927bfb"
+        },
+        {
+          "path": "APP_MAP.md",
+          "sha256": "6004f9ebdcf3ddc280d83c60f0c7a56b8269a878ffe3dfe75f727f96bf2e7102"
+        },
+        {
+          "path": "README.md",
+          "sha256": "8db083eda36af686bbd49ccb512cf245720ecbd60d85acf82c24a8d8f1c97755"
+        },
+        {
+          "path": "docs/CHANGELOG.md",
+          "sha256": "8b50cc17f430c86b19f3d0fa1099ca2ab4e9b6148715e45912d914ba29d109a5"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "0ea8afd86a0214956d753f701d533fddb9d4fc42d01bc485530454cd93031969"
+        },
+        {
+          "path": "package-lock.json",
+          "sha256": "3a7fce8e27d8dd137883a8c097ebf19a9466b1a8215eca9c5e1667849bee3b0d"
+        },
+        {
+          "path": "package.json",
+          "sha256": "a081fe63a03ab2c0737af0ac202693c70481843c3de2f2c85fc58623dc25d9b1"
+        },
+        {
+          "path": "src/DynamicForm.tsx",
+          "sha256": "f854d68877cc82a1e9dc98297f2d24bb1de0d89770ecbb0e999ed8c4717e062e"
+        },
+        {
+          "path": "src/DynamicFormBuilder.tsx",
+          "sha256": "0dff6d643ebcbab79126dd13897a435963d2d8f0acfe8297344f04f311d4ff85"
+        },
+        {
+          "path": "src/FormPresentationEditor.tsx",
+          "sha256": "75dc98e3dcc2ae2bd910be04a953b893a9281e80161f7f3247ab1a4388ecdcaf"
+        },
+        {
+          "path": "src/SortableLaneBoard.tsx",
+          "sha256": "90356c59abb29cc696372f61731a443a99454beda672ce1cd8877dcb66753bc5"
+        },
+        {
+          "path": "src/UnifiedFormStructureBuilder.tsx",
+          "sha256": "8a50aad42eac4f29c161e096020eaf282ea64344d9652c6851adde718b74d960"
+        },
+        {
+          "path": "src/index.ts",
+          "sha256": "f5248ff91d74da99343c9e99d732c3f0b0e50d03b8040dfd5095ec1056af1ce0"
+        },
+        {
+          "path": "src/registry.tsx",
+          "sha256": "6768d83bc8e4e37e147a8726cf012a700197afdc2f4f8d81458375639ae47044"
+        },
+        {
+          "path": "src/rules.ts",
+          "sha256": "7f852b07008cfc6ffd6828f14f801f43c25d174fb0f70e9964198f16589faab2"
+        },
+        {
+          "path": "src/schema.ts",
+          "sha256": "8cee06b78aae847ccde812b34d072403492b4dacc8a7c67734b5ec2e3e8e2894"
+        },
+        {
+          "path": "src/styles.css",
+          "sha256": "8a8206e3f61feeeeb9ffece2551cbacebd5c1782ea68c999bec135fe32272aff"
+        },
+        {
+          "path": "src/types.ts",
+          "sha256": "cb5ecb5c4078aca8b3d5fa3a6ddcfbe786b1f2b874685c58827e94ac5da37928"
+        }
+      ]
+    },
+    {
+      "name": "@hots/service-form-runtime",
+      "version": "0.1.0",
+      "source": "D:/Kantor/1.Frontend/service-form-runtime",
+      "local": "1.Frontend/service-form-runtime",
+      "files": [
+        {
+          "path": ".app_index.json",
+          "sha256": "0511e3cb8725d9bc62a2d427c27daf2d5f7cb864350096298a81c0e521cc0325"
+        },
+        {
+          "path": "APP_MAP.md",
+          "sha256": "067396007d49fd25dca37b40ab913dac70970c27dc17f66e5728c8da045caa0a"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "2b005012e53f72e1a2e3c25ab8281b85d1fa0fcd5b2cafa5c168b685f749b203"
+        },
+        {
+          "path": "package.json",
+          "sha256": "d1e22ce0f8b7779699f5a177def731d34fb5c653c65d0a0ff5460399a54c4b54"
+        },
+        {
+          "path": "src/ServiceFormRuntime.tsx",
+          "sha256": "f3fa062b3b0e8d686eff5a704dfbf5b217f13842654d302fb0a70a2ebf0d6cea"
+        },
+        {
+          "path": "src/index.ts",
+          "sha256": "087c28ae4292c43998d19a3b03b44da093c2daa08f8a1211c7ec00f20ef975b1"
+        },
+        {
+          "path": "src/mapServiceFormPayload.ts",
+          "sha256": "e0994f8ea0b6c9516b067956849d16f55045a5004224777d70f078ac91aebfb8"
+        },
+        {
+          "path": "src/normalizeServiceFormConfig.ts",
+          "sha256": "fde05ad39123199a038d1ad4336d417706d8178fa142d15b8a8e0414896200a9"
+        },
+        {
+          "path": "src/styles.css",
+          "sha256": "d4ab6ee2ca00b997616e917f5ab9a56d001f3ba6f3da563fbe890c8f29e505f2"
+        },
+        {
+          "path": "src/types.ts",
+          "sha256": "7d804472f822b99225fb935314feae61ffb563211b4aaad9c7b61ee5c57fb266"
+        }
+      ]
+    },
+    {
+      "name": "@hots/app-core",
+      "version": "0.5.0",
+      "source": "D:/Kantor/1.Frontend/packages/app-core",
+      "local": "1.Frontend/packages/app-core",
+      "files": [
+        {
+          "path": ".app_index.json",
+          "sha256": "81615408ab6e2b82f2be1ba170bfc73ec1790bd4cc3c98cab734331a07041848"
+        },
+        {
+          "path": "APP_MAP.md",
+          "sha256": "364fde539d7a58f8715a0798ecebb42ec4a3f1067157fa8088cbe9c42f1fd55e"
+        },
+        {
+          "path": "docs/API.md",
+          "sha256": "770d05d35d10c515cf3f4fa1d6fe2338b04fd2dbc2bae3f5b663e4c51903a99d"
+        },
+        {
+          "path": "docs/CHANGELOG.md",
+          "sha256": "b6ff8f6ec7b3fbd45b2365ad0f7922db16d7c78e07e8791f9086b2b6203a57ce"
+        },
+        {
+          "path": "docs/DECISIONS/001-cookie-only-auth.md",
+          "sha256": "b523e2beb1a4d0c7d4cb174684f6724f4bb9930e62a9ab5681a37d0e88f53af7"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "5000ca3c872f83d075676df4adbbd6d9efd7f23e278697c79013266d153bcbb1"
+        },
+        {
+          "path": "package.json",
+          "sha256": "a3475c1c3dade91ec55467e2d4a8c52c33c0262ada550c524d90f7a73982a399"
+        },
+        {
+          "path": "src/HotsCoreProvider.tsx",
+          "sha256": "63764e4fcf5e8d6c2267015cf47b208b1898be2c88e05184c014a06ed6856dfe"
+        },
+        {
+          "path": "src/config.ts",
+          "sha256": "7dfbe3a53df9c69c675106c8ad36faa8e9da2876a50e63f064842820c010abeb"
+        },
+        {
+          "path": "src/download.ts",
+          "sha256": "242706755a6747530b73b0138174348ac346cdaf85af82f4208df8bba5e8d151"
+        },
+        {
+          "path": "src/endpoint.ts",
+          "sha256": "da456f06b92782f5ff9c84c4c97e8959a1ed679593e0d235afd70c4f14a0e09f"
+        },
+        {
+          "path": "src/format.ts",
+          "sha256": "429418b89c46ae79dd93cbf6eb56b6c7a75db1fe350851b3b9721406bbfcd6eb"
+        },
+        {
+          "path": "src/http.ts",
+          "sha256": "67817c7edd48b8accc20ba804824bb76cd7c5ed72680da4ec06331cc93245ceb"
+        },
+        {
+          "path": "src/index.ts",
+          "sha256": "0e99c4212816b32660103489ddc710ea4b3ae133d5c6cc22306a3ee56135be3b"
+        },
+        {
+          "path": "src/media.ts",
+          "sha256": "efd12e7ab33cff95d67ba20709302e99c712eeda4ce2ec7564e5e14074a8d48e"
+        },
+        {
+          "path": "src/sse.ts",
+          "sha256": "9d5fa958854d136f0bf4bee56a1609773949a68d9ec92195ec12f48e884d70cf"
+        },
+        {
+          "path": "src/storage.ts",
+          "sha256": "e9748fda1f7c754fa920e62eb028d2ff0a77f46c98b3e12828375650da04848d"
+        },
+        {
+          "path": "tsconfig.json",
+          "sha256": "f52bebe95c546e7f2701b48b88071d55c903d66130d84f5e9eb42e52d6a62b7c"
+        }
+      ]
+    },
+    {
+      "name": "@hots/calc-kit",
+      "version": "0.5.1",
+      "source": "D:/Kantor/1.Frontend/packages/calc-kit",
+      "local": "1.Frontend/packages/calc-kit",
+      "files": [
+        {
+          "path": ".app_index.json",
+          "sha256": "2e78bcf72adfe57004e6575bc2426bcef22c26238b72b84d62784eb60260e0a1"
+        },
+        {
+          "path": "APP_MAP.md",
+          "sha256": "85b5ff67176e605f24784d79f45e418ad8adc68839a0c2caf790f198ba4e6a8a"
+        },
+        {
+          "path": "docs/CHANGELOG.md",
+          "sha256": "1162eb54139ab1e98df74c9b5c4101aec1f844fafeac07a37e614c64e91d0e12"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "99015e4a005ae6659687674acd5bd270e6e07fd46051f3fc2a726e7664e10a53"
+        },
+        {
+          "path": "package.json",
+          "sha256": "60a58707fa954b1cc8c2f1ea17c3a2107e94b240afdd9d5eec741ff43edc8a5a"
+        },
+        {
+          "path": "src/cbm/autoBalance.js",
+          "sha256": "576a5d9eec241da603fb14ba3ae452b933921326253201c3e2095ef860a8ed6a"
+        },
+        {
+          "path": "src/cbm/cbmCalculator.js",
+          "sha256": "b774bf8a1a79434c89f3dc22761d161d24e328c76a62017d6c5189b3934c77b7"
+        },
+        {
+          "path": "src/cbm/containerRuleEngine.js",
+          "sha256": "050bf3b5fcb241816ff332c875f9d2b55819ae94b0338ec096be34e244a76623"
+        },
+        {
+          "path": "src/cbm/defaultContainerRules.js",
+          "sha256": "f3cbea2d96ac3a64d16ba1427d913b0bfccc88c262ee7d1c0104bb2f712a19ed"
+        },
+        {
+          "path": "src/cbm/evaluateContainerLoad.js",
+          "sha256": "ace97e729e54d7a1b9ef113d3a5cb711179f57f63f7bb9a5a97661716370cc91"
+        },
+        {
+          "path": "src/cbm/palletPlan.js",
+          "sha256": "edc60ef12eff91c5bac83f1bc48aa5dabb5f6276d9360fa9b6970ea106a35453"
+        },
+        {
+          "path": "src/cbm/validateOrderLoad.js",
+          "sha256": "21dd4f3b4dd19d22c89a29d669cf7e5f7dbaf922facb3d2975270ee32a1a1839"
+        },
+        {
+          "path": "src/index.js",
+          "sha256": "9710fe5454346e0acd70e6e420691a31b6085a294773ae1c1e3057f445412a45"
+        },
+        {
+          "path": "src/rules/approvalThreshold.js",
+          "sha256": "a096cc75d21fa69082f8cccd7279e04599a6af1a3b95d64ec76d3d37c965d11d"
+        },
+        {
+          "path": "test/approvalThreshold.test.js",
+          "sha256": "4e6deea637dfc57699b2d1ff05899b17c2b01cb3cf9e11356b882571c86be16a"
+        },
+        {
+          "path": "test/autoBalance.test.js",
+          "sha256": "2bb38df4c72a223ff3fbc16286eacb8454eb6f1ce554c4f84a25f150d2ade9df"
+        },
+        {
+          "path": "test/cbm.test.js",
+          "sha256": "77c7fc05b0ed7755ba6c4584643cf8b356a500d32a7fb51b5265804ef23b1f1c"
+        },
+        {
+          "path": "test/evaluateContainerLoad.test.js",
+          "sha256": "a0a6880b3b16104951a69d613ea7758eee8d42107c43cda3c651e49a57ef647b"
+        },
+        {
+          "path": "test/validateOrderLoad.test.js",
+          "sha256": "13fcec3016e8926f9b02e7e1608a230e877238160b7ec4d73cc6403cf69bb0a3"
+        }
+      ]
+    },
+    {
+      "name": "@hots/engine-client",
+      "version": "0.2.0",
+      "source": "D:/Kantor/1.Frontend/packages/engine-client",
+      "local": "1.Frontend/packages/engine-client",
+      "files": [
+        {
+          "path": ".app_index.json",
+          "sha256": "0f81b26614b5f19d6b4a3500e41f2c902e642027dd1a899f8e4047ff3fbd73de"
+        },
+        {
+          "path": "APP_MAP.md",
+          "sha256": "41be9541faad55c798ecd135223730d505f8897cad5638a17924ce79f959e5bd"
+        },
+        {
+          "path": "docs/CHANGELOG.md",
+          "sha256": "a72393ae587afcd186d600afbd8cec4b0a5a7b423893d762c44c45b0cbcb4295"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "0a0365e9d66fe36d8f810c43601ba5bf9d8f090632a492b06b0d76e1f4962177"
+        },
+        {
+          "path": "package.json",
+          "sha256": "c568f920ec09f5f37d0348dea16895930a778c57e4625f1b9aa2714b313ca067"
+        },
+        {
+          "path": "src/core/request.ts",
+          "sha256": "7338f6feba49751c9b2c6e2323f18b751aeae348f16525697bd80c5478aed221"
+        },
+        {
+          "path": "src/event/campaigns.ts",
+          "sha256": "109bdca59d04ee4f9cdd06ed955f3fb2a2e8013bf2fcd0b529293534f8a31a5a"
+        },
+        {
+          "path": "src/event/index.ts",
+          "sha256": "b78cf65fb1211decd7ef142b83273dc8f53f571cc2bdb5fd3ad1209e570f46e2"
+        },
+        {
+          "path": "src/event/pools.ts",
+          "sha256": "bfb72d5a09c7455ee75242ce996ff6683f38bb256c32681e574c7ef53dc5f3d3"
+        },
+        {
+          "path": "src/event/submissions.ts",
+          "sha256": "812a0ca2df82a8d55b4352cf050c67c3c1412d9202842f5d5f654c3e1f5eb966"
+        },
+        {
+          "path": "src/event/types.ts",
+          "sha256": "3ab0b536c0d84be38972d6b578ee4d1aed709399e08161d9e8d4946b57dfb6f0"
+        },
+        {
+          "path": "src/event/winnersAndTeam.ts",
+          "sha256": "d2d77f0f31ae0076df6c19795635dcdd5afc10869c06cc9dc365e4da1629d217"
+        },
+        {
+          "path": "src/form/index.ts",
+          "sha256": "8c5b8c19b1c7ad08253ea6f2c1ab1c40261c567c31fd4973991ad6ad3a01da6d"
+        },
+        {
+          "path": "src/form/types.ts",
+          "sha256": "594847fc94ff1892591485b5565a6acc41edf892dfc5b74a666c29d1301a5ff9"
+        },
+        {
+          "path": "src/hots/prefs.ts",
+          "sha256": "b6fb8fa6134a46bd2f505c2d8df80cb6e6eb71929b64cc7270633d9744673b79"
+        },
+        {
+          "path": "src/hots/trigger.ts",
+          "sha256": "a28cb85f7215d97dd3649593eb846142da6f8112d7fcab65443aa0cb4c63f6ae"
+        },
+        {
+          "path": "src/hots/workflow.ts",
+          "sha256": "e789428ae2268762c0e4dd49663800c351cafda5949379c60e982686b8cbe6d7"
+        },
+        {
+          "path": "src/index.ts",
+          "sha256": "2403d6fd4dc495cca63303b4124e2e59cdf34f8652053fc994479b510bed5c1f"
+        },
+        {
+          "path": "tsconfig.json",
+          "sha256": "f52bebe95c546e7f2701b48b88071d55c903d66130d84f5e9eb42e52d6a62b7c"
+        }
+      ]
+    },
+    {
+      "name": "@hots/eslint-config",
+      "version": "0.1.0",
+      "source": "D:/Kantor/1.Frontend/packages/eslint-config",
+      "local": "1.Frontend/packages/eslint-config",
+      "files": [
+        {
+          "path": ".app_index.json",
+          "sha256": "0bcc58696d4c306b3a715f081806755d7bf0f3d2a33d9fb5ac7117f9a74cd726"
+        },
+        {
+          "path": "APP_MAP.md",
+          "sha256": "c8276c11c8ac77afd22adfea3ebc64f3bd8fbadd2dee45019a0c9459c7b3a413"
+        },
+        {
+          "path": "docs/CHANGELOG.md",
+          "sha256": "f53d4c751d944cf6248dbe2994c64133b1e751d6e4e607b21c4761721d25f0bb"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "dbf7e33db51b04a3b1df50916d24dffac86380f6e4f75df2313b678909aaefb2"
+        },
+        {
+          "path": "index.js",
+          "sha256": "942a2e127498f66a43d67fbfe78f1896bf8dfd831180f19d83ac869b183b5a84"
+        },
+        {
+          "path": "package.json",
+          "sha256": "18d13906ebee60df7b2dfccce97f3c6f5f4adb9b3e1cc2e37ccb987341482c9c"
+        }
+      ]
+    },
+    {
+      "name": "@hots/geo-kit",
+      "version": "0.1.0",
+      "source": "D:/Kantor/1.Frontend/packages/geo-kit",
+      "local": "1.Frontend/packages/geo-kit",
+      "files": [
+        {
+          "path": ".app_index.json",
+          "sha256": "168b0893709ed05559778f8a355762c5134de9d51b16b4317287db341801bb5b"
+        },
+        {
+          "path": "APP_MAP.md",
+          "sha256": "a0c42de7e0449deb759ddb692a49ed4c8bdd0aa3b4ff35d95968f3cb51ba32b2"
+        },
+        {
+          "path": "docs/CHANGELOG.md",
+          "sha256": "8146331e4f5947a6336f9cef691710a458222968b8786cdc03216a61c5f8d8ba"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "4a6d99b8e7006d55ad90e8901e1303d24df37d14540d7799b3b0aa7570d1cca2"
+        },
+        {
+          "path": "package.json",
+          "sha256": "228773714f0afda3883bceedfedf69dc0224e421daad507d8111372f5053594f"
+        },
+        {
+          "path": "src/data/countries.geo.json",
+          "sha256": "9b6f5d871a9a2d502d74382d44726c2e1eb47863d3f033db5f603d8e50eb535e"
+        },
+        {
+          "path": "src/index.ts",
+          "sha256": "4b0b731d90caaa794588ff4a6f1d45b74e1f2f8dc2b91efa67eb3e079093c639"
+        },
+        {
+          "path": "tsconfig.json",
+          "sha256": "5f7a4dabeab40f06223b82961543564b31b26ea54788e1f9d5ea579414bd06fc"
+        }
+      ]
+    },
+    {
+      "name": "@hots/import-kit",
+      "version": "0.1.0",
+      "source": "D:/Kantor/1.Frontend/packages/import-kit",
+      "local": "1.Frontend/packages/import-kit",
+      "files": [
+        {
+          "path": ".app_index.json",
+          "sha256": "1dc6a947254aba20ec29c947ab50524cb4a49dca5abc02bb39816b39b0bc73f7"
+        },
+        {
+          "path": "APP_MAP.md",
+          "sha256": "5f0aa1f47ef045352e76bb2102716a0e1291d8e6b92ac67a3ec2eb1edfad7ead"
+        },
+        {
+          "path": "docs/CHANGELOG.md",
+          "sha256": "42237c48d6f110b686b4f622926860ea60423b195d8a40d409d7854f446016c1"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "999238bbd2a350a1c83a3255530bcb1166ec6d8693f6de11c6b31bafb04aaa29"
+        },
+        {
+          "path": "package.json",
+          "sha256": "c182154c558d9f0173aadda399e880c3630c6c00f59f6acefc653b8205e95e88"
+        },
+        {
+          "path": "src/core/columns.js",
+          "sha256": "53b1cbc48745bb1bf215b437bfe492c7c1ce164137b483bf8dc0a572d90709e3"
+        },
+        {
+          "path": "src/core/fingerprint.js",
+          "sha256": "6a043852fb0aab81ba741505c24ded9426125fd85effe47fef8aad317c0a726d"
+        },
+        {
+          "path": "src/core/header.js",
+          "sha256": "73752c04f4547ed077f9ac3c2c31c1e7433918f14d8081dbcfd17b71df9b82a4"
+        },
+        {
+          "path": "src/core/rules.js",
+          "sha256": "0f6082b4adb582284ae9c64b5ca4f2433d05f8c0bed80a88f6e97bf982063c9d"
+        },
+        {
+          "path": "src/core/transforms.js",
+          "sha256": "3eb18478435bd36c373453a07233a910997b0433695b8fd761d21093c14856c3"
+        },
+        {
+          "path": "src/engine/applyTemplate.js",
+          "sha256": "f05d9ea1e7bbb47f9b9b93d2485753a64f4e01a36d0d67d9be1337b8e901b0a8"
+        },
+        {
+          "path": "src/engine/validateTemplate.js",
+          "sha256": "3da51e31f435be8e2b4dd9c03bc1e6967220328e90c6ebc4a4a43166cfb493e2"
+        },
+        {
+          "path": "src/enrich/dailyStock.js",
+          "sha256": "7992d7f36fb081a514b6f9466efb65bcfe87dcd53ab0a98a61f704f1517b2fcc"
+        },
+        {
+          "path": "src/index.js",
+          "sha256": "e33a6f787487e795e724a2ecc0a44c77ed8b43759f9f9cd6a3e1c86312ac4c72"
+        },
+        {
+          "path": "templates/indovietnam/IV_DAILY_INPUT.json",
+          "sha256": "fc090cb98617f56024370f61989267f8dd4b731d41716bb2fdd406ca15ff8f69"
+        },
+        {
+          "path": "templates/indovietnam/IV_OPENING_STOCK_WEEKLY.json",
+          "sha256": "aa557036b16fb66b0c2890a2479f6963a2492cb0852a825a57f80a541507e83e"
+        },
+        {
+          "path": "templates/indovietnam/IV_ORDER_REALIZATION.json",
+          "sha256": "6f1957d16c04b43eecc90367181f80cfc7ccfc2902eb4ee75eff2a6f8496bd05"
+        },
+        {
+          "path": "templates/indovietnam/IV_RECEIPT_WEEKLY.json",
+          "sha256": "fc92284f7782cf9a42bde7f1a95bd573190e349f2a7441973b8c5d9782d3ea2b"
+        },
+        {
+          "path": "templates/indovietnam/IV_SP3_DAILY_INPUT.json",
+          "sha256": "0f846ecf5a3c032e316438a819449f27f2a8f928bd39ec839dbc3b4febf41bd6"
+        },
+        {
+          "path": "templates/indovietnam/IV_SP3_DAILY_STOCK_BATCH.json",
+          "sha256": "00196a58e9650a163f179bf5f53b74c0efccc9f1b402004ec2da7da7eaf666c8"
+        },
+        {
+          "path": "templates/indovietnam/IV_SP3_DELIVERY_LINE.json",
+          "sha256": "6b32600b3ba174ae3ac1f6a7ba8433d49d01e8181d78a4cf73f757cbd0c54e68"
+        },
+        {
+          "path": "templates/indovietnam/IV_STT_WEEKLY.json",
+          "sha256": "39967e28528ee5b394ffb49e50cdf7749441e50613648a359dc4560caa558718"
+        },
+        {
+          "path": "templates/indovietnam/IV_VEHICLE_MASTER.json",
+          "sha256": "ef99d43ffe7f659cc4320c67745d08ec7caca77ca3e7d184c47b456de9b23aea"
+        },
+        {
+          "path": "test/indovietnam.real.test.js",
+          "sha256": "52c97c9688e634d73d5cb90f1ac721850950d82fb3f419137bc51d41d8c4e572"
+        },
+        {
+          "path": "test/unit.test.js",
+          "sha256": "02d6b45386fc0ae2477af0b83ec8aa2f6213439efd00c029099b7a36d95e8f88"
+        }
+      ]
+    },
+    {
+      "name": "@hots/page-engine",
+      "version": "0.1.0",
+      "source": "D:/Kantor/1.Frontend/packages/page-engine",
+      "local": "1.Frontend/packages/page-engine",
+      "files": [
+        {
+          "path": ".app_index.json",
+          "sha256": "c31011edac95f1e5ed2ae63ea09c4061a2d1ab00162c9f8c9be5a17b32389453"
+        },
+        {
+          "path": "APP_MAP.md",
+          "sha256": "2e3d5fe8c10b37cf3dcd6fb86557b663d53c2bc6eb2c8e67bff291df5aaee933"
+        },
+        {
+          "path": "docs/CHANGELOG.md",
+          "sha256": "a3c785efdb7ee87d9656fb6f9bec0ed7a29be25cff0c781b3ed993c4de206c18"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "899212f18a9c23ef4e7995709c87ff39fd9dd7b8776d3bb11f092a26e2e0d601"
+        },
+        {
+          "path": "package.json",
+          "sha256": "0a9fb2c34cdc4f951d99898143e01400d0597e5baebf5acd33df99096947483a"
+        },
+        {
+          "path": "src/index.ts",
+          "sha256": "befc417f4d76598420abb36655b0774f82dfa0bec5a270a87caa6b06c8006d08"
+        },
+        {
+          "path": "src/layout/responsiveLayout.ts",
+          "sha256": "531c7599354226c1d1f67959e86fc5506050a89b488d7ee7d67a2e856086bc6f"
+        },
+        {
+          "path": "src/style/parseCustomCss.ts",
+          "sha256": "47b2f73d32a685e882a04d55a5780b789ede09b25202a2af5eb866376f7eea26"
+        },
+        {
+          "path": "tsconfig.json",
+          "sha256": "f52bebe95c546e7f2701b48b88071d55c903d66130d84f5e9eb42e52d6a62b7c"
+        }
+      ]
+    },
+    {
+      "name": "@hots/table-engine",
+      "version": "0.2.0",
+      "source": "D:/Kantor/1.Frontend/packages/table-engine",
+      "local": "1.Frontend/packages/table-engine",
+      "files": [
+        {
+          "path": ".app_index.json",
+          "sha256": "6d02715c0ee93c0405bc1ee98a4dd18208e8962b200d6bf638f9f23625564f82"
+        },
+        {
+          "path": "APP_MAP.md",
+          "sha256": "9ed7afcdf98da2f456288006e17f6febeae3c302ad9ddfbeba86fd25c1b7f593"
+        },
+        {
+          "path": "docs/CHANGELOG.md",
+          "sha256": "14e3c848f075d35974410aeb497d705f8ee97483147f9788798afe069be901f9"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "76f1a9fc926ec1d665c4113df0fa6f9a3a0eb66d3e06a0ebbe402775d4749a35"
+        },
+        {
+          "path": "package.json",
+          "sha256": "b73d0908fe31fac0139e60a5da428f1ac8b452be809fafd26bf3ead674cdca18"
+        },
+        {
+          "path": "src/ReusableTableEngine.tsx",
+          "sha256": "ffff3a595a07272ee71bc3b98e23885d650940e0153ab30e9583045acb72aa31"
+        },
+        {
+          "path": "src/cells/EditableCell.tsx",
+          "sha256": "959c736bb0cb06a789c5b8f003d020c9148492229f324af513590dbcab816638"
+        },
+        {
+          "path": "src/controls/ColumnFilterInput.tsx",
+          "sha256": "f66fe36d172aa57ace8788d0c14a17547720c1696c0b438c0792b68e375416e8"
+        },
+        {
+          "path": "src/controls/ColumnSelectFilterInput.tsx",
+          "sha256": "1f51dd2a3f463531d6a2507a660fd2f9bc0540d7966a87d8a2c8a31c44bc0c8f"
+        },
+        {
+          "path": "src/controls/HexRoundColorPicker.tsx",
+          "sha256": "feafa7503a367c3476e9b63ee82d2746851ea87fa7b145f1a885ca63defbe945"
+        },
+        {
+          "path": "src/export.ts",
+          "sha256": "322a242dfd305b479d523a037c2a2dba77a69ade161a5572f3c9ff48086ef55d"
+        },
+        {
+          "path": "src/index.ts",
+          "sha256": "507a2c95b3fe829cc29a1fff8b5e057dfb42970863184c26a55a385bb97ec6af"
+        },
+        {
+          "path": "src/parts/footer/PaginationBar.tsx",
+          "sha256": "bafb320e0ca01b012b217f4788fd4f5be4ba78a5a6c6b584a29938f1cefea891"
+        },
+        {
+          "path": "src/parts/header/HeaderBar.tsx",
+          "sha256": "a64561d62e8c559b2cac054e99af30823cba52ce849a44795215918599947316"
+        },
+        {
+          "path": "src/parts/menus/CellContextMenu.tsx",
+          "sha256": "71d9480205fb67d97232184c7f9f2130713fe0103327e86f55632334f051c757"
+        },
+        {
+          "path": "src/parts/menus/RenameViewDialog.tsx",
+          "sha256": "b43bf4e79207d8616c96894b538baaec61303b52c8dde3c1cefd9d45aeb23eef"
+        },
+        {
+          "path": "src/parts/menus/ViewContextMenu.tsx",
+          "sha256": "ed30f4a62f9748091404672a60768416cdd3ad8025451310413c3cab4ffb47d2"
+        },
+        {
+          "path": "src/parts/table/TableSection.tsx",
+          "sha256": "95b3c3aba5cd0ba1fefcc9136737bd1dc860aa3f663477acf4519f4ec95ebc6e"
+        },
+        {
+          "path": "src/parts/toolbar/Toolbar.tsx",
+          "sha256": "89cd21e2aef937845162e7209f03813191b919d2197ab0c28963d00312e42787"
+        },
+        {
+          "path": "src/state/useTableEngine.ts",
+          "sha256": "fd131cc4696cf968f5e32eac9b0ffa40bd0bf07dd0b80d938a16e90aec9c5a4f"
+        },
+        {
+          "path": "src/types.ts",
+          "sha256": "019dd7a1eb436b22e65d4a44a2c45df23d6fc4366e477a705589dd047668b975"
+        },
+        {
+          "path": "tsconfig.json",
+          "sha256": "f52bebe95c546e7f2701b48b88071d55c903d66130d84f5e9eb42e52d6a62b7c"
+        }
+      ]
+    },
+    {
+      "name": "@hots/tracking-kit",
+      "version": "0.1.0",
+      "source": "D:/Kantor/1.Frontend/packages/tracking-kit",
+      "local": "1.Frontend/packages/tracking-kit",
+      "files": [
+        {
+          "path": ".app_index.json",
+          "sha256": "d361dcfede66b06c2c01a54e625119561fcddd8f72ea9e9a843b2beff6b0ef20"
+        },
+        {
+          "path": "APP_MAP.md",
+          "sha256": "07d6130483bcdc3cbd56a4e27c9b6462f90495d5563c6d10d33f482ab271833b"
+        },
+        {
+          "path": "docs/CHANGELOG.md",
+          "sha256": "95100924a3d41eb42a8cd424087253dd1f406a4660a904d92771cbe97d866796"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "5e12233b0dec56ddd42079056f75edc8acde5457f5dcfef46b7a2dfe5437a714"
+        },
+        {
+          "path": "package.json",
+          "sha256": "1248cf01665a7ae67e6e94256931b077025da53a89d66f735acdd3172971356e"
+        },
+        {
+          "path": "src/index.ts",
+          "sha256": "0d62b2ce36beab63a1563e1865eaf11bebfa7d32532316f2dd8bbe56b7ad9cd0"
+        },
+        {
+          "path": "src/normalizer/containerTrackingNormalizer.js",
+          "sha256": "514b548bd3d0596acb2ee6d3d11e06dc4d90215c7b42d7b0dcee706d452baaf9"
+        },
+        {
+          "path": "src/normalizer/types.ts",
+          "sha256": "6ee56b88bbdeee35fb0df002675f3cf85af7a457ff50e93ace5bafb3f5a587fa"
+        },
+        {
+          "path": "tsconfig.json",
+          "sha256": "94e1e496da382ea7f2a6b905a322df860d2c8d78f70bf7f0cd54e7b840c1367d"
+        }
+      ]
+    },
+    {
+      "name": "@hots/ui-kit",
+      "version": "0.2.0",
+      "source": "D:/Kantor/1.Frontend/packages/ui-kit",
+      "local": "1.Frontend/packages/ui-kit",
+      "files": [
+        {
+          "path": ".app_index.json",
+          "sha256": "c4b7163e5d138aa2b011cb82b46e6ac06ca1be829de519eede0f2256a263305d"
+        },
+        {
+          "path": "APP_MAP.md",
+          "sha256": "3901006fbdb69d2000861464cd2a0b2049286a955aa6e94648401671f154096a"
+        },
+        {
+          "path": "docs/CHANGELOG.md",
+          "sha256": "ec01f92216b49d5c06ce436c0c9cfa9038116a70e121640e1fdf357d420c068f"
+        },
+        {
+          "path": "docs/DECISIONS/001-tailwind-standard.md",
+          "sha256": "abdb3dbd609688d85cc924c7c595760181d90d90338e5e333635c89483f77d2c"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "a152f143fe7f9c5292842640845d1df7f729365a969d9445ad1dbde406e0fcad"
+        },
+        {
+          "path": "package.json",
+          "sha256": "79bc545a183191c239c3062c85caa614fc077c6c73af6b5db90f6ace08257298"
+        },
+        {
+          "path": "src/components/CardCollapsible.tsx",
+          "sha256": "fa080ae56d6c8dbe8222aebc5e6fcc0fa6b58cb113906ced747cbadee6010faf"
+        },
+        {
+          "path": "src/components/FormSkeleton.tsx",
+          "sha256": "152dacbeeabc5ef7652d296685781b1cf5561db2a000c66e3b0863495ea78c61"
+        },
+        {
+          "path": "src/components/RichTextEditor.tsx",
+          "sha256": "3e7930191cd88e7cb0d837e8e9a2bb18f688681cd31e2ed2b970445c69a62df2"
+        },
+        {
+          "path": "src/components/TicketPagination.tsx",
+          "sha256": "01642248d12796fc6e114b8d8d13ef67805db8551beaf5b878aaa5e6c83d0d5f"
+        },
+        {
+          "path": "src/components/UserStatusBadge.tsx",
+          "sha256": "161ec433749299b57801a8e28aa24e4a706a823fb4b4ef67e17d66cd92629d73"
+        },
+        {
+          "path": "src/components/accordion.tsx",
+          "sha256": "c178db817f45fd84f28a1d0d991fbe177403d19a6337e12326583641fc36e701"
+        },
+        {
+          "path": "src/components/alert-dialog.tsx",
+          "sha256": "01256dae347ef26898c9bc7d98428fdbccd941b5699a8e9d53313605916e844b"
+        },
+        {
+          "path": "src/components/alert.tsx",
+          "sha256": "68077eaaf7d3aa15378bd860199b319a20a0e43cb195cc7575de660f3e58928b"
+        },
+        {
+          "path": "src/components/aspect-ratio.tsx",
+          "sha256": "08b0aa0b05efc573c7d63363c03e83d4b101bfeb54140764e96ddea30659cfcc"
+        },
+        {
+          "path": "src/components/avatar.tsx",
+          "sha256": "14162f1617defe62b0c55e3e26f0bea2c132580326223a40afc8393b65cd39f7"
+        },
+        {
+          "path": "src/components/badge.tsx",
+          "sha256": "bc555ef39888e7fcbe7ce79b8f0c5fbfba525a08ac13decc86b020a870852970"
+        },
+        {
+          "path": "src/components/breadcrumb.tsx",
+          "sha256": "56c36af5b440ea44c689838004a9b3e928ae249f922d8340cd9e807aea9db528"
+        },
+        {
+          "path": "src/components/button.tsx",
+          "sha256": "b5c31327bb6e7b938d9b4188a66e72760e905660af37d59f9e5af473aabb7364"
+        },
+        {
+          "path": "src/components/calendar.tsx",
+          "sha256": "6f2d97f9cf1dcfafb4b5681662aac338c0cedcc6dd98fd2de7013f1fb4c13a5a"
+        },
+        {
+          "path": "src/components/card.tsx",
+          "sha256": "d8cc2745f6194deaaa64d39c85850eaa6e6f21d9088a03a1acaeab5381b4ab10"
+        },
+        {
+          "path": "src/components/carousel.tsx",
+          "sha256": "0a874b4f4986a73a5441c9b552ba2dfa2f33ba53511edfdde3677d2a30384ef8"
+        },
+        {
+          "path": "src/components/chart.tsx",
+          "sha256": "9613d2a94726fbfbbb683144e18cc51c812b47e765c5166dbb7f1bdb02370669"
+        },
+        {
+          "path": "src/components/checkbox.tsx",
+          "sha256": "d69a28686c5c3562641ac353c81a275bbc49831cddb22213e5fd6980f92dbbb3"
+        },
+        {
+          "path": "src/components/collapsible.tsx",
+          "sha256": "6f5be8ba164c177759bf63cc25ad4d49391f162f6784ba624d72e5d5c0c0dde2"
+        },
+        {
+          "path": "src/components/combobox.tsx",
+          "sha256": "e6e71d5c0fa0fbb2b1d35b569a0bb6582731996a6fde0efcb3f52859f4903d47"
+        },
+        {
+          "path": "src/components/command.tsx",
+          "sha256": "59a7b552dddd39e527f2579be1590b6efbd19c7e19626200fc929c146b732727"
+        },
+        {
+          "path": "src/components/context-menu.tsx",
+          "sha256": "5fd8c3eb6d74f4f4ba46da9ec3aa844c119e4f91400396cd2a47ee1eb885c810"
+        },
+        {
+          "path": "src/components/date-range-picker.tsx",
+          "sha256": "23d0035cf41d6e8f1ff0a2c7764b58f86a481115e15f4ed311571070a0f25827"
+        },
+        {
+          "path": "src/components/dialog.tsx",
+          "sha256": "b401ea3d59f21f05c1fff9560acd4edcaca84c404786bc0d84f8f97de6afe189"
+        },
+        {
+          "path": "src/components/drawer.tsx",
+          "sha256": "6a3483e43fde36c596e6f1f87b9b41ec3e60cb4f5a7fa74e4d6722013108b9dc"
+        },
+        {
+          "path": "src/components/dropdown-menu.tsx",
+          "sha256": "a70cbce78b9376adb6a9336f0c4e7c8d8943396df36094c0e9072a040d17e52f"
+        },
+        {
+          "path": "src/components/form.tsx",
+          "sha256": "8430a4445f7b19fb6302a23cf02d0f63f674b57f11a15ef7d2d065805c9dc13e"
+        },
+        {
+          "path": "src/components/hots-suggestion-select.tsx",
+          "sha256": "0b3717e9a17208a1bf0a8251c95f8e71ca1b540884074546ad9a37aa9bebdf14"
+        },
+        {
+          "path": "src/components/hover-card.tsx",
+          "sha256": "1cd9e712faf93fcd6b4cd983b1e7ec310af06d0d5818d4ede2fc573bc8459282"
+        },
+        {
+          "path": "src/components/input-otp.tsx",
+          "sha256": "fe53121d9bd40a018d700712e1fa2152102a8a1c0c8d5051618f36e9261e1830"
+        },
+        {
+          "path": "src/components/input.tsx",
+          "sha256": "0f0e50d965f6457d7087ec1538ba5bc79eb584dcbd9319c9a1242e8ee5fcb55d"
+        },
+        {
+          "path": "src/components/label.tsx",
+          "sha256": "4962d751c6246a1aba296f2c655593a4eb89c2d022212232c55b24c6df4b4903"
+        },
+        {
+          "path": "src/components/loading-spinner.tsx",
+          "sha256": "36315f6be2764105221d94e1dc1c54243d299e05314b9ac9a94b002f33739685"
+        },
+        {
+          "path": "src/components/menubar.tsx",
+          "sha256": "081851f2756dd6d6855f939e4c89d135b3424f924d5de30218388c35b3631a7c"
+        },
+        {
+          "path": "src/components/multi-combobox.tsx",
+          "sha256": "7edabbffbc43909b75d7edb211b016409a025d209ad416162dfa2d8c8a9d47e7"
+        },
+        {
+          "path": "src/components/navigation-menu.tsx",
+          "sha256": "b7b04e1cdd538fae10dcdc2f92011612a33ce4cede751c88d8211a5d2726b0b6"
+        },
+        {
+          "path": "src/components/pagination.tsx",
+          "sha256": "0cc3e1fbc4b250606b4137c8af1f1b23a3339744ca13ed0a4799ad73460dd930"
+        },
+        {
+          "path": "src/components/popover.tsx",
+          "sha256": "1772e858f53b2e0dd14c98b9da22731a4ab29d9364d8d47fac47b87873ed925b"
+        },
+        {
+          "path": "src/components/progress.tsx",
+          "sha256": "b3ffada5ff26d82c573cfc30e93a50716944f78aba6fc36d90a1bb8a9bc68f2c"
+        },
+        {
+          "path": "src/components/radio-group.tsx",
+          "sha256": "23eee1423e8c11fb3ff2143eed5bde6e45846cbe03f9ac5d4158a03060bfc112"
+        },
+        {
+          "path": "src/components/resizable.tsx",
+          "sha256": "55fceaec0ab584b579da1ab19fb6cbbc3d622cba3fcab5a52c1a2412836f2e54"
+        },
+        {
+          "path": "src/components/scroll-area.tsx",
+          "sha256": "4f03f69a9d4df19bf3322e51ff8a10c776bdbfb2c521d876e48d208f94e14c4a"
+        },
+        {
+          "path": "src/components/select.tsx",
+          "sha256": "be322684a0872452dcf7aaac5183c4530e1eef372c7ed3ce8510aea44e9e3d36"
+        },
+        {
+          "path": "src/components/separator.tsx",
+          "sha256": "f7633493b87c06c39cf016aba0054680a17fd23a601abd7740cdbd592553222e"
+        },
+        {
+          "path": "src/components/sheet.tsx",
+          "sha256": "88e67ec8abbbc210b57ace9dbb14d04771a9b854cc55e6f0912f42b364574377"
+        },
+        {
+          "path": "src/components/sidebar.tsx",
+          "sha256": "dc0c2ad1ec01eec4ed533e3c4bdd28fb9e422f3cac7ecabfc7bf73b96f9a258f"
+        },
+        {
+          "path": "src/components/skeleton.tsx",
+          "sha256": "2a68439f6125f88627b1a7bcc82d11c0c03d44836f01cd3ee13423cb9627c256"
+        },
+        {
+          "path": "src/components/slider.tsx",
+          "sha256": "6e9f4f46776fb66feef0bd9e746cec0785ed30ff98227f787d65a0fdb12960d0"
+        },
+        {
+          "path": "src/components/sonner.tsx",
+          "sha256": "6e4ffdc133896e398b222f113f2bbee62d4615c6dcd92102d73c94138d8ae3de"
+        },
+        {
+          "path": "src/components/switch.tsx",
+          "sha256": "84b42d407db29facee5d208eee1b02d4434a451c3a9abf1ae4db4358decc33c4"
+        },
+        {
+          "path": "src/components/table.tsx",
+          "sha256": "eb76abce55494082f2301e251c60b4d67f6925897ac4149d8d5e4811fbf712b5"
+        },
+        {
+          "path": "src/components/tabs.tsx",
+          "sha256": "4205a02374943be801f7e019467589535b23453649d8258363284841aa4e8acb"
+        },
+        {
+          "path": "src/components/textarea.tsx",
+          "sha256": "a75e94adfbec1fb2423a2517e5ae1748d2531c31c6aff17a280a8b1a5743d5b3"
+        },
+        {
+          "path": "src/components/time-picker.tsx",
+          "sha256": "320d29bde15d45c239f84b263806d8a1420ce1337fcd1c77d49a450632fc38b1"
+        },
+        {
+          "path": "src/components/toggle-group.tsx",
+          "sha256": "64705c1fb5ef57219851c85b21c2f9d501b66f6f31b66974615849585db36cfe"
+        },
+        {
+          "path": "src/components/toggle.tsx",
+          "sha256": "e4b416ede5444c9dd59753d64d1fae53e7e7856c856456f6c61e48b76813522d"
+        },
+        {
+          "path": "src/components/tooltip.tsx",
+          "sha256": "2b3b0dc8d8ce6241608bc5410436f02cbc07e3f83768170fa8d3910b618911ac"
+        },
+        {
+          "path": "src/hooks/use-mobile.tsx",
+          "sha256": "d2377fbad5ad2bdf7fa896a68c36ac8bf4aa74a974b2061f77b41ae58d623001"
+        },
+        {
+          "path": "src/index.ts",
+          "sha256": "32ae8be7d0d5745b30edaa9ebbc049d04ddc40d305dde063779ed60e5b48c2ac"
+        },
+        {
+          "path": "src/lib/utils.ts",
+          "sha256": "74a147991a119f1c4cdc25a4d9b22713632fa32eb136e55ab6939b006d71b9d6"
+        },
+        {
+          "path": "src/media/PdfViewer.tsx",
+          "sha256": "97ffdf8edd85f2fc3d845a8382601ac7fa70d4f0541ac6dc1e315c1612c332af"
+        },
+        {
+          "path": "src/media/XlsxPreview.tsx",
+          "sha256": "99390714c11cd48a45e6ba00843a5db5665f75aaf330147daad94c5e455b432b"
+        },
+        {
+          "path": "src/media/index.ts",
+          "sha256": "c4bd70a09d696fcc75d309fb8b271a7b12764490f13f21c9445b9e09cd67f3e9"
+        },
+        {
+          "path": "src/styles/tokens.css",
+          "sha256": "d86dc9516324390ddfa04069777ba1da0639be444240a595ad0c6cdb7448656c"
+        },
+        {
+          "path": "tailwind-preset.cjs",
+          "sha256": "47e46d2e5bfd3be2902e4e1c916c27871ea17c77ec438867e1ef500942a24ce7"
+        },
+        {
+          "path": "tsconfig.json",
+          "sha256": "f52bebe95c546e7f2701b48b88071d55c903d66130d84f5e9eb42e52d6a62b7c"
+        }
+      ]
+    },
+    {
+      "name": "@hots/workflow-policy-kit",
+      "version": "0.2.0",
+      "source": "D:/Kantor/1.Frontend/packages/workflow-policy-kit",
+      "local": "1.Frontend/packages/workflow-policy-kit",
+      "files": [
+        {
+          "path": ".app_index.json",
+          "sha256": "5d53494edc1efdecc040b403ecab757340f1a41187debf20631efa1a9111483e"
+        },
+        {
+          "path": "APP_MAP.md",
+          "sha256": "7b28132088299ad1a83e2c0b07d55aa427f366cbf52126547610d644c0d1f00d"
+        },
+        {
+          "path": "docs/CHANGELOG.md",
+          "sha256": "85536d5438c8ea36ac6de113b5c8aa96e3647883abf481cc9ae9d59d9d4032a5"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "02734163eab6c54bed83c13fb4c6d32fcfa464c3394a2b1ec965810f5becd380"
+        },
+        {
+          "path": "package.json",
+          "sha256": "097df272dd6f65b58cae6a0c89172aaeb7fbeccaaf161dd3fc47116b20e3a0b6"
+        },
+        {
+          "path": "src/approvalTimeoutPolicy.generated.js",
+          "sha256": "d396a0a87d7722d85e9e674483d98ed40e256bdc66d64653f8031581569f0032"
+        },
+        {
+          "path": "src/index.js",
+          "sha256": "130029b7c26da081858ddcce5c2b98daa24191138452ba2f39dc1be1e8980b4d"
+        },
+        {
+          "path": "src/react/TimeoutPolicyEditor.tsx",
+          "sha256": "8b5cacf498dc380286e354a4f930e1f28c53e3d395676a3d86fadc641c843bd7"
+        },
+        {
+          "path": "src/react/index.ts",
+          "sha256": "a84a00baa3f163ae3e2273163fa381d9996b3cedb4376055b6754999726317f4"
+        },
+        {
+          "path": "test/policy.test.js",
+          "sha256": "ffbcb9948db7ca187b10f1b2d71cec60a0fb270ea2dde456f47a5ff231caeddd"
+        }
+      ]
+    },
+    {
+      "name": "@hots/transaction-kit",
+      "version": "0.2.0",
+      "source": "D:/Kantor/2.Backend/packages/transaction-kit",
+      "local": "2.Backend/packages/transaction-kit",
+      "files": [
+        {
+          "path": ".app_index.json",
+          "sha256": "18af14aa857657421c7bc747109e83db3508766e06a8758e5be3ddeced11daa5"
+        },
+        {
+          "path": "APP_MAP.md",
+          "sha256": "d8da7260fec2e616fb7a70804172bcdc480cf0ff2b1491aafbf305d747ff5ac3"
+        },
+        {
+          "path": "docs/CHANGELOG.md",
+          "sha256": "7cbb37bb9ffe1fa382fb2ec8fde0821f8e804392fce88df3d0d4077c4e9056ae"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "856ce93dd8ecfd57452b90927923f023f3a75d3c736af14f1349ee1aa3f127b3"
+        },
+        {
+          "path": "package.json",
+          "sha256": "d9c54475d63e84588d34f484dd4f1061df79f67526636af31daeb9b42201566f"
+        },
+        {
+          "path": "src/index.js",
+          "sha256": "fd5ef19ad40f3243a48c1be6b2dda0f611c56743b977102d2e74cf27410ef1da"
+        },
+        {
+          "path": "src/kernel/engine.js",
+          "sha256": "0b5045b2dd2f157c2a0986f216c5c3e119086de8ae846abb8f22c6c37110504c"
+        },
+        {
+          "path": "src/kernel/errors.js",
+          "sha256": "375161842b1f64a4ab017b85e02215d042f0dfae340228abf83fda56f46b87d6"
+        },
+        {
+          "path": "src/kernel/idempotency.js",
+          "sha256": "58e9fe4a26c3c6194e4ac96e8c541e2b9971be5a17de5712992d911487f3f6a4"
+        },
+        {
+          "path": "src/kernel/locks.js",
+          "sha256": "b4a238b7ebac75c4056b6f5bba017fc6a8187568ea34dde1cf5fc21e7e95f90a"
+        },
+        {
+          "path": "src/kernel/mysqlAdapter.js",
+          "sha256": "3473d6d393d6bef0fad9dcf9bd642d45befaa212abb11535b8550da1409e93e1"
+        },
+        {
+          "path": "src/kernel/outbox.js",
+          "sha256": "414b765edb033f22b81e0f7a47099136c6b8acf505834364129373ec037f88a7"
+        },
+        {
+          "path": "src/kernel/problem.js",
+          "sha256": "fcae547ab93449cbb3a20da8a04d7a58b77431bbb5d04d4438389cb6c8ec59a8"
+        },
+        {
+          "path": "src/kernel/sequence.js",
+          "sha256": "9f38308ec5994721889f1edec947fca370e9e2aa230d8d5bb8b20c8495ba0fe9"
+        },
+        {
+          "path": "src/ledger/stockLedger.js",
+          "sha256": "fe0ad6b6a46959216f7a4e44ac2f4bc822c4848317eed212f4ca14499561793c"
+        },
+        {
+          "path": "src/stores/hotsResourceStore.js",
+          "sha256": "4ea9636852944b34d504c88a19b46db63815401b3c5e83d95ebe79389ad21375"
+        },
+        {
+          "path": "src/stores/memory.js",
+          "sha256": "a065f7d60939765ca3c2cc7f18fffda4d41886dfdad64f668f7044470bcd985b"
+        },
+        {
+          "path": "src/types/eorder/orderSubmit.js",
+          "sha256": "6ca3aab7ec89f72cd3e52ce2e88d84f6b2891280854c328a978e191ac7b81385"
+        },
+        {
+          "path": "src/types/event/couponClaim.js",
+          "sha256": "ed72b1e7c69ce8072bf929bde9250cf97c75ff7a646a72207eda090c5483d1ed"
+        },
+        {
+          "path": "src/types/form/formSubmission.js",
+          "sha256": "28f2691e8b14800f19699d55ec81f3d404dcd83633905c2568e670a9403c15cb"
+        },
+        {
+          "path": "src/types/hots/inventoryMovement.js",
+          "sha256": "8edbc38e895a6afd509f94cb6b98dd1e461621dd52ee92cb963774187908d3df"
+        },
+        {
+          "path": "src/types/hots/posmIssue.js",
+          "sha256": "c9a2aecf3d43e8177f9d211d137a7565176b8c4d53dc864b7c27f78fcbf1d1eb"
+        },
+        {
+          "path": "test/kernel.test.js",
+          "sha256": "ca84fb7303ed2c9a53c1c5ca0433267719ade838cf30aad4e9f4c003ce06f61d"
+        },
+        {
+          "path": "test/problem.test.js",
+          "sha256": "b159253bdf9d3f2c3153fc7c46736d64de204519b01cab29ff232239fe745365"
+        },
+        {
+          "path": "test/programs.test.js",
+          "sha256": "a47532d55e0b15e0f9ff37a256f6d3c0a9c847b047f53502ae825f707a158301"
+        }
+      ]
+    }
+  ],
+  "components": [
+    {
+      "name": "CardCollapsible.tsx",
+      "original": {
+        "named": [
+          "CardCollapsible"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "CardCollapsible"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "FilePreview.tsx",
+      "status": "not-in-package"
+    },
+    {
+      "name": "FormSkeleton.tsx",
+      "original": {
+        "named": [
+          "FormSkeleton"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "FormSkeleton"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "ProgressionBar.tsx",
+      "status": "not-in-package"
+    },
+    {
+      "name": "RichTextEditor.tsx",
+      "original": {
+        "named": [
+          "RichTextEditorProps",
+          "RichTextEditorRef",
+          "RichTextEditor"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "RichTextEditorProps",
+          "RichTextEditorRef",
+          "RichTextEditor"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "TaskApprovalActionssimple.tsx",
+      "status": "not-in-package"
+    },
+    {
+      "name": "TaskListBadge.tsx",
+      "status": "not-in-package"
+    },
+    {
+      "name": "TicketPagination.tsx",
+      "original": {
+        "named": [
+          "TicketPagination"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "TicketPagination"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "UserStatusBadge.tsx",
+      "original": {
+        "named": [],
+        "defaultExport": true
+      },
+      "package": {
+        "named": [],
+        "defaultExport": true
+      }
+    },
+    {
+      "name": "TaskApprovalActions.tsx",
+      "status": "not-in-package"
+    },
+    {
+      "name": "accordion.tsx",
+      "original": {
+        "named": [
+          "Accordion",
+          "AccordionItem",
+          "AccordionTrigger",
+          "AccordionContent"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Accordion",
+          "AccordionItem",
+          "AccordionTrigger",
+          "AccordionContent"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "alert-dialog.tsx",
+      "original": {
+        "named": [
+          "AlertDialog",
+          "AlertDialogPortal",
+          "AlertDialogOverlay",
+          "AlertDialogTrigger",
+          "AlertDialogContent",
+          "AlertDialogHeader",
+          "AlertDialogFooter",
+          "AlertDialogTitle",
+          "AlertDialogDescription",
+          "AlertDialogAction",
+          "AlertDialogCancel"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "AlertDialog",
+          "AlertDialogPortal",
+          "AlertDialogOverlay",
+          "AlertDialogTrigger",
+          "AlertDialogContent",
+          "AlertDialogHeader",
+          "AlertDialogFooter",
+          "AlertDialogTitle",
+          "AlertDialogDescription",
+          "AlertDialogAction",
+          "AlertDialogCancel"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "alert.tsx",
+      "original": {
+        "named": [
+          "Alert",
+          "AlertTitle",
+          "AlertDescription"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Alert",
+          "AlertTitle",
+          "AlertDescription"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "aspect-ratio.tsx",
+      "original": {
+        "named": [
+          "AspectRatio"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "AspectRatio"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "avatar.tsx",
+      "original": {
+        "named": [
+          "Avatar",
+          "AvatarImage",
+          "AvatarFallback"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Avatar",
+          "AvatarImage",
+          "AvatarFallback"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "badge.tsx",
+      "original": {
+        "named": [
+          "BadgeProps",
+          "Badge",
+          "badgeVariants"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "BadgeProps",
+          "Badge",
+          "badgeVariants"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "breadcrumb.tsx",
+      "original": {
+        "named": [
+          "Breadcrumb",
+          "BreadcrumbList",
+          "BreadcrumbItem",
+          "BreadcrumbLink",
+          "BreadcrumbPage",
+          "BreadcrumbSeparator",
+          "BreadcrumbEllipsis"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Breadcrumb",
+          "BreadcrumbList",
+          "BreadcrumbItem",
+          "BreadcrumbLink",
+          "BreadcrumbPage",
+          "BreadcrumbSeparator",
+          "BreadcrumbEllipsis"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "button.tsx",
+      "original": {
+        "named": [
+          "ButtonProps",
+          "Button",
+          "buttonVariants"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "ButtonProps",
+          "Button",
+          "buttonVariants"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "calendar.tsx",
+      "original": {
+        "named": [
+          "CalendarProps",
+          "Calendar"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "CalendarProps",
+          "Calendar"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "card.tsx",
+      "original": {
+        "named": [
+          "Card",
+          "CardHeader",
+          "CardFooter",
+          "CardTitle",
+          "CardDescription",
+          "CardContent"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Card",
+          "CardHeader",
+          "CardFooter",
+          "CardTitle",
+          "CardDescription",
+          "CardContent"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "carousel.tsx",
+      "original": {
+        "named": [
+          "CarouselApi",
+          "Carousel",
+          "CarouselContent",
+          "CarouselItem",
+          "CarouselPrevious",
+          "CarouselNext"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "CarouselApi",
+          "Carousel",
+          "CarouselContent",
+          "CarouselItem",
+          "CarouselPrevious",
+          "CarouselNext"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "chart.tsx",
+      "original": {
+        "named": [
+          "ChartConfig",
+          "ChartContainer",
+          "ChartTooltip",
+          "ChartTooltipContent",
+          "ChartLegend",
+          "ChartLegendContent",
+          "ChartStyle"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "ChartConfig",
+          "ChartContainer",
+          "ChartTooltip",
+          "ChartTooltipContent",
+          "ChartLegend",
+          "ChartLegendContent",
+          "ChartStyle"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "checkbox.tsx",
+      "original": {
+        "named": [
+          "Checkbox"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Checkbox"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "collapsible.tsx",
+      "original": {
+        "named": [
+          "Collapsible",
+          "CollapsibleTrigger",
+          "CollapsibleContent"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Collapsible",
+          "CollapsibleTrigger",
+          "CollapsibleContent"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "combobox.tsx",
+      "original": {
+        "named": [
+          "Combobox"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Combobox"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "command.tsx",
+      "original": {
+        "named": [
+          "Command",
+          "CommandDialog",
+          "CommandInput",
+          "CommandList",
+          "CommandEmpty",
+          "CommandGroup",
+          "CommandItem",
+          "CommandShortcut",
+          "CommandSeparator"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Command",
+          "CommandDialog",
+          "CommandInput",
+          "CommandList",
+          "CommandEmpty",
+          "CommandGroup",
+          "CommandItem",
+          "CommandShortcut",
+          "CommandSeparator"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "context-menu.tsx",
+      "original": {
+        "named": [
+          "ContextMenu",
+          "ContextMenuTrigger",
+          "ContextMenuContent",
+          "ContextMenuItem",
+          "ContextMenuCheckboxItem",
+          "ContextMenuRadioItem",
+          "ContextMenuLabel",
+          "ContextMenuSeparator",
+          "ContextMenuShortcut",
+          "ContextMenuGroup",
+          "ContextMenuPortal",
+          "ContextMenuSub",
+          "ContextMenuSubContent",
+          "ContextMenuSubTrigger",
+          "ContextMenuRadioGroup"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "ContextMenu",
+          "ContextMenuTrigger",
+          "ContextMenuContent",
+          "ContextMenuItem",
+          "ContextMenuCheckboxItem",
+          "ContextMenuRadioItem",
+          "ContextMenuLabel",
+          "ContextMenuSeparator",
+          "ContextMenuShortcut",
+          "ContextMenuGroup",
+          "ContextMenuPortal",
+          "ContextMenuSub",
+          "ContextMenuSubContent",
+          "ContextMenuSubTrigger",
+          "ContextMenuRadioGroup"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "dialog.tsx",
+      "original": {
+        "named": [
+          "Dialog",
+          "DialogPortal",
+          "DialogOverlay",
+          "DialogClose",
+          "DialogTrigger",
+          "DialogContent",
+          "DialogHeader",
+          "DialogFooter",
+          "DialogTitle",
+          "DialogDescription"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Dialog",
+          "DialogPortal",
+          "DialogOverlay",
+          "DialogClose",
+          "DialogTrigger",
+          "DialogContent",
+          "DialogHeader",
+          "DialogFooter",
+          "DialogTitle",
+          "DialogDescription"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "drawer.tsx",
+      "original": {
+        "named": [
+          "Drawer",
+          "DrawerPortal",
+          "DrawerOverlay",
+          "DrawerTrigger",
+          "DrawerClose",
+          "DrawerContent",
+          "DrawerHeader",
+          "DrawerFooter",
+          "DrawerTitle",
+          "DrawerDescription"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Drawer",
+          "DrawerPortal",
+          "DrawerOverlay",
+          "DrawerTrigger",
+          "DrawerClose",
+          "DrawerContent",
+          "DrawerHeader",
+          "DrawerFooter",
+          "DrawerTitle",
+          "DrawerDescription"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "dropdown-menu.tsx",
+      "original": {
+        "named": [
+          "DropdownMenu",
+          "DropdownMenuTrigger",
+          "DropdownMenuContent",
+          "DropdownMenuItem",
+          "DropdownMenuCheckboxItem",
+          "DropdownMenuRadioItem",
+          "DropdownMenuLabel",
+          "DropdownMenuSeparator",
+          "DropdownMenuShortcut",
+          "DropdownMenuGroup",
+          "DropdownMenuPortal",
+          "DropdownMenuSub",
+          "DropdownMenuSubContent",
+          "DropdownMenuSubTrigger",
+          "DropdownMenuRadioGroup"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "DropdownMenu",
+          "DropdownMenuTrigger",
+          "DropdownMenuContent",
+          "DropdownMenuItem",
+          "DropdownMenuCheckboxItem",
+          "DropdownMenuRadioItem",
+          "DropdownMenuLabel",
+          "DropdownMenuSeparator",
+          "DropdownMenuShortcut",
+          "DropdownMenuGroup",
+          "DropdownMenuPortal",
+          "DropdownMenuSub",
+          "DropdownMenuSubContent",
+          "DropdownMenuSubTrigger",
+          "DropdownMenuRadioGroup"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "form.tsx",
+      "original": {
+        "named": [
+          "useFormField",
+          "Form",
+          "FormItem",
+          "FormLabel",
+          "FormControl",
+          "FormDescription",
+          "FormMessage",
+          "FormField"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "useFormField",
+          "Form",
+          "FormItem",
+          "FormLabel",
+          "FormControl",
+          "FormDescription",
+          "FormMessage",
+          "FormField"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "hover-card.tsx",
+      "original": {
+        "named": [
+          "HoverCard",
+          "HoverCardTrigger",
+          "HoverCardContent"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "HoverCard",
+          "HoverCardTrigger",
+          "HoverCardContent"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "input-otp.tsx",
+      "original": {
+        "named": [
+          "InputOTP",
+          "InputOTPGroup",
+          "InputOTPSlot",
+          "InputOTPSeparator"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "InputOTP",
+          "InputOTPGroup",
+          "InputOTPSlot",
+          "InputOTPSeparator"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "input.tsx",
+      "original": {
+        "named": [
+          "Input"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Input"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "label.tsx",
+      "original": {
+        "named": [
+          "Label"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Label"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "loading-spinner.tsx",
+      "original": {
+        "named": [
+          "LoadingSpinner"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "LoadingSpinner"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "menubar.tsx",
+      "original": {
+        "named": [
+          "Menubar",
+          "MenubarMenu",
+          "MenubarTrigger",
+          "MenubarContent",
+          "MenubarItem",
+          "MenubarSeparator",
+          "MenubarLabel",
+          "MenubarCheckboxItem",
+          "MenubarRadioGroup",
+          "MenubarRadioItem",
+          "MenubarPortal",
+          "MenubarSubContent",
+          "MenubarSubTrigger",
+          "MenubarGroup",
+          "MenubarSub",
+          "MenubarShortcut"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Menubar",
+          "MenubarMenu",
+          "MenubarTrigger",
+          "MenubarContent",
+          "MenubarItem",
+          "MenubarSeparator",
+          "MenubarLabel",
+          "MenubarCheckboxItem",
+          "MenubarRadioGroup",
+          "MenubarRadioItem",
+          "MenubarPortal",
+          "MenubarSubContent",
+          "MenubarSubTrigger",
+          "MenubarGroup",
+          "MenubarSub",
+          "MenubarShortcut"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "navigation-menu.tsx",
+      "original": {
+        "named": [
+          "navigationMenuTriggerStyle",
+          "NavigationMenu",
+          "NavigationMenuList",
+          "NavigationMenuItem",
+          "NavigationMenuContent",
+          "NavigationMenuTrigger",
+          "NavigationMenuLink",
+          "NavigationMenuIndicator",
+          "NavigationMenuViewport"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "navigationMenuTriggerStyle",
+          "NavigationMenu",
+          "NavigationMenuList",
+          "NavigationMenuItem",
+          "NavigationMenuContent",
+          "NavigationMenuTrigger",
+          "NavigationMenuLink",
+          "NavigationMenuIndicator",
+          "NavigationMenuViewport"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "pagination.tsx",
+      "original": {
+        "named": [
+          "Pagination",
+          "PaginationContent",
+          "PaginationEllipsis",
+          "PaginationItem",
+          "PaginationLink",
+          "PaginationNext",
+          "PaginationPrevious"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Pagination",
+          "PaginationContent",
+          "PaginationEllipsis",
+          "PaginationItem",
+          "PaginationLink",
+          "PaginationNext",
+          "PaginationPrevious"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "popover.tsx",
+      "original": {
+        "named": [
+          "Popover",
+          "PopoverTrigger",
+          "PopoverContent"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Popover",
+          "PopoverTrigger",
+          "PopoverContent"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "progress.tsx",
+      "original": {
+        "named": [
+          "Progress"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Progress"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "radio-group.tsx",
+      "original": {
+        "named": [
+          "RadioGroup",
+          "RadioGroupItem"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "RadioGroup",
+          "RadioGroupItem"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "resizable.tsx",
+      "original": {
+        "named": [
+          "ResizablePanelGroup",
+          "ResizablePanel",
+          "ResizableHandle"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "ResizablePanelGroup",
+          "ResizablePanel",
+          "ResizableHandle"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "scroll-area.tsx",
+      "original": {
+        "named": [
+          "ScrollArea",
+          "ScrollBar"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "ScrollArea",
+          "ScrollBar"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "select.tsx",
+      "original": {
+        "named": [
+          "Select",
+          "SelectGroup",
+          "SelectValue",
+          "SelectTrigger",
+          "SelectContent",
+          "SelectLabel",
+          "SelectItem",
+          "SelectSeparator",
+          "SelectScrollUpButton",
+          "SelectScrollDownButton"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Select",
+          "SelectGroup",
+          "SelectValue",
+          "SelectTrigger",
+          "SelectContent",
+          "SelectLabel",
+          "SelectItem",
+          "SelectSeparator",
+          "SelectScrollUpButton",
+          "SelectScrollDownButton"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "separator.tsx",
+      "original": {
+        "named": [
+          "Separator"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Separator"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "sheet.tsx",
+      "original": {
+        "named": [
+          "Sheet",
+          "SheetClose",
+          "SheetContent",
+          "SheetDescription",
+          "SheetFooter",
+          "SheetHeader",
+          "SheetOverlay",
+          "SheetPortal",
+          "SheetTitle",
+          "SheetTrigger"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Sheet",
+          "SheetClose",
+          "SheetContent",
+          "SheetDescription",
+          "SheetFooter",
+          "SheetHeader",
+          "SheetOverlay",
+          "SheetPortal",
+          "SheetTitle",
+          "SheetTrigger"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "sidebar.tsx",
+      "original": {
+        "named": [
+          "Sidebar",
+          "SidebarContent",
+          "SidebarFooter",
+          "SidebarGroup",
+          "SidebarGroupAction",
+          "SidebarGroupContent",
+          "SidebarGroupLabel",
+          "SidebarHeader",
+          "SidebarInput",
+          "SidebarInset",
+          "SidebarMenu",
+          "SidebarMenuAction",
+          "SidebarMenuBadge",
+          "SidebarMenuButton",
+          "SidebarMenuItem",
+          "SidebarMenuSkeleton",
+          "SidebarMenuSub",
+          "SidebarMenuSubButton",
+          "SidebarMenuSubItem",
+          "SidebarProvider",
+          "SidebarRail",
+          "SidebarSeparator",
+          "SidebarTrigger",
+          "useSidebar"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Sidebar",
+          "SidebarContent",
+          "SidebarFooter",
+          "SidebarGroup",
+          "SidebarGroupAction",
+          "SidebarGroupContent",
+          "SidebarGroupLabel",
+          "SidebarHeader",
+          "SidebarInput",
+          "SidebarInset",
+          "SidebarMenu",
+          "SidebarMenuAction",
+          "SidebarMenuBadge",
+          "SidebarMenuButton",
+          "SidebarMenuItem",
+          "SidebarMenuSkeleton",
+          "SidebarMenuSub",
+          "SidebarMenuSubButton",
+          "SidebarMenuSubItem",
+          "SidebarProvider",
+          "SidebarRail",
+          "SidebarSeparator",
+          "SidebarTrigger",
+          "useSidebar"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "skeleton.tsx",
+      "original": {
+        "named": [
+          "Skeleton"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Skeleton"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "slider.tsx",
+      "original": {
+        "named": [
+          "Slider"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Slider"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "sonner.tsx",
+      "original": {
+        "named": [
+          "Toaster",
+          "toast"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Toaster",
+          "toast"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "switch.tsx",
+      "original": {
+        "named": [
+          "Switch"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Switch"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "table.tsx",
+      "original": {
+        "named": [
+          "Table",
+          "TableHeader",
+          "TableBody",
+          "TableFooter",
+          "TableHead",
+          "TableRow",
+          "TableCell",
+          "TableCaption"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Table",
+          "TableHeader",
+          "TableBody",
+          "TableFooter",
+          "TableHead",
+          "TableRow",
+          "TableCell",
+          "TableCaption"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "tabs.tsx",
+      "original": {
+        "named": [
+          "Tabs",
+          "TabsList",
+          "TabsTrigger",
+          "TabsContent"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Tabs",
+          "TabsList",
+          "TabsTrigger",
+          "TabsContent"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "textarea.tsx",
+      "original": {
+        "named": [
+          "TextareaProps",
+          "Textarea"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "TextareaProps",
+          "Textarea"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "toast.tsx",
+      "status": "not-in-package"
+    },
+    {
+      "name": "toaster.tsx",
+      "status": "not-in-package"
+    },
+    {
+      "name": "toggle-group.tsx",
+      "original": {
+        "named": [
+          "ToggleGroup",
+          "ToggleGroupItem"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "ToggleGroup",
+          "ToggleGroupItem"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "toggle.tsx",
+      "original": {
+        "named": [
+          "Toggle",
+          "toggleVariants"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Toggle",
+          "toggleVariants"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "tooltip.tsx",
+      "original": {
+        "named": [
+          "Tooltip",
+          "TooltipTrigger",
+          "TooltipContent",
+          "TooltipProvider"
+        ],
+        "defaultExport": false
+      },
+      "package": {
+        "named": [
+          "Tooltip",
+          "TooltipTrigger",
+          "TooltipContent",
+          "TooltipProvider"
+        ],
+        "defaultExport": false
+      }
+    },
+    {
+      "name": "use-toast.ts",
+      "status": "not-in-package"
+    }
+  ]
+}

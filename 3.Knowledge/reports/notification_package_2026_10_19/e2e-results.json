@@ -1,0 +1,31 @@
+{
+  "checks": [
+    {
+      "name": "Real Cineva bell loads scoped synthetic inbox and unread badge through package client",
+      "status": "passed"
+    },
+    {
+      "name": "Mark one read persists through reload without removing notification history",
+      "status": "passed"
+    },
+    {
+      "name": "Named SSE event updates open inbox and badge immediately",
+      "status": "passed"
+    },
+    {
+      "name": "Same user in another tenant does not leak inbox or realtime payload",
+      "status": "passed"
+    },
+    {
+      "name": "Failed mark-all request preserves unread state; successful retry clears it",
+      "status": "passed"
+    },
+    {
+      "name": "New mobile session reads retained dummy history with no external services or browser errors",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "scope": "Loopback HTTP + actual SSE + real Cineva bell; synthetic in-memory transaction repository only"
+}

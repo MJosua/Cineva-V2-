@@ -1,0 +1,31 @@
+{
+  "exports": [
+    "createTenantEngine",
+    "createOidcBridge",
+    "createAppSessionManager",
+    "createRegistrationService",
+    "createMysqlMemberships",
+    "createUnitOfWork",
+    "createTenantRouter",
+    "createTenantRuntime",
+    "createRegisteredTenantRuntime",
+    "createProgramRegistry",
+    "createMysqlRuntimeStore",
+    "createMysqlTicketReads",
+    "resolveCompanyScopes",
+    "createMysqlCompanyScopes",
+    "createPersistentTenantRuntime"
+  ],
+  "externalImports": [
+    "node:crypto",
+    "node:crypto",
+    "node:crypto",
+    "node:crypto",
+    "node:crypto",
+    "node:crypto",
+    "node:crypto",
+    "node:crypto"
+  ],
+  "sourceFiles": 33,
+  "scope": "Isolated backend feature bundle. Not a full API release/deployment."
+}

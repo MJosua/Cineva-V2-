@@ -1,0 +1,32 @@
+{
+  "checks": [
+    {
+      "name": "Raw names, source text and formula errors render literally without invented payment",
+      "status": "passed"
+    },
+    {
+      "name": "All three accounts switch by URL and reload preserves selected account",
+      "status": "passed"
+    },
+    {
+      "name": "Refresh fetches updated source data without rebuilding or masking text categories",
+      "status": "passed"
+    },
+    {
+      "name": "Lifestyle maps to a content niche tag and never becomes an Instagram follower count",
+      "status": "passed"
+    },
+    {
+      "name": "Read failure shows stale-data warning while preserving previous display; recovery works",
+      "status": "passed"
+    },
+    {
+      "name": "Reader never writes application localStorage or calls external services",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "fixtures": "synthetic live endpoint only; no real workbook reads",
+  "databaseUsed": false
+}

@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-22T06:54:43.857Z",
+  "exit": 0,
+  "tests": 42,
+  "passed": 42,
+  "failed": 0,
+  "diagnostics": [],
+  "fullAppDiagnostics": 113,
+  "liveMySQL": false,
+  "liveSocialProviders": false,
+  "liveAI": false
+}

@@ -1,0 +1,24 @@
+✔ Legacy briefs remain valid with optional service details, scoped by service type (2.7539ms)
+✔ Session count rejects invalid quantities and keeps absent legacy values valid (0.8269ms)
+✔ Each service follows its own sequence and rejects skipping, repeating, reverse and terminal updates (2.6839ms)
+✔ Workflow rejects foreign service stages and corrupted history; reads return independent copies (0.391ms)
+✔ Quote change request is owner-scoped, reason-required and pinned to displayed revision (0.8926ms)
+✔ HQ revisions retain immutable snapshots and require explicit resending (0.627ms)
+✔ Acceptance rejects stale revisions and locks the exact snapshot used for project conversion (1.7469ms)
+✔ Legacy accepted records remain readable, snapshot tampering and duplicate revision mutation fail (0.9262ms)
+✔ CS queues scope workspace before searching/filtering and count waiting independently (2.7334ms)
+✔ CS assignment records handover, reassignment, resolve and explicit return to AI (1.1691ms)
+✔ Booking explicitly confirms and preserves legacy allocations without role requirements (50.5772ms)
+✔ Booking rejects missing specialist, overlaps and stale schedule acknowledgement (3.7645ms)
+✔ Reallocation invalidates confirmation; contiguous resource sessions remain available (2.5513ms)
+✔ Repository guards accepted quote history and conversion retains approved version and role needs (4.5083ms)
+✔ Late AI cannot reappear even after human handover returns to AI (6.6316ms)
+✔ Negotiated quantities are snapshotted separately from initial brief and conversion uses agreed scope (4.4392ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 344.3771

@@ -1,0 +1,15 @@
+✔ Complete synthetic portable document retains HOTS EAV and unresolved source values (7.4697ms)
+✔ Fee and followers reject negative, fractional and nonfinite quantities (4.4059ms)
+✔ Partial payments remain separate from source paid amount and cannot exceed fee (1.1138ms)
+✔ Calendar rejects invalid, reversed and end-without-start dates without guessing ambiguous text (0.6516ms)
+✔ Assignments reject foreign ticket, campaign, batch and user references (5.1622ms)
+✔ Duplicate IDs are rejected in operational collections and editable arrays (0.7617ms)
+✔ Source-like script text stays valid literal content; validation never interprets it (0.5922ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 221.7963

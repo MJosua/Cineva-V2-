@@ -1,0 +1,24 @@
+✔ Hotel reservations require a room in the same hotel and reject foreign IDs (6.2348ms)
+✔ Orders reject duplicate identifiers, invalid scalar IDs, ambiguity and unknown configuration (1.55ms)
+✔ Optional references allow absent values but reject supplied foreign values (3.51ms)
+✔ Safe paths never traverse inherited, prototype or getter properties (0.6715ms)
+✔ Rule pipeline accumulates business failures, fails closed on exceptions and asserts structured issues (1.9074ms)
+✔ Typed attributes distinguish integer money, fractions, tags and actual calendar dates (4.3793ms)
+✔ Each rule receives an isolated document even when previous checks mutate or throw (1.1229ms)
+✔ Uncloneable inputs and failing custom clone fail closed without executing checks (1.267ms)
+✔ Command allowlist authorizes and validates before reduction, isolating every phase (7.5674ms)
+✔ Reducer/protection failure never alters original state and expected revisions fail closed (1.304ms)
+✔ Unrelated library and warehouse adapters reuse commands without domain defaults (1.0681ms)
+✔ AI gateway permits only JSON command proposals and still enforces command policy (2.3066ms)
+✔ Exact module versions resolve dependencies and snapshot configuration without aliasing (1.7492ms)
+✔ Read projections authorize, redact and detach both selector input and consumer output (0.6676ms)
+✔ Event subscriptions isolate payloads, expose errors and support unsubscribe (0.9847ms)
+✔ Host transaction rollback discards state/outbox and retry dispatch starts after commit (2.9214ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 476.3354

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "programs": [
+    {"tenant_key": "hots", "enabled": false, "program_id": null, "permission_module": null, "origin": null, "workspace_path": "/hots/platform/workspaces"},
+    {"tenant_key": "overseas", "enabled": false, "program_id": null, "permission_module": null, "origin": null, "workspace_path": "/hots/platform/workspaces"},
+    {"tenant_key": "cineva", "enabled": false, "program_id": null, "permission_module": null, "origin": "https://cineva.com", "workspace_path": "/hots/platform/workspaces"}
+  ]
+}

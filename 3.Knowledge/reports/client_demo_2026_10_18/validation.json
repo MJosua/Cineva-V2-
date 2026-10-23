@@ -1,0 +1,52 @@
+{
+  "htmlBytes": 544382,
+  "embeddedSeedMatchesJson": true,
+  "sourceHashUnchanged": true,
+  "contracts": 7,
+  "e2e": 10,
+  "testsUseSyntheticData": true,
+  "databaseUsed": false,
+  "officeWrites": 0,
+  "sourceFiles": [
+    {
+      "file": "CalendarPanel.tsx",
+      "lines": 108
+    },
+    {
+      "file": "DataPanel.tsx",
+      "lines": 15
+    },
+    {
+      "file": "DocumentPanels.tsx",
+      "lines": 130
+    },
+    {
+      "file": "documentStore.ts",
+      "lines": 17
+    },
+    {
+      "file": "entry.tsx",
+      "lines": 10
+    },
+    {
+      "file": "model.ts",
+      "lines": 23
+    },
+    {
+      "file": "offline.css",
+      "lines": 9
+    },
+    {
+      "file": "OfflineDemo.tsx",
+      "lines": 38
+    },
+    {
+      "file": "portableExport.ts",
+      "lines": 16
+    },
+    {
+      "file": "validation.ts",
+      "lines": 40
+    }
+  ]
+}

@@ -1,0 +1,1260 @@
+{
+  "catalog": [
+    {
+      "name": "@hots/dynamic-form",
+      "upstream": "0.1.0",
+      "localVersion": "0.1.0",
+      "path": "1.Frontend/dynamic-form",
+      "files": 19
+    },
+    {
+      "name": "@hots/service-form-runtime",
+      "upstream": "0.1.0",
+      "localVersion": "0.1.0",
+      "path": "1.Frontend/service-form-runtime",
+      "files": 10
+    },
+    {
+      "name": "@hots/app-core",
+      "upstream": "0.5.0",
+      "localVersion": "0.5.0",
+      "path": "1.Frontend/packages/app-core",
+      "files": 18
+    },
+    {
+      "name": "@hots/calc-kit",
+      "upstream": "0.5.1",
+      "localVersion": "0.5.1",
+      "path": "1.Frontend/packages/calc-kit",
+      "files": 19
+    },
+    {
+      "name": "@hots/engine-client",
+      "upstream": "0.2.0",
+      "localVersion": "0.2.0",
+      "path": "1.Frontend/packages/engine-client",
+      "files": 19
+    },
+    {
+      "name": "@hots/eslint-config",
+      "upstream": "0.1.0",
+      "localVersion": "0.1.0",
+      "path": "1.Frontend/packages/eslint-config",
+      "files": 6
+    },
+    {
+      "name": "@hots/geo-kit",
+      "upstream": "0.1.0",
+      "localVersion": "0.1.0",
+      "path": "1.Frontend/packages/geo-kit",
+      "files": 8
+    },
+    {
+      "name": "@hots/import-kit",
+      "upstream": "0.1.0",
+      "localVersion": "0.1.0",
+      "path": "1.Frontend/packages/import-kit",
+      "files": 25
+    },
+    {
+      "name": "@hots/page-engine",
+      "upstream": "0.1.0",
+      "localVersion": "0.1.0",
+      "path": "1.Frontend/packages/page-engine",
+      "files": 9
+    },
+    {
+      "name": "@hots/table-engine",
+      "upstream": "0.2.0",
+      "localVersion": "0.2.0-cineva.1",
+      "path": "1.Frontend/packages/table-engine",
+      "files": 22
+    },
+    {
+      "name": "@hots/tracking-kit",
+      "upstream": "0.1.0",
+      "localVersion": "0.1.0",
+      "path": "1.Frontend/packages/tracking-kit",
+      "files": 9
+    },
+    {
+      "name": "@hots/ui-kit",
+      "upstream": "0.2.0",
+      "localVersion": "0.2.0-cineva.1",
+      "path": "1.Frontend/packages/ui-kit",
+      "files": 72
+    },
+    {
+      "name": "@hots/workflow-policy-kit",
+      "upstream": "0.2.0",
+      "localVersion": "0.2.0",
+      "path": "1.Frontend/packages/workflow-policy-kit",
+      "files": 10
+    },
+    {
+      "name": "@hots/transaction-kit",
+      "upstream": "0.2.0",
+      "localVersion": "0.2.0",
+      "path": "2.Backend/packages/transaction-kit",
+      "files": 25
+    }
+  ],
+  "consumed": [
+    "@hots/app-core",
+    "@hots/dynamic-form",
+    "@hots/engine-client",
+    "@hots/eslint-config",
+    "@hots/service-form-runtime",
+    "@hots/table-engine",
+    "@hots/ui-kit"
+  ],
+  "referenceSnapshotFiles": 271,
+  "referenceChanged": [],
+  "localChanges": [
+    "1.Frontend/dynamic-form/APP_MAP.md",
+    "1.Frontend/dynamic-form/docs/CHANGELOG.md",
+    "1.Frontend/dynamic-form/docs/README.md",
+    "1.Frontend/service-form-runtime/APP_MAP.md",
+    "1.Frontend/service-form-runtime/docs/README.md",
+    "1.Frontend/packages/app-core/APP_MAP.md",
+    "1.Frontend/packages/calc-kit/APP_MAP.md",
+    "1.Frontend/packages/engine-client/APP_MAP.md",
+    "1.Frontend/packages/eslint-config/APP_MAP.md",
+    "1.Frontend/packages/geo-kit/APP_MAP.md",
+    "1.Frontend/packages/import-kit/APP_MAP.md",
+    "1.Frontend/packages/page-engine/APP_MAP.md",
+    "1.Frontend/packages/table-engine/APP_MAP.md",
+    "1.Frontend/packages/table-engine/package.json",
+    "1.Frontend/packages/table-engine/src/cells/EditableCell.tsx",
+    "1.Frontend/packages/table-engine/src/parts/toolbar/Toolbar.tsx",
+    "1.Frontend/packages/table-engine/src/state/useTableEngine.ts",
+    "1.Frontend/packages/table-engine/src/types.ts",
+    "1.Frontend/packages/tracking-kit/APP_MAP.md",
+    "1.Frontend/packages/ui-kit/APP_MAP.md",
+    "1.Frontend/packages/ui-kit/package.json",
+    "1.Frontend/packages/workflow-policy-kit/APP_MAP.md",
+    "2.Backend/packages/transaction-kit/APP_MAP.md"
+  ],
+  "backendChanges": [],
+  "uiForwarders": 53,
+  "fileGaps": [
+    {
+      "path": "1.Frontend/HOTS/src/action/cartAction.js",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/action/dump/userAction.js",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/action/KeepLogin.js",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/action/userAction.js",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/api/cms.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/BaseLayout/sidebarlayout.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/blog/addnew.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/blog/draft.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/blog/edit.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/blog/Event.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/blog/News.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/admin/CreateAccount.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/admin/EditAccount.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/admin/SidebarMenuSettings.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/approval/ApproveRejectModal.jsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/approval/TicketApprovalSection.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/assignment/AssignmentTimeline.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/assignment/CompactAssignmentCard.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/assignment/GanttTaskModal.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/assignment/SharedReportTimeline.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/assignment/SharedTaskEditor.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/assignment/TaskCard.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/assignment/TaskGantt.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/assignment/TaskKanban.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access",
+        "Over 1000 lines"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/assignment/TicketDiscussion.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/auth/ProtectedRoute.tsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/CheckToken/CheckToken.js",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/CheckToken/FetchData/DataContext.js",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/ExcelViewer/ExcelViewer.jsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/builder/ComponentPalette.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/builder/PropertyInspector.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/builder/VisualFormCanvas.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/CatalogFormLoader.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/dashboard/DashboardFormLoader.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/DynamicField.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access",
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/DynamicForm.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access",
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/DynamicSection.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/FieldEditor.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/FormLayoutPreview.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/Functioneditor.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/NumberField.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RepeatingSection.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupField.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/specialFunc/DetailTableWidget.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access",
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/specialFunc/DiffWidget.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access",
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/specialFunc/SpecialFuncFactory.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/specialfunction/orderchangetable.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/specialfunction/skuchange.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/StructuredRowGroup.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/SuggestionInsertInput.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/SuggestionInsertInputWrapper.tsx",
+      "flags": [
+        "Local form/domain renderer"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/inventory/AssetDetailDrawer.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/inventory/AssetInstanceModal.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/inventory/StockTransactionModal.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/inventory/StockTransferModal.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/inventory/views/AssetRegistryView.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/inventory/views/BulkInventoryView.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/layout/AppLayout.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/layout/NotificationBell.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/layout/PublicCMSLayout.tsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/modals/ChangePasswordModal.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/modals/CompletionModal.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/modals/ProfileModal.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/report/ReportDiscussion.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/SearchBarComponent.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/ui/FilePreview.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/workflow/visual/WorkflowNodeInspector.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/workflow/WorkflowFormModal.jsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/hooks/useAuthCheck.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/hooks/usePreferences.ts",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/hooks/useWidgetData.ts",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/AccountManagementPage.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/AdminGuide.tsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/BannerSettings.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/dashboard/DashboardAdmin.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/DepartmentManagement.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/EventAuditPage.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/FeedbackAdmin.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/ItemConfig.jsx",
+      "flags": [
+        "Legacy token storage access",
+        "Over 1000 lines"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/JobTitleManagement.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/LogData/LogData.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/OrderReport.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/ReportingDashboard.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/ServiceCatalogAdmin.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/ServiceFormEditor.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/StudioPage.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/SystemSettings.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/TriggerFunctionManager.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/UserManagement.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/AssignmentDetailPage.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/DashboardPanelRenderer.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/DashboardView.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/panels/AnalyticsCardsPanel.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/panels/AnalyticsPanel.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/panels/ChartPanel.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/panels/GenericReportPanel.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/panels/SummaryCardsPanel.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/report/CardNameGenerator.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/report/EOrderReporting.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/report/JobListPage.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/report/ProjectDashboard.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/report/ReportService.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/report/ShipmentReport.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access",
+        "Over 1000 lines"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/report/srf_report.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/report/srf_report2.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/report/UniversalReportPage.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/dashboard/ServiceAnalyticsView.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/EngineModuleAdminPage.tsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/EngineModulePage.tsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/Error/NotFoundPage.jsx",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/HelpCenter.tsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/Index.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/inventory/AssetAuditPage.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/inventory/RequestTrackingPage.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/inventory/StorageManagementPage.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/jobmarketplace/JobMarketplaceAdminCreate.tsx",
+      "flags": [
+        "Over 1000 lines"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/login/form/Forgotpassform.tsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/login/form/Loginform.tsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/login/Registerpage.tsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/login/ResetPasswordPage.tsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/module/admin/TicketDetailPage.jsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/module/admin/TicketListPage.jsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/module/view/TicketListViewPage.jsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/module/view/TicketViewPage.jsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/MyAssignments.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketApprovalPage.jsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access",
+        "Over 1000 lines"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/tools/QRDashboard.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/tools/ShortRedirect.tsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/UserGuide.tsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/WorkflowAdminPage.jsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/platform/clients.ts",
+      "flags": [
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/services/jobMarketplaceService.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/standalone/meetingbook/MeetingRoomStandalone.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/analystslice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/assignmentSlice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/authSlice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/catalogSlice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/countryslice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/customFunctionSlice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/dashboardSlice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/inventorySlice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/meetingroom_slice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/sidebarSlice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/SKUslice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/srf_po_slice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/srf_purpose.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/srf_slice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/srf_todaysweekSlice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/ticketsSlice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/userManagementSlice.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/apiResolver.ts",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/readExcelFromURL.ts",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/rulingSystem/ruleActions/handleAPI.ts",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/AIChatWidget.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/CardNameGenerator.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/DataExecutionTools.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/Default_item_download.tsx",
+      "flags": [
+        "Inline HTTP/API call"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/GanttRoomUsage.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access",
+        "Over 1000 lines"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/JobApplicantsTable.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/MyTicketsWidget.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/PendingApprovalsWidget.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/SRFFactorySelector.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/SRFInvoiceInput.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/SRFWorkflowContainer.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/StockOverview.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/TaskCompletionButton.tsx",
+      "flags": [
+        "Inline HTTP/API call",
+        "Legacy token storage access"
+      ]
+    }
+  ]
+}

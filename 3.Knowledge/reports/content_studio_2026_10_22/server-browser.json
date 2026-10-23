@@ -1,0 +1,37 @@
+{
+  "checks": [
+    {
+      "name": "production UI connects to actual localhost HTTP API without route interception",
+      "status": "passed"
+    },
+    {
+      "name": "app-core sends cookie+CSRF+workspace context for real content mutation",
+      "status": "passed"
+    },
+    {
+      "name": "server-enforced reviewer permission renders and completes QC flow",
+      "status": "passed"
+    },
+    {
+      "name": "company switch removes prior content, then reselect loads only its own state",
+      "status": "passed"
+    },
+    {
+      "name": "missing CSRF is rejected by real HTTP server before mutation",
+      "status": "passed"
+    },
+    {
+      "name": "new content API does not send manual Bearer credentials",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "actualHTTP": true,
+  "productionFrontend": true,
+  "interception": false,
+  "auth": "synthetic localhost cookie/CSRF adapter",
+  "persistence": "memory",
+  "liveMySQL": false,
+  "liveIdP": false,
+  "liveProvider": false
+}

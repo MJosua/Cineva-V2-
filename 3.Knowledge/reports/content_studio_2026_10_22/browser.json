@@ -1,0 +1,57 @@
+{
+  "origin": "http://127.0.0.1:48178",
+  "checks": [
+    {
+      "name": "empty studio clearly labels local preview",
+      "status": "passed"
+    },
+    {
+      "name": "create content uses shared dynamic form and selects document",
+      "status": "passed"
+    },
+    {
+      "name": "edit persists on reload and image preview renders",
+      "status": "passed"
+    },
+    {
+      "name": "gallery filters templates and retains chosen template",
+      "status": "passed"
+    },
+    {
+      "name": "PNG ZIP exports actual dimensions and caption with ordered slides",
+      "status": "passed"
+    },
+    {
+      "name": "text proposal is explicitly a non-AI demo and never auto-approves",
+      "status": "passed"
+    },
+    {
+      "name": "HQ QC pins revision before scheduling",
+      "status": "passed"
+    },
+    {
+      "name": "demo accounts and schedule create per-platform target",
+      "status": "passed"
+    },
+    {
+      "name": "worker demo and analytics do not claim real provider delivery",
+      "status": "passed"
+    },
+    {
+      "name": "brand kit persists and adds closing slide to new documents",
+      "status": "passed"
+    },
+    {
+      "name": "mobile controls remain inside viewport and studio is usable",
+      "status": "passed"
+    },
+    {
+      "name": "creator preview does not inherit HQ documents or reviewer permission",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "realBrowser": true,
+  "liveBackend": false,
+  "liveProvider": false
+}

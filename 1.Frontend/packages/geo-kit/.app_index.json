@@ -1,0 +1,1 @@
+{"version":2,"app":"1.Frontend/packages/geo-kit","indexed_at":"2026-10-13T02:35:01.648Z","files":{"src/index.ts":{"mtime":1791256945424,"size":2742,"lines":69,"meta":{"exports":["countries","Position","CountryFeature","CountryCollection","getCountryFeature","findCountryByName","listCountries","filterCountries","countryCenter"]}}}}

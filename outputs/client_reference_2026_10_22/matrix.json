@@ -1,0 +1,114 @@
+[
+  [
+    "1",
+    "AI carousel dari link, teks, ide",
+    "Belum ditemukan",
+    "Assistant hanya parser draft job dummy.",
+    "Perlu ingestion, generator, review dan render slide.",
+    "1.Frontend/HOTS/src/features/cineva-shared/assistant.ts"
+  ],
+  [
+    "1",
+    "Jumlah slide, rasio 4:5 / 9:16, bahasa",
+    "Belum ditemukan",
+    "Belum ditemukan pipeline carousel.",
+    "Perlu model slide dan ekspor gambar.",
+    "1.Frontend/HOTS/src/features/creator-space/CreatorViews.tsx"
+  ],
+  [
+    "2,7",
+    "Galeri template desain dan filter",
+    "Belum ditemukan",
+    "Form/page/document engine bukan galeri desain carousel.",
+    "Perlu katalog template dan renderer konten sosial.",
+    "3.Knowledge/packages/REGISTRY.md"
+  ],
+  [
+    "3,6",
+    "Kalender konten",
+    "Sebagian - dummy",
+    "Kalender bulanan job dan daftar job harian.",
+    "Belum board posting mingguan dengan status per platform.",
+    "1.Frontend/HOTS/src/features/cineva-shared/CalendarView.tsx"
+  ],
+  [
+    "4",
+    "Hasil visual feed/carousel sosial",
+    "Belum terbukti",
+    "Screenshot memperlihatkan hasil di aplikasi sosial.",
+    "Butuh output render nyata dan verifikasi publikasi.",
+    "Referensi client gambar 4"
+  ],
+  [
+    "5",
+    "Koneksi banyak akun/platform sosial",
+    "Belum ditemukan",
+    "Snapshot identitas akun dan platform deliverable tersedia.",
+    "Belum koneksi OAuth atau token akun untuk publikasi.",
+    "1.Frontend/HOTS/src/features/cineva-campaigns/model.ts"
+  ],
+  [
+    "5",
+    "Posting sekarang dan jadwal otomatis",
+    "Belum ditemukan",
+    "recordPosting menyimpan URL/tanggal setelah QC.",
+    "Perlu adapter provider, queue, retry dan status tiap tujuan.",
+    "1.Frontend/HOTS/src/features/cineva-campaigns/execution.ts"
+  ],
+  [
+    "5",
+    "Feed/story, caption, hashtag, audio TikTok",
+    "Belum ditemukan",
+    "Belum ditemukan publish adapter untuk opsi ini.",
+    "Perlu validasi capability provider per format.",
+    "2.Backend/Integrated-API/routers; service"
+  ],
+  [
+    "8",
+    "Brand kit logo, handle, watermark, penutup",
+    "Belum ditemukan",
+    "Theme vendor Cineva tersedia untuk aplikasi.",
+    "Theme aplikasi belum brand kit yang dirender pada slide.",
+    "1.Frontend/HOTS/src/features/cineva-shared/CinevaVendorTheme.tsx"
+  ],
+  [
+    "9",
+    "Views, interaksi, engagement",
+    "Sebagian - dummy",
+    "Snapshot manual dan rumus ER per deliverable.",
+    "Belum sinkron metrik otomatis lintas akun/platform.",
+    "1.Frontend/HOTS/src/features/cineva-campaigns/finance.ts"
+  ],
+  [
+    "9,10",
+    "Grafik periode, top content, ranking template",
+    "Belum ditemukan",
+    "Insight assignment tersedia sebagai snapshot.",
+    "Perlu agregasi periode, attribution dan dashboard. ",
+    "1.Frontend/HOTS/src/features/cineva-campaigns/FinancePanel.tsx"
+  ],
+  [
+    "10",
+    "AI insight waktu posting/template terbaik",
+    "Belum ditemukan",
+    "Assistant dummy tidak menganalisis performa sosial.",
+    "Perlu dataset metrik dan analisis dengan bukti.",
+    "1.Frontend/HOTS/src/features/creator-space/CreatorViews.tsx"
+  ],
+  [
+    "1,8",
+    "Paket dan kuota generasi",
+    "Sebagian - simulasi",
+    "Starter/Pro membatasi job aktif di frontend.",
+    "Belum kuota AI, billing atau entitlement server.",
+    "1.Frontend/HOTS/src/features/creator-space/CreatorViews.tsx"
+  ],
+  [
+    "3,5",
+    "Draft, revisi, persetujuan QC, catatan post",
+    "Sebagian - dummy",
+    "Ada versi draft, review dan guard QC sebelum URL post.",
+    "Dapat menjadi fondasi workflow content studio.",
+    "1.Frontend/HOTS/src/features/cineva-campaigns/execution.ts"
+  ]
+]

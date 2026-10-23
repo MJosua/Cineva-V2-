@@ -1,0 +1,22 @@
+✔ Explicit tuple scopes distinguish tenants and reject missing identities (2.7761ms)
+✔ SSE framing preserves JSON text and rejects newline event injection (0.8437ms)
+✔ Backpressure accepts first frame once and flushes later frames in order after drain (3.4338ms)
+✔ Bounded slow-consumer queues close only on overflow and clean listeners (1.4491ms)
+✔ Hub fans out to tabs only inside the exact scope and disconnect is isolated (1.7248ms)
+✔ Publish persists for offline users; lists/counts/read are scoped and detached (2.9356ms)
+✔ Authorization and invalid paging/content reject before writes (2.0619ms)
+✔ Rollback prevents both persistence and realtime publication (0.7634ms)
+✔ Delivery failure remains explicit after commit and does not erase the inbox (1.538ms)
+✔ Hub rejects shared-response registration across scopes and removes errored connections (1.1913ms)
+✔ Throwing writes fail without retries and closed responses are never written (0.6623ms)
+✔ Unserializable notification data is rejected before transaction commit (1.0036ms)
+✔ Legacy singleton retains persistence options and existing envelope fields (14.157ms)
+✔ Legacy broadcast and filtered admin logs use package writer and retain counts (6.2629ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 294.0952

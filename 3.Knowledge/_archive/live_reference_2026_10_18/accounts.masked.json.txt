@@ -1,0 +1,171 @@
+[
+  {
+    "id": "ref-1",
+    "alias": "Akun Referensi 1",
+    "sourceFile": "SIMPLY JUUN.xlsx",
+    "sheet": "Assesment Simply Juun 3",
+    "sourceRow": 36,
+    "sha256": "06f5d020bffe959da2b8e869fb35d0601f6309a1927da299a59833c21ff999e4",
+    "social": [
+      {
+        "platform": "Instagram",
+        "followers": 1542.0
+      }
+    ],
+    "product": "GLEE",
+    "tasks": [
+      {
+        "label": "REVIEW SHOPEE",
+        "observation": "Catatan sumber tersedia; perlu review",
+        "referenceAvailable": true,
+        "cell": "X36"
+      },
+      {
+        "label": "LINK DRIVE",
+        "observation": "Catatan sumber tersedia; perlu review",
+        "referenceAvailable": true,
+        "cell": "Y36"
+      },
+      {
+        "label": "LINK POST",
+        "observation": "Catatan sumber tersedia; perlu review",
+        "referenceAvailable": true,
+        "cell": "Z36"
+      },
+      {
+        "label": "STATUS PAYMENT",
+        "observation": "Diajukan",
+        "referenceAvailable": true,
+        "cell": "AA36"
+      }
+    ],
+    "insight": {
+      "likes": 64.0,
+      "comments": 1.0,
+      "shares": 0.0,
+      "saves": 0.0,
+      "reposts": 0.0,
+      "views": 1428.0,
+      "er": 4.551820728291316,
+      "sourceRow": 61
+    },
+    "matchNote": "Pencocokan nama unik dalam sheet ini saja; bukan ID lintas campaign.",
+    "cashFee": null,
+    "cashPaid": null
+  },
+  {
+    "id": "ref-2",
+    "alias": "Akun Referensi 2",
+    "sourceFile": "SIMPLY JUUN.xlsx",
+    "sheet": "Assesment Simply Juun 2",
+    "sourceRow": 35,
+    "sha256": "06f5d020bffe959da2b8e869fb35d0601f6309a1927da299a59833c21ff999e4",
+    "social": [
+      {
+        "platform": "Instagram",
+        "followers": 24300.0
+      },
+      {
+        "platform": "TikTok",
+        "followers": 1200.0
+      }
+    ],
+    "product": "BLOOM",
+    "tasks": [
+      {
+        "label": "STATUS PRODUCT",
+        "observation": "DELIVERED",
+        "referenceAvailable": true,
+        "cell": "AA35"
+      },
+      {
+        "label": "REVIEW SHOPEE",
+        "observation": "DONE",
+        "referenceAvailable": true,
+        "cell": "X43"
+      },
+      {
+        "label": "LINK DRIVE ALL",
+        "observation": "DONE",
+        "referenceAvailable": true,
+        "cell": "Y43"
+      },
+      {
+        "label": "QC CONTENT QUALITY",
+        "observation": "Catatan sumber tersedia; perlu review",
+        "referenceAvailable": true,
+        "cell": "Z43"
+      },
+      {
+        "label": "STATUS PAYMENT",
+        "observation": "Catatan sumber tersedia; perlu review",
+        "referenceAvailable": true,
+        "cell": "AA43"
+      },
+      {
+        "label": "PERFORMA CREATOR",
+        "observation": "Catatan sumber tersedia; perlu review",
+        "referenceAvailable": true,
+        "cell": "AB43"
+      }
+    ],
+    "insight": null,
+    "matchNote": "Pencocokan nama unik dalam sheet ini saja; bukan ID lintas campaign.",
+    "cashFee": null,
+    "cashPaid": null
+  },
+  {
+    "id": "ref-3",
+    "alias": "Akun Referensi 3",
+    "sourceFile": "Assesment Vape IC 100.xlsx",
+    "sheet": "Assesment IC 100 LIQUID 1",
+    "sourceRow": 42,
+    "sha256": "9daeb6e0db4c7e5b9b31a5684052f3c2a7c192660f48c76770ea6998cfb0dbe9",
+    "social": [
+      {
+        "platform": "Instagram",
+        "followers": null
+      }
+    ],
+    "product": "Belum tersedia",
+    "tasks": [
+      {
+        "label": "LINK DRIVE",
+        "observation": "Belum tersedia",
+        "referenceAvailable": false,
+        "cell": "X42"
+      },
+      {
+        "label": "STORYLINE",
+        "observation": "Belum tersedia",
+        "referenceAvailable": false,
+        "cell": "Y42"
+      },
+      {
+        "label": "LINK POST",
+        "observation": "Belum tersedia",
+        "referenceAvailable": false,
+        "cell": "Z42"
+      },
+      {
+        "label": "STATUS PAYMENT",
+        "observation": "Belum tersedia",
+        "referenceAvailable": false,
+        "cell": "AA42"
+      }
+    ],
+    "insight": {
+      "likes": null,
+      "comments": null,
+      "shares": null,
+      "saves": null,
+      "reposts": null,
+      "views": null,
+      "er": null,
+      "sourceRow": 69
+    },
+    "matchNote": "Pencocokan nama unik dalam sheet ini saja; bukan ID lintas campaign.",
+    "cashFee": null,
+    "cashPaid": null
+  }
+]

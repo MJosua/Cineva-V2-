@@ -1,0 +1,13 @@
+{
+  "name": "@hots/calc-kit",
+  "version": "0.5.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "node --test test/cbm.test.js test/approvalThreshold.test.js test/evaluateContainerLoad.test.js test/autoBalance.test.js test/validateOrderLoad.test.js"
+  }
+}

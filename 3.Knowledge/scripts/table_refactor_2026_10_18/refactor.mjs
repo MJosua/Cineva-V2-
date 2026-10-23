@@ -1,0 +1,25 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'../../..');
+const dir=path.join(root,'1.Frontend/packages/table-engine/src/state');
+const source=await fs.readFile(path.join(dir,'useTableEngine.ts'),'utf8');
+const archive=path.join(root,'3.Knowledge/_archive/table_refactor_2026_10_18');
+await fs.mkdir(archive,{recursive:true});
+await fs.writeFile(path.join(archive,'useTableEngine.ts.before.txt'),source,{flag:'wx'});
+let result=source;
+const slice=(start,end)=>source.slice(source.indexOf(start),source.indexOf(end));
+const selection=slice('  const allCurrentRowKeys =','  const [expandedFilters,');
+await fs.writeFile(path.join(dir,'useTableSelection.ts'),`import React, { useMemo } from 'react';\nimport type { ReusableTableEngineProps } from '../types';\n\n/** Page selection; preserves the existing key and callback contracts. */\nexport function useTableSelection<T extends Record<string, any>>(\n  displayRows: T[],\n  getRowKey: ReusableTableEngineProps<T>['getRowKey'],\n  selectedRowKeys: React.Key[],\n  onSelectionChange: ReusableTableEngineProps<T>['onSelectionChange'],\n) {\n${selection}  return { allCurrentRowKeys, isAllSelected, isSomeSelected, handleToggleSelectAll, handleToggleRowSelect };\n}\n`);
+result=result.replace(selection,`  const { allCurrentRowKeys, isAllSelected, isSomeSelected, handleToggleSelectAll, handleToggleRowSelect } =\n    useTableSelection(displayRows, getRowKey, selectedRowKeys, onSelectionChange);\n\n`);
+const orderState=slice('  // Column Ordering (Drag & Drop)','  // Saved View Presets');
+const orderHandlers=slice('  // Drag & Drop Column Reordering Handlers','  const isControlledTags =');
+await fs.writeFile(path.join(dir,'useColumnOrder.ts'),`import React, { useState } from 'react';\nimport type { ReusableTableEngineProps } from '../types';\n\n/** Controlled/local order, drag lifecycle and report-scoped browser persistence. */\nexport function useColumnOrder<T extends Record<string, any>>({\n  reportKey, columns, columnOrder: propColumnOrder, onColumnOrderChange,\n}: Pick<ReusableTableEngineProps<T>, 'reportKey' | 'columns' | 'columnOrder' | 'onColumnOrderChange'>) {\n${orderState}${orderHandlers}  return { ORDER_STORAGE_KEY, internalColumnOrder, setInternalColumnOrder, columnOrder,\n    draggedColKey, setDraggedColKey, dragOverColKey, setDragOverColKey,\n    handleDragStart, handleDragOver, handleDrop, handleDragEnd };\n}\n`);
+result=result.replace(orderState,`  const { ORDER_STORAGE_KEY, internalColumnOrder, setInternalColumnOrder, columnOrder,\n    draggedColKey, setDraggedColKey, dragOverColKey, setDragOverColKey,\n    handleDragStart, handleDragOver, handleDrop, handleDragEnd } = useColumnOrder(props);\n\n`).replace(orderHandlers,'');
+const groupState=slice('  // Group By State','  // Load Saved Views');
+// Pagination belongs to the composing table, not grouping.
+const grouping=groupState.replace(/  const \[jumpToPageVal, setJumpToPageVal\] = useState<string>\(''\);\r?\n/,'');
+const groupRows=slice('  // Client-side grouping','  const allCurrentRowKeys =');
+await fs.writeFile(path.join(dir,'useTableGrouping.ts'),`import { useMemo, useState } from 'react';\nimport type { ReusableTableEngineProps } from '../types';\n\n/** Group control and collapse state, with grouping delegated to controlled hosts. */\nexport function useTableGrouping<T extends Record<string, any>>(\n  groupBy: ReusableTableEngineProps<T>['groupBy'],\n  onGroupByChange: ReusableTableEngineProps<T>['onGroupByChange'],\n) {\n${grouping}  return { internalGroupBy, setInternalGroupBy, activeGroupBy, collapsedGroups,\n    setCollapsedGroups, toggleGroupCollapse, handleGroupByChange };\n}\n\nexport function useGroupedRows<T extends Record<string, any>>(\n  displayRows: T[], activeGroupBy: string | null,\n  onGroupByChange: ReusableTableEngineProps<T>['onGroupByChange'],\n) {\n${groupRows}  return groupedEntries;\n}\n`);
+result=result.replace(groupState,`  const { internalGroupBy, setInternalGroupBy, activeGroupBy, collapsedGroups,\n    setCollapsedGroups, toggleGroupCollapse, handleGroupByChange } = useTableGrouping(groupBy, onGroupByChange);\n  const [jumpToPageVal, setJumpToPageVal] = useState<string>('');\n\n`).replace(groupRows,'  const groupedEntries = useGroupedRows(displayRows, activeGroupBy, onGroupByChange);\n\n');
+result=result.replace("import { Copy } from 'lucide-react';",`import { useColumnOrder } from './useColumnOrder';\nimport { useTableSelection } from './useTableSelection';\nimport { useTableGrouping, useGroupedRows } from './useTableGrouping';`);
+await fs.writeFile(path.join(dir,'useTableEngine.ts'),result);

@@ -1,0 +1,122 @@
+/* 1.Frontend/service-form-runtime/src/styles.css */
+.hsfr-shell {
+  width: 100%;
+}
+.hsfr-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 auto 18px;
+  max-width: 920px;
+}
+.hsfr-toolbar-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.hsfr-toolbar button {
+  border: 1px solid #d8dee9;
+  border-radius: 8px;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+  font-weight: 750;
+  padding: 9px 12px;
+  cursor: pointer;
+}
+.hsfr-toolbar div {
+  display: grid;
+  gap: 3px;
+}
+.hsfr-toolbar span {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.hsfr-toolbar strong {
+  color: #172033;
+  font-size: 1rem;
+  font-weight: 950;
+}
+.hsfr-state {
+  margin: 0 auto 16px;
+  max-width: 920px;
+  border: 1px solid #d8dee9;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  padding: 14px 16px;
+  font-weight: 750;
+}
+.hsfr-error {
+  border-color: #fecaca;
+  background: #fff7f7;
+  color: #b91c1c;
+}
+.hsfr-toast {
+  position: fixed;
+  z-index: 10000;
+  right: clamp(14px, 3vw, 34px);
+  bottom: clamp(14px, 3vw, 34px);
+  width: min(420px, calc(100vw - 28px));
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: #fff;
+  padding: 16px 44px 16px 20px;
+  box-shadow: 0 20px 50px rgba(127, 29, 29, 0.22);
+  animation: hsfr-toast-enter 0.22s ease-out;
+}
+.hsfr-toast-error {
+  border: 1px solid #fecaca;
+  border-left: 5px solid #dc2626;
+  color: #7f1d1d;
+}
+.hsfr-toast > button {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #991b1b;
+  font: inherit;
+  font-weight: 800;
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.hsfr-toast strong {
+  display: block;
+  color: #991b1b;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+.hsfr-toast p {
+  margin: 6px 0 0;
+  color: #7f1d1d;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  font-weight: 600;
+}
+@keyframes hsfr-toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (max-width: 700px) {
+  .hsfr-toast {
+    right: 14px;
+    bottom: 14px;
+  }
+}

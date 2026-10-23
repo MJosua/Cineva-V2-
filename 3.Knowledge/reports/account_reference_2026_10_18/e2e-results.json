@@ -1,0 +1,24 @@
+{
+  "checks": [
+    {
+      "name": "Synthetic account snapshot uses source observations and unavailable cash, not invented paid status",
+      "status": "passed"
+    },
+    {
+      "name": "Three account links update content and deep-link survives reload",
+      "status": "passed"
+    },
+    {
+      "name": "Missing insight remains unavailable; source row and provenance are visible",
+      "status": "passed"
+    },
+    {
+      "name": "Reference page never writes localStorage or sends backend/external requests",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "fixtures": "synthetic only; real accounts.json replaced before bundling",
+  "databaseUsed": false
+}

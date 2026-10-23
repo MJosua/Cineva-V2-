@@ -1,0 +1,1800 @@
+[
+  {
+    "file": "SIMPLY JUUN.xlsx",
+    "bytes": 306859,
+    "sha256": "06f5d020bffe959da2b8e869fb35d0601f6309a1927da299a59833c21ff999e4",
+    "sheets": [
+      {
+        "sheet": "Assesment Simply Juun 1",
+        "extent": {
+          "rows": 72,
+          "columns": 29
+        },
+        "nonempty_cells": 558,
+        "tables": [
+          {
+            "heading": "TALENT TERPILIH [20 orang]",
+            "heading_cell": "Q28",
+            "header_row": 29,
+            "end_row": 50,
+            "record_count": 20,
+            "columns": [
+              {
+                "cell": "Q29",
+                "label": "NAMA LENGKAP",
+                "types": {
+                  "text": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "R29",
+                "label": "USERNAME INSTAGRAM",
+                "types": {
+                  "text": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "S29",
+                "label": "LINK INSTAGRAM",
+                "types": {
+                  "text": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "T29",
+                "label": "FOLLOWERS",
+                "types": {
+                  "number": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "U29",
+                "label": "NO WHATSAPP",
+                "types": {
+                  "number": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "V29",
+                "label": "DOMISILI",
+                "types": {
+                  "text": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "W29",
+                "label": "PRODUCT",
+                "types": {
+                  "text": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "X29",
+                "label": "REVIEW SHOPEE",
+                "types": {
+                  "text": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Y29",
+                "label": "LINK DRIVE",
+                "types": {
+                  "text": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Z29",
+                "label": "LINK POST",
+                "types": {
+                  "text": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AA29",
+                "label": "STATUS PAYMENT",
+                "types": {
+                  "text": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              }
+            ]
+          },
+          {
+            "heading": "ENGAGEMENT DASBOARD [UPDATE 16 JUNI 2026]",
+            "heading_cell": "Q51",
+            "header_row": 52,
+            "end_row": 72,
+            "record_count": 20,
+            "columns": [
+              {
+                "cell": "Q52",
+                "label": "NAMA LENGKAP",
+                "types": {
+                  "text": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "R52",
+                "label": "USERNAME INSTAGRAM",
+                "types": {
+                  "text": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "S52",
+                "label": "LINK INSTAGRAM",
+                "types": {
+                  "text": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "T52",
+                "label": "FOLLOWERS",
+                "types": {
+                  "number": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "U52",
+                "label": "POST KONTEN",
+                "types": {
+                  "text": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "V52",
+                "label": "LIKE",
+                "types": {
+                  "number": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "W52",
+                "label": "COMMENT",
+                "types": {
+                  "number": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "X52",
+                "label": "SHARE",
+                "types": {
+                  "number": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Y52",
+                "label": "SAVE",
+                "types": {
+                  "number": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Z52",
+                "label": "REPOST",
+                "types": {
+                  "number": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AA52",
+                "label": "VIEWS",
+                "types": {
+                  "number": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AB52",
+                "label": "RANGE ENGAGEMENT",
+                "types": {
+                  "number": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AC52",
+                "label": "ENGAGEMENT CATEGORIES",
+                "types": {
+                  "text": 20
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              }
+            ]
+          }
+        ],
+        "metadata_labels": [
+          {
+            "cell": "R5",
+            "label": "Nama Brand / Perusahaan",
+            "value_cell": "S5"
+          },
+          {
+            "cell": "R6",
+            "label": "About Brand",
+            "value_cell": "S6"
+          },
+          {
+            "cell": "R7",
+            "label": "Penanggung Jawab Brand",
+            "value_cell": "S7"
+          },
+          {
+            "cell": "R8",
+            "label": "Kategori Creator",
+            "value_cell": "S8"
+          },
+          {
+            "cell": "R9",
+            "label": "Lokasi Brand",
+            "value_cell": "S9"
+          },
+          {
+            "cell": "R10",
+            "label": "Key campaign objective",
+            "value_cell": "S10"
+          },
+          {
+            "cell": "R11",
+            "label": "Target audience",
+            "value_cell": "S11"
+          },
+          {
+            "cell": "R12",
+            "label": "Key messaging",
+            "value_cell": "S12"
+          },
+          {
+            "cell": "R13",
+            "label": "Nama Product Kategori",
+            "value_cell": "S13"
+          },
+          {
+            "cell": "R17",
+            "label": "Timeline Campaign",
+            "value_cell": "S17"
+          },
+          {
+            "cell": "R18",
+            "label": "Platform yang digunakan",
+            "value_cell": "S18"
+          },
+          {
+            "cell": "R19",
+            "label": "Budget KOL",
+            "value_cell": "S19"
+          },
+          {
+            "cell": "R20",
+            "label": "Budget Marketing",
+            "value_cell": "S20"
+          },
+          {
+            "cell": "R21",
+            "label": "Benefit Creator",
+            "value_cell": "S21"
+          },
+          {
+            "cell": "R22",
+            "label": "SOW [Scope Of Work]",
+            "value_cell": "S22"
+          },
+          {
+            "cell": "R23",
+            "label": "Status Campaign",
+            "value_cell": "S23"
+          },
+          {
+            "cell": "R24",
+            "label": "Timeline Campaign",
+            "value_cell": "S24"
+          },
+          {
+            "cell": "R25",
+            "label": "Sheet Data Progress",
+            "value_cell": "S25"
+          },
+          {
+            "cell": "R26",
+            "label": "File Rekapan",
+            "value_cell": "S26"
+          }
+        ],
+        "formulas": [
+          {
+            "cell": "AB53",
+            "formula": "=SUM(V53:Z53)/AA53*100"
+          },
+          {
+            "cell": "AB54",
+            "formula": "=SUM(V54:Z54)/AA54*100"
+          },
+          {
+            "cell": "AB55",
+            "formula": "=SUM(V55:Z55)/AA55*100"
+          },
+          {
+            "cell": "AB56",
+            "formula": "=SUM(V56:Z56)/AA56*100"
+          },
+          {
+            "cell": "AB57",
+            "formula": "=SUM(V57:Z57)/AA57*100"
+          },
+          {
+            "cell": "AB58",
+            "formula": "=SUM(V58:Z58)/AA58*100"
+          },
+          {
+            "cell": "AB59",
+            "formula": "=SUM(V59:Z59)/AA59*100"
+          },
+          {
+            "cell": "AB60",
+            "formula": "=SUM(V60:Z60)/AA60*100"
+          },
+          {
+            "cell": "AB61",
+            "formula": "=SUM(V61:Z61)/AA61*100"
+          },
+          {
+            "cell": "AB62",
+            "formula": "=SUM(V62:Z62)/AA62*100"
+          },
+          {
+            "cell": "AB63",
+            "formula": "=SUM(V63:Z63)/AA63*100"
+          },
+          {
+            "cell": "AB64",
+            "formula": "=SUM(V64:Z64)/AA64*100"
+          },
+          {
+            "cell": "AB65",
+            "formula": "=SUM(V65:Z65)/AA65*100"
+          },
+          {
+            "cell": "AB66",
+            "formula": "=SUM(V66:Z66)/AA66*100"
+          },
+          {
+            "cell": "AB67",
+            "formula": "=SUM(V67:Z67)/AA67*100"
+          },
+          {
+            "cell": "AB68",
+            "formula": "=SUM(V68:Z68)/AA68*100"
+          },
+          {
+            "cell": "AB69",
+            "formula": "=SUM(V69:Z69)/AA69*100"
+          },
+          {
+            "cell": "AB70",
+            "formula": "=SUM(V70:Z70)/AA70*100"
+          },
+          {
+            "cell": "AB71",
+            "formula": "=SUM(V71:Z71)/AA71*100"
+          },
+          {
+            "cell": "AB72",
+            "formula": "=SUM(V72:Z72)/AA72*100"
+          }
+        ],
+        "cached_errors": [],
+        "engagement_checks": {
+          "checked": 20,
+          "missing_denominator": [],
+          "cached_mismatch": []
+        }
+      },
+      {
+        "sheet": "Assesment Simply Juun 2",
+        "extent": {
+          "rows": 43,
+          "columns": 28
+        },
+        "nonempty_cells": 195,
+        "tables": [
+          {
+            "heading": "TALENT TERPILIH [5 orang]",
+            "heading_cell": "Q29",
+            "header_row": 30,
+            "end_row": 36,
+            "record_count": 5,
+            "columns": [
+              {
+                "cell": "Q30",
+                "label": "NAMA LENGKAP",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "R30",
+                "label": "USERNAME INSTAGRAM",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "S30",
+                "label": "LINK INSTAGRAM",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "T30",
+                "label": "FOLLOWERS INSTAGRAM",
+                "types": {
+                  "number": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "U30",
+                "label": "USERNAME TIKTOK",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "V30",
+                "label": "LINK TIKTOK",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [
+                  "V31"
+                ],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "W30",
+                "label": "FOLLOWERS TIKTOK",
+                "types": {
+                  "number": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "X30",
+                "label": "NO WHATSAPP",
+                "types": {
+                  "number": 4,
+                  "text": 1
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Y30",
+                "label": "DOMISILI",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Z30",
+                "label": "PRODUCT",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AA30",
+                "label": "STATUS PRODUCT",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              }
+            ]
+          },
+          {
+            "heading": "FINAL PROGRESS CREATOR",
+            "heading_cell": "Q37",
+            "header_row": 38,
+            "end_row": 43,
+            "record_count": 5,
+            "columns": [
+              {
+                "cell": "Q38",
+                "label": "NAMA LENGKAP",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "R38",
+                "label": "USERNAME INSTAGRAM",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "S38",
+                "label": "LINK INSTAGRAM",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "T38",
+                "label": "FOLLOWERS INSTAGRAM",
+                "types": {
+                  "number": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "U38",
+                "label": "USERNAME TIKTOK",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "V38",
+                "label": "LINK  TIKTOK",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [
+                  "V39"
+                ],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "W38",
+                "label": "FOLLOWERS TIKTOK",
+                "types": {
+                  "number": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "X38",
+                "label": "REVIEW SHOPEE",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Y38",
+                "label": "LINK DRIVE ALL",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [
+                  "Y39",
+                  "Y40",
+                  "Y41",
+                  "Y42",
+                  "Y43"
+                ],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Z38",
+                "label": "QC CONTENT QUALITY",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AA38",
+                "label": "STATUS PAYMENT",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AB38",
+                "label": "PERFORMA CREATOR",
+                "types": {
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              }
+            ]
+          }
+        ],
+        "metadata_labels": [
+          {
+            "cell": "R5",
+            "label": "Nama Brand / Perusahaan",
+            "value_cell": "S5"
+          },
+          {
+            "cell": "R6",
+            "label": "About Brand",
+            "value_cell": "S6"
+          },
+          {
+            "cell": "R7",
+            "label": "Penanggung Jawab Brand",
+            "value_cell": "S7"
+          },
+          {
+            "cell": "R8",
+            "label": "Kategori Creator",
+            "value_cell": "S8"
+          },
+          {
+            "cell": "R9",
+            "label": "Lokasi Brand",
+            "value_cell": "S9"
+          },
+          {
+            "cell": "R10",
+            "label": "Key campaign objective",
+            "value_cell": "S10"
+          },
+          {
+            "cell": "R11",
+            "label": "Target audience",
+            "value_cell": "S11"
+          },
+          {
+            "cell": "R12",
+            "label": "Key messaging",
+            "value_cell": "S12"
+          },
+          {
+            "cell": "R13",
+            "label": "Nama Product Kategori",
+            "value_cell": "S13"
+          },
+          {
+            "cell": "R18",
+            "label": "Timeline Campaign",
+            "value_cell": "S18"
+          },
+          {
+            "cell": "R19",
+            "label": "Platform yang digunakan",
+            "value_cell": "S19"
+          },
+          {
+            "cell": "R20",
+            "label": "Budget KOL",
+            "value_cell": "S20"
+          },
+          {
+            "cell": "R21",
+            "label": "Budget Marketing",
+            "value_cell": "S21"
+          },
+          {
+            "cell": "R22",
+            "label": "Benefit Creator",
+            "value_cell": "S22"
+          },
+          {
+            "cell": "R23",
+            "label": "SOW [Scope Of Work]",
+            "value_cell": "S23"
+          },
+          {
+            "cell": "R24",
+            "label": "Status Campaign",
+            "value_cell": "S24"
+          },
+          {
+            "cell": "R25",
+            "label": "Timeline Campaign",
+            "value_cell": "S25"
+          },
+          {
+            "cell": "R26",
+            "label": "Sheet Data Progress",
+            "value_cell": "S26"
+          },
+          {
+            "cell": "R27",
+            "label": "File Rekapan",
+            "value_cell": "S27"
+          }
+        ],
+        "formulas": [],
+        "cached_errors": [],
+        "engagement_checks": {
+          "checked": 0,
+          "missing_denominator": [],
+          "cached_mismatch": []
+        }
+      },
+      {
+        "sheet": "Assesment Simply Juun 3",
+        "extent": {
+          "rows": 76,
+          "columns": 29
+        },
+        "nonempty_cells": 597,
+        "tables": [
+          {
+            "heading": "TALENT TERPILIH [20 orang]",
+            "heading_cell": "Q28",
+            "header_row": 29,
+            "end_row": 52,
+            "record_count": 22,
+            "columns": [
+              {
+                "cell": "Q29",
+                "label": "NAMA LENGKAP",
+                "types": {
+                  "text": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "R29",
+                "label": "USERNAME INSTAGRAM",
+                "types": {
+                  "text": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "S29",
+                "label": "LINK INSTAGRAM",
+                "types": {
+                  "text": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "T29",
+                "label": "FOLLOWERS",
+                "types": {
+                  "number": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "U29",
+                "label": "NO WHATSAPP",
+                "types": {
+                  "number": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "V29",
+                "label": "DOMISILI",
+                "types": {
+                  "text": 21,
+                  "blank": 1
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "W29",
+                "label": "PRODUCT",
+                "types": {
+                  "text": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "X29",
+                "label": "REVIEW SHOPEE",
+                "types": {
+                  "text": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Y29",
+                "label": "LINK DRIVE",
+                "types": {
+                  "text": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Z29",
+                "label": "LINK POST",
+                "types": {
+                  "text": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AA29",
+                "label": "STATUS PAYMENT",
+                "types": {
+                  "text": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              }
+            ]
+          },
+          {
+            "heading": "ENGAGEMENT DASBOARD [UPDATE 7 SEPTEMBER 2026]",
+            "heading_cell": "Q53",
+            "header_row": 54,
+            "end_row": 76,
+            "record_count": 22,
+            "columns": [
+              {
+                "cell": "Q54",
+                "label": "NAMA LENGKAP",
+                "types": {
+                  "text": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "R54",
+                "label": "USERNAME INSTAGRAM",
+                "types": {
+                  "text": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "S54",
+                "label": "LINK INSTAGRAM",
+                "types": {
+                  "text": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "T54",
+                "label": "FOLLOWERS",
+                "types": {
+                  "number": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "U54",
+                "label": "POST KONTEN",
+                "types": {
+                  "text": 22
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "V54",
+                "label": "LIKE",
+                "types": {
+                  "number": 21,
+                  "blank": 1
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "W54",
+                "label": "COMMENT",
+                "types": {
+                  "number": 21,
+                  "blank": 1
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "X54",
+                "label": "SHARE",
+                "types": {
+                  "number": 21,
+                  "blank": 1
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Y54",
+                "label": "SAVE",
+                "types": {
+                  "number": 21,
+                  "blank": 1
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Z54",
+                "label": "REPOST",
+                "types": {
+                  "number": 21,
+                  "blank": 1
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AA54",
+                "label": "VIEWS",
+                "types": {
+                  "number": 21,
+                  "blank": 1
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AB54",
+                "label": "RANGE ENGAGEMENT",
+                "types": {
+                  "number": 21,
+                  "blank": 1
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AC54",
+                "label": "ENGAGEMENT CATEGORIES",
+                "types": {
+                  "text": 21,
+                  "blank": 1
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              }
+            ]
+          }
+        ],
+        "metadata_labels": [
+          {
+            "cell": "R5",
+            "label": "Nama Brand / Perusahaan",
+            "value_cell": "S5"
+          },
+          {
+            "cell": "R6",
+            "label": "About Brand",
+            "value_cell": "S6"
+          },
+          {
+            "cell": "R7",
+            "label": "Penanggung Jawab Brand",
+            "value_cell": "S7"
+          },
+          {
+            "cell": "R8",
+            "label": "Kategori Creator",
+            "value_cell": "S8"
+          },
+          {
+            "cell": "R9",
+            "label": "Lokasi Brand",
+            "value_cell": "S9"
+          },
+          {
+            "cell": "R10",
+            "label": "Key campaign objective",
+            "value_cell": "S10"
+          },
+          {
+            "cell": "R11",
+            "label": "Target audience",
+            "value_cell": "S11"
+          },
+          {
+            "cell": "R12",
+            "label": "Key messaging",
+            "value_cell": "S12"
+          },
+          {
+            "cell": "R13",
+            "label": "Nama Product Kategori",
+            "value_cell": "S13"
+          },
+          {
+            "cell": "R17",
+            "label": "Timeline Campaign",
+            "value_cell": "S17"
+          },
+          {
+            "cell": "R18",
+            "label": "Platform yang digunakan",
+            "value_cell": "S18"
+          },
+          {
+            "cell": "R19",
+            "label": "Budget KOL",
+            "value_cell": "S19"
+          },
+          {
+            "cell": "R20",
+            "label": "Budget Marketing",
+            "value_cell": "S20"
+          },
+          {
+            "cell": "R21",
+            "label": "Benefit Creator",
+            "value_cell": "S21"
+          },
+          {
+            "cell": "R22",
+            "label": "SOW [Scope Of Work]",
+            "value_cell": "S22"
+          },
+          {
+            "cell": "R23",
+            "label": "Status Campaign",
+            "value_cell": "S23"
+          },
+          {
+            "cell": "R24",
+            "label": "Timeline Campaign",
+            "value_cell": "S24"
+          },
+          {
+            "cell": "R25",
+            "label": "Sheet Data Progress",
+            "value_cell": "S25"
+          },
+          {
+            "cell": "R26",
+            "label": "File Rekapan",
+            "value_cell": "S26"
+          }
+        ],
+        "formulas": [
+          {
+            "cell": "AB55",
+            "formula": "=SUM(V55:Z55)/AA55*100"
+          },
+          {
+            "cell": "AB56",
+            "formula": "=SUM(V56:Z56)/AA56*100"
+          },
+          {
+            "cell": "AB57",
+            "formula": "=SUM(V57:Z57)/AA57*100"
+          },
+          {
+            "cell": "AB58",
+            "formula": "=SUM(V58:Z58)/AA58*100"
+          },
+          {
+            "cell": "AB59",
+            "formula": "=SUM(V59:Z59)/AA59*100"
+          },
+          {
+            "cell": "AB60",
+            "formula": "=SUM(V60:Z60)/AA60*100"
+          },
+          {
+            "cell": "AB61",
+            "formula": "=SUM(V61:Z61)/AA61*100"
+          },
+          {
+            "cell": "AB62",
+            "formula": "=SUM(V62:Z62)/AA62*100"
+          },
+          {
+            "cell": "AB63",
+            "formula": "=SUM(V63:Z63)/AA63*100"
+          },
+          {
+            "cell": "AB64",
+            "formula": "=SUM(V64:Z64)/AA64*100"
+          },
+          {
+            "cell": "AB65",
+            "formula": "=SUM(V65:Z65)/AA65*100"
+          },
+          {
+            "cell": "AB66",
+            "formula": "=SUM(V66:Z66)/AA66*100"
+          },
+          {
+            "cell": "AB67",
+            "formula": "=SUM(V67:Z67)/AA67*100"
+          },
+          {
+            "cell": "AB69",
+            "formula": "=SUM(V69:Z69)/AA69*100"
+          },
+          {
+            "cell": "AB70",
+            "formula": "=SUM(V70:Z70)/AA70*100"
+          },
+          {
+            "cell": "AB71",
+            "formula": "=SUM(V71:Z71)/AA71*100"
+          },
+          {
+            "cell": "AB72",
+            "formula": "=SUM(V72:Z72)/AA72*100"
+          },
+          {
+            "cell": "AB73",
+            "formula": "=SUM(V73:Z73)/AA73*100"
+          },
+          {
+            "cell": "AB74",
+            "formula": "=SUM(V74:Z74)/AA74*100"
+          },
+          {
+            "cell": "AB75",
+            "formula": "=SUM(V75:Z75)/AA75*100"
+          },
+          {
+            "cell": "AB76",
+            "formula": "=SUM(V76:Z76)/AA76*100"
+          }
+        ],
+        "cached_errors": [],
+        "engagement_checks": {
+          "checked": 21,
+          "missing_denominator": [],
+          "cached_mismatch": []
+        }
+      }
+    ],
+    "source_unchanged_after_read": true
+  },
+  {
+    "file": "Assesment Vape IC 100.xlsx",
+    "bytes": 92399,
+    "sha256": "9daeb6e0db4c7e5b9b31a5684052f3c2a7c192660f48c76770ea6998cfb0dbe9",
+    "sheets": [
+      {
+        "sheet": "Assesment IC 100 LIQUID 1",
+        "extent": {
+          "rows": 81,
+          "columns": 29
+        },
+        "nonempty_cells": 288,
+        "tables": [
+          {
+            "heading": "TALENT TERPILIH",
+            "heading_cell": "Q29",
+            "header_row": 30,
+            "end_row": 55,
+            "record_count": 24,
+            "columns": [
+              {
+                "cell": "Q30",
+                "label": "NAMA LENGKAP",
+                "types": {
+                  "text": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "R30",
+                "label": "LINK TIKTOK",
+                "types": {
+                  "text": 23,
+                  "blank": 1
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "S30",
+                "label": "LINK INSTAGRAM",
+                "types": {
+                  "text": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "T30",
+                "label": "FOLLOWERS",
+                "types": {
+                  "text": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": [
+                  "T31",
+                  "T32",
+                  "T33",
+                  "T34",
+                  "T35",
+                  "T36",
+                  "T37",
+                  "T38",
+                  "T39",
+                  "T40",
+                  "T41",
+                  "T42",
+                  "T43",
+                  "T44",
+                  "T45",
+                  "T46",
+                  "T47",
+                  "T48",
+                  "T49",
+                  "T50",
+                  "T51",
+                  "T52",
+                  "T53",
+                  "T54"
+                ]
+              },
+              {
+                "cell": "U30",
+                "label": "NO WHATSAPP",
+                "types": {
+                  "number": 23,
+                  "text": 1
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "V30",
+                "label": "ALAMAT",
+                "types": {
+                  "text": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "W30",
+                "label": "PRODUCT",
+                "types": {
+                  "blank": 19,
+                  "text": 5
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "X30",
+                "label": "LINK DRIVE",
+                "types": {
+                  "blank": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Y30",
+                "label": "STORYLINE",
+                "types": {
+                  "blank": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Z30",
+                "label": "LINK POST",
+                "types": {
+                  "blank": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AA30",
+                "label": "STATUS PAYMENT",
+                "types": {
+                  "blank": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              }
+            ]
+          },
+          {
+            "heading": "ENGAGEMENT DASBOARD",
+            "heading_cell": "Q56",
+            "header_row": 57,
+            "end_row": 81,
+            "record_count": 24,
+            "columns": [
+              {
+                "cell": "Q57",
+                "label": "NAMA LENGKAP",
+                "types": {
+                  "text": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "R57",
+                "label": "USERNAME INSTAGRAM",
+                "types": {
+                  "blank": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "S57",
+                "label": "LINK INSTAGRAM",
+                "types": {
+                  "blank": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "T57",
+                "label": "FOLLOWERS",
+                "types": {
+                  "blank": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "U57",
+                "label": "POST KONTEN",
+                "types": {
+                  "blank": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "V57",
+                "label": "LIKE",
+                "types": {
+                  "blank": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "W57",
+                "label": "COMMENT",
+                "types": {
+                  "blank": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "X57",
+                "label": "SHARE",
+                "types": {
+                  "blank": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Y57",
+                "label": "SAVE",
+                "types": {
+                  "blank": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "Z57",
+                "label": "REPOST",
+                "types": {
+                  "blank": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AA57",
+                "label": "VIEWS",
+                "types": {
+                  "blank": 24
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AB57",
+                "label": "RANGE ENGAGEMENT",
+                "types": {
+                  "text": 20,
+                  "blank": 4
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              },
+              {
+                "cell": "AC57",
+                "label": "ENGAGEMENT CATEGORIES",
+                "types": {
+                  "text": 20,
+                  "blank": 4
+                },
+                "invalid_url_cells": [],
+                "non_numeric_follower_cells": []
+              }
+            ]
+          }
+        ],
+        "metadata_labels": [
+          {
+            "cell": "R5",
+            "label": "Nama Brand / Perusahaan",
+            "value_cell": "S5"
+          },
+          {
+            "cell": "R6",
+            "label": "About Brand",
+            "value_cell": "S6"
+          },
+          {
+            "cell": "R7",
+            "label": "Penanggung Jawab Brand",
+            "value_cell": "S7"
+          },
+          {
+            "cell": "R8",
+            "label": "Kategori Creator",
+            "value_cell": "S8"
+          },
+          {
+            "cell": "R9",
+            "label": "Lokasi Brand",
+            "value_cell": "S9"
+          },
+          {
+            "cell": "R10",
+            "label": "Key campaign objective",
+            "value_cell": "S10"
+          },
+          {
+            "cell": "R11",
+            "label": "Target audience",
+            "value_cell": "S11"
+          },
+          {
+            "cell": "R12",
+            "label": "Key messaging",
+            "value_cell": "S12"
+          },
+          {
+            "cell": "R13",
+            "label": "Nama Product Kategori",
+            "value_cell": "S13"
+          },
+          {
+            "cell": "R18",
+            "label": "Timeline Campaign",
+            "value_cell": "S18"
+          },
+          {
+            "cell": "R19",
+            "label": "Platform yang digunakan",
+            "value_cell": "S19"
+          },
+          {
+            "cell": "R20",
+            "label": "Budget KOL",
+            "value_cell": "S20"
+          },
+          {
+            "cell": "R21",
+            "label": "Budget Marketing",
+            "value_cell": "S21"
+          },
+          {
+            "cell": "R22",
+            "label": "Benefit Creator",
+            "value_cell": "S22"
+          },
+          {
+            "cell": "R23",
+            "label": "SOW [Scope Of Work]",
+            "value_cell": "S23"
+          },
+          {
+            "cell": "R24",
+            "label": "Status Campaign",
+            "value_cell": "S24"
+          },
+          {
+            "cell": "R25",
+            "label": "Timeline Campaign",
+            "value_cell": "S25"
+          },
+          {
+            "cell": "R26",
+            "label": "Sheet Data Progress",
+            "value_cell": "S26"
+          },
+          {
+            "cell": "R27",
+            "label": "File Rekapan",
+            "value_cell": "S27"
+          }
+        ],
+        "formulas": [
+          {
+            "cell": "AB58",
+            "formula": "=SUM(V58:Z58)/AA58*100"
+          },
+          {
+            "cell": "AB59",
+            "formula": "=SUM(V59:Z59)/AA59*100"
+          },
+          {
+            "cell": "AB60",
+            "formula": "=SUM(V60:Z60)/AA60*100"
+          },
+          {
+            "cell": "AB61",
+            "formula": "=SUM(V61:Z61)/AA61*100"
+          },
+          {
+            "cell": "AB62",
+            "formula": "=SUM(V62:Z62)/AA62*100"
+          },
+          {
+            "cell": "AB63",
+            "formula": "=SUM(V63:Z63)/AA63*100"
+          },
+          {
+            "cell": "AB64",
+            "formula": "=SUM(V64:Z64)/AA64*100"
+          },
+          {
+            "cell": "AB65",
+            "formula": "=SUM(V65:Z65)/AA65*100"
+          },
+          {
+            "cell": "AB66",
+            "formula": "=SUM(V66:Z66)/AA66*100"
+          },
+          {
+            "cell": "AB67",
+            "formula": "=SUM(V67:Z67)/AA67*100"
+          },
+          {
+            "cell": "AB68",
+            "formula": "=SUM(V68:Z68)/AA68*100"
+          },
+          {
+            "cell": "AB69",
+            "formula": "=SUM(V69:Z69)/AA69*100"
+          },
+          {
+            "cell": "AB70",
+            "formula": "=SUM(V70:Z70)/AA70*100"
+          },
+          {
+            "cell": "AB71",
+            "formula": "=SUM(V71:Z71)/AA71*100"
+          },
+          {
+            "cell": "AB72",
+            "formula": "=SUM(V72:Z72)/AA72*100"
+          },
+          {
+            "cell": "AB73",
+            "formula": "=SUM(V73:Z73)/AA73*100"
+          },
+          {
+            "cell": "AB74",
+            "formula": "=SUM(V74:Z74)/AA74*100"
+          },
+          {
+            "cell": "AB75",
+            "formula": "=SUM(V75:Z75)/AA75*100"
+          },
+          {
+            "cell": "AB76",
+            "formula": "=SUM(V76:Z76)/AA76*100"
+          },
+          {
+            "cell": "AB77",
+            "formula": "=SUM(V77:Z77)/AA77*100"
+          }
+        ],
+        "cached_errors": [
+          {
+            "cell": "AB58",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB59",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB60",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB61",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB62",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB63",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB64",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB65",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB66",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB67",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB68",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB69",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB70",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB71",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB72",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB73",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB74",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB75",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB76",
+            "error": "#DIV/0!"
+          },
+          {
+            "cell": "AB77",
+            "error": "#DIV/0!"
+          }
+        ],
+        "engagement_checks": {
+          "checked": 0,
+          "missing_denominator": [
+            "AA58",
+            "AA59",
+            "AA60",
+            "AA61",
+            "AA62",
+            "AA63",
+            "AA64",
+            "AA65",
+            "AA66",
+            "AA67",
+            "AA68",
+            "AA69",
+            "AA70",
+            "AA71",
+            "AA72",
+            "AA73",
+            "AA74",
+            "AA75",
+            "AA76",
+            "AA77"
+          ],
+          "cached_mismatch": []
+        }
+      }
+    ],
+    "source_unchanged_after_read": true
+  }
+]

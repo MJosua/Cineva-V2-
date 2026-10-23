@@ -1,0 +1,56 @@
+{
+  "template_code": "IV_ORDER_REALIZATION",
+  "target": "staging.iv_order_realization",
+  "description": "IndoVietnam order → shipment → arrival lines (PO × SKU × container). Sheet 'DB' (New Format workbook) or 'Master Data' (Order Realization Monitoring workbook). Used to reconcile against i2i STD; Excel blank dates (1899/1900) become NULL; Forecast rows flagged.",
+  "scope": { "program": "cto", "distributor_company_id": 216, "division_id": 1, "hots_company_id": 4 },
+  "fingerprint": {
+    "sheets_any": ["DB", "Master Data"],
+    "header_tokens": [],
+    "min_score": 0.5
+  },
+  "columns": {
+    "customer_code": { "from": "Customer Code", "transform": ["string", "upper"] },
+    "product_category": { "from": "Product Category", "transform": ["string"] },
+    "po_ref": { "from": "#PO", "transform": ["string"] },
+    "official_po_number": { "from": "Official PO Number", "transform": ["string"] },
+    "sku_name": { "from": "SKU Name", "transform": ["string"] },
+    "material_code": { "from": "Material Code", "transform": ["string"] },
+    "sku_code": { "from": "SKU Code", "transform": ["string"] },
+    "order_qty_ctn": { "from": "Order Qty in Ctn", "transform": ["number"] },
+    "order_qty_pack": { "from": "Order Qty in Pack", "transform": ["number"] },
+    "order_qty_cont": { "from": "Order Qty in Cont.", "transform": ["number"] },
+    "cont_type": { "from": "Cont. Type", "transform": ["string"] },
+    "est_stuffing_date": { "from": "Est. Stuffing Date", "transform": ["excel_date", "null_if_before:1901-01-01"] },
+    "pi_no": { "from": "PI No", "transform": ["string"] },
+    "pi_date": { "from": "PI Date", "transform": ["excel_date", "null_if_before:1901-01-01"] },
+    "invoice_no": { "from": "Invoice No", "transform": ["string"] },
+    "invoice_date": { "from": "Invoice Date", "transform": ["excel_date", "null_if_before:1901-01-01"] },
+    "bl_no": { "from": "B/L No", "transform": ["string"] },
+    "stuffing_date": { "from": "Stuffing Date", "transform": ["excel_date", "null_if_before:1901-01-01"] },
+    "stuffing_qty_ctn": { "from": "Stuffing Qty in Carton2", "transform": ["number"] },
+    "stuffing_qty_pack": { "from": "Stuffing Qty in Pack", "transform": ["number"] },
+    "invoice_ori_cif": { "from": "Invoice Ori. CIF", "transform": ["number"] },
+    "invoice_nett_cif": { "from": "Invoice Nett CIF", "transform": ["number"] },
+    "act_etd": { "from": "Act ETD", "transform": ["excel_date", "null_if_before:1901-01-01"] },
+    "act_eta": { "from": "Act ETA", "transform": ["excel_date", "null_if_before:1901-01-01"] },
+    "ata": { "from": "ATA", "transform": ["excel_date", "null_if_before:1901-01-01"] },
+    "container_no": { "from": "Container No.", "transform": ["string"] },
+    "vessel": { "from": "VESSEL", "transform": ["string"] },
+    "shipping_line": { "from": "SHIPPING LINE", "transform": ["string"] },
+    "port": { "from": "Port", "transform": ["string", "upper"] },
+    "status": { "from": "Status", "transform": ["string"] }
+  },
+  "sheets": [
+    { "match": "DB", "optional": true, "mode": "rows", "header": { "detect": { "contains": ["Customer Code", "#PO", "SKU Name"], "maxScan": 5 } }, "skip_when": { "field": "customer_code", "op": "empty" } },
+    { "match": "Master Data", "optional": true, "mode": "rows", "header": { "detect": { "contains": ["Customer Code", "#PO", "SKU Name"], "maxScan": 5 } }, "skip_when": { "field": "customer_code", "op": "empty" } }
+  ],
+  "lookups": {
+    "warehouse_code": { "from": "port", "map": "port_to_warehouse", "on_missing": "warning:PORT_UNMAPPED" }
+  },
+  "required": ["customer_code", "po_ref", "sku_name"],
+  "rules": [
+    { "when": { "field": "status", "op": "=", "value": "Forecast" }, "then": { "set": { "is_forecast": true } } },
+    { "when": { "field": "status", "op": "=", "value": "Actual" }, "then": { "set": { "is_forecast": false } } },
+    { "when": { "all": [{ "field": "status", "op": "=", "value": "Actual" }, { "field": "ata", "op": "empty" }] }, "then": { "warning": "ACTUAL_WITHOUT_ATA" } }
+  ]
+}

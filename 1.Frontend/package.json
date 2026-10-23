@@ -1,0 +1,11 @@
+{
+  "name": "cineva-frontend-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["HOTS", "dynamic-form", "service-form-runtime", "packages/*"],
+  "scripts": {
+    "dev": "npm run dev --workspace HOTS",
+    "build": "npm run build --workspace HOTS",
+    "build:dev": "npm run build:dev --workspace HOTS"
+  }
+}

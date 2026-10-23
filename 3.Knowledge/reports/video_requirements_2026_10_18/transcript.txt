@@ -1,0 +1,1 @@
+[00:00–01:21.245] Tidak ada ucapan yang dapat ditranskripsikan. Audio berada di bawah satu langkah PCM 16-bit dan VAD tidak mendeteksi ucapan. Ini bukan transkrip narasi dan tidak boleh dijadikan sumber requirement lisan.

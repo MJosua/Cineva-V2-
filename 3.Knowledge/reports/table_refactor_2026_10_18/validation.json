@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-18",
+  "lintErrors": 0,
+  "lintWarnings": 1,
+  "tableDiagnostics": [],
+  "totalAppDiagnostics": 101,
+  "e2ePassed": 19,
+  "e2eFailed": 0,
+  "browserErrors": [],
+  "externalRequests": [],
+  "databaseUsed": false
+}

@@ -1,0 +1,31 @@
+{
+  "bundle": "content-studio.cjs",
+  "sha256": "b9d5b40e347dce101a4d90fe0e693e7d0c2bb366af42be64b596b873b6adbc56",
+  "exports": [
+    "createAccountConnections",
+    "createArticleExtractor",
+    "createContentRuntime",
+    "createContentService",
+    "createCredentialVault",
+    "createGraphProvider",
+    "createMysqlDocumentStore",
+    "createOAuthCodeAdapter",
+    "createOllamaGenerator",
+    "createOllamaInsightGenerator",
+    "createPublishWorker",
+    "createPuppeteerRasterizer",
+    "createTikTokProvider",
+    "createVirtualMedia",
+    "createWorkerRunner",
+    "syncInsights",
+    "tenantContentAuthorization"
+  ],
+  "isolatedLoad": true,
+  "builtinOnly": true,
+  "externalImports": [
+    "node:crypto",
+    "node:https",
+    "node:dns/promises"
+  ],
+  "deployment": false
+}

@@ -1,0 +1,12 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+const root = path.resolve(import.meta.dirname, '../../..'), require = createRequire(path.join(root, '1.Frontend/HOTS/package.json')), ts = require('typescript');
+const configFile = ts.readConfigFile(path.join(root, '1.Frontend/HOTS/tsconfig.app.json'), ts.sys.readFile);
+const config = ts.parseJsonConfigFileContent(configFile.config, ts.sys, path.join(root, '1.Frontend/HOTS'));
+const program = ts.createProgram(config.fileNames, config.options);
+const all = ts.getPreEmitDiagnostics(program), feature = all.filter(d => /tenant-platform|tenant-client|tenant-contracts/.test(d.file?.fileName || ''));
+const integration = all.filter(d => (d.file?.fileName || '').replaceAll('\\', '/').endsWith('/HOTS/src/App.tsx'));
+const format = d => ({file: d.file?.fileName, message: ts.flattenDiagnosticMessageText(d.messageText, ' ')});
+await fs.writeFile(path.join(root, '3.Knowledge/reports/tenant_foundation_2026_10_21/types.json'), JSON.stringify({totalDiagnostics: all.length, featureDiagnostics: feature.map(format), integrationDiagnostics: integration.map(format)}, null, 2));
+process.stdout.write(JSON.stringify({totalDiagnostics: all.length, featureDiagnostics: feature.map(format), integrationDiagnostics: integration.map(format)})+'\n');if (feature.length || integration.length) process.exitCode = 1;

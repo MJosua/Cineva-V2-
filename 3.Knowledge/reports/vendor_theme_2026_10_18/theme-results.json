@@ -1,0 +1,197 @@
+{
+  "date": "2026-10-18",
+  "checks": [
+    {
+      "name": "Cineva vendor activates warm brown/gold/white semantic tokens",
+      "status": "passed"
+    },
+    {
+      "name": "Light theme: 13 text pairs meet 4.5 contrast target",
+      "status": "passed"
+    },
+    {
+      "name": "Body portal dialogs inherit vendor colors and keyboard focus works",
+      "status": "passed"
+    },
+    {
+      "name": "Creator Space uses the same vendor adapter",
+      "status": "passed"
+    },
+    {
+      "name": "Mobile sidebar portal stays brown with readable vendor labels",
+      "status": "passed"
+    },
+    {
+      "name": "Dark vendor variant: 13 text pairs meet 4.5 contrast target",
+      "status": "passed"
+    },
+    {
+      "name": "Removing vendor scope restores original HOTS tokens without rewriting globals",
+      "status": "passed"
+    },
+    {
+      "name": "Theme suite has no browser exceptions or external traffic",
+      "status": "passed"
+    }
+  ],
+  "contrast": [
+    {
+      "mode": "light",
+      "foreground": "foreground",
+      "background": "background",
+      "ratio": 11.96
+    },
+    {
+      "mode": "light",
+      "foreground": "card-foreground",
+      "background": "card",
+      "ratio": 12.38
+    },
+    {
+      "mode": "light",
+      "foreground": "popover-foreground",
+      "background": "popover",
+      "ratio": 12.15
+    },
+    {
+      "mode": "light",
+      "foreground": "primary-foreground",
+      "background": "primary",
+      "ratio": 6.18
+    },
+    {
+      "mode": "light",
+      "foreground": "primary",
+      "background": "background",
+      "ratio": 5.97
+    },
+    {
+      "mode": "light",
+      "foreground": "secondary-foreground",
+      "background": "secondary",
+      "ratio": 9.15
+    },
+    {
+      "mode": "light",
+      "foreground": "muted-foreground",
+      "background": "muted",
+      "ratio": 5.3
+    },
+    {
+      "mode": "light",
+      "foreground": "accent-foreground",
+      "background": "accent",
+      "ratio": 8.2
+    },
+    {
+      "mode": "light",
+      "foreground": "sidebar-foreground",
+      "background": "sidebar-background",
+      "ratio": 11.99
+    },
+    {
+      "mode": "light",
+      "foreground": "sidebar-primary",
+      "background": "sidebar-background",
+      "ratio": 8.51
+    },
+    {
+      "mode": "light",
+      "foreground": "sidebar-accent-foreground",
+      "background": "sidebar-accent",
+      "ratio": 7.16
+    },
+    {
+      "mode": "light",
+      "foreground": "destructive-foreground",
+      "background": "destructive",
+      "ratio": 7.14
+    },
+    {
+      "mode": "light",
+      "foreground": "destructive",
+      "background": "background",
+      "ratio": 6.9
+    },
+    {
+      "mode": "dark",
+      "foreground": "foreground",
+      "background": "background",
+      "ratio": 15.17
+    },
+    {
+      "mode": "dark",
+      "foreground": "card-foreground",
+      "background": "card",
+      "ratio": 13.46
+    },
+    {
+      "mode": "dark",
+      "foreground": "popover-foreground",
+      "background": "popover",
+      "ratio": 13.46
+    },
+    {
+      "mode": "dark",
+      "foreground": "primary-foreground",
+      "background": "primary",
+      "ratio": 8.41
+    },
+    {
+      "mode": "dark",
+      "foreground": "primary",
+      "background": "background",
+      "ratio": 11.06
+    },
+    {
+      "mode": "dark",
+      "foreground": "secondary-foreground",
+      "background": "secondary",
+      "ratio": 10.47
+    },
+    {
+      "mode": "dark",
+      "foreground": "muted-foreground",
+      "background": "muted",
+      "ratio": 6.46
+    },
+    {
+      "mode": "dark",
+      "foreground": "accent-foreground",
+      "background": "accent",
+      "ratio": 7.53
+    },
+    {
+      "mode": "dark",
+      "foreground": "sidebar-foreground",
+      "background": "sidebar-background",
+      "ratio": 14.29
+    },
+    {
+      "mode": "dark",
+      "foreground": "sidebar-primary",
+      "background": "sidebar-background",
+      "ratio": 10.42
+    },
+    {
+      "mode": "dark",
+      "foreground": "sidebar-accent-foreground",
+      "background": "sidebar-accent",
+      "ratio": 7.53
+    },
+    {
+      "mode": "dark",
+      "foreground": "destructive-foreground",
+      "background": "destructive",
+      "ratio": 7
+    },
+    {
+      "mode": "dark",
+      "foreground": "destructive",
+      "background": "background",
+      "ratio": 7
+    }
+  ],
+  "errors": [],
+  "blocked": []
+}

@@ -1,0 +1,612 @@
+{
+  "totalErrors": 101,
+  "editedErrors": [],
+  "diagnostics": [
+    {
+      "path": "1.Frontend/HOTS/src/components/approval/TicketApprovalSection.tsx",
+      "line": 55,
+      "code": 2339,
+      "message": "Property 'find' does not exist on type 'unknown'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/approval/TicketApprovalSection.tsx",
+      "line": 56,
+      "code": 2339,
+      "message": "Property 'some' does not exist on type 'unknown'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/builder/PropertyInspector.tsx",
+      "line": 9,
+      "code": 2459,
+      "message": "Module '\"@/components/forms/UnifiedFormStructureEditor\"' declares 'FormStructureItem' locally, but it is not exported."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/builder/VisualFormCanvas.tsx",
+      "line": 5,
+      "code": 2459,
+      "message": "Module '\"@/components/forms/UnifiedFormStructureEditor\"' declares 'FormStructureItem' locally, but it is not exported."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/DynamicField.tsx",
+      "line": 157,
+      "code": 2365,
+      "message": "Operator '>' cannot be applied to types 'number' and 'string | number'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/DynamicField.tsx",
+      "line": 157,
+      "code": 2322,
+      "message": "Type 'string | number' is not assignable to type 'number'.   Type 'string' is not assignable to type 'number'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/DynamicField.tsx",
+      "line": 158,
+      "code": 2365,
+      "message": "Operator '<' cannot be applied to types 'number' and 'string | number'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/DynamicField.tsx",
+      "line": 158,
+      "code": 2322,
+      "message": "Type 'string | number' is not assignable to type 'number'.   Type 'string' is not assignable to type 'number'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/DynamicForm.tsx",
+      "line": 481,
+      "code": 2339,
+      "message": "Property 'layout' does not exist on type 'FormConfig'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/DynamicSection.tsx",
+      "line": 137,
+      "code": 2339,
+      "message": "Property 'label' does not exist on type 'FormField | RowGroup'.   Property 'label' does not exist on type 'RowGroup'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/DynamicSection.tsx",
+      "line": 140,
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"number\" | \"select\" | \"textarea\" | \"text\" | \"time\" | \"file\" | \"date\" | \"html\" | \"checkbox\" | \"radio\" | \"textblock\" | \"cms\" | \"suggestion-insert\" | \"toggle\" | \"qrcodedesign\"' and '\"rowgroup\"' have no overlap."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/DynamicSection.tsx",
+      "line": 160,
+      "code": 2339,
+      "message": "Property 'type' does not exist on type 'RowGroup'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/DynamicSection.tsx",
+      "line": 163,
+      "code": 2339,
+      "message": "Property 'id' does not exist on type 'RowGroup'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/DynamicSection.tsx",
+      "line": 166,
+      "code": 2339,
+      "message": "Property 'id' does not exist on type 'RowGroup'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/Functioneditor.tsx",
+      "line": 21,
+      "code": 2339,
+      "message": "Property 'field' does not exist on type 'specialfunctionEditorProps'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RepeatingSection.tsx",
+      "line": 89,
+      "code": 2739,
+      "message": "Type '{ field: FormField; value: any; onChange: (value: any) => void; }' is missing the following properties from type 'DynamicFieldProps': globalValues, setGlobalValues"
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 22,
+      "code": 2304,
+      "message": "Cannot find name 'FormField'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 107,
+      "code": 2304,
+      "message": "Cannot find name 'FormField'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 378,
+      "code": 2339,
+      "message": "Property 'dependsOn' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\" | \"suggestion-insert\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 387,
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'dependsOn' does not exist in type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\" | \"suggestion-insert\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 429,
+      "code": 2339,
+      "message": "Property 'dependsOn' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\" | \"suggestion-insert\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 433,
+      "code": 2339,
+      "message": "Property 'dependsOnValue' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\" | \"suggestion-insert\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 440,
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'dependsOnValue' does not exist in type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\" | \"suggestion-insert\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 461,
+      "code": 2339,
+      "message": "Property 'dependsOn' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\" | \"suggestion-insert\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 465,
+      "code": 2339,
+      "message": "Property 'dependsByValue' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\" | \"suggestion-insert\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 472,
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'dependsByValue' does not exist in type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\" | \"suggestion-insert\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 489,
+      "code": 2339,
+      "message": "Property 'dependsOn' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\" | \"suggestion-insert\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 493,
+      "code": 2339,
+      "message": "Property 'dependsOn' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\" | \"suggestion-insert\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 578,
+      "code": 2339,
+      "message": "Property 'maxnumber' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 584,
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'maxnumber' does not exist in type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 596,
+      "code": 2339,
+      "message": "Property 'minnumber' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 602,
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'minnumber' does not exist in type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 614,
+      "code": 2339,
+      "message": "Property 'rounding' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 620,
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'rounding' does not exist in type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 692,
+      "code": 2339,
+      "message": "Property 'label' does not exist on type 'never'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 755,
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"number\" | \"text\"' and '\"suggestion-insert\"' have no overlap."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 771,
+      "code": 2339,
+      "message": "Property 'dependsOn' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 780,
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'dependsOn' does not exist in type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 822,
+      "code": 2339,
+      "message": "Property 'dependsOn' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 826,
+      "code": 2339,
+      "message": "Property 'dependsOnValue' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 833,
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'dependsOnValue' does not exist in type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 854,
+      "code": 2339,
+      "message": "Property 'dependsOn' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 858,
+      "code": 2339,
+      "message": "Property 'dependsByValue' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 865,
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'dependsByValue' does not exist in type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 882,
+      "code": 2339,
+      "message": "Property 'dependsOn' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupConfigurator.tsx",
+      "line": 886,
+      "code": 2339,
+      "message": "Property 'dependsOn' does not exist on type '{ label: string; placeholder: string; name?: string; type?: \"number\" | \"select\" | \"text\"; options?: string[]; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/RowGroupField.tsx",
+      "line": 26,
+      "code": 2739,
+      "message": "Type '{ key: string; field: FormField; value: any; onChange: (value: any) => void; }' is missing the following properties from type 'DynamicFieldProps': globalValues, setGlobalValues"
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/specialFunc/DetailTableWidget.tsx",
+      "line": 445,
+      "code": 2339,
+      "message": "Property 'client_id' does not exist on type '{ so_id?: string | number; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/specialFunc/DetailTableWidget.tsx",
+      "line": 448,
+      "code": 2339,
+      "message": "Property 'client_id' does not exist on type '{ so_id?: string | number; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/forms/SuggestionInsertInputWrapper.tsx",
+      "line": 28,
+      "code": 2322,
+      "message": "Type '{ suggestions: string[]; placeholder: string; defaultValue: string; onChange: () => void; onEnter: (value: string) => void; }' is not assignable to type 'IntrinsicAttributes & SuggestionInsertInputProps'.   Property 'defaultValue' does not exist on type 'IntrinsicAttributes & SuggestionInsertInputProps'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/theme-provider.tsx",
+      "line": 14,
+      "code": 2304,
+      "message": "Cannot find name 'ViewMode'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/theme-provider.tsx",
+      "line": 15,
+      "code": 2304,
+      "message": "Cannot find name 'ViewMode'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/theme-provider.tsx",
+      "line": 34,
+      "code": 2304,
+      "message": "Cannot find name 'ViewMode'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/components/workflow/visual/VisualWorkflowEditor.tsx",
+      "line": 69,
+      "code": 2304,
+      "message": "Cannot find name 'Connection'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/StudioPage.tsx",
+      "line": 11,
+      "code": 2459,
+      "message": "Module '\"@/components/forms/UnifiedFormStructureEditor\"' declares 'FormStructureItem' locally, but it is not exported."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/admin/StudioPage.tsx",
+      "line": 409,
+      "code": 2322,
+      "message": "Type 'void' is not assignable to type 'ReactNode'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TaskList.tsx",
+      "line": 9,
+      "code": 2307,
+      "message": "Cannot find module '@/components/ui/TaskApprovalActions' or its corresponding type declarations."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 14,
+      "code": 2307,
+      "message": "Cannot find module '@/components/ui/TaskApprovalActions' or its corresponding type declarations."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 384,
+      "code": 2304,
+      "message": "Cannot find name 'chatMessage'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 385,
+      "code": 2304,
+      "message": "Cannot find name 'chatMessage'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 386,
+      "code": 2304,
+      "message": "Cannot find name 'setChatMessage'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 404,
+      "code": 2339,
+      "message": "Property 'event_type' does not exist on type 'WritableDraft<Approver>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 428,
+      "code": 2339,
+      "message": "Property 'event_type' does not exist on type 'WritableDraft<Approver>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 431,
+      "code": 2339,
+      "message": "Property 'task_name' does not exist on type 'WritableDraft<Approver>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 431,
+      "code": 2339,
+      "message": "Property 'event_meta' does not exist on type 'WritableDraft<Approver>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 432,
+      "code": 2339,
+      "message": "Property 'task_type' does not exist on type 'WritableDraft<Approver>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 432,
+      "code": 2339,
+      "message": "Property 'step_type' does not exist on type 'WritableDraft<Approver>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 433,
+      "code": 2339,
+      "message": "Property 'assigned_value' does not exist on type 'WritableDraft<Approver>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 441,
+      "code": 2339,
+      "message": "Property 'event_meta' does not exist on type 'WritableDraft<Approver>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 441,
+      "code": 2339,
+      "message": "Property 'event_meta' does not exist on type 'WritableDraft<Approver>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 743,
+      "code": 2339,
+      "message": "Property 'user_id' does not exist on type 'WritableDraft<TicketDetail>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 758,
+      "code": 2339,
+      "message": "Property 'user_id' does not exist on type 'WritableDraft<TicketDetail>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 936,
+      "code": 2339,
+      "message": "Property 'generated_date' does not exist on type 'WritableDraft<{ upload_id: number; filename: string; path: string; size: number; }>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 984,
+      "code": 2339,
+      "message": "Property 'view_url' does not exist on type 'WritableDraft<GeneratedDocument>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 986,
+      "code": 2339,
+      "message": "Property 'download_url' does not exist on type 'WritableDraft<GeneratedDocument>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/TicketDetail.tsx",
+      "line": 1069,
+      "code": 2322,
+      "message": "Type 'string | number' is not assignable to type 'number'.   Type 'string' is not assignable to type 'number'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/pages/verify/VerifyRegister.tsx",
+      "line": 58,
+      "code": 2322,
+      "message": "Type '{ children: string; h: string; size: \"sm\"; className: string; onClick: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'.   Property 'h' does not exist on type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/srf_po_slice.ts",
+      "line": 4,
+      "code": 2305,
+      "message": "Module '\"@/types/sku_types\"' has no exported member 'srf_po_list'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/srf_po_slice.ts",
+      "line": 18,
+      "code": 2304,
+      "message": "Cannot find name 's'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/srf_po_slice.ts",
+      "line": 19,
+      "code": 1005,
+      "message": "',' expected."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/srf_po_slice.ts",
+      "line": 19,
+      "code": 2769,
+      "message": "No overload matches this call.   Overload 1 of 2, '(typePrefix: string, payloadCreator: AsyncThunkPayloadCreator<unknown, void, AsyncThunkConfig>, options?: AsyncThunkOptions<void, AsyncThunkConfig>): AsyncThunk<...>', gave the following error.     Argument of type 'string' is not assignable to parameter of type 'AsyncThunkPayloadCreator<unknown, void, AsyncThunkConfig>'.   Overload 2 of 2, '(typePrefix: string, payloadCreator: AsyncThunkPayloadCreator<unknown, unknown, { state?: unknown; dispatch?: ThunkDispatch<unknown, unknown, UnknownAction>; extra?: unknown; rejectValue?: unknown; serializedErrorType?: unknown; pendingMeta?: unknown; fulfilledMeta?: unknown; rejectedMeta?: unknown; }>, options?: AsyncThunkOptions<...>): AsyncThunk<...>', gave the following error.     Argument of type 'string' is not assignable to parameter of type 'AsyncThunkPayloadCreator<unknown, unknown, { state?: unknown; dispatch?: ThunkDispatch<unknown, unknown, UnknownAction>; extra?: unknown; rejectValue?: unknown; serializedErrorType?: unknown; pendingMeta?: unknown; fulfilledMeta?: unknown; rejectedMeta?: unknown; }>'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/store/slices/srf_po_slice.ts",
+      "line": 64,
+      "code": 2769,
+      "message": "No overload matches this call.   Overload 1 of 2, '(actionCreator: AsyncThunkFulfilledActionCreator<unknown, void, AsyncThunkConfig>, reducer: CaseReducer<WritableDraft<srf_po_data>, PayloadAction<...>>): ActionReducerMapBuilder<...>', gave the following error.     Argument of type '(state: WritableDraft<WritableDraft<srf_po_data>>, action: { payload: { srf_po_list: srf_po_list[]; }; type: string; }) => void' is not assignable to parameter of type 'CaseReducer<WritableDraft<srf_po_data>, PayloadAction<unknown, string, { arg: void; requestId: string; requestStatus: \"fulfilled\"; }, never>>'.       Types of parameters 'action' and 'action' are incompatible.         Type 'PayloadAction<unknown, string, { arg: void; requestId: string; requestStatus: \"fulfilled\"; }, never>' is not assignable to type '{ payload: { srf_po_list: srf_po_list[]; }; type: string; }'.           Types of property 'payload' are incompatible.             Property 'srf_po_list' is missing in type '{}' but required in type '{ srf_po_list: srf_po_list[]; }'.   Overload 2 of 2, '(type: string, reducer: CaseReducer<WritableDraft<srf_po_data>, { payload: { srf_po_list: srf_po_list[]; }; type: string; }>): ActionReducerMapBuilder<WritableDraft<srf_po_data>>', gave the following error.     Argument of type 'AsyncThunkFulfilledActionCreator<unknown, void, AsyncThunkConfig>' is not assignable to parameter of type 'string'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/formrules/submitcheck.ts",
+      "line": 27,
+      "code": 2339,
+      "message": "Property 'error' does not exist on type '({ duration, ...props }: Toast) => { id: string; dismiss: () => void; update: (props: ToasterToast) => void; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/formrules/submitcheck.ts",
+      "line": 34,
+      "code": 2339,
+      "message": "Property 'error' does not exist on type '({ duration, ...props }: Toast) => { id: string; dismiss: () => void; update: (props: ToasterToast) => void; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/formrules/submitcheck.ts",
+      "line": 38,
+      "code": 2339,
+      "message": "Property 'error' does not exist on type '({ duration, ...props }: Toast) => { id: string; dismiss: () => void; update: (props: ToasterToast) => void; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/formrules/submitcheck.ts",
+      "line": 45,
+      "code": 2339,
+      "message": "Property 'error' does not exist on type '({ duration, ...props }: Toast) => { id: string; dismiss: () => void; update: (props: ToasterToast) => void; }'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/rulingSystem/schemaNormalizer.ts",
+      "line": 40,
+      "code": 2345,
+      "message": "Argument of type '{ id: any; type: string; scope: string; label: any; rowGroup: any; }' is not assignable to parameter of type 'NormalizedField'.   Types of property 'type' are incompatible.     Type 'string' is not assignable to type '\"field\"'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/rulingSystem/schemaNormalizer.ts",
+      "line": 41,
+      "code": 2322,
+      "message": "Type '{ id: any; type: string; scope: string; label: any; rowGroup: any; }' is not assignable to type 'NormalizedField'.   Types of property 'type' are incompatible.     Type 'string' is not assignable to type '\"field\"'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/rulingSystem/schemaNormalizer.ts",
+      "line": 55,
+      "code": 2339,
+      "message": "Property 'name' does not exist on type 'unknown'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/rulingSystem/schemaNormalizer.ts",
+      "line": 60,
+      "code": 2339,
+      "message": "Property 'label' does not exist on type 'unknown'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/rulingSystem/schemaNormalizer.ts",
+      "line": 64,
+      "code": 2345,
+      "message": "Argument of type '{ id: any; type: string; scope: string; label: any; rowGroup: any; groupColumn: string; }' is not assignable to parameter of type 'NormalizedField'.   Types of property 'type' are incompatible.     Type 'string' is not assignable to type '\"field\"'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/rulingSystem/schemaNormalizer.ts",
+      "line": 65,
+      "code": 2322,
+      "message": "Type '{ id: any; type: string; scope: string; label: any; rowGroup: any; groupColumn: string; }' is not assignable to type 'NormalizedField'.   Types of property 'type' are incompatible.     Type 'string' is not assignable to type '\"field\"'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/rulingSystem/schemaNormalizer.ts",
+      "line": 69,
+      "code": 2345,
+      "message": "Argument of type '{ id: any; type: string; title: any; children: any[]; }' is not assignable to parameter of type 'NormalizedGroup'.   Types of property 'type' are incompatible.     Type 'string' is not assignable to type '\"rowgroup\"'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/ticketUtils.ts",
+      "line": 42,
+      "code": 2339,
+      "message": "Property 'created_by' does not exist on type 'Ticket'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/utils/ticketUtils.ts",
+      "line": 47,
+      "code": 2339,
+      "message": "Property 'status_name' does not exist on type 'Ticket'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/AIChatWidget.tsx",
+      "line": 16,
+      "code": 2339,
+      "message": "Property 'data' does not exist on type 'WidgetProps'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/MyTicketsWidget.tsx",
+      "line": 20,
+      "code": 2339,
+      "message": "Property 'data' does not exist on type 'WidgetProps'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/OrderItemsWidget.tsx",
+      "line": 16,
+      "code": 2339,
+      "message": "Property 'data' does not exist on type 'WidgetProps'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/OrderItemsWidget.tsx",
+      "line": 16,
+      "code": 2339,
+      "message": "Property 'handleUpdateData' does not exist on type 'WidgetProps'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/PendingApprovalsWidget.tsx",
+      "line": 19,
+      "code": 2339,
+      "message": "Property 'data' does not exist on type 'WidgetProps'."
+    },
+    {
+      "path": "1.Frontend/HOTS/src/widgets/QuickLinksWidget.tsx",
+      "line": 18,
+      "code": 2339,
+      "message": "Property 'data' does not exist on type 'WidgetProps'."
+    }
+  ]
+}

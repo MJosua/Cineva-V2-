@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "programs": [
+    {"tenant_key": "hots", "enabled": true, "program_id": 103, "permission_module": "tenant.hots", "origin": "https://www.indofoodinternational.com", "workspace_path": "/hots/platform/workspaces"},
+    {"tenant_key": "overseas", "enabled": false, "program_id": 108, "permission_module": "tenant.overseas", "origin": "https://www.indofoodinternational.com", "api_base_path": "/api/tenant/overseas/v1", "workspace_path": "/overseas/platform/workspaces"},
+    {"tenant_key": "cineva", "enabled": false, "program_id": null, "permission_module": "tenant.cineva", "origin": "https://cineva.com", "workspace_path": "/hots/platform/workspaces"}
+  ]
+}

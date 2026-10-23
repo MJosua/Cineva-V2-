@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "apps": [
+    {"key": "@hots/tenant-contracts", "root": "1.Frontend/packages/tenant-contracts", "sourceRoots": ["src"], "kind": "shared-package"},
+    {"key": "@hots/tenant-client", "root": "1.Frontend/packages/tenant-client", "sourceRoots": ["src"], "kind": "frontend-package"},
+    {"key": "@hots/tenant-server", "root": "2.Backend/packages/tenant-server", "sourceRoots": ["src"], "kind": "backend-package"},
+    {
+      "key": "cineva-frontend",
+      "root": "1.Frontend/HOTS",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend"
+    },
+    {
+      "key": "cineva-backend",
+      "root": "2.Backend/Integrated-API",
+      "sourceRoots": [
+        "app",
+        "bootstrap",
+        "config",
+        "controller",
+        "core",
+        "jobs",
+        "middleware",
+        "routers",
+        "script",
+        "server",
+        "service",
+        "index.js",
+        "ecosystem.config.js"
+      ],
+      "kind": "backend"
+    },
+    {
+      "key": "@hots/dynamic-form",
+      "root": "1.Frontend/dynamic-form",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/service-form-runtime",
+      "root": "1.Frontend/service-form-runtime",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/app-core",
+      "root": "1.Frontend/packages/app-core",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/calc-kit",
+      "root": "1.Frontend/packages/calc-kit",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/engine-client",
+      "root": "1.Frontend/packages/engine-client",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/eslint-config",
+      "root": "1.Frontend/packages/eslint-config",
+      "sourceRoots": [
+        "index.js"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/geo-kit",
+      "root": "1.Frontend/packages/geo-kit",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/import-kit",
+      "root": "1.Frontend/packages/import-kit",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/page-engine",
+      "root": "1.Frontend/packages/page-engine",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/table-engine",
+      "root": "1.Frontend/packages/table-engine",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/tracking-kit",
+      "root": "1.Frontend/packages/tracking-kit",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/ui-kit",
+      "root": "1.Frontend/packages/ui-kit",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/workflow-policy-kit",
+      "root": "1.Frontend/packages/workflow-policy-kit",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/transaction-kit",
+      "root": "2.Backend/packages/transaction-kit",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "backend-package"
+    },
+    {
+      "key": "@hots/domain-kit",
+      "root": "1.Frontend/packages/domain-kit",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/scheduling-kit",
+      "root": "1.Frontend/packages/scheduling-kit",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "frontend-package"
+    },
+    {
+      "key": "@hots/notification-kit",
+      "root": "2.Backend/packages/notification-kit",
+      "sourceRoots": [
+        "src"
+      ],
+      "kind": "backend-package"
+    }
+  ],
+  "knowledgeRoot": "3.Knowledge",
+  "excludedDirectories": [
+    "node_modules",
+    ".git",
+    ".vscode",
+    "dist",
+    "build",
+    "coverage",
+    "public",
+    "logs",
+    "_old",
+    "_archive",
+    "key",
+    "keys",
+    "oauth-keys",
+    "previews",
+    "restructure_2026_10_14",
+    "legacy",
+    "package_upgrade_2026_10_14"
+  ],
+  "excludedFiles": [
+    "FILE_MAP.md",
+    "APP_MAP.md"
+  ],
+  "sourceExtensions": [
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".mjs",
+    ".cjs"
+  ],
+  "chunkMaxLines": 30,
+  "includeAppDocs": true
+}

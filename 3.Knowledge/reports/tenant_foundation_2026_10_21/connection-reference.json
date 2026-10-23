@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-21",
+  "cinevaLocalEnv": "File present but no DB/SSO variables configured (2 bytes).",
+  "hotsReferenceDatabase": "hots",
+  "mcpDatabase": "hots",
+  "mcpVersion": "8.0.20",
+  "visibleNamedSchemaCandidates": [
+    "hots"
+  ],
+  "programReference": [],
+  "credentialsRecorded": false,
+  "directConnectionUsed": false,
+  "databaseWrites": 0,
+  "scope": "Kantor env redacted inventory and guarded MCP read-only. Program catalog does not prove SSO client registration or deployment."
+}

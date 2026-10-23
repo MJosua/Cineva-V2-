@@ -1,0 +1,16 @@
+{
+  "contracts": 19,
+  "browserChecks": 12,
+  "origin": "http://127.0.0.1:48175",
+  "largestFeatureFile": {
+    "file": "cineva-campaigns/execution.ts",
+    "lines": 144
+  },
+  "lintErrors": 0,
+  "lintWarnings": 0,
+  "featureDiagnostics": 0,
+  "totalAppDiagnostics": 101,
+  "databaseUsed": false,
+  "officeWrites": 0,
+  "realWorkbookRowsImported": 0
+}

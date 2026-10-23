@@ -1,0 +1,69 @@
+# @hots/ui-kit source map
+
+Generated: 2026-10-22T06:59:40.227Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
+
+| File | Lines | Imports | Route definitions |
+|---|---:|---:|---|
+| [src/components/CardCollapsible.tsx](src/components/CardCollapsible.tsx) | 74 | 4 |  |
+| [src/components/FormSkeleton.tsx](src/components/FormSkeleton.tsx) | 58 | 3 |  |
+| [src/components/RichTextEditor.tsx](src/components/RichTextEditor.tsx) | 406 | 7 |  |
+| [src/components/TicketPagination.tsx](src/components/TicketPagination.tsx) | 119 | 2 |  |
+| [src/components/UserStatusBadge.tsx](src/components/UserStatusBadge.tsx) | 22 | 2 |  |
+| [src/components/accordion.tsx](src/components/accordion.tsx) | 57 | 4 |  |
+| [src/components/alert-dialog.tsx](src/components/alert-dialog.tsx) | 135 | 4 |  |
+| [src/components/alert.tsx](src/components/alert.tsx) | 60 | 3 |  |
+| [src/components/aspect-ratio.tsx](src/components/aspect-ratio.tsx) | 6 | 1 |  |
+| [src/components/avatar.tsx](src/components/avatar.tsx) | 49 | 3 |  |
+| [src/components/badge.tsx](src/components/badge.tsx) | 38 | 3 |  |
+| [src/components/breadcrumb.tsx](src/components/breadcrumb.tsx) | 116 | 4 |  |
+| [src/components/button.tsx](src/components/button.tsx) | 57 | 4 |  |
+| [src/components/calendar.tsx](src/components/calendar.tsx) | 65 | 5 |  |
+| [src/components/card.tsx](src/components/card.tsx) | 81 | 2 |  |
+| [src/components/carousel.tsx](src/components/carousel.tsx) | 261 | 5 |  |
+| [src/components/chart.tsx](src/components/chart.tsx) | 364 | 3 |  |
+| [src/components/checkbox.tsx](src/components/checkbox.tsx) | 29 | 4 |  |
+| [src/components/collapsible.tsx](src/components/collapsible.tsx) | 10 | 1 |  |
+| [src/components/combobox.tsx](src/components/combobox.tsx) | 97 | 6 |  |
+| [src/components/command.tsx](src/components/command.tsx) | 154 | 6 |  |
+| [src/components/context-menu.tsx](src/components/context-menu.tsx) | 199 | 4 |  |
+| [src/components/date-range-picker.tsx](src/components/date-range-picker.tsx) | 68 | 8 |  |
+| [src/components/dialog.tsx](src/components/dialog.tsx) | 122 | 4 |  |
+| [src/components/drawer.tsx](src/components/drawer.tsx) | 117 | 3 |  |
+| [src/components/dropdown-menu.tsx](src/components/dropdown-menu.tsx) | 199 | 4 |  |
+| [src/components/form.tsx](src/components/form.tsx) | 177 | 6 |  |
+| [src/components/hots-suggestion-select.tsx](src/components/hots-suggestion-select.tsx) | 304 | 3 |  |
+| [src/components/hover-card.tsx](src/components/hover-card.tsx) | 28 | 3 |  |
+| [src/components/input-otp.tsx](src/components/input-otp.tsx) | 70 | 4 |  |
+| [src/components/input.tsx](src/components/input.tsx) | 24 | 2 |  |
+| [src/components/label.tsx](src/components/label.tsx) | 25 | 4 |  |
+| [src/components/loading-spinner.tsx](src/components/loading-spinner.tsx) | 29 | 2 |  |
+| [src/components/menubar.tsx](src/components/menubar.tsx) | 235 | 4 |  |
+| [src/components/multi-combobox.tsx](src/components/multi-combobox.tsx) | 130 | 7 |  |
+| [src/components/navigation-menu.tsx](src/components/navigation-menu.tsx) | 129 | 5 |  |
+| [src/components/pagination.tsx](src/components/pagination.tsx) | 118 | 4 |  |
+| [src/components/popover.tsx](src/components/popover.tsx) | 30 | 3 |  |
+| [src/components/progress.tsx](src/components/progress.tsx) | 29 | 3 |  |
+| [src/components/radio-group.tsx](src/components/radio-group.tsx) | 43 | 4 |  |
+| [src/components/resizable.tsx](src/components/resizable.tsx) | 44 | 3 |  |
+| [src/components/scroll-area.tsx](src/components/scroll-area.tsx) | 47 | 3 |  |
+| [src/components/select.tsx](src/components/select.tsx) | 159 | 4 |  |
+| [src/components/separator.tsx](src/components/separator.tsx) | 30 | 3 |  |
+| [src/components/sheet.tsx](src/components/sheet.tsx) | 132 | 5 |  |
+| [src/components/sidebar.tsx](src/components/sidebar.tsx) | 784 | 12 |  |
+| [src/components/skeleton.tsx](src/components/skeleton.tsx) | 16 | 1 |  |
+| [src/components/slider.tsx](src/components/slider.tsx) | 27 | 3 |  |
+| [src/components/sonner.tsx](src/components/sonner.tsx) | 30 | 2 |  |
+| [src/components/switch.tsx](src/components/switch.tsx) | 28 | 3 |  |
+| [src/components/table.tsx](src/components/table.tsx) | 118 | 2 |  |
+| [src/components/tabs.tsx](src/components/tabs.tsx) | 55 | 3 |  |
+| [src/components/textarea.tsx](src/components/textarea.tsx) | 25 | 2 |  |
+| [src/components/time-picker.tsx](src/components/time-picker.tsx) | 131 | 5 |  |
+| [src/components/toggle-group.tsx](src/components/toggle-group.tsx) | 60 | 5 |  |
+| [src/components/toggle.tsx](src/components/toggle.tsx) | 44 | 4 |  |
+| [src/components/tooltip.tsx](src/components/tooltip.tsx) | 30 | 3 |  |
+| [src/hooks/use-mobile.tsx](src/hooks/use-mobile.tsx) | 20 | 1 |  |
+| [src/index.ts](src/index.ts) | 61 | 59 |  |
+| [src/lib/utils.ts](src/lib/utils.ts) | 7 | 2 |  |
+| [src/media/PdfViewer.tsx](src/media/PdfViewer.tsx) | 49 | 3 |  |
+| [src/media/XlsxPreview.tsx](src/media/XlsxPreview.tsx) | 89 | 3 |  |
+| [src/media/index.ts](src/media/index.ts) | 4 | 2 |  |

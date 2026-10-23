@@ -1,0 +1,106 @@
+"""Read-only workbook sampling. Export only whitelisted, de-identified observations."""
+import datetime
+import hashlib
+import json
+import random
+import re
+from pathlib import Path
+import openpyxl
+
+ROOT = Path(__file__).resolve().parents[3]
+OUT = ROOT / '1.Frontend/HOTS/src/features/cineva-reference/accounts.json'
+MANIFEST = ROOT / '3.Knowledge/reports/account_reference_2026_10_18/selection.json'
+
+def present(value):
+    return value is not None and str(value).strip() != ''
+
+def number(value):
+    return value if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0 else None
+
+def observed(value):
+    if not present(value):
+        return 'Belum tersedia'
+    if isinstance(value, (datetime.datetime, datetime.date)):
+        return 'Tanggal sumber: ' + value.isoformat(sep=' ') if isinstance(value, datetime.datetime) else 'Tanggal sumber: ' + value.isoformat()
+    text = str(value).strip()
+    if text.upper() in ['DONE', 'DIAJUKAN', 'PAID', 'DELIVERED', 'SELESAI', 'PENDING', 'ACC', 'APPROVED']:
+        return text
+    if re.fullmatch(r'[\d\s:./-]+', text):
+        return 'Tanggal/angka sumber: ' + text[:60]
+    return 'Catatan sumber tersedia; perlu review'
+
+def run():
+    profile = json.loads((ROOT / '3.Knowledge/reports/workbook_reference_2026_10_18/structure_profile.json').read_text())
+    candidates = []
+    hashes = {}
+    books = {}
+    for item in profile:
+        source = ROOT / '4. Refrence' / item['file']
+        digest = hashlib.sha256(source.read_bytes()).hexdigest()
+        if digest != item['sha256']:
+            raise ValueError('Source changed since reference audit; review mapping first')
+        hashes[item['file']] = digest
+        books[item['file']] = openpyxl.load_workbook(source, read_only=True, data_only=True)
+        for sheet in item['sheets']:
+            candidates.append((item['file'], sheet))
+    rng = random.SystemRandom()
+    accounts, manifest, selected_names = [], [], set()
+    # One sampled person from each of three randomly selected cohorts; not a representative statistic.
+    for file, meta in rng.sample(candidates, 3):
+        sheet = books[file][meta['sheet']]
+        cells = {(cell.row, cell.column): cell.value for row in sheet.iter_rows() for cell in row if cell.value is not None}
+        get = lambda row, col: cells.get((row, col))
+        table = meta['tables'][0]
+        rows = [r for r in range(table['header_row'] + 1, table['end_row'] + 1) if present(get(r, 17)) and str(get(r, 17)).strip().casefold() not in selected_names]
+        if not rows:
+            raise ValueError('No distinct person in sampled cohort')
+        row = rng.choice(rows)
+        name = str(get(row, 17)).strip().casefold()
+        selected_names.add(name)
+        index = len(accounts) + 1
+        is_second = meta['sheet'].endswith('Juun 2')
+        social = [{'platform': 'Instagram', 'followers': number(get(row, 20))}]
+        if is_second:
+            social.append({'platform': 'TikTok', 'followers': number(get(row, 23))})
+        observation = table['columns']
+        tasks = []
+        safe_columns = ['REVIEW', 'DRIVE', 'POST', 'STORYLINE', 'QC', 'STATUS PRODUCT', 'STATUS PAYMENT', 'PERFORMA']
+        for column in observation:
+            label = column['label']
+            if any(key in label.upper() for key in safe_columns):
+                col = openpyxl.utils.cell.column_index_from_string(re.sub(r'\d', '', column['cell']))
+                value = get(row, col)
+                tasks.append({'label': label, 'observation': observed(value), 'referenceAvailable': present(value), 'cell': f'{openpyxl.utils.get_column_letter(col)}{row}'})
+        detail, insight, match_note = None, None, 'Tidak ada baris lanjutan yang cocok secara unik.'
+        for extra in meta['tables'][1:]:
+            matches = [r for r in range(extra['header_row'] + 1, extra['end_row'] + 1) if str(get(r, 17) or '').strip().casefold() == name]
+            if len(matches) != 1:
+                continue
+            detail = matches[0]
+            match_note = 'Pencocokan nama unik dalam sheet ini saja; bukan ID lintas campaign.'
+            if 'ENGAGEMENT' in extra['heading'].upper():
+                values = [number(get(detail, col)) for col in range(22, 28)]
+                er = sum(values[:5]) / values[5] * 100 if all(v is not None for v in values) and values[5] > 0 else None
+                insight = {'likes': values[0], 'comments': values[1], 'shares': values[2], 'saves': values[3], 'reposts': values[4], 'views': values[5], 'er': er, 'sourceRow': detail}
+            else:
+                for column in extra['columns']:
+                    if any(key in column['label'].upper() for key in safe_columns):
+                        col = openpyxl.utils.cell.column_index_from_string(re.sub(r'\d', '', column['cell']))
+                        tasks.append({'label': column['label'], 'observation': observed(get(detail, col)), 'referenceAvailable': present(get(detail, col)), 'cell': f'{openpyxl.utils.get_column_letter(col)}{detail}'})
+        product_col = 26 if is_second else 23
+        product = str(get(row, product_col) or '').strip()
+        product = product[:100] if not re.search(r'https?://|@|\d{8,}', product) else 'Pilihan produk tercatat (detail disamarkan)'
+        account = {'id': f'ref-{index}', 'alias': f'Akun Referensi {index}', 'sourceFile': file, 'sheet': meta['sheet'], 'sourceRow': row, 'sha256': hashes[file], 'social': social, 'product': product or 'Belum tersedia', 'tasks': tasks, 'insight': insight, 'matchNote': match_note, 'cashFee': None, 'cashPaid': None}
+        accounts.append(account)
+        manifest.append({'id': account['id'], 'sourceFile': file, 'sheet': meta['sheet'], 'sourceRow': row, 'detailRow': detail, 'sha256': hashes[file]})
+    for file, book in books.items():
+        book.close()
+        assert hashlib.sha256((ROOT / '4. Refrence' / file).read_bytes()).hexdigest() == hashes[file]
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps(accounts, ensure_ascii=False, indent=2), encoding='utf-8')
+    MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+    MANIFEST.write_text(json.dumps({'selection': manifest, 'method': 'SystemRandom: 3 cohorts, one distinct name per cohort', 'piiExported': False, 'databaseUsed': False}, indent=2), encoding='utf-8')
+    print('3 de-identified account snapshots exported; source hashes unchanged.')
+
+if __name__ == '__main__':
+    run()

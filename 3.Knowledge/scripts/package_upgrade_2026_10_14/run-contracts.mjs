@@ -1,0 +1,12 @@
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { spawnSync } from 'node:child_process';
+const root=path.resolve(import.meta.dirname,'../../..'),require=createRequire(path.join(root,'1.Frontend/HOTS/package.json'));
+const esbuild=require('esbuild'),alias={};
+const snapshot=JSON.parse(await fs.readFile(path.join(import.meta.dirname,'snapshot.json'),'utf8'));
+for(const p of snapshot.packages)alias[p.name]=path.join(root,p.local);
+alias.react=path.dirname(require.resolve('react/package.json'));alias['react-dom']=path.dirname(require.resolve('react-dom/package.json'));alias.axios=require.resolve('axios');
+await esbuild.build({entryPoints:[path.join(import.meta.dirname,'contracts.test.ts')],outfile:path.join(import.meta.dirname,'contracts.bundle.cjs'),bundle:true,platform:'node',format:'cjs',jsx:'automatic',alias,logLevel:'warning'});
+const result=spawnSync(process.execPath,['--test',path.join(import.meta.dirname,'contracts.bundle.cjs')],{encoding:'utf8'});
+await fs.writeFile(path.join(import.meta.dirname,'contracts-results.txt'),result.stdout+result.stderr);console.log(result.stdout);if(result.stderr)console.error(result.stderr);process.exitCode=result.status??1;

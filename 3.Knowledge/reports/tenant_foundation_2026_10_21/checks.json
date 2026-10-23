@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-21",
+  "exit": 0,
+  "tests": 62,
+  "passed": 62,
+  "failed": 0,
+  "databaseWrites": 0,
+  "liveIdentityProvider": false,
+  "scope": "Package contracts + localhost HTTP + synthetic cryptographic OIDC. No application DB/runtime imports."
+}

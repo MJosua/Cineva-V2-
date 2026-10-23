@@ -1,0 +1,17 @@
+✔ Three service schemas keep relevant fields, campaign period and production occasion (53.5226ms)
+✔ Price items reconcile, reject bad counts and retain snapshots after rate changes (7.0341ms)
+✔ Request envelope excludes private data, scopes two Creator and HQ identities (2.2235ms)
+✔ Submit retries deduplicate; failed storage never returns false success (2.4944ms)
+✔ Quote acceptance belongs to request owner, terminal states prevent project conversion (5.7168ms)
+✔ Delayed AI result is ignored after human handover, context and user message remain (15.8005ms)
+✔ Provider failure retains user input without a fake successful AI response (2.3661ms)
+✔ Support retry with the same message identity does not duplicate input or AI reply (3.0328ms)
+✔ Drafts belong to author and destination, and can be removed after submit (1.1456ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 376.7665

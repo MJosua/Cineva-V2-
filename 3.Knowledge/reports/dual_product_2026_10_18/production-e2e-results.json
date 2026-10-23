@@ -1,0 +1,86 @@
+{
+  "date": "2026-10-18",
+  "origin": "http://127.0.0.1:48175",
+  "scope": "Real A/B components, HOTS shell and dynamic form; synthetic local repository only; no database",
+  "checks": [
+    {
+      "name": "HQ dashboard: shared shell and separated financial KPIs",
+      "status": "passed"
+    },
+    {
+      "name": "HQ CRM: create and duplicate validation",
+      "status": "passed"
+    },
+    {
+      "name": "HQ estimator: quote → shared HOTS form → new project",
+      "status": "passed"
+    },
+    {
+      "name": "HQ search and workflow update keep payment independent",
+      "status": "passed"
+    },
+    {
+      "name": "HQ edit rejects a fee below money already received",
+      "status": "passed"
+    },
+    {
+      "name": "HQ resource allocation detects overlapping bookings",
+      "status": "passed"
+    },
+    {
+      "name": "Workspace product switch uses separate dummy datasets",
+      "status": "passed"
+    },
+    {
+      "name": "Assistant: ambiguous input requires details, complete prompt yields draft",
+      "status": "passed"
+    },
+    {
+      "name": "Creator Starter limit rejects a fourth active job without mutation",
+      "status": "passed"
+    },
+    {
+      "name": "Creator Pro simulation unlocks creation without checkout",
+      "status": "passed"
+    },
+    {
+      "name": "Creator payment prevents overpayment and preserves workflow status",
+      "status": "passed"
+    },
+    {
+      "name": "Deliverable notes render as text and persist with the ticket view",
+      "status": "passed"
+    },
+    {
+      "name": "Archive and restore preserve payment values",
+      "status": "passed"
+    },
+    {
+      "name": "Calendar, month navigation and reminders use dummy WIB dates",
+      "status": "passed"
+    },
+    {
+      "name": "Storage failure keeps previous data and reports save failure",
+      "status": "passed"
+    },
+    {
+      "name": "Reload retains the dummy workspace and cross-product switching retains HQ",
+      "status": "passed"
+    },
+    {
+      "name": "Dark tokens render without changing shared theme files",
+      "status": "passed"
+    },
+    {
+      "name": "Mobile sidebar navigation, calendar and no horizontal overflow",
+      "status": "passed"
+    },
+    {
+      "name": "No real backend or external service requests, no browser exceptions",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "backend": []
+}

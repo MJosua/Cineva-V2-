@@ -1,0 +1,20 @@
+{
+  "user": "kevin.sietho",
+  "user_id": 1150,
+  "root_company_id": 1,
+  "known_descendants": [
+    2,
+    3,
+    4
+  ],
+  "permissions": [
+    "brand.read",
+    "resources.read"
+  ],
+  "changedExistingRows": 0,
+  "inserted": [
+    "company-relation-1-4"
+  ],
+  "overseas_program_id": 108,
+  "success": true
+}

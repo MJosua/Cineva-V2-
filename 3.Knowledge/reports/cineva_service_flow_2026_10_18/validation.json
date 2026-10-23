@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-18",
+  "milestones": "1–4 frontend dummy; 5 deferred",
+  "serviceContracts": 9,
+  "packageContracts": 17,
+  "productContracts": 9,
+  "serviceE2E": 15,
+  "componentE2E": 19,
+  "productE2E": 19,
+  "themeE2E": 8,
+  "productionOrigin": "http://127.0.0.1:48175",
+  "lintErrors": 0,
+  "lintWarnings": 0,
+  "newDiagnostics": [],
+  "totalAppDiagnostics": 101,
+  "largestFeatureFile": {
+    "file": "cineva-shared/model.ts",
+    "lines": 100
+  },
+  "styleChanges": [],
+  "backendChanges": [],
+  "databaseUsed": false,
+  "externalMessagesSent": false,
+  "officeWrites": 0
+}

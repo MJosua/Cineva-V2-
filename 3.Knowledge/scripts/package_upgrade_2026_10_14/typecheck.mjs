@@ -1,0 +1,13 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+const root=path.resolve(import.meta.dirname,'../../..'),app=path.join(root,'1.Frontend/HOTS');
+const require=createRequire(path.join(app,'package.json')),ts=require('typescript');
+const parsed=ts.getParsedCommandLineOfConfigFile(path.join(app,'tsconfig.app.json'),{}, {...ts.sys,onUnRecoverableConfigFileDiagnostic:()=>{}});
+const program=ts.createProgram(parsed.fileNames,parsed.options),diagnostics=ts.getPreEmitDiagnostics(program);
+const rows=diagnostics.map(d=>({path:d.file?path.relative(root,d.file.fileName).replaceAll('\\','/'):'config',line:d.file&&d.start!==undefined?d.file.getLineAndCharacterOfPosition(d.start).line+1:null,code:d.code,message:ts.flattenDiagnosticMessageText(d.messageText,' ')}));
+const editedPrefixes=['1.Frontend/HOTS/src/platform/','1.Frontend/HOTS/src/components/forms/shared/','1.Frontend/HOTS/src/components/report/reportAdapter.ts','1.Frontend/HOTS/src/components/report/DataTableReport.tsx','1.Frontend/HOTS/src/components/forms/UnifiedFormStructureEditor.tsx','1.Frontend/HOTS/src/hooks/useTriggerFunction.ts'];
+const edited=rows.filter(d=>editedPrefixes.some(p=>d.path.startsWith(p)));
+await fs.writeFile(path.join(import.meta.dirname,'typecheck.json'),JSON.stringify({totalErrors:rows.length,editedErrors:edited,diagnostics:rows},null,2));
+console.log(JSON.stringify({totalDiagnostics:rows.length,newAdapterDiagnostics:edited},null,2));
+if(edited.length)process.exitCode=1;

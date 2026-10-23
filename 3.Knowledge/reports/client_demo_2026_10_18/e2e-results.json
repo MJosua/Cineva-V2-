@@ -1,0 +1,49 @@
+{
+  "checks": [
+    {
+      "name": "Single HTML works from file URL without server, external assets or database",
+      "status": "passed"
+    },
+    {
+      "name": "HOTS profile form edits persist through reload in isolated localStorage",
+      "status": "passed"
+    },
+    {
+      "name": "Timeline keeps ambiguous dates separate; review and new visit are editable",
+      "status": "passed"
+    },
+    {
+      "name": "Payout simulation stays separate from unknown source cash and prevents overpayment",
+      "status": "passed"
+    },
+    {
+      "name": "Insight uses ER views and unavailable denominator, without guessing source categories",
+      "status": "passed"
+    },
+    {
+      "name": "JSON import validates before mutation and preserves last valid document",
+      "status": "passed"
+    },
+    {
+      "name": "Exported HTML carries edited data in a fresh browser with no original localStorage",
+      "status": "passed"
+    },
+    {
+      "name": "JSON export and mobile calendar remain usable offline",
+      "status": "passed"
+    },
+    {
+      "name": "Script-like raw JSON text remains inert after exporting and reopening HTML",
+      "status": "passed"
+    },
+    {
+      "name": "Blocked localStorage preserves session edits and explicitly offers portable export",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "fixtures": "synthetic only",
+  "databaseUsed": false,
+  "mode": "file URL without server"
+}

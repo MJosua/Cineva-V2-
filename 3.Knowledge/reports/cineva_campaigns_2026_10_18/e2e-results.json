@@ -1,0 +1,56 @@
+{
+  "checks": [
+    {
+      "name": "HQ campaign preserves brief, milestones, two assignments and internal identity scope",
+      "status": "passed"
+    },
+    {
+      "name": "HQ configures creator cash separately from marketing and product benefits",
+      "status": "passed"
+    },
+    {
+      "name": "Creator sees own assignment only, selects product and submits draft",
+      "status": "passed"
+    },
+    {
+      "name": "HQ processes product and requests content revision without paying cash",
+      "status": "passed"
+    },
+    {
+      "name": "Creator resubmits and confirms product while posting remains blocked until QC",
+      "status": "passed"
+    },
+    {
+      "name": "HQ approves latest revision, records evidenced partial payout and prevents overpay",
+      "status": "passed"
+    },
+    {
+      "name": "Creator records approved post and immutable ER-by-views insight snapshots",
+      "status": "passed"
+    },
+    {
+      "name": "Second Creator cannot see first Creator execution or payout history",
+      "status": "passed"
+    },
+    {
+      "name": "Campaign creation and roster assignment persist with brand-only deliverable",
+      "status": "passed"
+    },
+    {
+      "name": "HQ adds product, milestone, batch and another output without replacing existing work",
+      "status": "passed"
+    },
+    {
+      "name": "A stale campaign browser tab cannot overwrite a newer batch mutation",
+      "status": "passed"
+    },
+    {
+      "name": "Vendor theme survives expanded mobile campaign operations without horizontal overflow",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "origin": "http://127.0.0.1:48178",
+  "databaseUsed": false
+}

@@ -1,0 +1,10 @@
+{
+  "name": "@hots/notification-kit",
+  "version": "0.1.0-cineva.1",
+  "private": true,
+  "description": "Parameterized notification service and SSE transport extracted through Cineva adapters",
+  "main": "src/index.js",
+  "exports": { ".": "./src/index.js" },
+  "scripts": { "test": "node --test test/*.test.cjs" },
+  "engines": { "node": ">=18" }
+}

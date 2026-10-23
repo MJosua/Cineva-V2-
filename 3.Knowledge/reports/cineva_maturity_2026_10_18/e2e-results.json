@@ -1,0 +1,44 @@
+{
+  "checks": [
+    {
+      "name": "Distinct service details retain common inputs while sending only the chosen schema",
+      "status": "passed"
+    },
+    {
+      "name": "Owner requests quote changes and HQ creates a new scoped version",
+      "status": "passed"
+    },
+    {
+      "name": "A stale browser tab cannot approve an outdated quote revision",
+      "status": "passed"
+    },
+    {
+      "name": "Exact quote version is approved, history retained and project fee pinned",
+      "status": "passed"
+    },
+    {
+      "name": "Production workflow progresses separately from payment and survives reload",
+      "status": "passed"
+    },
+    {
+      "name": "CS queue filters, assigns agents and audits reassignment/handover",
+      "status": "passed"
+    },
+    {
+      "name": "Booking requires specialist allocation and explicit confirmation",
+      "status": "passed"
+    },
+    {
+      "name": "Reallocation invalidates booking and overlapping specialist schedules are rejected",
+      "status": "passed"
+    },
+    {
+      "name": "Expanded mobile views preserve vendor style and avoid horizontal overflow",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "origin": "http://127.0.0.1:48175",
+  "databaseUsed": false
+}

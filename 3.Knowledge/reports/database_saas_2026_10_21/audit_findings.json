@@ -1,0 +1,194 @@
+{
+  "date": "2026-10-21",
+  "database": "hots",
+  "server_version": "8.0.20",
+  "schemaSource": "3.Knowledge/schema/hots_saas_baseline_2026_10_21.json",
+  "sha256": "c14810f78f6c0c3c7150846191e2b8030c768497af04543ec023a9647f0684e3",
+  "tableCount": 180,
+  "baseTableCount": 176,
+  "columnCount": 2010,
+  "indexParts": 673,
+  "declaredForeignKeys": 59,
+  "findings": [
+    [
+      "D01",
+      "P0",
+      "Tenant dan company",
+      "Belum terpisah",
+      "Tidak ada kolom bernama tenant pada 2.010 kolom; m_company berarti organisasi/country/IOD mapping.",
+      "Definisikan tenant pelanggan sebagai batas ownership; company tetap badan usaha/unit bisnis.",
+      "m_company; seluruh katalog"
+    ],
+    [
+      "D02",
+      "P0",
+      "Ownership ticket",
+      "Tidak authoritative",
+      "company_id nullable/default 0, tanpa FK company; 993/1.000 sampel bernilai 0 tanpa master.",
+      "Karantina ownership ambigu dan mapping evidence-based; jangan memetakan semua 0 ke tenant pertama.",
+      "t_ticket; ticket_ownership_sample"
+    ],
+    [
+      "D03",
+      "P0",
+      "Ownership work-data",
+      "Makna perlu klarifikasi",
+      "Default company 1; 905/1.000 sampel berbeda dari parent ticket.",
+      "Putuskan apakah company = pemilik/aktor/legacy; gunakan owning tenant yang konsisten.",
+      "t_ticket_work_data; work_company_pairs"
+    ],
+    [
+      "D04",
+      "P0",
+      "Integritas parent-child",
+      "FK belum cukup",
+      "FK work-data ke ticket hanya ticket_id; assignment_id int tanpa FK ke assignment bigint.",
+      "Jaga ownership parent + assignment pada context tenant; rancang tipe/FK setelah semantik disepakati.",
+      "t_ticket_work_data; foreign_keys"
+    ],
+    [
+      "D05",
+      "P0",
+      "Identity dan membership",
+      "Fondasi parsial",
+      "user_uuid unique tetapi nullable; user.company_id default 1; profil company-user punya unique pair.",
+      "Global user boleh dipertahankan; membership tenant/company dan peran aktif harus terpisah.",
+      "user; m_company_user_profile"
+    ],
+    [
+      "D06",
+      "P0",
+      "Role dan permission",
+      "Scope ambigu",
+      "user.role_id global; permission memiliki company/module namun unique tidak memasukkan module_key.",
+      "Pisahkan platform admin dari tenant admin; tetapkan namespace permission dan role scoped.",
+      "user; user_permission"
+    ],
+    [
+      "D07",
+      "P1",
+      "Akses program",
+      "Dua representasi",
+      "user_t_program_access ada tanpa unique user/company/program; sampel kosong; OIDC membaca sso_program_access JSON.",
+      "Pilih satu sumber akses program/membership authoritative; migrasikan kompatibilitas tanpa grant implisit.",
+      "user_t_program_access; oidc/accountStore.js"
+    ],
+    [
+      "D08",
+      "P1",
+      "Identitas eksternal",
+      "Fondasi baik",
+      "Mapping external memiliki unique program/subject/company/user dan FK user_uuid/program.",
+      "Pertahankan; bedakan external_company_id dari tenant internal; petakan issuer/realm bila multi-provider.",
+      "user_t_program_identity"
+    ],
+    [
+      "D09",
+      "P0",
+      "Profil talent",
+      "Global per user",
+      "user_profile unique user_id/attribute_name tanpa scope company/product.",
+      "Pisahkan atribut identitas global dari NDA/rating/status/fee privat tenant; jangan overwrite lintas pelanggan.",
+      "user_profile; jobmarketplace_schema.md"
+    ],
+    [
+      "D10",
+      "P1",
+      "Preference user",
+      "Global per user",
+      "Unique user/category/key tanpa company/product.",
+      "Preferensi global hanya jika sengaja; workspace layout/filter/brand override harus scoped.",
+      "user_preferences"
+    ],
+    [
+      "D11",
+      "P0",
+      "Service dan workflow",
+      "Definisi global",
+      "m_service dan m_service_workflow tidak memiliki company; workflow primary key service_id.",
+      "Default shared immutable/versioned + binding/override tenant; jangan edit default untuk satu pelanggan.",
+      "m_service; m_service_workflow"
+    ],
+    [
+      "D12",
+      "P1",
+      "Brand config",
+      "Belum kontrak lengkap",
+      "m_company.logo_url tersedia; config_value TEXT, company nullable, unique company/key; 2/11 value valid JSON.",
+      "Tetapkan scope default/tenant/product/company, revision/publish/history; TEXT non-JSON existing bukan otomatis rusak.",
+      "m_company; m_company_configuration"
+    ],
+    [
+      "D13",
+      "P1",
+      "Namespace bisnis",
+      "Perlu pilihan eksplisit",
+      "cms_m_page.slug unique global meski ada company; uid juga unique global.",
+      "Putuskan global identity vs slug lokal tenant/product; jangan ubah semua unique key secara massal.",
+      "cms_m_page; user"
+    ],
+    [
+      "D14",
+      "P1",
+      "Kapasitas identifier",
+      "Tidak seragam",
+      "ticket_id varchar36, root varchar32, parent/child varchar50; assignment bigint vs work-data int.",
+      "Standarkan contract opaque ID/string dan kapasitas root; panjang string berbeda bukan bukti FK invalid.",
+      "t_ticket; t_ticket_work_data"
+    ],
+    [
+      "D15",
+      "P0",
+      "File dan dokumen",
+      "Owner belum seragam",
+      "Generic file/document mengacu entity_type/entity_id; sebagian tanpa FK/tenant dan nullable ticket.",
+      "Asset/file/document harus punya root ownership; temporary upload terikat context; cek otorisasi download.",
+      "file_t_upload; t_document; t_ticket_file"
+    ],
+    [
+      "D16",
+      "P1",
+      "Event, outbox dan notifikasi",
+      "Scope belum eksplisit",
+      "trigger_outbox idempotency_key unique global nullable; user_notification hanya user_id.",
+      "Idempotency namespace tenant/operation; event context dan subscriber mengikuti tenant aktif.",
+      "trigger_outbox; user_notification"
+    ],
+    [
+      "D17",
+      "P1",
+      "Fitur dan subscription",
+      "Belum model SaaS lengkap",
+      "m_company_feature punya company/service/config tetapi tanpa unique pair; plan/subscription/invoice SaaS tidak ada pada baseline ini.",
+      "Pisahkan entitlement produk, membership pengguna, subscription/invoice dan pembayaran; jangan menganggap license_expiry cukup.",
+      "m_company_feature; m_company; tables"
+    ],
+    [
+      "D18",
+      "P1",
+      "Index tenant query",
+      "Perlu desain workload",
+      "Ticket mempunyai index company dan service/date terpisah; belum tenant key.",
+      "Setelah ownership final, rancang composite index dari query nyata; EXPLAIN sebelum klaim optimasi.",
+      "t_ticket indexes"
+    ],
+    [
+      "D19",
+      "P0",
+      "Compatibility Cineva",
+      "Belum cocok langsung",
+      "Controller TalentProfile memakai profile_id; baseline user_profile memakai id. Job/billing marketplace tidak ada di baseline.",
+      "Buat adapter/mapping dan migrasi additive; engine shared tidak menggantikan aggregate domain marketplace.",
+      "TalentProfileController.js:106; schema"
+    ],
+    [
+      "D20",
+      "P0",
+      "Relasi job-ticket",
+      "Ambigu di source",
+      "Cineva mencari job_id pada EAV LIMIT 1 tanpa owner/user deterministik.",
+      "Tetapkan cardinality application/job/ticket dan relasi eksplisit tenant-scoped; EAV dipertahankan untuk form.",
+      "JobPICController.js:130"
+    ]
+  ]
+}

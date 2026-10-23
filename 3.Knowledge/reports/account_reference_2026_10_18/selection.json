@@ -1,0 +1,31 @@
+{
+  "selection": [
+    {
+      "id": "ref-1",
+      "sourceFile": "SIMPLY JUUN.xlsx",
+      "sheet": "Assesment Simply Juun 3",
+      "sourceRow": 36,
+      "detailRow": 61,
+      "sha256": "06f5d020bffe959da2b8e869fb35d0601f6309a1927da299a59833c21ff999e4"
+    },
+    {
+      "id": "ref-2",
+      "sourceFile": "SIMPLY JUUN.xlsx",
+      "sheet": "Assesment Simply Juun 2",
+      "sourceRow": 35,
+      "detailRow": 43,
+      "sha256": "06f5d020bffe959da2b8e869fb35d0601f6309a1927da299a59833c21ff999e4"
+    },
+    {
+      "id": "ref-3",
+      "sourceFile": "Assesment Vape IC 100.xlsx",
+      "sheet": "Assesment IC 100 LIQUID 1",
+      "sourceRow": 42,
+      "detailRow": 69,
+      "sha256": "9daeb6e0db4c7e5b9b31a5684052f3c2a7c192660f48c76770ea6998cfb0dbe9"
+    }
+  ],
+  "method": "SystemRandom: 3 cohorts, one distinct name per cohort",
+  "piiExported": false,
+  "databaseUsed": false
+}

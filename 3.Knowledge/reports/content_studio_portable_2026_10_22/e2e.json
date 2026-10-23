@@ -1,0 +1,69 @@
+{
+  "checks": [
+    {
+      "name": "single file opens from file URL with no server and seeded selected content",
+      "status": "passed"
+    },
+    {
+      "name": "theme uses existing Cineva gold light and dark tokens",
+      "status": "passed"
+    },
+    {
+      "name": "seeded analytics immediately show synthetic metrics and top content",
+      "status": "passed"
+    },
+    {
+      "name": "gallery search and selection use the real shared templates",
+      "status": "passed"
+    },
+    {
+      "name": "edits persist through file reload in the same browser",
+      "status": "passed"
+    },
+    {
+      "name": "file URL exports actual ordered PNGs in a ZIP",
+      "status": "passed"
+    },
+    {
+      "name": "HQ review and synthetic account scheduling work entirely offline",
+      "status": "passed"
+    },
+    {
+      "name": "help explains demo steps and synthetic boundaries",
+      "status": "passed"
+    },
+    {
+      "name": "script-like title remains inert when saved and serialised",
+      "status": "passed"
+    },
+    {
+      "name": "exported HTML carries saved edits into a fresh browser without old localStorage",
+      "status": "passed"
+    },
+    {
+      "name": "invalid JSON import never replaces the last valid workspace",
+      "status": "passed"
+    },
+    {
+      "name": "mobile layout fits a 390px viewport",
+      "status": "passed"
+    },
+    {
+      "name": "Creator workspace remains separate and cannot approve its draft",
+      "status": "passed"
+    },
+    {
+      "name": "blocked storage has an editable memory fallback and a working HTML export",
+      "status": "passed"
+    },
+    {
+      "name": "no HTTP requests, backend access or runtime browser errors",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "attempts": [],
+  "protocol": "file:",
+  "offline": true,
+  "mobile": "Chromium viewport emulation, not a physical phone or WhatsApp viewer"
+}

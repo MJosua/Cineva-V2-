@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-18",
+  "scope": "Three parallel groups, integrated frontend dummy only",
+  "contracts": {
+    "maturity": 16,
+    "services": 9,
+    "packages": 17,
+    "products": 9
+  },
+  "contractTotal": 51,
+  "browserChecks": {
+    "maturity": 9,
+    "services": 15,
+    "components": 19,
+    "products": 19,
+    "theme": 8
+  },
+  "browserTotal": 70,
+  "productionOrigin": "http://127.0.0.1:48175",
+  "lintErrors": 0,
+  "lintWarnings": 0,
+  "featureDiagnostics": [],
+  "totalAppDiagnostics": 101,
+  "largestFeatureFile": {
+    "file": "cineva-shared/model.ts",
+    "lines": 105
+  },
+  "styleChanges": [],
+  "backendChanges": [],
+  "databaseUsed": false,
+  "officeWrites": 0,
+  "externalMessagesSent": false
+}

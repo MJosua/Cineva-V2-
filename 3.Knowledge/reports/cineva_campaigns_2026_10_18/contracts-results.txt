@@ -1,0 +1,27 @@
+✔ Choice and fulfillment remain independent of deliverable and payout state (1.4084ms)
+✔ Creator draft -> HQ revision -> newer draft -> QC approval preserves version history (1.7053ms)
+✔ Posting requires QC approved creator output, valid URL/date and is stored separately (18.2091ms)
+✔ Creator identity, HQ QC role and stale execution revisions are enforced (0.7895ms)
+✔ HTTP(S) URLs reject executable/file schemes, credentials and malformed values (0.2284ms)
+✔ Repository execution guard replays legal actions and rejects forged QC/history or fulfillment (9.9077ms)
+✔ Creator cash fee, marketing and non-cash benefit remain separate from paid ledger (0.7549ms)
+✔ Payout validates owner, HQ permissions, proof, date, exact retry and remaining fee (0.4998ms)
+✔ Engagement uses views percentage points and does not invent values for missing metrics (0.2997ms)
+✔ Insight stores independent immutable snapshots, validates own post and rejects rewritten IDs (0.7006ms)
+✔ Insight H+7 is date-stable and requires a snapshot on or after the due date (1.1057ms)
+✔ Repository mutation guard rejects financial bypass and rewritten/deleted/duplicated history (0.9345ms)
+✔ Repository persists HQ amounts, Creator request and partial payout while keeping projection private (5.1198ms)
+✔ Campaign HQ ownership and Creator assignment projection isolate both actors (1.0333ms)
+✔ Persistence reload, stale campaign revisions, identity changes and rejected storage writes (1.7534ms)
+✔ Campaign validation preserves unknown followers and rejects invalid references/date/quantity (0.7883ms)
+✔ Malformed saved campaign state produces actionable error and is never replaced with seed (0.1612ms)
+✔ New campaign or assignment cannot smuggle progress or paid ledger into master writes (0.6758ms)
+✔ Assignment outputs become immutable once operations start; new output remains additive (1.4301ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 145.9826

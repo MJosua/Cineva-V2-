@@ -1,0 +1,5 @@
+
+D:\Project\Cineva-V2-\1.Frontend\packages\table-engine\src\state\useTableEngine.ts
+  16:8  warning  Function 'useTableEngine' has too many lines (611). Maximum allowed is 150  max-lines-per-function
+
+✖ 1 problem (0 errors, 1 warning)
