@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: parallel app instances do not share active company
+ok 1 - parallel app instances do not share active company
+  ---
+  duration_ms: 1.2224
+  type: 'test'
+  ...
+# Subtest: late response from company A cannot populate company B
+ok 2 - late response from company A cannot populate company B
+  ---
+  duration_ms: 1.1136
+  type: 'test'
+  ...
+# Subtest: out of order context selections do not restore older company
+ok 3 - out of order context selections do not restore older company
+  ---
+  duration_ms: 0.211
+  type: 'test'
+  ...
+# Subtest: switch closes SSE subscriptions and resets context even when next company denied
+ok 4 - switch closes SSE subscriptions and resets context even when next company denied
+  ---
+  duration_ms: 0.295
+  type: 'test'
+  ...
+# Subtest: cached reads still revalidate server membership and clear on revoke
+ok 5 - cached reads still revalidate server membership and clear on revoke
+  ---
+  duration_ms: 0.379
+  type: 'test'
+  ...
+# Subtest: context cannot leak through absolute paths or mismatched response ownership
+ok 6 - context cannot leak through absolute paths or mismatched response ownership
+  ---
+  duration_ms: 0.2898
+  type: 'test'
+  ...
+# Subtest: disposed client cannot be reused
+ok 7 - disposed client cannot be reused
+  ---
+  duration_ms: 0.199
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 114.9054

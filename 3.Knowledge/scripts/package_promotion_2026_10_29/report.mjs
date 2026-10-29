@@ -1,0 +1,24 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {Workbook,SpreadsheetFile} from '@oai/artifact-tool';
+const root=path.resolve(import.meta.dirname,'../../..'),out=path.join(root,'outputs/package_promotion_2026_10_29');await fs.mkdir(out,{recursive:true});
+const result=JSON.parse(await fs.readFile(path.join(root,'3.Knowledge/reports/package_promotion_2026_10_29/validation.json'),'utf8'));
+const wb=Workbook.create(),s=wb.worksheets.add('Package upgrade');s.showGridLines=false;
+s.getRange('A1:F1').merge();s.getRange('A1').values=[['HOTS — Cineva package promotion | 29 Oct 2026']];
+s.getRange('A2:F2').merge();s.getRange('A2').values=[['Local reusable source release • No app, DB, provider or deployment activation']];
+s.getRange('A4:F9').values=[['Package','Before','After','Decision','Capability / boundary','Source'],['content-kit','Absent','0.1.0','Promoted','Content contracts, SVG renderer, templates, metrics','Cineva content-kit 0.1.0-cineva.1'],['tenant-client','Absent','0.1.0','Promoted','Scoped lifecycle, React provider, semantic brand adapter','Cineva tenant-client 0.1.0-cineva.1'],['engine-client','0.2.1','0.3.0','Upgraded','Optional content client; existing trigger/factory retained','Cineva engine-client src/content.ts'],['scheduling-kit','0.1.0','0.1.0','Already equal','Resource conflicts/capacity; no generic calendar UI','Kantor src matches Cineva fork .2'],['domain-kit','0.1.0','0.1.0','Already equal','Generic domain contracts already promoted','Kantor src matches Cineva fork .2']];
+s.getRange('A11:D11').values=[['Verification','Tests','Passed','Status']];
+const rows=result.checks.map(x=>[x.name,x.tests,x.passed,x.exit===0?'PASS':'FAIL']);s.getRange(`A12:D${11+rows.length}`).values=rows;
+const total=12+rows.length;s.getRange(`A${total}`).values=[['Total']];s.getRange(`B${total}:C${total}`).formulas=[[`=SUM(B12:B${total-1})`,`=SUM(C12:C${total-1})`]];
+s.getRange('A21:F21').merge();s.getRange('A21').values=[['Preserved: 25 pre-existing file edits; upstream auth, PDF, table actions and page-engine work.']];
+s.getRange('A22:F22').merge();s.getRange('A22').values=[['Pending: reusable calendar UI/recurrence; server/provider/SSO integration; backend package promotion.']];
+s.getRange('A24:F24').merge();s.getRange('A24').values=[['Evidence: 3.Knowledge/reports/package_promotion_2026_10_29/{validation,provenance,protected-baseline}.json']];
+s.getRange('A25:F25').merge();s.getRange('A25').values=[['Release detail: D:/Kantor/1.Frontend/packages/docs/CINEVA_PROMOTION_2026_10_29.md']];
+s.getRange('A1:F25').format.font.name='Calibri';s.getRange('A1:F25').format.font.size=11;s.getRange('A1:F25').format.rowHeight=34;s.getRange('A1:F25').format.verticalAlignment='center';s.getRange('A1:F25').format.wrapText=true;
+s.getRange('A:A').format.columnWidth=22;s.getRange('B:C').format.columnWidth=12;s.getRange('D:D').format.columnWidth=18;s.getRange('E:E').format.columnWidth=48;s.getRange('F:F').format.columnWidth=46;
+for(const range of ['A1:F1','A4:F4','A11:D11']){s.getRange(range).format.fill='#563B2B';s.getRange(range).format.font.color='#FFFFFF';s.getRange(range).format.font.bold=true;}
+s.getRange('A1:F1').format.font.size=18;s.getRange('A1:F1').format.rowHeight=44;s.getRange('A2:F2').format.font.color='#795B35';s.getRange('A5:F9').format.rowHeight=60;s.getRange('A5:F9').format.borders={preset:'inside',style:'thin',color:'#E2D7C8'};
+s.getRange(`A${total}:D${total}`).format.fill='#EFE3CF';s.getRange(`A${total}:D${total}`).format.font.bold=true;s.freezePanes.freezeRows(4);
+wb.recalculate();console.log((await wb.inspect({kind:'table',range:`'Package upgrade'!A11:D${total}`,include:'values,formulas',tableMaxRows:10,tableMaxCols:4})).ndjson);
+const png=await wb.render({sheetName:s.name,range:'A1:F25',scale:1.4});await fs.writeFile(path.join(out,'preview.png'),new Uint8Array(await png.arrayBuffer()));
+await(await SpreadsheetFile.exportXlsx(wb)).save(path.join(out,'HOTS_Package_Upgrade_Report.xlsx'));

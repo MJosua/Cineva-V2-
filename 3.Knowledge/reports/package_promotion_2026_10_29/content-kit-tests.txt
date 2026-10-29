@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: universal contracts render fixed sizes for all templates and both formats
+ok 1 - universal contracts render fixed sizes for all templates and both formats
+  ---
+  duration_ms: 5.5779
+  type: 'test'
+  ...
+# Subtest: long multilingual text remains bounded and hostile markup is escaped
+ok 2 - long multilingual text remains bounded and hostile markup is escaped
+  ---
+  duration_ms: 0.8818
+  type: 'test'
+  ...
+# Subtest: gallery accepts 64 entries without hardcoded card count
+ok 3 - gallery accepts 64 entries without hardcoded card count
+  ---
+  duration_ms: 0.2897
+  type: 'test'
+  ...
+# Subtest: brand kit logo and closing are frozen per document and appended in render
+ok 4 - brand kit logo and closing are frozen per document and appended in render
+  ---
+  duration_ms: 0.2566
+  type: 'test'
+  ...
+# Subtest: review policy rejects forged approval and stale changes invalidate approval
+ok 5 - review policy rejects forged approval and stale changes invalidate approval
+  ---
+  duration_ms: 0.5882
+  type: 'test'
+  ...
+# Subtest: resource identifiers and dynamic images fail closed
+ok 6 - resource identifiers and dynamic images fail closed
+  ---
+  duration_ms: 0.39
+  type: 'test'
+  ...
+# Subtest: latest lifetime snapshot is counted once and unsupported metrics stay unknown
+ok 7 - latest lifetime snapshot is counted once and unsupported metrics stay unknown
+  ---
+  duration_ms: 9.6647
+  type: 'test'
+  ...
+# Subtest: template ranking uses weighted engagement rather than average of post rates
+ok 8 - template ranking uses weighted engagement rather than average of post rates
+  ---
+  duration_ms: 0.1812
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 116.3968

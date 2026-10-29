@@ -1,6 +1,6 @@
 # Cineva file map
 
-Generated: 2026-10-22T06:59:40.227Z. Static extraction only; route paths can be relative to mount prefixes.
+Generated: 2026-10-29T01:28:11.450Z. Static extraction only; route paths can be relative to mount prefixes.
 
 | Area | Root | Source files | App map |
 |---|---|---:|---|
@@ -105,6 +105,7 @@ Generated: 2026-10-22T06:59:40.227Z. Static extraction only; route paths can be 
 - [Notification/SSE package extraction and adoption — 19 October 2026](architecture/notification_package_2026_10_19.md)
 - [Online Order Kantor: Flavour 2 tersangkut](architecture/online_order_flavour_2026_10_22.md)
 - [Promote domain and scheduling packages to HOTS — 19 October 2026](architecture/package_promotion_2026_10_19.md)
+- [Existing Cineva capabilities promoted to Kantor — 29 October 2026](architecture/package_promotion_2026_10_29.md)
 - [Upgrade approval remark dan Latest PIC PAR](architecture/par_approval_pic_2026_10_22.md)
 - [Backlog capability reusable HOTS dari Cineva dan Meetingbook](architecture/reusable_module_backlog_2026_10_19.md)
 - [Cineva reusable package integration](architecture/reusable_packages_2026_10_14.md)

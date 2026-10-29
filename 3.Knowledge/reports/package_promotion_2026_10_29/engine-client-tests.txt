@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: content uses existing transport, context and envelope
+ok 1 - content uses existing transport, context and envelope
+  ---
+  duration_ms: 2.789
+  type: 'test'
+  ...
+# Subtest: late content responses reject after context switch
+ok 2 - late content responses reject after context switch
+  ---
+  duration_ms: 0.6912
+  type: 'test'
+  ...
+# Subtest: no context or remote base path never reaches network
+ok 3 - no context or remote base path never reaches network
+  ---
+  duration_ms: 0.3836
+  type: 'test'
+  ...
+# Subtest: existing canonical trigger filter, false boolean and category DTO survive promotion
+ok 4 - existing canonical trigger filter, false boolean and category DTO survive promotion
+  ---
+  duration_ms: 0.5152
+  type: 'test'
+  ...
+# Subtest: existing trigger execution returns complete body
+ok 5 - existing trigger execution returns complete body
+  ---
+  duration_ms: 0.2066
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 103.1587

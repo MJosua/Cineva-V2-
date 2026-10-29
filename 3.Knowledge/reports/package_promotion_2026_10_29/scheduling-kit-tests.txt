@@ -1,0 +1,106 @@
+TAP version 13
+# Subtest: Half-open intervals allow adjacent meetings but detect contained and cross-window overlap
+ok 1 - Half-open intervals allow adjacent meetings but detect contained and cross-window overlap
+  ---
+  duration_ms: 1.6117
+  type: 'test'
+  ...
+# Subtest: Meeting availability rejects overlap and permits adjacency
+ok 2 - Meeting availability rejects overlap and permits adjacency
+  ---
+  duration_ms: 1.2753
+  type: 'test'
+  ...
+# Subtest: Crew and gear candidate allocations are checked together without mutating any input
+ok 3 - Crew and gear candidate allocations are checked together without mutating any input
+  ---
+  duration_ms: 0.457
+  type: 'test'
+  ...
+# Subtest: Hotel type inventory counts concurrent rooms rather than summing disjoint reservations
+ok 4 - Hotel type inventory counts concurrent rooms rather than summing disjoint reservations
+  ---
+  duration_ms: 0.2231
+  type: 'test'
+  ...
+# Subtest: Overlapping candidate requests consume capacity collectively
+ok 5 - Overlapping candidate requests consume capacity collectively
+  ---
+  duration_ms: 0.1754
+  type: 'test'
+  ...
+# Subtest: Existing overcapacity outside requested windows does not reject unrelated availability
+ok 6 - Existing overcapacity outside requested windows does not reject unrelated availability
+  ---
+  duration_ms: 0.1377
+  type: 'test'
+  ...
+# Subtest: Expired holds release at exact expiry while confirmed reservations keep occupying
+ok 7 - Expired holds release at exact expiry while confirmed reservations keep occupying
+  ---
+  duration_ms: 0.2421
+  type: 'test'
+  ...
+# Subtest: Cancellation releases capacity and update exclusion omits only the named reservation
+ok 8 - Cancellation releases capacity and update exclusion omits only the named reservation
+  ---
+  duration_ms: 0.1711
+  type: 'test'
+  ...
+# Subtest: Blackouts reject overlap but allow adjacency, including buffered preparation
+ok 9 - Blackouts reject overlap but allow adjacency, including buffered preparation
+  ---
+  duration_ms: 0.213
+  type: 'test'
+  ...
+# Subtest: Buffers expand existing and requested occupied intervals with exact gap adjacency
+ok 10 - Buffers expand existing and requested occupied intervals with exact gap adjacency
+  ---
+  duration_ms: 0.2422
+  type: 'test'
+  ...
+# Subtest: Strict date-only hotel stays use ordinal days and exclusive checkout through leap/month/year changes
+ok 11 - Strict date-only hotel stays use ordinal days and exclusive checkout through leap/month/year changes
+  ---
+  duration_ms: 1.4003
+  type: 'test'
+  ...
+# Subtest: Invalid hotel dates, equal/reverse checkout and non date-only values are rejected
+ok 12 - Invalid hotel dates, equal/reverse checkout and non date-only values are rejected
+  ---
+  duration_ms: 0.4799
+  type: 'test'
+  ...
+# Subtest: Duplicate resource and reservation IDs are rejected even when reservations are excluded
+ok 13 - Duplicate resource and reservation IDs are rejected even when reservations are excluded
+  ---
+  duration_ms: 0.1634
+  type: 'test'
+  ...
+# Subtest: Quantity and capacity require positive safe integers; unknown resources are rejected
+ok 14 - Quantity and capacity require positive safe integers; unknown resources are rejected
+  ---
+  duration_ms: 0.2023
+  type: 'test'
+  ...
+# Subtest: Invalid intervals, expiry, clock, blackouts and buffers return validation issues
+ok 15 - Invalid intervals, expiry, clock, blackouts and buffers return validation issues
+  ---
+  duration_ms: 0.3843
+  type: 'test'
+  ...
+# Subtest: Buffer numeric overflow is rejected and high integer capacities remain exact
+ok 16 - Buffer numeric overflow is rejected and high integer capacities remain exact
+  ---
+  duration_ms: 0.206
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 152.3311

@@ -1,0 +1,12 @@
+{
+  "packageCommit": "a9a780a2e74f07d60b6fa32fa49b27ccf3c1a540",
+  "unchangedExistingFactory": true,
+  "protectedFilesVerified": 25,
+  "strictPromotedApiDiagnostics": 0,
+  "scope": [
+    "content-kit@0.1.0",
+    "tenant-client@0.1.0",
+    "engine-client@0.3.0"
+  ],
+  "liveDeployment": false
+}

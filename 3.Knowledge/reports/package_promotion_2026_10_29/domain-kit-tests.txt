@@ -1,0 +1,106 @@
+TAP version 13
+# Subtest: Hotel reservations require a room in the same hotel and reject foreign IDs
+ok 1 - Hotel reservations require a room in the same hotel and reject foreign IDs
+  ---
+  duration_ms: 2.0905
+  type: 'test'
+  ...
+# Subtest: Orders reject duplicate identifiers, invalid scalar IDs, ambiguity and unknown configuration
+ok 2 - Orders reject duplicate identifiers, invalid scalar IDs, ambiguity and unknown configuration
+  ---
+  duration_ms: 1.3016
+  type: 'test'
+  ...
+# Subtest: Optional references allow absent values but reject supplied foreign values
+ok 3 - Optional references allow absent values but reject supplied foreign values
+  ---
+  duration_ms: 0.2109
+  type: 'test'
+  ...
+# Subtest: Safe paths never traverse inherited, prototype or getter properties
+ok 4 - Safe paths never traverse inherited, prototype or getter properties
+  ---
+  duration_ms: 0.1436
+  type: 'test'
+  ...
+# Subtest: Rule pipeline accumulates business failures, fails closed on exceptions and asserts structured issues
+ok 5 - Rule pipeline accumulates business failures, fails closed on exceptions and asserts structured issues
+  ---
+  duration_ms: 0.8781
+  type: 'test'
+  ...
+# Subtest: Typed attributes distinguish integer money, fractions, tags and actual calendar dates
+ok 6 - Typed attributes distinguish integer money, fractions, tags and actual calendar dates
+  ---
+  duration_ms: 1.7295
+  type: 'test'
+  ...
+# Subtest: Each rule receives an isolated document even when previous checks mutate or throw
+ok 7 - Each rule receives an isolated document even when previous checks mutate or throw
+  ---
+  duration_ms: 0.4627
+  type: 'test'
+  ...
+# Subtest: Uncloneable inputs and failing custom clone fail closed without executing checks
+ok 8 - Uncloneable inputs and failing custom clone fail closed without executing checks
+  ---
+  duration_ms: 0.2465
+  type: 'test'
+  ...
+# Subtest: Command allowlist authorizes and validates before reduction, isolating every phase
+ok 9 - Command allowlist authorizes and validates before reduction, isolating every phase
+  ---
+  duration_ms: 2.9522
+  type: 'test'
+  ...
+# Subtest: Reducer/protection failure never alters original state and expected revisions fail closed
+ok 10 - Reducer/protection failure never alters original state and expected revisions fail closed
+  ---
+  duration_ms: 0.7356
+  type: 'test'
+  ...
+# Subtest: Unrelated library and warehouse adapters reuse commands without domain defaults
+ok 11 - Unrelated library and warehouse adapters reuse commands without domain defaults
+  ---
+  duration_ms: 0.3127
+  type: 'test'
+  ...
+# Subtest: AI gateway permits only JSON command proposals and still enforces command policy
+ok 12 - AI gateway permits only JSON command proposals and still enforces command policy
+  ---
+  duration_ms: 0.7188
+  type: 'test'
+  ...
+# Subtest: Exact module versions resolve dependencies and snapshot configuration without aliasing
+ok 13 - Exact module versions resolve dependencies and snapshot configuration without aliasing
+  ---
+  duration_ms: 0.8929
+  type: 'test'
+  ...
+# Subtest: Read projections authorize, redact and detach both selector input and consumer output
+ok 14 - Read projections authorize, redact and detach both selector input and consumer output
+  ---
+  duration_ms: 0.3813
+  type: 'test'
+  ...
+# Subtest: Event subscriptions isolate payloads, expose errors and support unsubscribe
+ok 15 - Event subscriptions isolate payloads, expose errors and support unsubscribe
+  ---
+  duration_ms: 0.5139
+  type: 'test'
+  ...
+# Subtest: Host transaction rollback discards state/outbox and retry dispatch starts after commit
+ok 16 - Host transaction rollback discards state/outbox and retry dispatch starts after commit
+  ---
+  duration_ms: 0.6662
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 183.7713

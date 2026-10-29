@@ -1,0 +1,52 @@
+{
+  "checks": [
+    {
+      "name": "content-kit",
+      "exit": 0,
+      "tests": 8,
+      "passed": 8
+    },
+    {
+      "name": "tenant-client",
+      "exit": 0,
+      "tests": 7,
+      "passed": 7
+    },
+    {
+      "name": "tenant-contracts",
+      "exit": 0,
+      "tests": 6,
+      "passed": 6
+    },
+    {
+      "name": "scheduling-kit",
+      "exit": 0,
+      "tests": 16,
+      "passed": 16
+    },
+    {
+      "name": "domain-kit",
+      "exit": 0,
+      "tests": 16,
+      "passed": 16
+    },
+    {
+      "name": "table-engine",
+      "exit": 0,
+      "tests": 9,
+      "passed": 9
+    },
+    {
+      "name": "engine-client",
+      "exit": 0,
+      "tests": 5,
+      "passed": 5
+    }
+  ],
+  "totalTests": 67,
+  "changedProtected": [],
+  "sourceParity": true,
+  "liveDB": false,
+  "liveProvider": false,
+  "appMigration": false
+}

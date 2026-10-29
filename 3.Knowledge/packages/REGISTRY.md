@@ -32,3 +32,7 @@ Detailed compatibility/gaps: [integration](../architecture/reusable_packages_202
 
 User decision 2026-10-21: isolation must live in frontend/backend packages. The three local packages above now implement the foundation; they have no upstream release/publication claim. See [implementation](../architecture/tenant_foundation_2026_10_21.md). app-core HTTP and transaction-kit are reused. Legacy business consumers, real session/invitation persistence, provider activation and production acceptance remain pending; package presence is not full SaaS readiness.
 
+
+## Kantor promotion verified 2026-10-29
+
+With explicit user authorization, content-kit and tenant-client source/tests are promoted to Kantor 0.1.0; the optional content client is added to Kantor engine-client 0.3.0. Cineva fork versions and local dependencies remain unchanged. Existing scheduling-kit/domain-kit sources already match Kantor 0.1.0. See [release and validation](../architecture/package_promotion_2026_10_29.md); the earlier no-upstream labels describe the original local release.

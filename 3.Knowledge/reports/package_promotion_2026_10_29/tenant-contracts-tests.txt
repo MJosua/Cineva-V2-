@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: context forbids company sentinel and coerced ids
+ok 1 - context forbids company sentinel and coerced ids
+  ---
+  duration_ms: 1.07
+  type: 'test'
+  ...
+# Subtest: context requires membership/user/tenant/version
+ok 2 - context requires membership/user/tenant/version
+  ---
+  duration_ms: 0.2435
+  type: 'test'
+  ...
+# Subtest: context and cache namespaces separate user tenant company and version
+ok 3 - context and cache namespaces separate user tenant company and version
+  ---
+  duration_ms: 0.337
+  type: 'test'
+  ...
+# Subtest: ownership rejects cross program and company
+ok 4 - ownership rejects cross program and company
+  ---
+  duration_ms: 1.0844
+  type: 'test'
+  ...
+# Subtest: branding rejects CSS injection and invalid HSL
+ok 5 - branding rejects CSS injection and invalid HSL
+  ---
+  duration_ms: 0.91
+  type: 'test'
+  ...
+# Subtest: brand logo requires matching ownership/id, safe HTTPS and supported MIME
+ok 6 - brand logo requires matching ownership/id, safe HTTPS and supported MIME
+  ---
+  duration_ms: 0.3711
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 96.0502

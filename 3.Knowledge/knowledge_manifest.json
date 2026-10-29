@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-22T06:59:40.227Z",
+  "generatedAt": "2026-10-29T01:28:11.450Z",
   "documents": [
     {
       "path": "1.Frontend/HOTS/docs/CHANGELOG.md",
@@ -1197,7 +1197,7 @@
     },
     {
       "path": "3.Knowledge/KNOWLEDGE_INDEX.md",
-      "sha256": "1b68af0995cbec15bfaa384ba73a6aa61030b284f83e694fd5ca2194768b0547",
+      "sha256": "580743c6673c6b44023a07a4b08f665b15e7a15ab446a298aaeada7b8b8aa661",
       "title": "Cineva knowledge entry point",
       "headings": [
         {
@@ -1210,15 +1210,15 @@
         },
         {
           "heading": "Upgrade decisions to preserve",
-          "line": 89
+          "line": 91
         },
         {
           "heading": "Verification boundaries",
-          "line": 100
+          "line": 102
         },
         {
           "heading": "Reproduce audit",
-          "line": 104
+          "line": 106
         }
       ]
     },
@@ -1999,6 +1999,29 @@
         {
           "heading": "Promote domain and scheduling packages to HOTS — 19 October 2026",
           "line": 1
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/package_promotion_2026_10_29.md",
+      "sha256": "b790e16f9f9ab13399372c2ee38444173e3546d25c7f58da05db57ff845e0cbd",
+      "title": "Existing Cineva capabilities promoted to Kantor — 29 October 2026",
+      "headings": [
+        {
+          "heading": "Existing Cineva capabilities promoted to Kantor — 29 October 2026",
+          "line": 9
+        },
+        {
+          "heading": "Architecture and release",
+          "line": 13
+        },
+        {
+          "heading": "Correct calendar inventory",
+          "line": 27
+        },
+        {
+          "heading": "Verification",
+          "line": 33
         }
       ]
     },
@@ -3709,7 +3732,7 @@
     },
     {
       "path": "3.Knowledge/packages/REGISTRY.md",
-      "sha256": "d38db139b46802e3a8a17934d4643ef0aac57e029276b1e2d4e16fed877b919e",
+      "sha256": "628840bea799eb82e311ed85fa8dfff144b05c3c4210cf6c28c27d7d29d98102",
       "title": "Cineva shared package registry",
       "headings": [
         {
@@ -3719,6 +3742,10 @@
         {
           "heading": "Tenant adoption boundary",
           "line": 31
+        },
+        {
+          "heading": "Kantor promotion verified 2026-10-29",
+          "line": 36
         }
       ]
     },

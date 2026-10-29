@@ -1,0 +1,68 @@
+[
+  {
+    "package": "content-kit",
+    "file": "src/analytics.mjs",
+    "sourceSha256": "90843d4aec1c9bccc5cb097856256c27765073fec876038bd5460d0c5295fc1c",
+    "targetSha256": "90843d4aec1c9bccc5cb097856256c27765073fec876038bd5460d0c5295fc1c"
+  },
+  {
+    "package": "content-kit",
+    "file": "src/index.d.mts",
+    "sourceSha256": "ef013f3ac088a4d5ed1ff60dbb4323e14387de6b33c610d534c732c4dd2b8ca6",
+    "targetSha256": "ef013f3ac088a4d5ed1ff60dbb4323e14387de6b33c610d534c732c4dd2b8ca6"
+  },
+  {
+    "package": "content-kit",
+    "file": "src/index.mjs",
+    "sourceSha256": "f4b05bcf4b74aa0d726c981ea1dbe56ef092e52a0f39e5ea5ef81cbcad4a7f0c",
+    "targetSha256": "f4b05bcf4b74aa0d726c981ea1dbe56ef092e52a0f39e5ea5ef81cbcad4a7f0c"
+  },
+  {
+    "package": "content-kit",
+    "file": "src/model.mjs",
+    "sourceSha256": "d83cc1119303b93b41e15d13025b20ec6ec72de8fc23dbae181597a5d74adf65",
+    "targetSha256": "d83cc1119303b93b41e15d13025b20ec6ec72de8fc23dbae181597a5d74adf65"
+  },
+  {
+    "package": "content-kit",
+    "file": "src/render.mjs",
+    "sourceSha256": "76997547d649c778182eaba7e2da05191b4a3279fa21dd2c3b81088c76ea2b80",
+    "targetSha256": "76997547d649c778182eaba7e2da05191b4a3279fa21dd2c3b81088c76ea2b80"
+  },
+  {
+    "package": "content-kit",
+    "file": "src/templates.mjs",
+    "sourceSha256": "693223a283dda4aec03c0d8d8b160a63b2cafdac9049208e685a408acad4811e",
+    "targetSha256": "693223a283dda4aec03c0d8d8b160a63b2cafdac9049208e685a408acad4811e"
+  },
+  {
+    "package": "tenant-client",
+    "file": "src/client.d.mts",
+    "sourceSha256": "1a9b2681459bdb92c3caa0434e409dc1890fb79b054061013e8feb3bd19aa2e2",
+    "targetSha256": "1a9b2681459bdb92c3caa0434e409dc1890fb79b054061013e8feb3bd19aa2e2"
+  },
+  {
+    "package": "tenant-client",
+    "file": "src/client.mjs",
+    "sourceSha256": "e60b9b661c2f18477b99162863222f4c64a69b740575466b139ae96f1365d0f6",
+    "targetSha256": "e60b9b661c2f18477b99162863222f4c64a69b740575466b139ae96f1365d0f6"
+  },
+  {
+    "package": "tenant-client",
+    "file": "src/index.ts",
+    "sourceSha256": "4537a153e4868a5a03e1041ee5dc45fe72624a4fd3320f6ef65ef246bffb133a",
+    "targetSha256": "4537a153e4868a5a03e1041ee5dc45fe72624a4fd3320f6ef65ef246bffb133a"
+  },
+  {
+    "package": "tenant-client",
+    "file": "src/provider.tsx",
+    "sourceSha256": "36c0513fa9c99820c5a48e97f8de8d88066d9150e62e75788a893e9b2666abf9",
+    "targetSha256": "36c0513fa9c99820c5a48e97f8de8d88066d9150e62e75788a893e9b2666abf9"
+  },
+  {
+    "package": "engine-client",
+    "file": "src/content.ts",
+    "sourceSha256": "27ae0eb7c17bd445392b237b1535ac937a9a72d0e7453d7fb7ebac8b0ff96161",
+    "targetSha256": "27ae0eb7c17bd445392b237b1535ac937a9a72d0e7453d7fb7ebac8b0ff96161"
+  }
+]

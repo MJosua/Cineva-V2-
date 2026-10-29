@@ -6,6 +6,8 @@ Status update 2026-10-18: local trigger/builder fixes verified; HQ/Creator Space
 
 ## Read first
 
+- [Promosi package ke Kantor 29 Oktober](architecture/package_promotion_2026_10_29.md): content-kit/tenant-client 0.1.0 dan engine-client 0.3.0; scheduling/domain sudah setara, preserve upstream dan pekerjaan page-engine, 67 tes terisolasi; tanpa aktivasi aplikasi/DB/provider.
+
 - [HTML demo Content Studio siap kirim](architecture/content_studio_portable_2026_10_22.md): satu HTML offline sekitar 1 MB + ZIP sekitar 258 KB, existing UI/theme, synthetic HQ/Creator, portable export terbaru dan 15 file-URL E2E. Tidak mengirim WhatsApp atau mengaktifkan provider.
 
 - [Implementasi Content Studio](architecture/content_studio_implementation_2026_10_22.md): package lokal/renderer/8 template, UI HQ/Creator, scoped API, virtual-document MySQL adapter, worker/provider/AI ports, browser/HTTP/raster dan batas aktivasi production. Laporan implementasi terpisah dari baseline plan.
