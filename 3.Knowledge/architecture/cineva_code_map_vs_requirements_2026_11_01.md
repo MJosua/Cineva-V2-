@@ -35,3 +35,13 @@ Dasar: pembacaan kode di komputer rumah tanpa `node_modules`. Tidak ada kode yan
 ## Cara verifikasi yang tersedia sekarang
 
 Fungsi murni TypeScript baru (rate, kelas project, lembur, hari kerja) dapat diuji dengan `node --experimental-strip-types --test`. Pengecekan tipe, lint, dan tampilan baru bisa dilakukan setelah `npm.cmd --prefix 1.Frontend ci` pada komputer yang punya akses paket.
+
+## Tahap 1 (fondasi aturan) — dikerjakan 1 Nov 2026
+
+Berkas baru, additive, tanpa mengubah `pricing.ts`: `1.Frontend/HOTS/src/features/cineva-services/rules.ts` dan `rules.test.ts`.
+
+- Aturan client sebagai data (`defaultServiceRules`): rate minimum per peran, jam layanan 09.00-18.00 Senin-Jumat, kelas project (5 jt, 100 jt), biaya tambahan kru, 14 hari kerja payment.
+- Fungsi murni: `projectClass`, `overtimeRange`, `overtimeRate`, `isWithinServiceHours`, `isWorkingDay`, `addWorkingDays`, `paymentDueDate`.
+- Nilai yang belum dijawab bernilai `null` dan fungsinya melempar galat: pita lembur per budget (N53) dan daftar libur.
+- Tafsiran tim yang belum dikonfirmasi: nilai tepat Rp5 jt dan Rp100 jt dianggap sedang; hari mulai tidak dihitung pada tambah hari kerja; aturan pembulatan lembur (A2) diserahkan ke pemilik bisnis (`overtimeBillableHours`, tanda `TODO(human)`).
+- Verifikasi: `node --experimental-strip-types --test HOTS/src/features/cineva-services/rules.test.ts` (8 lulus, 1 todo). Belum diverifikasi: tsc, lint, build (tanpa `node_modules`).
