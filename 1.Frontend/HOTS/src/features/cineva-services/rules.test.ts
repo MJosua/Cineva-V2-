@@ -13,6 +13,7 @@ test('Invalid rules are rejected instead of silently used', () => {
   assert.throws(() => assertServiceRules({ ...defaultServiceRules, serviceHours: { open: 18, close: 9 } }), /Jam layanan/);
   assert.throws(() => assertServiceRules({ ...defaultServiceRules, classThresholds: { sedangFrom: 9, profesionalAbove: 5 } }), /Ambang/);
   assert.throws(() => assertServiceRules({ ...defaultServiceRules, holidays: ['2026-02-30'] }), /libur/);
+  assert.throws(() => assertServiceRules({ ...defaultServiceRules, holidays: ['2026-13-01'] }), /libur/);
 });
 test('Project class follows total budget thresholds', () => {
   assert.equal(projectClass(0), 'kecil');

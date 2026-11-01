@@ -45,3 +45,15 @@ Berkas baru, additive, tanpa mengubah `pricing.ts`: `1.Frontend/HOTS/src/feature
 - Nilai yang belum dijawab bernilai `null` dan fungsinya melempar galat: pita lembur per budget (N53) dan daftar libur.
 - Tafsiran tim yang belum dikonfirmasi: nilai tepat Rp5 jt dan Rp100 jt dianggap sedang; hari mulai tidak dihitung pada tambah hari kerja; aturan pembulatan lembur (A2) diserahkan ke pemilik bisnis (`overtimeBillableHours`, tanda `TODO(human)`).
 - Verifikasi: `node --experimental-strip-types --test HOTS/src/features/cineva-services/rules.test.ts` (8 lulus, 1 todo). Belum diverifikasi: tsc, lint, build (tanpa `node_modules`).
+
+## Tahap 3a (kalender tahap campaign) — dikerjakan 1 Nov 2026
+
+Berkas baru, additive: `1.Frontend/HOTS/src/features/cineva-campaigns/stages.ts` dan `stages.test.ts`. Memakai `addWorkingDays` dari Tahap 1.
+
+- Template tahap sebagai data (`defaultStageTemplates`): "Reguler bulanan" (talent 7 hari, barang 7 hari, konten 4 hari, payment 14 hari kerja) dan "Non-barang 30 hari" (30 hari kalender, lalu payment).
+- `buildStageCalendar(template, mulai, rules, perpanjangan)` menghasilkan tanggal mulai dan selesai tiap tahap secara berurutan; perpanjangan menggeser tahap itu dan semua tahap sesudahnya.
+- `validateExtension`: alasan dan bukti (PNG, JPEG, atau teks) wajib, maksimal 2 hari total per campaign.
+- Tafsiran tim belum dikonfirmasi: hari konten 4 (dari "3-4 hari, bisa 1 minggu"); tahap sebelum payment berupa hari kalender (L13); batas 2 hari total per campaign (N28); perpanjangan terpisah dari izin submit terlambat (L18).
+- Belum ada: urutan wajib antar tahap dan aksi terkunci jendela tanggal (N17, N18), persetujuan bertingkat (B3), replace creator (L21), dan sambungan ke milestone `Campaign` yang ada.
+- Tes menemukan dan memperbaiki bug validasi tanggal di `rules.ts` dan `stages.ts` (bulan 13 melempar `RangeError`).
+- Verifikasi: `node --experimental-strip-types --test` pada kedua berkas tes; tsc, lint, build belum (tanpa `node_modules`).

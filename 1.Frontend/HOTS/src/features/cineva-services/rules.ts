@@ -37,7 +37,7 @@ export const defaultServiceRules: ServiceRules = {
 };
 
 const isRupiah = (n: unknown): n is number => Number.isSafeInteger(n) && (n as number) >= 0;
-const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) === value;
+const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value + 'T00:00:00Z')) && new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) === value;
 
 export function assertServiceRules(rules: ServiceRules): ServiceRules {
   const { crewMinimum, serviceHours, serviceDays, classThresholds, overtime, holidays } = rules;
