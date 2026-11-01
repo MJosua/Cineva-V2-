@@ -1,0 +1,318 @@
+{
+ "source": "cineva WhatsApp Ptt 2026-11-01 at 9.30.57 AM.ogg",
+ "duration": 368.3135,
+ "segments": [
+  {
+   "start": 0.43,
+   "end": 6.67,
+   "text": "Hai, selamat pagi, selamat hari minggu, apakabar?",
+   "avg_logprob": -0.498
+  },
+  {
+   "start": 7.67,
+   "end": 13.43,
+   "text": "Dalamang nggak ketemu, tapi yaudahlah karena kamu sibuk, aku jinfevian aja ya,",
+   "avg_logprob": -0.498
+  },
+  {
+   "start": 13.43,
+   "end": 16.43,
+   "text": "karena aku juga, dalamang nggak nyapak kamu ya?",
+   "avg_logprob": -0.498
+  },
+  {
+   "start": 18.43,
+   "end": 28.43,
+   "text": "Oke ya, kalau misalkan di PH itu, ya yos ya, jadi permintaannya tuh pertama kayak jam",
+   "avg_logprob": -0.498
+  },
+  {
+   "start": 28.43,
+   "end": 34.43,
+   "text": "biasanya tim itu, crew-crew itu perhitungannya per hours,",
+   "avg_logprob": -0.236
+  },
+  {
+   "start": 34.43,
+   "end": 41.43,
+   "text": "kayak contoh per 4 hours, per 6 hours, per 8 hours gitu ya,",
+   "avg_logprob": -0.236
+  },
+  {
+   "start": 41.43,
+   "end": 49.43,
+   "text": "jadi tiap ratenya itu beda-beda, jadi misalnya nih kalau di aku itu ada 4 sampai 6",
+   "avg_logprob": -0.236
+  },
+  {
+   "start": 49.43,
+   "end": 57.43,
+   "text": "nah setelah itu kena charge, kena charge jam gitu,",
+   "avg_logprob": -0.236
+  },
+  {
+   "start": 57.43,
+   "end": 65.43,
+   "text": "misalkan di luar dari estimasi gitu, nah package-nya itu 4 sama 6 jam gitu, per 1 crew,",
+   "avg_logprob": -0.219
+  },
+  {
+   "start": 65.43,
+   "end": 74.43,
+   "text": "nah kadang kan kalau kita nggak tahu tuh totalnya berapa lah ya, gitu nah perhitungannya",
+   "avg_logprob": -0.219
+  },
+  {
+   "start": 74.43,
+   "end": 82.43,
+   "text": "biar enak, nah ada gatekeeper-nya, jadi misalnya kita masukin start jari jam berapa gitu,",
+   "avg_logprob": -0.219
+  },
+  {
+   "start": 82.43,
+   "end": 88.43,
+   "text": "nah itu mau break even point-nya berapa, karena kan ada call crew lah biasanya",
+   "avg_logprob": -0.238
+  },
+  {
+   "start": 88.43,
+   "end": 95.43,
+   "text": "kalau di production also ada call crew, nah call crew itu kita kasih jata 10 minit,",
+   "avg_logprob": -0.238
+  },
+  {
+   "start": 95.43,
+   "end": 102.43,
+   "text": "10 menit, nah itu di luar dari jam ke sepakata bisanik kita kerjanya 6 jam,",
+   "avg_logprob": -0.238
+  },
+  {
+   "start": 102.43,
+   "end": 108.43,
+   "text": "gitu ada call crew sekitar 10 menit, nah kalau lebih dari 10 menit,",
+   "avg_logprob": -0.238
+  },
+  {
+   "start": 108.43,
+   "end": 117.43,
+   "text": "itu udah masuk ke, ini jam kerja, kayak gitu, nah kalau misalkan kelebihan waktu gitu,",
+   "avg_logprob": -0.166
+  },
+  {
+   "start": 117.43,
+   "end": 123.43,
+   "text": "nanti dia langsung otomatis gitu loh, misalnya kita masukin jam berapa sampai jam berapa,",
+   "avg_logprob": -0.166
+  },
+  {
+   "start": 123.43,
+   "end": 131.43,
+   "text": "nanti keluar lah, oh dia kelebihan waktu, oh dia kekurangan nih gitu, oh ini dia kelebihan jam,",
+   "avg_logprob": -0.166
+  },
+  {
+   "start": 131.43,
+   "end": 139.43,
+   "text": "nah biasanya nanti kalau aku kebijakannya, kalau misalkan kurang dari sejam,",
+   "avg_logprob": -0.167
+  },
+  {
+   "start": 139.43,
+   "end": 146.43,
+   "text": "gitu ya lebih setengah jam lah ya, gitu selesainnya kan kita harus kayak,",
+   "avg_logprob": -0.167
+  },
+  {
+   "start": 146.43,
+   "end": 155.43,
+   "text": "apa namanya tuh, prepare alat kan sama tutup alat gitu, itu juga nggak termasuk waktu",
+   "avg_logprob": -0.167
+  },
+  {
+   "start": 155.43,
+   "end": 161.43,
+   "text": "estimasi sih, itu setting up, kalau setting up itu biasanya 10 menit,",
+   "avg_logprob": -0.21
+  },
+  {
+   "start": 161.43,
+   "end": 168.43,
+   "text": "kalau misalkan setting up di atas 10 menit lebih lah hampir sejam, ya itu udah masuk jam kerja,",
+   "avg_logprob": -0.21
+  },
+  {
+   "start": 168.43,
+   "end": 175.43,
+   "text": "kayak gitu, nah kalau di creator sama di creator itu namanya time lines,",
+   "avg_logprob": -0.21
+  },
+  {
+   "start": 175.43,
+   "end": 180.43,
+   "text": "nah ya kurang lebih sama lah pengarjangan waktu ya, nah time lines ini biasanya",
+   "avg_logprob": -0.21
+  },
+  {
+   "start": 180.43,
+   "end": 188.43,
+   "text": "misalnya kalau ada produk gitu kirim produk, biasanya terproduk datang itu 3 sampai",
+   "avg_logprob": -0.163
+  },
+  {
+   "start": 188.43,
+   "end": 196.43,
+   "text": "seminggu gitu pengarjangan untuk kontennya, nah aku tuh pengennya ketika udah,",
+   "avg_logprob": -0.163
+  },
+  {
+   "start": 196.43,
+   "end": 201.43,
+   "text": "oh ini tuh optimasinya tuh adalah ketika udah di luar dari timeline gitu,",
+   "avg_logprob": -0.163
+  },
+  {
+   "start": 202.43,
+   "end": 209.43,
+   "text": "ya maka sih creator tidak bisa submit kayak gitu, nah aku nggak tau si Yoso itu",
+   "avg_logprob": -0.196
+  },
+  {
+   "start": 209.43,
+   "end": 215.43,
+   "text": "gimana untuk mekanismannya, nah kalau misalkan kata Yoso enaknya gimana,",
+   "avg_logprob": -0.196
+  },
+  {
+   "start": 215.43,
+   "end": 220.43,
+   "text": "terus kan kadang kalau editing nih, nah kalau balik lagi ke produk,",
+   "avg_logprob": -0.196
+  },
+  {
+   "start": 220.43,
+   "end": 228.43,
+   "text": "kalau editing biasanya kan waktu misalnya after kita shoot itu minimal 3 sampai",
+   "avg_logprob": -0.196
+  },
+  {
+   "start": 228.43,
+   "end": 234.43,
+   "text": "seminggu kalau yang standar gitu, tapi itu hari kerja, jadi hari jumat itu kita",
+   "avg_logprob": -0.202
+  },
+  {
+   "start": 234.43,
+   "end": 239.43,
+   "text": "termasuk libur gitu deh kita cuma setengah hari gitu sampai jam 11,",
+   "avg_logprob": -0.202
+  },
+  {
+   "start": 239.43,
+   "end": 246.43,
+   "text": "karena satu minggu kita libur gitu, nah minggu untuk editor ya,",
+   "avg_logprob": -0.202
+  },
+  {
+   "start": 246.43,
+   "end": 253.43,
+   "text": "untuk editor itu minggu itu diliburin kecuali yang emang oh kita ngambilnya",
+   "avg_logprob": -0.202
+  },
+  {
+   "start": 253.43,
+   "end": 259.43,
+   "text": "jadinya freelance gitu, miatnya seperti itu ya, cuman kalau misalkan satu minggu itu beda",
+   "avg_logprob": -0.304
+  },
+  {
+   "start": 259.43,
+   "end": 265.43,
+   "text": "red gitu, kalau misalkan emang kita ada job yang di satu minggu,",
+   "avg_logprob": -0.304
+  },
+  {
+   "start": 265.43,
+   "end": 273.43,
+   "text": "itu rednya berbeda gitu untuk editing ya editor, enak kan mau rasa waktu libur gitu,",
+   "avg_logprob": -0.304
+  },
+  {
+   "start": 273.43,
+   "end": 280.43,
+   "text": "tapi sih nggak tau sih enaknya gimana ya, gitu karena biar manisia biar aja gitu,",
+   "avg_logprob": -0.304
+  },
+  {
+   "start": 280.43,
+   "end": 285.43,
+   "text": "nah pokoknya intinya sih perhitungannya gitu ya, jadi kalau misalkan di production house itu dia",
+   "avg_logprob": -0.274
+  },
+  {
+   "start": 285.43,
+   "end": 294.43,
+   "text": "lebih ke estimasi waktu pengerjaan sama ini lebih aja, kayak misalnya biar production contoh ya,",
+   "avg_logprob": -0.274
+  },
+  {
+   "start": 294.43,
+   "end": 301.43,
+   "text": "kemarin ada yang ngajuin kayak ini namanya to credital,",
+   "avg_logprob": -0.274
+  },
+  {
+   "start": 301.43,
+   "end": 309.43,
+   "text": "nah credital itu dia estimation untuk production, misalnya ini kayak misalkan alatnya berapa,",
+   "avg_logprob": -0.281
+  },
+  {
+   "start": 309.43,
+   "end": 318.43,
+   "text": "semuanya berapa EAB lah ya, nah itu menurut josua meninggangsi total estimasi",
+   "avg_logprob": -0.281
+  },
+  {
+   "start": 318.43,
+   "end": 327.43,
+   "text": "itu integrasi dengan sheet atau bisa di, oh apa namanya bisa dimasukin angkanya di web gitu,",
+   "avg_logprob": -0.281
+  },
+  {
+   "start": 327.43,
+   "end": 332.43,
+   "text": "jadi ketawa nih, oh rednya kan adalah red misalkan videographer,",
+   "avg_logprob": -0.195
+  },
+  {
+   "start": 332.43,
+   "end": 339.43,
+   "text": "bapak kan udah tertera gitu, nanti ada profilnya dari tim gitu kan sama profilnya dari kreator,",
+   "avg_logprob": -0.195
+  },
+  {
+   "start": 339.43,
+   "end": 346.43,
+   "text": "kalau misalkan konten kreator ya gitu, performa nanti ada performa,",
+   "avg_logprob": -0.195
+  },
+  {
+   "start": 346.43,
+   "end": 354.43,
+   "text": "terus ada kualiti akun, kualiti apa namanya konten gitu, karena kan kalau PH kan konten ya,",
+   "avg_logprob": -0.195
+  },
+  {
+   "start": 354.43,
+   "end": 361.43,
+   "text": "udah videonya, kualiti kontennya gimana dia, oh dia full HD atau 4K atau apa gitu kan,",
+   "avg_logprob": -0.218
+  },
+  {
+   "start": 361.43,
+   "end": 366.43,
+   "text": "nah itu gimana nih menurut josua gitu.",
+   "avg_logprob": -0.218
+  }
+ ]
+}

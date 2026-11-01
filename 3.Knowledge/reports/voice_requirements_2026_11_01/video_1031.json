@@ -1,0 +1,42 @@
+{
+ "source": "WhatsApp Video 2026-10-31 at 2.58.51 AM.mp4",
+ "duration": 65.2001875,
+ "segments": [
+  {
+   "start": 0.0,
+   "end": 3.84,
+   "text": "In the quiet corners of our world",
+   "avg_logprob": -0.368
+  },
+  {
+   "start": 3.84,
+   "end": 7.84,
+   "text": "Shadows dance where light wants to talk",
+   "avg_logprob": -0.368
+  },
+  {
+   "start": 7.84,
+   "end": 12.67,
+   "text": "We carry stories etched in silence",
+   "avg_logprob": -0.368
+  },
+  {
+   "start": 12.67,
+   "end": 15.79,
+   "text": "Waiting for someone to break the spell",
+   "avg_logprob": -0.368
+  },
+  {
+   "start": 15.79,
+   "end": 24.74,
+   "text": "When the night feels endless and cold",
+   "avg_logprob": -0.368
+  },
+  {
+   "start": 24.74,
+   "end": 65.12,
+   "text": "A simple life can manifest your over-upload",
+   "avg_logprob": -0.368
+  }
+ ]
+}

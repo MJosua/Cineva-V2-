@@ -6,6 +6,12 @@ Status update 2026-10-18: local trigger/builder fixes verified; HQ/Creator Space
 
 ## Read first
 
+- [Requirement dari 2 voice note dan 1 video (1 Nov 2026)](architecture/voice_requirements_2_2026_11_01.md): hitungan crew per jam dan gatekeeper, timeline/kalender kerja, grade Premium/A/B/C, laman Brand berlangganan, produk KOL specialist dan RAB. Transkrip ASR di [reports](reports/voice_requirements_2026_11_01/); audio MP4 hanya lagu, isi video rekaman layar dashboard KOL. Analisis saja.
+
+- [Pertanyaan dan jawaban client (1 Nov 2026)](handover/PERTANYAAN_UNTUK_CLIENT_2026_11_01.md): jawaban A1-G6 dan 44 pertanyaan terbuka (P1 20, P2 22, P3 2). Excel pendamping: [jawaban dan aturan](handover/Jawaban_Client_Cineva_2026_11_01.xlsx) serta [sisa pertanyaan](handover/Sisa_Pertanyaan_Client_Cineva_2026_11_01.xlsx). Dokumen live Claude Docs memuat daftar yang sama. Tanpa data pribadi dari sheet KOL atau formulir pendaftar.
+- [Peta kode Cineva dan kesenjangan terhadap requirement (1 Nov 2026)](architecture/cineva_code_map_vs_requirements_2026_11_01.md): fitur yang sudah ada per folder, apa yang belum ada, dan cara menguji tanpa `node_modules` (`node --experimental-strip-types --test`). Pembacaan saja.
+- [Review pandangan client: assessment akun dan DP anti-cancel](architecture/client_assessment_dp_review_2026_11_01.md): perhitungan kualitas akun (ER, kewajaran angka, median) dan DP di awal versus implementasi dummy saat ini; yang belum ada dan 4 pertanyaan terbuka untuk client. Review saja, tanpa perubahan runtime.
+
 - [HTML demo Content Studio siap kirim](architecture/content_studio_portable_2026_10_22.md): satu HTML offline sekitar 1 MB + ZIP sekitar 258 KB, existing UI/theme, synthetic HQ/Creator, portable export terbaru dan 15 file-URL E2E. Tidak mengirim WhatsApp atau mengaktifkan provider.
 
 - [Implementasi Content Studio](architecture/content_studio_implementation_2026_10_22.md): package lokal/renderer/8 template, UI HQ/Creator, scoped API, virtual-document MySQL adapter, worker/provider/AI ports, browser/HTTP/raster dan batas aktivasi production. Laporan implementasi terpisah dari baseline plan.
