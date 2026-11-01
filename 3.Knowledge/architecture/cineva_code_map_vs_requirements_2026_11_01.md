@@ -57,3 +57,14 @@ Berkas baru, additive: `1.Frontend/HOTS/src/features/cineva-campaigns/stages.ts`
 - Belum ada: urutan wajib antar tahap dan aksi terkunci jendela tanggal (N17, N18), persetujuan bertingkat (B3), replace creator (L21), dan sambungan ke milestone `Campaign` yang ada.
 - Tes menemukan dan memperbaiki bug validasi tanggal di `rules.ts` dan `stages.ts` (bulan 13 melempar `RangeError`).
 - Verifikasi: `node --experimental-strip-types --test` pada kedua berkas tes; tsc, lint, build belum (tanpa `node_modules`).
+
+## Tahap 2 (estimator kru berbasis budget) — dikerjakan 1 Nov 2026
+
+Berkas baru, additive: `1.Frontend/HOTS/src/features/cineva-hq/crewEstimator.ts` dan `crewEstimator.test.ts`. `estimateBudget` dan `EstimatorView` yang ada tidak diubah.
+
+- `minimumCrewCost`: perkiraan minimum jasa kru = jumlah x rate minimum per peran (A1) x sesi. Bukan RAB dan bukan harga final.
+- `crewBudgetCoverage`: apakah total budget menutup minimum itu; `remaining` negatif berarti kurang.
+- `recommendCrew`: memilih pita budget tertinggi yang tercapai dari tabel budget ke komposisi kru, lalu menyertakan kelas project dan cakupan budget.
+- Tabel budget ke kru adalah milik Cineva dan belum diberikan (L6): `defaultCrewBands = null` dan `recommendCrew` melempar galat, bukan menebak. Budget di bawah pita terendah ditolak.
+- Belum diputuskan client: apakah angka biaya ditampilkan ke Brand atau hanya admin (L8) dan apa arti "benefit" (L7). Karena itu modul ini hanya menghasilkan angka; penayangannya ditentukan saat tampilan dibuat.
+- Verifikasi: `node --experimental-strip-types --test` (6 tes baru lulus; total 21 lulus, 1 todo). tsc, lint, build belum (tanpa `node_modules`).
