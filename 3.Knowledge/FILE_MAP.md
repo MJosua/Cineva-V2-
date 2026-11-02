@@ -1,6 +1,6 @@
 # Cineva file map
 
-Generated: 2026-11-02T15:02:44.159Z. Static extraction only; route paths can be relative to mount prefixes.
+Generated: 2026-11-02T15:17:36.994Z. Static extraction only; route paths can be relative to mount prefixes.
 
 | Area | Root | Source files | App map |
 |---|---|---:|---|
@@ -126,6 +126,7 @@ Generated: 2026-11-02T15:02:44.159Z. Static extraction only; route paths can be 
 - [Workbook operasional asli sebagai referensi Cineva](architecture/workbook_reference_2026_10_18.md)
 - [Handover HOTS original — reusable platform](handover/HOTS_ORIGINAL_HANDOVER_2026_10_14.md)
 - [Handover to Kantor: PAR title and Claude/Codex Kanban trial](handover/KANTOR_PAR_ORCHESTRATOR_TEST_2026_10_19.md)
+- [Panduan Cineva: Alur Campaign dari Awal sampai Dibayar](handover/PANDUAN_CLIENT_ALUR_CAMPAIGN_2026_11_02.md)
 - [Penjelasan pertanyaan untuk client Cineva](handover/PENJELASAN_PERTANYAAN_CLIENT_2026_11_02.md)
 - [Pertanyaan dan jawaban client Cineva](handover/PERTANYAAN_UNTUK_CLIENT_2026_11_01.md)
 - [Prompt untuk chat AI project Kantor](handover/PROMPT_AI_KANTOR.md)

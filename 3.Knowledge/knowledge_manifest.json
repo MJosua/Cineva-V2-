@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-02T15:02:44.159Z",
+  "generatedAt": "2026-11-02T15:17:36.994Z",
   "documents": [
     {
       "path": "1.Frontend/HOTS/docs/CHANGELOG.md",
@@ -1201,7 +1201,7 @@
     },
     {
       "path": "3.Knowledge/KNOWLEDGE_INDEX.md",
-      "sha256": "128c86414f23b915df4ceb98cf825953d806bd44a8fa1fda3df3b454fb9cf0b7",
+      "sha256": "a8936ed284fe1e13c0a205c2de94f725827800d7d68487feefd5c1aa4e751105",
       "title": "Cineva knowledge entry point",
       "headings": [
         {
@@ -1214,15 +1214,15 @@
         },
         {
           "heading": "Upgrade decisions to preserve",
-          "line": 99
+          "line": 100
         },
         {
           "heading": "Verification boundaries",
-          "line": 110
+          "line": 111
         },
         {
           "heading": "Reproduce audit",
-          "line": 114
+          "line": 115
         }
       ]
     },
@@ -2754,6 +2754,121 @@
         {
           "heading": "Pending and boundaries",
           "line": 71
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/handover/PANDUAN_CLIENT_ALUR_CAMPAIGN_2026_11_02.md",
+      "sha256": "5692b08f570f5c165775c8f48f3b34f35c7cd6fc40f719c301a331d5d9c0b138",
+      "title": "Panduan Cineva: Alur Campaign dari Awal sampai Dibayar",
+      "headings": [
+        {
+          "heading": "Panduan Cineva: Alur Campaign dari Awal sampai Dibayar",
+          "line": 1
+        },
+        {
+          "heading": "1. Pengantar",
+          "line": 5
+        },
+        {
+          "heading": "Dua sisi aplikasi",
+          "line": 9
+        },
+        {
+          "heading": "Cara membuka demo",
+          "line": 16
+        },
+        {
+          "heading": "Istilah penting",
+          "line": 25
+        },
+        {
+          "heading": "2. Alur besar dari awal sampai dibayar",
+          "line": 41
+        },
+        {
+          "heading": "3. Alur Kantor Cineva (HQ), langkah demi langkah",
+          "line": 61
+        },
+        {
+          "heading": "4. Alur Member (creator), langkah demi langkah",
+          "line": 147
+        },
+        {
+          "heading": "5. Fungsi tiap tombol",
+          "line": 217
+        },
+        {
+          "heading": "Menu dan bagian atas",
+          "line": 221
+        },
+        {
+          "heading": "Kalender tahap campaign",
+          "line": 234
+        },
+        {
+          "heading": "Pendaftaran creator",
+          "line": 242
+        },
+        {
+          "heading": "Talent assignment",
+          "line": 253
+        },
+        {
+          "heading": "Alur kerja creator",
+          "line": 261
+        },
+        {
+          "heading": "Pilihan produk & pemenuhan",
+          "line": 272
+        },
+        {
+          "heading": "Deliverable & QC",
+          "line": 280
+        },
+        {
+          "heading": "Keuangan talent dan insight",
+          "line": 289
+        },
+        {
+          "heading": "Penilaian kinerja",
+          "line": 301
+        },
+        {
+          "heading": "6. Contoh kasus dari tiga campaign di demo",
+          "line": 308
+        },
+        {
+          "heading": "Kasus A. Campaign Vape Liquid IC 100 (data asli client)",
+          "line": 320
+        },
+        {
+          "heading": "Kasus B. Campaign Studio Dummy 1 (latihan dari awal)",
+          "line": 373
+        },
+        {
+          "heading": "Kasus C. Campaign Studio Dummy 2 (akun kantor lain)",
+          "line": 383
+        },
+        {
+          "heading": "7. Aturan penting dan yang belum tersedia",
+          "line": 391
+        },
+        {
+          "heading": "Aturan yang sudah berjalan di sistem",
+          "line": 393
+        },
+        {
+          "heading": "Aturan pembatalan (simulasi di Budget estimator)",
+          "line": 407
+        },
+        {
+          "heading": "Belum tersedia di demo",
+          "line": 414
+        },
+        {
+          "heading": "Perlu konfirmasi dari client",
+          "line": 422
         }
       ]
     },
