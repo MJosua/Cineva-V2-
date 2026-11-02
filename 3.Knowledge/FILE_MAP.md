@@ -1,6 +1,6 @@
 # Cineva file map
 
-Generated: 2026-11-02T13:09:46.388Z. Static extraction only; route paths can be relative to mount prefixes.
+Generated: 2026-11-02T13:12:06.408Z. Static extraction only; route paths can be relative to mount prefixes.
 
 | Area | Root | Source files | App map |
 |---|---|---:|---|
@@ -82,6 +82,7 @@ Generated: 2026-11-02T13:09:46.388Z. Static extraction only; route paths can be 
 - [@hots/transaction-kit](../2.Backend/packages/transaction-kit/docs/README.md)
 - [Cineva knowledge entry point](KNOWLEDGE_INDEX.md)
 - [Preview tiga akun referensi Excel](architecture/account_reference_2026_10_18.md)
+- [Aturan batch J: pembatalan, jendela tahap, pendaftar ganda (2 Nov 2026)](architecture/cineva_batch_j_rules_2026_11_02.md)
 - [Cineva Campaign Operations](architecture/cineva_campaign_operations_2026_10_18.md)
 - [Peta kode Cineva dan kesenjangan terhadap requirement client (1 Nov 2026)](architecture/cineva_code_map_vs_requirements_2026_11_01.md)
 - [Usulan DDL Cineva dan uji coba di database terpisah (2 Nov 2026)](architecture/cineva_ddl_trial_2026_11_02.md)

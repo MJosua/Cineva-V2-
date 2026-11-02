@@ -8,8 +8,9 @@ export const defaultConfig = Object.freeze({
   approvalKeys: ['client', 'owner'],
   /** Creator payout gate (client N19, N43). */
   paymentKeys: ['post_live', 'insight_submitted', 'obligations_complete'],
-  /** One extension request, 2 extra days in total per campaign (client N28). */
-  extensionLimits: { maxTotalDays: 2, maxRequests: 1 },
+  /** Sick/disaster leave: 2 requests at different times, each at most 2 consecutive days (client N28 + K6 clarification). */
+  extensionLimits: { maxTotalDays: 4, maxRequests: 2 },
+  maxExtensionDaysPerRequest: 2,
   cancellationPolicy: {
     version: 'CLIENT-2026-11-03',
     parties: {

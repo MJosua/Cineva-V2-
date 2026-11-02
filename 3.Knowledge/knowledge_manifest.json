@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-02T13:09:46.388Z",
+  "generatedAt": "2026-11-02T13:12:06.408Z",
   "documents": [
     {
       "path": "1.Frontend/HOTS/docs/CHANGELOG.md",
@@ -1201,7 +1201,7 @@
     },
     {
       "path": "3.Knowledge/KNOWLEDGE_INDEX.md",
-      "sha256": "e1973ffd9dd64f13d1621e83168fe2c5b8fa2183f42908b07ce7f2d74294db16",
+      "sha256": "128c86414f23b915df4ceb98cf825953d806bd44a8fa1fda3df3b454fb9cf0b7",
       "title": "Cineva knowledge entry point",
       "headings": [
         {
@@ -1214,15 +1214,15 @@
         },
         {
           "heading": "Upgrade decisions to preserve",
-          "line": 98
+          "line": 99
         },
         {
           "heading": "Verification boundaries",
-          "line": 109
+          "line": 110
         },
         {
           "heading": "Reproduce audit",
-          "line": 113
+          "line": 114
         }
       ]
     },
@@ -1234,6 +1234,49 @@
         {
           "heading": "Preview tiga akun referensi Excel",
           "line": 1
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/cineva_batch_j_rules_2026_11_02.md",
+      "sha256": "45c5a5d2bbb05a07dcea296bff14d9a98a2e9cf3e91f24429fdbd15c7cd9e82c",
+      "title": "Aturan batch J: pembatalan, jendela tahap, pendaftar ganda (2 Nov 2026)",
+      "headings": [
+        {
+          "heading": "Aturan batch J: pembatalan, jendela tahap, pendaftar ganda (2 Nov 2026)",
+          "line": 1
+        },
+        {
+          "heading": "1. Informasi baru dari client",
+          "line": 5
+        },
+        {
+          "heading": "2. Kode dan cara pakai",
+          "line": 22
+        },
+        {
+          "heading": "Pembatalan — `1.Frontend/HOTS/src/features/cineva-services/policies.ts`",
+          "line": 24
+        },
+        {
+          "heading": "Pendaftar ganda — `policies.ts`",
+          "line": 36
+        },
+        {
+          "heading": "Jendela tahap — `1.Frontend/HOTS/src/features/cineva-campaigns/stages.ts`",
+          "line": 47
+        },
+        {
+          "heading": "3. Flow",
+          "line": 58
+        },
+        {
+          "heading": "4. UI",
+          "line": 73
+        },
+        {
+          "heading": "5. Batasan",
+          "line": 78
         }
       ]
     },

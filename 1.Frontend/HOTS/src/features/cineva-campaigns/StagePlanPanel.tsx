@@ -4,14 +4,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Actor } from '../cineva-inquiries/domain';
 import type { Campaign } from './model';
-import { defaultExtensionRules, defaultStageTemplates, findStageTemplate, stagePlanCalendar, stageWindowState, assertStageReopen, validateExtension, type ExtensionProof, type StagePlan, type StageReopen } from './stages';
+import { defaultExtensionRules, maxExtensionDaysPerRequest, defaultStageTemplates, findStageTemplate, stagePlanCalendar, stageWindowState, assertStageReopen, validateExtension, type ExtensionProof, type StagePlan, type StageReopen } from './stages';
 
 type Change = (update: (row: Campaign) => Campaign) => void;
 const dateList = (text: string) => text.split(/[\s,;]+/).filter(Boolean);
 const localToday = () => { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
 const windowLabel = { timeline: 'Terbuka', reopen: 'Dibuka ulang PIC', not_started: 'Belum dibuka', closed: 'Tertutup' } as const;
 
-/** Kalender tahap campaign dari template client. Hanya HQ pemilik yang mengubah; Creator melihat jadwalnya. Perpanjangan: 1 kali, 2 hari (N28). */
+/** Kalender tahap campaign dari template client. Hanya HQ pemilik yang mengubah; Creator melihat jadwalnya. Perpanjangan: 2 kali, maks 2 hari per izin (K6). */
 export function StagePlanPanel({ campaign, actor, onChange }: { campaign: Campaign; actor: Actor; onChange: Change }) {
   const hq = actor.product === 'hq', plan = campaign.stagePlan;
   const [templateId, setTemplateId] = useState(defaultStageTemplates[0].id), [startDate, setStartDate] = useState(''), [holidays, setHolidays] = useState('');
@@ -63,14 +63,14 @@ export function StagePlanPanel({ campaign, actor, onChange }: { campaign: Campai
         <h4 className="font-medium">Catat perpanjangan waktu</h4>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm">Tahap<select aria-label="Tahap diperpanjang" className="mt-1 block h-10 w-full rounded-md border border-input bg-background px-3" value={stageKey || template.stages[0].key} onChange={event => setStageKey(event.target.value)}>{template.stages.map(stage => <option key={stage.key} value={stage.key}>{stage.label}</option>)}</select></label>
-          <label className="text-sm">Tambahan hari<Input aria-label="Tambahan hari" type="number" min="1" max={extensionLeft} step="1" value={days} onChange={event => setDays(event.target.value)}/></label>
+          <label className="text-sm">Tambahan hari<Input aria-label="Tambahan hari" type="number" min="1" max={Math.min(extensionLeft, maxExtensionDaysPerRequest)} step="1" value={days} onChange={event => setDays(event.target.value)}/></label>
         </div>
         <label className="block text-sm">Alasan (sakit, bencana, krisis digital, dan sejenisnya)<Textarea aria-label="Alasan perpanjangan" value={reason} onChange={event => setReason(event.target.value)} maxLength={2000}/></label>
         <label className="block text-sm">Jenis bukti<select aria-label="Jenis bukti" className="mt-1 block h-10 w-full rounded-md border border-input bg-background px-3" value={proofKind} onChange={event => setProofKind(event.target.value as 'text' | 'png' | 'jpeg')}><option value="text">Teks</option><option value="png">PNG</option><option value="jpeg">JPEG</option></select></label>
         {proofKind === 'text' ? <label className="block text-sm">Bukti (teks)<Textarea aria-label="Bukti teks" value={proofText} onChange={event => setProofText(event.target.value)} maxLength={2000}/></label>
           : <label className="block text-sm">Bukti (berkas {proofKind.toUpperCase()}, hanya nama dan ukuran yang dicatat)<Input aria-label="Berkas bukti" type="file" accept={proofKind === 'png' ? '.png' : '.jpg,.jpeg'} onChange={event => { const picked = event.target.files?.[0]; setFile(picked ? { name: picked.name, size: picked.size } : null); }}/></label>}
         <Button type="submit">Simpan perpanjangan</Button>
-        <p className="text-xs text-muted-foreground">Hanya 1 kali, tambahan maksimal 2 hari. Payment ikut bergeser. Terpisah dari izin submit terlambat.</p>
+        <p className="text-xs text-muted-foreground">Izin karena sakit atau bencana alam: maksimal 2 kali di waktu berbeda, satu izin paling lama 2 hari berturut-turut. Payment ikut bergeser. Terpisah dari izin submit terlambat.</p>
       </form>}
     </>}
   </section>;

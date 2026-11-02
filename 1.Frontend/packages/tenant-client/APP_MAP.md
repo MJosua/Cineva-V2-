@@ -1,6 +1,6 @@
 # @hots/tenant-client source map
 
-Generated: 2026-11-02T13:09:46.388Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
+Generated: 2026-11-02T13:12:06.408Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
 
 | File | Lines | Imports | Route definitions |
 |---|---:|---:|---|

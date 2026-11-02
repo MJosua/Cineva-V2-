@@ -35,13 +35,14 @@ test('Extension requires reason, proof, and stays within 2 days in total', () =>
   assert.equal(validateExtension(ext({ reason: '  Banjir ' }), [], reguler).reason, 'Banjir');
   assert.throws(() => validateExtension(ext({ reason: ' ' }), [], reguler), /Alasan/);
   assert.throws(() => validateExtension(ext({ days: 0 }), [], reguler), /minimal 1/);
-  assert.throws(() => validateExtension(ext({ days: 3 }), [], reguler), /batas 2/);
-  assert.throws(() => validateExtension(ext({ days: 2 }), [ext({ days: 1 })], reguler), /terpakai 1/);
+  assert.throws(() => validateExtension(ext({ days: 3 }), [], reguler), /paling lama 2 hari/);
+  assert.throws(() => validateExtension(ext({ days: 2 }), [ext({ days: 2 }), ext({ days: 1 })], reguler, { maxTotalDays: 4 }), /terpakai 3/);
   assert.throws(() => validateExtension(ext({ stageKey: 'nope' }), [], reguler), /tahap yang ada/);
   assert.throws(() => validateExtension(ext({ proof: { kind: 'text', text: ' ' } }), [], reguler), /Bukti teks/);
 });
-test('Extension may be requested only once per campaign (client answer N28)', () => {
-  assert.throws(() => validateExtension(ext({ days: 1 }), [ext({ days: 1 })], reguler), /1 kali/);
+test('Extension: 2 requests at different times, at most 2 consecutive days each (K6 clarification)', () => {
+  assert.equal(validateExtension(ext({ days: 2 }), [ext({ days: 2 })], reguler).days, 2);
+  assert.throws(() => validateExtension(ext({ days: 1 }), [ext({ days: 1 }), ext({ days: 1 })], reguler), /2 kali/);
   assert.equal(validateExtension(ext({ days: 2 }), [], reguler).days, 2);
   assert.equal(validateExtension(ext({ days: 1 }), [ext({ days: 1 })], reguler, { maxTotalDays: 2 }).days, 1);
 });
@@ -53,8 +54,8 @@ test('Stage plan is validated and rebuilt into a calendar with its extensions', 
   assert.throws(() => assertStagePlan({ ...plan, templateId: 'nope' }), /tidak dikenal/);
   assert.throws(() => assertStagePlan({ ...plan, startDate: '2026-02-30' }), /tidak valid/);
   assert.throws(() => assertStagePlan({ ...plan, holidays: ['2026-13-01'] }), /libur/);
-  assert.throws(() => assertStagePlan({ ...plan, extensions: [ext({ days: 1 }), ext({ days: 1 })] }), /1 kali/);
-  assert.throws(() => assertStagePlan({ ...plan, extensions: [ext({ days: 3 })] }), /batas 2/);
+  assert.throws(() => assertStagePlan({ ...plan, extensions: [ext({ days: 1 }), ext({ days: 1 }), ext({ days: 1 })] }), /2 kali/);
+  assert.throws(() => assertStagePlan({ ...plan, extensions: [ext({ days: 3 })] }), /paling lama 2 hari/);
 });
 test('Extension proof accepts PNG or JPEG only and rejects empty files', () => {
   const png = ext({ proof: { kind: 'png', fileName: 'bukti.PNG', sizeBytes: 1200 } }), jpg = ext({ proof: { kind: 'jpeg', fileName: 'bukti.jpeg', sizeBytes: 1 } });
@@ -84,4 +85,13 @@ test('Batch J: stage actions close after their window; only PIC with client appr
   assert.deepEqual(stageWindowState(calendar, 'draft', '2026-11-11', [reopen]), { open: true, via: 'reopen' });
   assert.deepEqual(stageWindowState(calendar, 'draft', '2026-11-12', [reopen]), { open: false, why: 'closed' });
   assert.throws(() => stageWindowState(calendar, 'draft', '2026-11-10', [{ ...reopen, clientApproved: false as unknown as true }]), /disetujui klien/);
+});
+
+test('Job rules are optional and configurable per job: SOW fee, minimum age, documents, storyline approval', async () => {
+  const { assertJobRules, meetsAgeRule } = await import('./model.ts');
+  assert.deepEqual(assertJobRules({ sowFee: 500_000, minAge: 21, requireLegalDoc: true, storylineApprovalRequired: false }).minAge, 21);
+  assert.throws(() => assertJobRules({ sowFee: -1 }), /SOW/);
+  assert.throws(() => assertJobRules({ minAge: 10 }), /usia/);
+  assert.equal(meetsAgeRule(20, { minAge: 21 }), false);
+  assert.equal(meetsAgeRule(20), true);
 });

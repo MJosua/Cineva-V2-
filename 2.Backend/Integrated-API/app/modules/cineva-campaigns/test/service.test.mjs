@@ -100,6 +100,7 @@ guarded('stage plan uses optimistic revision, and the extension is allowed once 
   const extended = await svc.addExtension(hq, campaign.id, { stageKey: 'konten', days: 2, reason: ' Sakit ', proof });
   assert.equal(extended.stagePlan.extensions[0].days, 2);
   assert.equal(extended.stagePlan.extensions[0].reason, 'Sakit');
+  await svc.addExtension(hq, campaign.id, { stageKey: 'konten', days: 2, reason: 'Sakit lagi', proof });
   await assert.rejects(svc.addExtension(hq, campaign.id, { stageKey: 'konten', days: 1, reason: 'Lagi', proof }), error => error.code === 'EXTENSION_INVALID' && error.details.some(issue => issue.code === 'request_limit'));
   assert.equal(await code(svc.addExtension(hq, (await svc.createCampaign(hq, sampleCampaign())).id, { stageKey: 'k', days: 1, reason: 'x', proof })), 'NO_STAGE_PLAN');
 });

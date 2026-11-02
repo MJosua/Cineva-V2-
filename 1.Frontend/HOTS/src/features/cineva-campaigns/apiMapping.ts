@@ -133,6 +133,7 @@ export function planCampaignCalls(previous: Campaign, next: Campaign, identities
   for (const p of next.products) if (!previous.products.some(item => item.id === p.id)) calls.push({ method: 'POST', path: `${base}/products`, body: { name: p.name, variant: p.variant, referenceValue: p.referenceValue } });
   const oldPlan = previous.stagePlan, plan = next.stagePlan;
   if (!plan && oldPlan) throw new Error('Menghapus kalender tahap belum didukung API percobaan.');
+  if (!same(previous.jobRules ?? {}, next.jobRules ?? {})) throw new Error('Pengaturan per job belum didukung API percobaan.');
   if (!same(oldPlan?.reopens ?? [], plan?.reopens ?? [])) throw new Error('Membuka ulang tahap belum didukung API percobaan.');
   if (plan) {
     if (!oldPlan || oldPlan.templateId !== plan.templateId || oldPlan.startDate !== plan.startDate || !same(oldPlan.holidays, plan.holidays))
@@ -150,6 +151,7 @@ export function planCampaignCalls(previous: Campaign, next: Campaign, identities
 }
 
 export function planCreateBody(row: Campaign) {
+  if (Object.keys(row.jobRules ?? {}).length) throw new Error('Pengaturan per job belum didukung API percobaan; kosongkan biaya SOW, usia, dokumen, dan ACC storyline.');
   return {
     title: row.title, brand: row.brand, brief: row.brief, objective: row.objective, audience: row.audience, messaging: row.messaging,
     batches: row.batches.map(item => ({ name: item.name })), milestones: row.milestones.map(item => ({ title: item.title, deadline: item.deadline })),

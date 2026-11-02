@@ -11,8 +11,12 @@ export interface StageTemplate { id: string; name: string; stages: StageDef[] }
 export interface StageDate { key: string; label: string; start: string; end: string }
 export type ExtensionProof = { kind: 'png' | 'jpeg'; fileName: string; sizeBytes: number } | { kind: 'text'; text: string };
 export interface ExtensionRecord { stageKey: string; days: number; reason: string; proof: ExtensionProof }
-/** Perpanjangan terpisah dari izin submit terlambat (L18 usulan tim). Jawaban client 2 Nov (N28): hanya 1 kali, tambahan 2 hari; batas berlaku total per campaign. */
-export const defaultExtensionRules: ExtensionLimits = { maxTotalDays: 2, maxRequests: 1 };
+/**
+ * Perpanjangan terpisah dari izin submit terlambat (L18 usulan tim). N28 + klarifikasi K6 (batch J): izin karena sakit atau bencana alam maksimal
+ * 2 kali di waktu berbeda; satu izin paling lama 2 hari berturut-turut (2 hari berkelanjutan dihitung 1 kali). Total per campaign jadi 4 hari.
+ */
+export const defaultExtensionRules: ExtensionLimits = { maxTotalDays: 4, maxRequests: 2 };
+export const maxExtensionDaysPerRequest = 2;
 
 /** Durasi dari jawaban B2. Hari konten 4 adalah nilai tengah "3 sampai 4 hari, bisa 1 minggu"; jenis hari kalender vs kerja belum dikonfirmasi (L13). */
 export const defaultStageTemplates: StageTemplate[] = [
@@ -83,10 +87,11 @@ export function stagePlanCalendar(plan: StagePlan): StageDate[] {
   return buildStageCalendar(findStageTemplate(plan.templateId)!, plan.startDate, { ...defaultServiceRules, holidays: plan.holidays }, plan.extensions);
 }
 
-/** Validasi pengajuan perpanjangan lewat `evaluateExtension` (scheduling-kit): alasan dan bukti (PNG, JPEG, atau teks) wajib, maksimal 2 hari total dan 1 pengajuan. Persetujuan bertingkat (B3) ditangani alur lain. */
+/** Validasi pengajuan perpanjangan lewat `evaluateExtension` (scheduling-kit): alasan dan bukti (PNG, JPEG, atau teks) wajib, maksimal 2 hari per izin, 2 izin (4 hari) per campaign. Persetujuan bertingkat (B3) ditangani alur lain. */
 export function validateExtension(request: ExtensionRecord, used: ExtensionRecord[], template: StageTemplate, limits: ExtensionLimits = defaultExtensionRules): ExtensionRecord {
   assertStageTemplate(template);
   if (!template.stages.some(stage => stage.key === request.stageKey)) throw new Error('Pilih tahap yang ada pada template campaign.');
+  if (Number.isSafeInteger(request.days) && request.days > maxExtensionDaysPerRequest) throw new Error(`Satu izin paling lama ${maxExtensionDaysPerRequest} hari berturut-turut; ajukan izin terpisah di waktu berbeda.`);
   const issue = evaluateExtension(request, used, limits).issues[0];
   if (issue) {
     const messages: Record<string, string> = {

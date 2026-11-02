@@ -137,6 +137,8 @@ export function createService({ pool, config = defaultConfig, clock = () => new 
         requireOwnerHQ(p, campaign);
         if (!campaign.stageTemplateId) fail('NO_STAGE_PLAN', 409, 'Susun kalender tahap lebih dulu.');
         const used = await repo.listExtensions(conn, id), verdict = evaluateExtension(request, used, config.extensionLimits);
+        if (Number.isSafeInteger(request.days) && request.days > config.maxExtensionDaysPerRequest)
+          verdict.ok = false, verdict.issues.push({ code: 'per_request_limit', path: 'days', message: `One request covers at most ${config.maxExtensionDaysPerRequest} consecutive days.` });
         if (!verdict.ok) fail('EXTENSION_INVALID', 422, 'Pengajuan perpanjangan tidak valid.', verdict.issues);
         await repo.insertExtension(conn, id, { ...request, reason: request.reason.trim() }, p.userId);
       });

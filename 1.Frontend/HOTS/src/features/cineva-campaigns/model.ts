@@ -27,7 +27,29 @@ export interface Campaign {
   stagePlan?: StagePlan;
   /** Butir penilaian yang disusun HQ per campaign (jawaban N4). */
   ratingCriteria?: RatingCriterion[];
+  /** Aturan per job (batch J lanjutan). Semua opsional: campaign lama tetap valid. */
+  jobRules?: CampaignJobRules;
 }
+/**
+ * Client: biaya per SOW (satu kali suruhan pengerjaan) besarannya fleksibel per job; syarat usia fleksibel per job (legal/KTP bila brand meminta);
+ * ACC storyline bisa wajib atau tidak. Fee kru sakit diatur belakangan, sengaja tidak ada di sini.
+ */
+export interface CampaignJobRules {
+  sowFee?: number;
+  minAge?: number;
+  requireLegalDoc?: boolean;
+  requireIdCard?: boolean;
+  storylineApprovalRequired?: boolean;
+}
+export function assertJobRules(rules: CampaignJobRules): CampaignJobRules {
+  if (rules.sowFee !== undefined && (!Number.isSafeInteger(rules.sowFee) || rules.sowFee < 0)) throw new Error('Biaya per SOW harus rupiah bulat non-negatif.');
+  if (rules.minAge !== undefined && (!Number.isSafeInteger(rules.minAge) || rules.minAge < 13 || rules.minAge > 100)) throw new Error('Syarat usia minimum harus 13 sampai 100 tahun.');
+  for (const key of ['requireLegalDoc', 'requireIdCard', 'storylineApprovalRequired'] as const)
+    if (rules[key] !== undefined && typeof rules[key] !== 'boolean') throw new Error('Pengaturan job tidak valid.');
+  return rules;
+}
+/** Usia pendaftar terhadap syarat job. Tanpa `minAge` semua usia lolos. */
+export const meetsAgeRule = (age: number, rules: CampaignJobRules = {}) => rules.minAge === undefined || (Number.isFinite(age) && age >= rules.minAge);
 export const isHQOwner = (actor: Actor, campaign: Campaign) => actor.product === 'hq' && actor.id === campaign.ownerId;
 export function validDate(value: string) {
   const date = new Date(value + 'T00:00:00Z');
@@ -52,6 +74,7 @@ export function validateCampaign(row: Campaign) {
   if (!unique(row.products.map(item => item.id)) || row.products.some(item => !item.name.trim() || !Number.isSafeInteger(item.referenceValue) || item.referenceValue < 0))
     throw new Error('Produk campaign tidak valid.');
   if (row.stagePlan) assertStagePlan(row.stagePlan);
+  if (row.jobRules) assertJobRules(row.jobRules);
   if (row.ratingCriteria && (!unique(row.ratingCriteria.map(item => item.id)) || row.ratingCriteria.some(item => !item.label.trim())))
     throw new Error('Butir penilaian tidak valid.');
 }
