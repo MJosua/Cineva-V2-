@@ -65,6 +65,19 @@ test('Extension proof accepts PNG or JPEG only and rejects empty files', () => {
   assert.throws(() => validateExtension(ext({ proof: { kind: 'jpeg', fileName: 'bukti.jpg', sizeBytes: 0 } }), [], reguler), /PNG atau JPEG/);
   assert.throws(() => validateExtension(ext({ proof: { kind: 'pdf' } as never }), [], reguler), /PNG, JPEG, atau teks/);
 });
+test('IC 100 template reproduces the client timeline exactly (7 Okt listing to 11 Nov payment)', () => {
+  const ic100 = defaultStageTemplates.find(item => item.id === 'kol-produk-ic100')!;
+  assert.deepEqual(buildStageCalendar(ic100, '2026-10-07', rules).map(stage => [stage.key, stage.start, stage.end]), [
+    ['listing', '2026-10-07', '2026-10-07'], ['info_lolos', '2026-10-08', '2026-10-08'], ['checkout', '2026-10-09', '2026-10-10'],
+    ['drafting', '2026-10-11', '2026-10-20'], ['posting', '2026-10-21', '2026-10-22'], ['insight', '2026-10-23', '2026-10-29'], ['payment', '2026-10-30', '2026-11-11']]);
+});
+test('Seed IC 100 campaign is valid and carries no real contact data', async () => {
+  const { campaignSeed } = await import('./seed.ts'), { validateCampaign } = await import('./model.ts');
+  const rows = campaignSeed();
+  rows.forEach(row => validateCampaign(row));
+  assert.equal(rows[0].id, 'campaign-ic100');
+  assert.ok(rows[0].assignments.every(item => item.creatorName.startsWith('Kreator IC-')));
+});
 test('Templates are validated and dates are checked', () => {
   const bad = (stages: StageTemplate['stages']): StageTemplate => ({ id: 't', name: 'T', stages });
   assert.throws(() => assertStageTemplate(bad([])), /minimal satu/);

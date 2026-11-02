@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-02T13:15:42.814Z",
+  "generatedAt": "2026-11-02T14:33:51.930Z",
   "documents": [
     {
       "path": "1.Frontend/HOTS/docs/CHANGELOG.md",
@@ -1239,7 +1239,7 @@
     },
     {
       "path": "3.Knowledge/architecture/cineva_batch_j_rules_2026_11_02.md",
-      "sha256": "fc77dd83e25a87a11118f64039c92c66746ff70318f7d576634f3c1278fe9c45",
+      "sha256": "286f31fc3fe95e3c21e4c800e72c534eab596637f0ed1f4ff72614b0bdb035b2",
       "title": "Aturan batch J: pembatalan, jendela tahap, pendaftar ganda (2 Nov 2026)",
       "headings": [
         {
@@ -1285,6 +1285,10 @@
         {
           "heading": "5. Batasan",
           "line": 93
+        },
+        {
+          "heading": "6. Data campaign nyata IC 100 dan Gantt tahap (2 Nov 2026, lanjutan)",
+          "line": 101
         }
       ]
     },
@@ -4256,6 +4260,17 @@
       "headings": [
         {
           "heading": "Transkrip otomatis voice note Cineva",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/scripts/cineva_demo/README.md",
+      "sha256": "3e341f5a1b256c16a1afe41a4a93a1a5941b0e122db39c4d5ff8ea1edd1d654b",
+      "title": "Build demo Cineva satu file HTML",
+      "headings": [
+        {
+          "heading": "Build demo Cineva satu file HTML",
           "line": 1
         }
       ]

@@ -97,3 +97,12 @@ assertJobRules(rules); meetsAgeRule(20, rules) // false
 - Mode API: `jobRules` ditolak saat membuat/mengubah campaign (belum ada kolom DB).
 - Belum diterapkan: fee kru sakit (diatur belakangan), penegakan ACC storyline dan dokumen di alur, UI pendaftar ganda. Tes backend `test:cineva` butuh DB uji (dilewati lokal).
 - Tes: `npx tsx --test src/features/cineva-campaigns/*.test.ts src/features/cineva-services/*.test.ts` (36 lulus). Belum diverifikasi di browser.
+
+## 6. Data campaign nyata IC 100 dan Gantt tahap (2 Nov 2026, lanjutan)
+
+Sumber dari client (WhatsApp 2 Nov): sheet progress talent Liquid IC 100, sheet assessment (brief brand, timeline, talent terpilih, dashboard engagement), contoh sheet agency (kolom per creator: SOW, produk, storyline, feedback STL, draft, caption, feedback client/zone, link post, tanggal post), brief Canva (tidak terbaca otomatis, perlu login).
+
+- **Template tahap** `kol-produk-ic100` di `stages.ts`: Listing 1 → Info lolos 1 → CO/pengiriman 2 → Drafting 10 → Posting 2 → Insight H+7 7 → Payment serentak 13 (hari kalender). Mulai 7 Okt 2026 menghasilkan tanggal sheet persis sampai 11 Nov (dites).
+- **Seed** `seed.ts`: campaign `campaign-ic100` (brand, produk 5 rasa @Rp110.000, SOW, fee Rp100.000 lewat `jobRules.sowFee`, ACC storyline wajib). Delapan talent **disamarkan** (`Kreator IC-01..08`, tanpa WA/alamat/akun asli) karena demo dibagikan; views dari dashboard engagement dicantumkan di judul deliverable. `creatorId` bergantian `creator-1`/`creator-2` karena validasi hanya mengenal dua akun demo.
+- **Gantt** `StageGantt.tsx`: meniru pola HOTS `components/assignment/TaskGantt.tsx` (batang per tahap dari tanggal mulai ke akhir, garis hari ini, warna status jendela). Ditampilkan di atas daftar tahap pada `StagePlanPanel`. TaskGantt HOTS tidak dipakai langsung karena terikat API assignment.
+- Belum: Gantt per creator (storyline/draft/post per talent seperti sheet agency), alur feedback storyline/caption dua tahap (client + zone), impor sheet otomatis. Data mentah sheet tidak disimpan di repo (berisi data pribadi).

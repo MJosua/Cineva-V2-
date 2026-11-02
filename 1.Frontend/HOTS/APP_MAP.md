@@ -1,6 +1,6 @@
 # cineva-frontend source map
 
-Generated: 2026-11-02T13:15:42.814Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
+Generated: 2026-11-02T14:33:51.930Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
 
 | File | Lines | Imports | Route definitions |
 |---|---:|---:|---|
@@ -262,7 +262,8 @@ Generated: 2026-11-02T13:15:42.814Z. Regex-based inventory; imports/route string
 | [src/features/cineva-campaigns/ExecutionPanel.tsx](src/features/cineva-campaigns/ExecutionPanel.tsx) | 85 | 8 |  |
 | [src/features/cineva-campaigns/FinancePanel.tsx](src/features/cineva-campaigns/FinancePanel.tsx) | 86 | 10 |  |
 | [src/features/cineva-campaigns/RatingPanel.tsx](src/features/cineva-campaigns/RatingPanel.tsx) | 59 | 7 |  |
-| [src/features/cineva-campaigns/StagePlanPanel.tsx](src/features/cineva-campaigns/StagePlanPanel.tsx) | 78 | 7 |  |
+| [src/features/cineva-campaigns/StageGantt.tsx](src/features/cineva-campaigns/StageGantt.tsx) | 42 | 1 |  |
+| [src/features/cineva-campaigns/StagePlanPanel.tsx](src/features/cineva-campaigns/StagePlanPanel.tsx) | 80 | 8 |  |
 | [src/features/cineva-campaigns/apiMapping.ts](src/features/cineva-campaigns/apiMapping.ts) | 162 | 3 |  |
 | [src/features/cineva-campaigns/apiRepository.test.ts](src/features/cineva-campaigns/apiRepository.test.ts) | 114 | 8 |  |
 | [src/features/cineva-campaigns/apiRepository.ts](src/features/cineva-campaigns/apiRepository.ts) | 110 | 3 |  |
@@ -275,9 +276,9 @@ Generated: 2026-11-02T13:15:42.814Z. Regex-based inventory; imports/route string
 | [src/features/cineva-campaigns/rating.test.ts](src/features/cineva-campaigns/rating.test.ts) | 46 | 4 |  |
 | [src/features/cineva-campaigns/rating.ts](src/features/cineva-campaigns/rating.ts) | 57 | 2 |  |
 | [src/features/cineva-campaigns/repository.ts](src/features/cineva-campaigns/repository.ts) | 84 | 8 |  |
-| [src/features/cineva-campaigns/seed.ts](src/features/cineva-campaigns/seed.ts) | 16 | 1 |  |
-| [src/features/cineva-campaigns/stages.test.ts](src/features/cineva-campaigns/stages.test.ts) | 98 | 4 |  |
-| [src/features/cineva-campaigns/stages.ts](src/features/cineva-campaigns/stages.ts) | 134 | 2 |  |
+| [src/features/cineva-campaigns/seed.ts](src/features/cineva-campaigns/seed.ts) | 49 | 1 |  |
+| [src/features/cineva-campaigns/stages.test.ts](src/features/cineva-campaigns/stages.test.ts) | 111 | 4 |  |
+| [src/features/cineva-campaigns/stages.ts](src/features/cineva-campaigns/stages.ts) | 144 | 2 |  |
 | [src/features/cineva-hq/BookingConfirmation.tsx](src/features/cineva-hq/BookingConfirmation.tsx) | 24 | 3 |  |
 | [src/features/cineva-hq/ClientsView.tsx](src/features/cineva-hq/ClientsView.tsx) | 19 | 7 |  |
 | [src/features/cineva-hq/EstimatorView.tsx](src/features/cineva-hq/EstimatorView.tsx) | 20 | 7 |  |

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-02T13:15:42.814Z",
+  "generatedAt": "2026-11-02T14:33:51.930Z",
   "files": [
     {
       "app": "@hots/tenant-contracts",
@@ -6504,9 +6504,32 @@
     },
     {
       "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/StageGantt.tsx",
+      "sha256": "f17c1c044779aacd2c11ed65678b422040972969a7c5cd5c4bd0879dbdaee7aa",
+      "lines": 42,
+      "imports": [
+        "./stages"
+      ],
+      "symbols": [
+        "dayMs",
+        "toDay",
+        "label",
+        "StageGantt",
+        "first",
+        "pct",
+        "ticks",
+        "now",
+        "state",
+        "tone",
+        "start"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/StagePlanPanel.tsx",
-      "sha256": "6e4c92b41dce7e53298b70c3d5a89dd7aecaef2fcab63f890561826da99e113f",
-      "lines": 78,
+      "sha256": "bb3d23aaae7040f7140d946f8996efcd206cfb70ed4db4dcd7d6f8fb9ddd75e3",
+      "lines": 80,
       "imports": [
         "react",
         "@/components/ui/button",
@@ -6514,6 +6537,7 @@
         "@/components/ui/textarea",
         "../cineva-inquiries/domain",
         "./model",
+        "./StageGantt",
         "./stages"
       ],
       "symbols": [
@@ -6954,12 +6978,15 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/seed.ts",
-      "sha256": "ab110020c59b45fbfbde19880d302cdd437d64292bf6f08d2e766635fde25731",
-      "lines": 16,
+      "sha256": "2183686e1bd2ad38a0f8f454a2a9ffed834c7a1b238e1fbd37a71a32a8d6b919",
+      "lines": 49,
       "imports": [
         "./model"
       ],
       "symbols": [
+        "ic100Talent",
+        "ic100Campaign",
+        "products",
         "campaignSeed"
       ],
       "endpoints": []
@@ -6967,8 +6994,8 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/stages.test.ts",
-      "sha256": "bcda814908dd217a21f21d92ab87ee8d932a2cb71e174b059c88cb98eac86e0c",
-      "lines": 98,
+      "sha256": "91bfa25bc32964f73b2f5247f9dc67e9ab3f1a67996eb25acae85f0195864f92",
+      "lines": 111,
       "imports": [
         "node:test",
         "node:assert/strict",
@@ -6984,6 +7011,8 @@
         "plan",
         "extended",
         "png",
+        "ic100",
+        "rows",
         "bad",
         "reopen"
       ],
@@ -6992,8 +7021,8 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/stages.ts",
-      "sha256": "b5e15edd26781a2441ab7f2a1b1e69905dcbbbaecce0a8d2146ca64bda9f9292",
-      "lines": 134,
+      "sha256": "6541977809174eeafa9823a9cec5fb8542dcac9c5466636ed61fcf48f84b59b0",
+      "lines": 144,
       "imports": [
         "@hots/scheduling-kit",
         "../cineva-services/rules.ts"

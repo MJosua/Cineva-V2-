@@ -30,6 +30,16 @@ export const defaultStageTemplates: StageTemplate[] = [
     { key: 'talent_sampai_beres', label: 'Cari talent sampai beres', days: 30, dayKind: 'calendar' },
     { key: 'payment', label: 'Pembayaran', days: 14, dayKind: 'working' },
   ] },
+  /** Contoh nyata client (assessment Vape Liquid IC 100, 2 Nov 2026): 7 Okt listing s/d 11 Nov payment serentak. Hari kalender agar tanggalnya sama persis. */
+  { id: 'kol-produk-ic100', name: 'KOL produk (pola IC 100)', stages: [
+    { key: 'listing', label: 'Listing', days: 1, dayKind: 'calendar' },
+    { key: 'info_lolos', label: 'Info lolos', days: 1, dayKind: 'calendar' },
+    { key: 'checkout', label: 'CO / pengiriman produk', days: 2, dayKind: 'calendar' },
+    { key: 'drafting', label: 'Drafting', days: 10, dayKind: 'calendar' },
+    { key: 'posting', label: 'Posting', days: 2, dayKind: 'calendar' },
+    { key: 'insight', label: 'Insight H+7', days: 7, dayKind: 'calendar' },
+    { key: 'payment', label: 'Payment serentak', days: 13, dayKind: 'calendar' },
+  ] },
 ];
 
 const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value + 'T00:00:00Z')) && new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) === value;

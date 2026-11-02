@@ -1,6 +1,6 @@
 # @hots/transaction-kit source map
 
-Generated: 2026-11-02T13:15:42.814Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
+Generated: 2026-11-02T14:33:51.930Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
 
 | File | Lines | Imports | Route definitions |
 |---|---:|---:|---|

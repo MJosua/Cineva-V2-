@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Actor } from '../cineva-inquiries/domain';
 import type { Campaign } from './model';
+import { StageGantt } from './StageGantt';
 import { defaultExtensionRules, maxExtensionDaysPerRequest, defaultStageTemplates, findStageTemplate, stagePlanCalendar, stageWindowState, assertStageReopen, validateExtension, type ExtensionProof, type StagePlan, type StageReopen } from './stages';
 
 type Change = (update: (row: Campaign) => Campaign) => void;
@@ -40,6 +41,7 @@ export function StagePlanPanel({ campaign, actor, onChange }: { campaign: Campai
       <p className="text-xs text-muted-foreground sm:col-span-3">Hari kerja dihitung Senin–Jumat di luar libur. Daftar libur resmi belum diberikan client; HQ mengisinya sendiri.</p>
     </form>}
     {plan && <>
+      {!readError && <StageGantt calendar={calendar} today={today} reopens={plan.reopens}/>}
       <ol className="space-y-1 text-sm">{calendar.map(item => { const state = stageWindowState(calendar, item.key, today, plan.reopens);
         return <li key={item.key} data-testid={`stage-window-${item.key}`}><span className="font-medium">{item.label}</span> · {item.start} s/d {item.end}{plan.extensions.filter(ext => ext.stageKey === item.key).map(ext => ` · diperpanjang ${ext.days} hari`).join('')}
           <span className={`ml-2 rounded px-2 py-0.5 text-xs ${state.open ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}>{windowLabel[state.open ? state.via : state.why]}</span></li>; })}</ol>
