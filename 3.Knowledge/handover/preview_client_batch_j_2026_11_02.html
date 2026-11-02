@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cineva Preview Aturan</title>
+<style>
+:root{--bg:#faf7f2;--card:#fff;--ink:#2b1d14;--muted:#7a6a5c;--brown:#5a3a22;--gold:#c9a24a;--line:#e6dccd;--ok:#2f7a3e;--bad:#a8322a;--soft:#f3ecdf}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1612;--card:#2a201a;--ink:#f3ebe0;--muted:#b9a896;--brown:#e0c08a;--gold:#d9b25a;--line:#43352a;--ok:#6fc07f;--bad:#ef8a80;--soft:#33281f}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:var(--brown);color:#fff;padding:18px 16px}header h1{margin:0;font-size:20px}header p{margin:4px 0 0;opacity:.85;font-size:13px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) header{background:#3a2717}}
+main{max-width:920px;margin:0 auto;padding:16px}
+nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}nav button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 12px;border-radius:999px;cursor:pointer;font:inherit}
+nav button[aria-selected="true"]{background:var(--gold);border-color:var(--gold);color:#2b1d14;font-weight:600}
+section{display:none;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}section.on{display:block}
+h2{margin:0 0 6px;font-size:18px;color:var(--brown)}h3{margin:16px 0 6px;font-size:15px}
+.hint{color:var(--muted);font-size:13px}.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+label{display:block;font-size:13px;color:var(--muted)}input,select,textarea{display:block;width:100%;margin-top:3px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+button.p{background:var(--brown);color:#fff;border:0;padding:9px 14px;border-radius:8px;cursor:pointer;font:inherit;margin-top:10px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button.p{background:var(--gold);color:#2b1d14}}
+button.l{background:none;border:0;color:var(--bad);cursor:pointer;font:inherit;padding:0}
+.box{background:var(--soft);border-radius:10px;padding:12px;margin-top:12px}.err{color:var(--bad)}.ok{color:var(--ok)}
+.tag{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;margin-left:6px;background:var(--line)}.tag.open{background:var(--ok);color:#fff}.tag.re{background:var(--gold);color:#2b1d14}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{border-bottom:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1}
+footer{max-width:920px;margin:0 auto;padding:0 16px 24px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<header><h1>Cineva · Preview aturan untuk dites</h1><p>Versi uji 2 November 2026. Data hanya tersimpan di browser Anda (localStorage), tidak dikirim ke mana pun.</p></header>
+<main>
+<nav role="tablist">
+ <button data-tab="cancel" aria-selected="true">Pembatalan</button>
+ <button data-tab="stage">Jendela tahap</button>
+ <button data-tab="leave">Izin sakit/bencana</button>
+ <button data-tab="job">Aturan per job</button>
+ <button data-tab="dup">Pendaftar ganda</button>
+ <button data-tab="fb">Masukan Anda</button>
+</nav>
+
+<section id="cancel" class="on">
+ <h2>Simulasi pembatalan</h2>
+ <p class="hint">Alasan dan lampiran wajib. Kewajiban diselesaikan paling lambat 7 hari setelah project selesai.</p>
+ <div class="grid">
+  <label>Pihak yang membatalkan<select id="c_party"><option value="brand">Brand / client</option><option value="crew">Tim / kru</option><option value="creator">KOL / creator</option></select></label>
+  <label>Alasan<select id="c_reason"></select></label>
+  <label>Tanggal selesai project<input id="c_end" type="date"></label>
+ </div>
+ <div class="grid" style="margin-top:10px">
+  <label id="l_dp">DP diterima (Rp)<input id="c_dp" type="number" min="0" value="0"></label>
+  <label id="l_deal">Total nilai deal (Rp)<input id="c_deal" type="number" min="0" value="0"></label>
+  <label id="l_fee">Total fee yang diterima (Rp)<input id="c_fee" type="number" min="0" value="0"></label>
+  <label id="l_prod">Biaya pergantian produk (Rp)<input id="c_prod" type="number" min="0" value="0"></label>
+  <label id="l_paid">Total sudah dibayarkan (Rp)<input id="c_paid" type="number" min="0" value="0"></label>
+ </div>
+ <div class="grid" style="margin-top:10px">
+  <label>Alasan batal (wajib)<input id="c_note" maxlength="2000"></label>
+  <label>Lampiran (wajib: teks atau nama berkas PNG/JPEG)<input id="c_proof" maxlength="2000"></label>
+ </div>
+ <div class="box" id="c_out"></div>
+</section>
+
+<section id="stage">
+ <h2>Jendela tahap</h2>
+ <p class="hint">Tombol aksi terbuka sesuai timeline dan tertutup otomatis setelah lewat. Hanya PIC campaign yang bisa membuka ulang, dengan persetujuan klien. Ubah "Tanggal hari ini" untuk mencoba.</p>
+ <div class="grid">
+  <label>Tanggal hari ini (simulasi)<input id="s_today" type="date"></label>
+ </div>
+ <h3>Tahap</h3>
+ <table><thead><tr><th>Tahap</th><th>Jendela</th><th>Status</th><th></th></tr></thead><tbody id="s_rows"></tbody></table>
+ <div class="row" style="margin-top:8px">
+  <input id="s_name" placeholder="Nama tahap (mis. Storyline + draft)"><input id="s_start" type="date"><input id="s_endd" type="date">
+ </div>
+ <button class="p" id="s_add">Tambah tahap</button>
+ <h3>Buka ulang tahap (PIC campaign)</h3>
+ <div class="grid">
+  <label>Tahap<select id="r_stage"></select></label>
+  <label>Terbuka sampai<input id="r_until" type="date"></label>
+  <label>Alasan<input id="r_reason"></label>
+ </div>
+ <label style="margin-top:8px"><input type="checkbox" id="r_ok" style="display:inline;width:auto"> Klien sudah menyetujui</label>
+ <button class="p" id="r_add">Buka ulang</button>
+ <p id="s_msg"></p>
+</section>
+
+<section id="leave">
+ <h2>Izin karena sakit atau bencana alam</h2>
+ <p class="hint">Maksimal 2 kali di waktu berbeda. Satu izin paling lama 2 hari berturut-turut (2 hari berkelanjutan dihitung 1 kali). Alasan dan bukti wajib.</p>
+ <div class="grid">
+  <label>Tahap<input id="x_stage" placeholder="mis. Pembuatan konten"></label>
+  <label>Jumlah hari<input id="x_days" type="number" min="1" max="2" value="1"></label>
+  <label>Jenis<select id="x_kind"><option>Sakit</option><option>Bencana alam</option></select></label>
+  <label>Bukti (teks / nama berkas)<input id="x_proof"></label>
+ </div>
+ <button class="p" id="x_add">Ajukan izin</button>
+ <p id="x_msg"></p>
+ <table><thead><tr><th>#</th><th>Tahap</th><th>Hari</th><th>Jenis</th><th>Bukti</th></tr></thead><tbody id="x_rows"></tbody></table>
+ <p class="hint" id="x_quota"></p>
+</section>
+
+<section id="job">
+ <h2>Aturan per job</h2>
+ <p class="hint">Semua bisa diatur per job. Biaya dihitung per SOW (satu kali suruhan pengerjaan).</p>
+ <div class="grid">
+  <label>Nama job<input id="j_name" placeholder="mis. Campaign brand X"></label>
+  <label>Biaya per SOW (Rp)<input id="j_fee" type="number" min="0"></label>
+  <label>Usia minimum (kosongkan bila bebas)<input id="j_age" type="number" min="13" max="100"></label>
+  <label>Dokumen pendaftar<select id="j_docs"><option value="none">Tidak perlu</option><option value="legal">Lampiran legal</option><option value="legal_ktp">Lampiran legal + KTP</option></select></label>
+  <label>ACC storyline<select id="j_story"><option value="no">Tidak wajib</option><option value="yes">Wajib di-ACC sebelum draft</option></select></label>
+ </div>
+ <button class="p" id="j_add">Simpan job</button>
+ <p id="j_msg"></p>
+ <table><thead><tr><th>Job</th><th>Biaya/SOW</th><th>Usia</th><th>Dokumen</th><th>Storyline</th><th>Cek usia</th><th></th></tr></thead><tbody id="j_rows"></tbody></table>
+</section>
+
+<section id="dup">
+ <h2>Cek pendaftar ganda</h2>
+ <p class="hint">Dicocokkan dari username sosial media dan nomor WhatsApp (pasti ganda). Nama yang sama saja ditandai "perlu dicek". Data creator disimpan, dan username/followers bisa diperbarui.</p>
+ <div class="grid">
+  <label>Nama<input id="d_name"></label>
+  <label>WhatsApp<input id="d_wa" placeholder="0812..."></label>
+  <label>Platform<select id="d_plat"><option>Instagram</option><option>TikTok</option><option>YouTube</option></select></label>
+  <label>Username<input id="d_user" placeholder="@username"></label>
+  <label>Followers<input id="d_fol" type="number" min="0"></label>
+ </div>
+ <button class="p" id="d_add">Tambah / perbarui pendaftar</button>
+ <table style="margin-top:12px"><thead><tr><th>Nama</th><th>WhatsApp</th><th>Akun</th><th>Followers</th><th>Diperbarui</th><th></th></tr></thead><tbody id="d_rows"></tbody></table>
+ <div class="box" id="d_out"></div>
+</section>
+
+<section id="fb">
+ <h2>Masukan Anda</h2>
+ <p class="hint">Mohon dijawab, lalu tekan "Salin semua jawaban" dan kirim ke tim Cineva.</p>
+ <div id="f_list"></div>
+ <button class="p" id="f_copy">Salin semua jawaban</button> <span id="f_msg" class="ok"></span>
+</section>
+<p style="margin-top:14px"><button class="l" id="reset">Hapus semua data uji di browser ini</button></p>
+</main>
+<footer>Preview uji, bukan aplikasi final. Angka di sini contoh; harga dan aturan final mengikuti kesepakatan.</footer>
+
+<script>
+const KEY = 'cineva-preview-batch-j-v1';
+const store = { get() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } }, set(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch {} } };
+let S = Object.assign({ tab: 'cancel', stages: [], reopens: [], leaves: [], jobs: [], regs: [], fb: {}, cancel: {} }, store.get());
+const save = () => store.set(S);
+const $ = id => document.getElementById(id);
+const rp = n => 'Rp' + Math.round(n || 0).toLocaleString('id-ID');
+const num = v => (v === '' || v == null ? 0 : Number(v));
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const todayStr = () => { const d = new Date(); return new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+const addDays = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+
+// Tabs
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => { S.tab = b.dataset.tab; save(); showTab(); });
+function showTab() { document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === S.tab)); document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === S.tab)); }
+
+// Pembatalan
+const REASONS = { brand: [['', 'Alasan tidak masuk akal'], ['force_majeure', 'Bencana alam / di luar kendali']], crew: [['', 'Sudah menyanggupi, tanpa alasan sah'], ['not_committed', 'Belum menyanggupi'], ['valid_reason', 'Alasan penting (sakit, kecelakaan)'], ['force_majeure', 'Bencana alam / di luar kendali']] };
+REASONS.creator = REASONS.crew;
+const cIds = ['c_party', 'c_reason', 'c_end', 'c_dp', 'c_deal', 'c_fee', 'c_prod', 'c_paid', 'c_note', 'c_proof'];
+function fillReasons() { const p = $('c_party').value; $('c_reason').innerHTML = REASONS[p].map(([v, l]) => `<option value="${v}">${l}</option>`).join(''); }
+function renderCancel() {
+  const v = Object.fromEntries(cIds.map(id => [id, $(id).value])); S.cancel = v; save();
+  const p = v.c_party, r = v.c_reason, brand = p === 'brand';
+  $('l_dp').style.display = brand ? '' : 'none'; $('l_deal').style.display = brand && !r ? '' : 'none'; $('l_paid').style.display = brand && r === 'force_majeure' ? '' : 'none';
+  $('l_fee').style.display = brand ? 'none' : ''; $('l_prod').style.display = brand ? 'none' : '';
+  const out = [];
+  if (!v.c_note.trim()) out.push('<p class="err">Alasan batal wajib diisi.</p>');
+  if (!v.c_proof.trim()) out.push('<p class="err">Lampiran alasan wajib diisi.</p>');
+  if (brand) {
+    if (r === 'force_majeure') out.push(`<p>Didiskusikan: biasanya jadwal mundur, atau pengembalian setengah dari total dibayarkan: <b>${rp(num(v.c_paid) * .5)}</b>.</p>`);
+    else out.push(`<p><b>Opsi A, DP hangus:</b> ${rp(num(v.c_dp))}</p><p><b>Opsi B, denda 15% dari total deal:</b> ${rp(num(v.c_deal) * .15)}</p><p class="hint">PIC/owner memilih salah satu.</p>`);
+  } else {
+    const waived = r !== '', pen = waived ? 0 : num(v.c_fee) * .15, prod = num(v.c_prod);
+    out.push(waived ? '<p>Tanpa denda 15% (alasan sah / belum menyanggupi).</p>' : `<p>Denda 15% dari total fee: <b>${rp(pen)}</b></p>`);
+    if (prod) out.push(`<p>Biaya pergantian produk: ${rp(prod)}</p>`);
+    out.push(`<p><b>Total: ${rp(pen + prod)}</b></p><p>Wajib mencarikan pengganti. Bila kru sakit, owner Cineva mencari pengganti dari tim backup.</p>`);
+  }
+  if (v.c_end) out.push(`<p>Kewajiban diselesaikan paling lambat <b>${addDays(v.c_end, 7)}</b>.</p>`);
+  out.push(`<p class="hint">Pihak bersalah diputuskan PIC Campaign (campaign) atau Account Manager Produksi (produksi); persetujuan akhir owner.</p>`);
+  $('c_out').innerHTML = out.join('');
+}
+$('c_party').onchange = () => { fillReasons(); renderCancel(); };
+cIds.slice(1).forEach(id => $(id).oninput = renderCancel);
+
+// Jendela tahap
+function stageState(st, today) {
+  if (today >= st.start && today <= st.end) return ['Terbuka', 'open'];
+  if (S.reopens.some(r => r.stage === st.id && today >= st.start && today <= r.until)) return ['Dibuka ulang PIC', 're'];
+  return [today < st.start ? 'Belum dibuka' : 'Tertutup', ''];
+}
+function renderStages() {
+  if (!S.today) S.today = todayStr();
+  $('s_today').value = S.today;
+  $('s_rows').innerHTML = S.stages.map(st => { const [l, c] = stageState(st, S.today); return `<tr><td>${esc(st.name)}</td><td>${st.start} s/d ${st.end}</td><td><span class="tag ${c}">${l}</span> <button class="p" style="margin:0;padding:3px 8px;${c ? '' : 'opacity:.4;cursor:not-allowed'}" ${c ? '' : 'disabled'} onclick="alert('Submit diterima (simulasi).')">Submit</button></td><td><button class="l" data-del="${st.id}">hapus</button></td></tr>`; }).join('') || '<tr><td colspan="4" class="hint">Belum ada tahap.</td></tr>';
+  $('r_stage').innerHTML = S.stages.map(st => `<option value="${st.id}">${esc(st.name)}</option>`).join('');
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { S.stages = S.stages.filter(s => s.id !== b.dataset.del); S.reopens = S.reopens.filter(r => r.stage !== b.dataset.del); save(); renderStages(); });
+}
+$('s_today').oninput = e => { S.today = e.target.value || todayStr(); save(); renderStages(); };
+$('s_add').onclick = () => {
+  const name = $('s_name').value.trim(), start = $('s_start').value, end = $('s_endd').value;
+  if (!name || !start || !end || end < start) { $('s_msg').innerHTML = '<span class="err">Isi nama, tanggal mulai, dan tanggal akhir (akhir tidak boleh sebelum mulai).</span>'; return; }
+  S.stages.push({ id: 's' + Date.now(), name, start, end }); save(); $('s_name').value = ''; $('s_msg').textContent = ''; renderStages();
+};
+$('r_add').onclick = () => {
+  const stage = $('r_stage').value, until = $('r_until').value, reason = $('r_reason').value.trim();
+  if (!stage) return $('s_msg').innerHTML = '<span class="err">Tambah tahap dulu.</span>';
+  if (!until || !reason) return $('s_msg').innerHTML = '<span class="err">Isi batas tanggal dan alasan.</span>';
+  if (!$('r_ok').checked) return $('s_msg').innerHTML = '<span class="err">Pembukaan ulang wajib disetujui klien.</span>';
+  S.reopens.push({ stage, until, reason }); save(); $('r_ok').checked = false; $('r_reason').value = ''; $('s_msg').innerHTML = '<span class="ok">Tahap dibuka ulang.</span>'; renderStages();
+};
+
+// Izin
+function renderLeaves() {
+  $('x_rows').innerHTML = S.leaves.map((x, i) => `<tr><td>${i + 1}</td><td>${esc(x.stage)}</td><td>${x.days}</td><td>${esc(x.kind)}</td><td>${esc(x.proof)}</td></tr>`).join('') || '<tr><td colspan="5" class="hint">Belum ada izin.</td></tr>';
+  $('x_quota').textContent = `Sisa: ${Math.max(0, 2 - S.leaves.length)} izin.`;
+}
+$('x_add').onclick = () => {
+  const stage = $('x_stage').value.trim(), days = Number($('x_days').value), proof = $('x_proof').value.trim(), kind = $('x_kind').value;
+  let err = '';
+  if (S.leaves.length >= 2) err = 'Izin hanya boleh 2 kali per campaign.';
+  else if (!stage) err = 'Isi tahap.';
+  else if (!Number.isInteger(days) || days < 1) err = 'Minimal 1 hari.';
+  else if (days > 2) err = 'Satu izin paling lama 2 hari berturut-turut; ajukan izin terpisah di waktu berbeda.';
+  else if (!proof) err = 'Bukti wajib diisi.';
+  if (err) { $('x_msg').innerHTML = `<span class="err">${err}</span>`; return; }
+  S.leaves.push({ stage, days, kind, proof }); save(); $('x_msg').innerHTML = '<span class="ok">Izin dicatat.</span>'; renderLeaves();
+};
+
+// Aturan per job
+const DOCS = { none: 'Tidak perlu', legal: 'Legal', legal_ktp: 'Legal + KTP' };
+function renderJobs() {
+  $('j_rows').innerHTML = S.jobs.map((j, i) => `<tr><td>${esc(j.name)}</td><td>${j.fee === '' ? '-' : rp(j.fee)}</td><td>${j.age || 'Bebas'}</td><td>${DOCS[j.docs]}</td><td>${j.story === 'yes' ? 'Wajib ACC' : 'Tidak wajib'}</td>
+    <td><input type="number" placeholder="usia" style="width:70px" data-age="${i}"> <span data-ageout="${i}"></span></td><td><button class="l" data-jdel="${i}">hapus</button></td></tr>`).join('') || '<tr><td colspan="7" class="hint">Belum ada job.</td></tr>';
+  document.querySelectorAll('[data-age]').forEach(inp => inp.oninput = () => { const j = S.jobs[inp.dataset.age], a = Number(inp.value), out = document.querySelector(`[data-ageout="${inp.dataset.age}"]`);
+    out.innerHTML = inp.value === '' ? '' : !j.age || a >= j.age ? '<span class="ok">Lolos</span>' : '<span class="err">Di bawah syarat</span>'; });
+  document.querySelectorAll('[data-jdel]').forEach(b => b.onclick = () => { S.jobs.splice(Number(b.dataset.jdel), 1); save(); renderJobs(); });
+}
+$('j_add').onclick = () => {
+  const name = $('j_name').value.trim(), fee = $('j_fee').value, age = $('j_age').value;
+  let err = !name ? 'Isi nama job.' : fee !== '' && (Number(fee) < 0 || !Number.isInteger(Number(fee))) ? 'Biaya per SOW harus rupiah bulat.' : age !== '' && (Number(age) < 13 || Number(age) > 100) ? 'Usia minimum 13 sampai 100.' : '';
+  if (err) { $('j_msg').innerHTML = `<span class="err">${err}</span>`; return; }
+  S.jobs.push({ name, fee: fee === '' ? '' : Number(fee), age: age === '' ? 0 : Number(age), docs: $('j_docs').value, story: $('j_story').value }); save(); $('j_msg').innerHTML = '<span class="ok">Job disimpan.</span>'; $('j_name').value = ''; renderJobs();
+};
+
+// Pendaftar ganda
+const normWa = raw => { const d = String(raw || '').replace(/\D/g, ''); const l = d.startsWith('62') ? d.slice(2) : d.startsWith('0') ? d.slice(1) : d; return l.length >= 8 ? '62' + l : ''; };
+const normUser = (p, u) => { const x = String(u || '').trim().replace(/^@/, '').toLowerCase(); return x ? p.toLowerCase() + ':' + x : ''; };
+const normName = n => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
+function renderRegs() {
+  $('d_rows').innerHTML = S.regs.map((r, i) => `<tr><td>${esc(r.name)}</td><td>${esc(r.wa)}</td><td>${esc(r.plat)} ${esc(r.user)}</td><td>${r.fol === '' ? '-' : Number(r.fol).toLocaleString('id-ID')}</td><td>${r.updated}</td><td><button class="l" data-rdel="${i}">hapus</button></td></tr>`).join('') || '<tr><td colspan="6" class="hint">Belum ada pendaftar.</td></tr>';
+  document.querySelectorAll('[data-rdel]').forEach(b => b.onclick = () => { S.regs.splice(Number(b.dataset.rdel), 1); save(); renderRegs(); });
+  const out = [];
+  for (let i = 0; i < S.regs.length; i++) for (let j = i + 1; j < S.regs.length; j++) {
+    const a = S.regs[i], b = S.regs[j], by = [];
+    const ua = normUser(a.plat, a.user), ub = normUser(b.plat, b.user);
+    if (ua && ua === ub) by.push('username'); if (normWa(a.wa) && normWa(a.wa) === normWa(b.wa)) by.push('WhatsApp'); if (normName(a.name) && normName(a.name) === normName(b.name)) by.push('nama');
+    if (by.length) out.push(`<p>${esc(a.name)} ↔ ${esc(b.name)}: cocok ${by.join(', ')} → ${by.includes('username') || by.includes('WhatsApp') ? '<b class="err">pasti ganda</b>' : '<b>perlu dicek</b>'}</p>`);
+  }
+  $('d_out').innerHTML = out.join('') || '<p class="ok">Tidak ada pendaftar ganda.</p>';
+}
+$('d_add').onclick = () => {
+  const r = { name: $('d_name').value.trim(), wa: $('d_wa').value.trim(), plat: $('d_plat').value, user: $('d_user').value.trim(), fol: $('d_fol').value, updated: todayStr() };
+  if (!r.name) return;
+  const key = normUser(r.plat, r.user), idx = key ? S.regs.findIndex(x => normUser(x.plat, x.user) === key && normName(x.name) === normName(r.name)) : -1;
+  if (idx >= 0) S.regs[idx] = r; else S.regs.push(r);
+  save(); ['d_name', 'd_wa', 'd_user', 'd_fol'].forEach(id => $(id).value = ''); renderRegs();
+};
+
+// Masukan
+const QUESTIONS = [
+  ['cancel', 'Brand batal: kapan dipakai denda 15% dan kapan DP hangus? Denda 15% dihitung dari total nilai deal?'],
+  ['payee', 'Denda pembatalan (15%) dibayarkan ke siapa?'],
+  ['seven', 'Benar "maks 7 hari" = 7 hari kalender setelah project selesai?'],
+  ['leave', 'Izin sakit/bencana: benar maksimal 2 izin, masing-masing paling lama 2 hari (total 4 hari per campaign)?'],
+  ['stage', 'Jendela tahap dan buka ulang oleh PIC sudah sesuai?'],
+  ['dup', 'Cek pendaftar ganda sudah sesuai? Nama sama saja cukup ditandai "perlu dicek"?'],
+  ['other', 'Masukan lain'],
+];
+function renderFb() {
+  $('f_list').innerHTML = QUESTIONS.map(([k, q]) => `<label style="margin-top:10px">${q}<textarea rows="2" data-fb="${k}">${esc(S.fb[k] || '')}</textarea></label>`).join('');
+  document.querySelectorAll('[data-fb]').forEach(t => t.oninput = () => { S.fb[t.dataset.fb] = t.value; save(); });
+}
+$('f_copy').onclick = async () => {
+  const text = QUESTIONS.map(([k, q], i) => `${i + 1}. ${q}\n   ${S.fb[k] || '-'}`).join('\n');
+  try { await navigator.clipboard.writeText(text); $('f_msg').textContent = 'Tersalin.'; } catch { $('f_msg').textContent = 'Gagal menyalin; blok teks manual.'; }
+};
+
+$('reset').onclick = () => { if (confirm('Hapus semua data uji di browser ini?')) { try { localStorage.removeItem(KEY); } catch {} location.reload(); } };
+
+// Init
+showTab(); fillReasons();
+for (const id of cIds) if (S.cancel[id] !== undefined) { $(id).value = S.cancel[id]; if (id === 'c_party') fillReasons(); }
+renderCancel(); renderStages(); renderLeaves(); renderJobs(); renderRegs(); renderFb();
+</script>
+</body>
+</html>

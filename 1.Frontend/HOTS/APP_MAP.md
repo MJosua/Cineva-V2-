@@ -1,6 +1,6 @@
 # cineva-frontend source map
 
-Generated: 2026-11-02T13:12:06.408Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
+Generated: 2026-11-02T13:15:42.814Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
 
 | File | Lines | Imports | Route definitions |
 |---|---:|---:|---|
@@ -256,28 +256,28 @@ Generated: 2026-11-02T13:12:06.408Z. Regex-based inventory; imports/route string
 | [src/data/inventoryMockData.ts](src/data/inventoryMockData.ts) | 85 | 0 |  |
 | [src/features/cineva-campaigns/AssignmentEditor.tsx](src/features/cineva-campaigns/AssignmentEditor.tsx) | 21 | 3 |  |
 | [src/features/cineva-campaigns/CampaignDesk.tsx](src/features/cineva-campaigns/CampaignDesk.tsx) | 63 | 12 |  |
-| [src/features/cineva-campaigns/CampaignEditor.tsx](src/features/cineva-campaigns/CampaignEditor.tsx) | 18 | 3 |  |
+| [src/features/cineva-campaigns/CampaignEditor.tsx](src/features/cineva-campaigns/CampaignEditor.tsx) | 23 | 3 |  |
 | [src/features/cineva-campaigns/CampaignSetup.tsx](src/features/cineva-campaigns/CampaignSetup.tsx) | 19 | 3 |  |
 | [src/features/cineva-campaigns/CampaignSourceDesk.tsx](src/features/cineva-campaigns/CampaignSourceDesk.tsx) | 34 | 7 |  |
 | [src/features/cineva-campaigns/ExecutionPanel.tsx](src/features/cineva-campaigns/ExecutionPanel.tsx) | 85 | 8 |  |
 | [src/features/cineva-campaigns/FinancePanel.tsx](src/features/cineva-campaigns/FinancePanel.tsx) | 86 | 10 |  |
 | [src/features/cineva-campaigns/RatingPanel.tsx](src/features/cineva-campaigns/RatingPanel.tsx) | 59 | 7 |  |
 | [src/features/cineva-campaigns/StagePlanPanel.tsx](src/features/cineva-campaigns/StagePlanPanel.tsx) | 78 | 7 |  |
-| [src/features/cineva-campaigns/apiMapping.ts](src/features/cineva-campaigns/apiMapping.ts) | 160 | 3 |  |
+| [src/features/cineva-campaigns/apiMapping.ts](src/features/cineva-campaigns/apiMapping.ts) | 162 | 3 |  |
 | [src/features/cineva-campaigns/apiRepository.test.ts](src/features/cineva-campaigns/apiRepository.test.ts) | 114 | 8 |  |
 | [src/features/cineva-campaigns/apiRepository.ts](src/features/cineva-campaigns/apiRepository.ts) | 110 | 3 |  |
 | [src/features/cineva-campaigns/execution.test.ts](src/features/cineva-campaigns/execution.test.ts) | 34 | 4 |  |
 | [src/features/cineva-campaigns/execution.ts](src/features/cineva-campaigns/execution.ts) | 153 | 3 |  |
 | [src/features/cineva-campaigns/finance.ts](src/features/cineva-campaigns/finance.ts) | 126 | 4 |  |
-| [src/features/cineva-campaigns/model.ts](src/features/cineva-campaigns/model.ts) | 58 | 5 |  |
+| [src/features/cineva-campaigns/model.ts](src/features/cineva-campaigns/model.ts) | 81 | 5 |  |
 | [src/features/cineva-campaigns/paymentGate.test.ts](src/features/cineva-campaigns/paymentGate.test.ts) | 31 | 4 |  |
 | [src/features/cineva-campaigns/paymentGate.ts](src/features/cineva-campaigns/paymentGate.ts) | 26 | 2 |  |
 | [src/features/cineva-campaigns/rating.test.ts](src/features/cineva-campaigns/rating.test.ts) | 46 | 4 |  |
 | [src/features/cineva-campaigns/rating.ts](src/features/cineva-campaigns/rating.ts) | 57 | 2 |  |
 | [src/features/cineva-campaigns/repository.ts](src/features/cineva-campaigns/repository.ts) | 84 | 8 |  |
 | [src/features/cineva-campaigns/seed.ts](src/features/cineva-campaigns/seed.ts) | 16 | 1 |  |
-| [src/features/cineva-campaigns/stages.test.ts](src/features/cineva-campaigns/stages.test.ts) | 88 | 4 |  |
-| [src/features/cineva-campaigns/stages.ts](src/features/cineva-campaigns/stages.ts) | 129 | 2 |  |
+| [src/features/cineva-campaigns/stages.test.ts](src/features/cineva-campaigns/stages.test.ts) | 98 | 4 |  |
+| [src/features/cineva-campaigns/stages.ts](src/features/cineva-campaigns/stages.ts) | 134 | 2 |  |
 | [src/features/cineva-hq/BookingConfirmation.tsx](src/features/cineva-hq/BookingConfirmation.tsx) | 24 | 3 |  |
 | [src/features/cineva-hq/ClientsView.tsx](src/features/cineva-hq/ClientsView.tsx) | 19 | 7 |  |
 | [src/features/cineva-hq/EstimatorView.tsx](src/features/cineva-hq/EstimatorView.tsx) | 20 | 7 |  |

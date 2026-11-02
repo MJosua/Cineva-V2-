@@ -1,6 +1,6 @@
 # Cineva file map
 
-Generated: 2026-11-02T13:12:06.408Z. Static extraction only; route paths can be relative to mount prefixes.
+Generated: 2026-11-02T13:15:42.814Z. Static extraction only; route paths can be relative to mount prefixes.
 
 | Area | Root | Source files | App map |
 |---|---|---:|---|

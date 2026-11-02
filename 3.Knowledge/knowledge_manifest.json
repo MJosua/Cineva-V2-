@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-02T13:12:06.408Z",
+  "generatedAt": "2026-11-02T13:15:42.814Z",
   "documents": [
     {
       "path": "1.Frontend/HOTS/docs/CHANGELOG.md",
@@ -1239,7 +1239,7 @@
     },
     {
       "path": "3.Knowledge/architecture/cineva_batch_j_rules_2026_11_02.md",
-      "sha256": "45c5a5d2bbb05a07dcea296bff14d9a98a2e9cf3e91f24429fdbd15c7cd9e82c",
+      "sha256": "fc77dd83e25a87a11118f64039c92c66746ff70318f7d576634f3c1278fe9c45",
       "title": "Aturan batch J: pembatalan, jendela tahap, pendaftar ganda (2 Nov 2026)",
       "headings": [
         {
@@ -1252,31 +1252,39 @@
         },
         {
           "heading": "2. Kode dan cara pakai",
-          "line": 22
+          "line": 23
         },
         {
           "heading": "Pembatalan — `1.Frontend/HOTS/src/features/cineva-services/policies.ts`",
-          "line": 24
+          "line": 25
         },
         {
           "heading": "Pendaftar ganda — `policies.ts`",
-          "line": 36
+          "line": 37
         },
         {
           "heading": "Jendela tahap — `1.Frontend/HOTS/src/features/cineva-campaigns/stages.ts`",
-          "line": 47
+          "line": 48
         },
         {
           "heading": "3. Flow",
-          "line": 58
+          "line": 59
+        },
+        {
+          "heading": "Izin/perpanjangan (K6) — `stages.ts` dan backend `config.mjs`",
+          "line": 74
+        },
+        {
+          "heading": "Aturan per job — `cineva-campaigns/model.ts`",
+          "line": 78
         },
         {
           "heading": "4. UI",
-          "line": 73
+          "line": 88
         },
         {
           "heading": "5. Batasan",
-          "line": 78
+          "line": 93
         }
       ]
     },

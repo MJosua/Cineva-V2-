@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-02T13:12:06.408Z",
+  "generatedAt": "2026-11-02T13:15:42.814Z",
   "files": [
     {
       "app": "@hots/tenant-contracts",
@@ -6357,15 +6357,17 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/CampaignEditor.tsx",
-      "sha256": "83375f5d88ecf1897d9c318ce87bc8cbaf070fb3eca8f5ee9fd1e09a672ec8a9",
-      "lines": 18,
+      "sha256": "a62e595568ae66e32659d14dd7b3b79435d359718ef1ed9adc1d83a572734630",
+      "lines": 23,
       "imports": [
         "react",
         "../cineva-shared/HotsForm",
         "./model"
       ],
       "symbols": [
-        "CampaignEditor"
+        "CampaignEditor",
+        "num",
+        "jobRules"
       ],
       "endpoints": []
     },
@@ -6503,7 +6505,7 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/StagePlanPanel.tsx",
-      "sha256": "ab2ddf9986abbeeba06abcc41d84250b8c6653ad1fd648a9167b947c83c7e44f",
+      "sha256": "6e4c92b41dce7e53298b70c3d5a89dd7aecaef2fcab63f890561826da99e113f",
       "lines": 78,
       "imports": [
         "react",
@@ -6538,8 +6540,8 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/apiMapping.ts",
-      "sha256": "4e520b80a464b6c8518fd94402f62e788d67221d2467cbdb7c1d9d9a03da08c5",
-      "lines": 160,
+      "sha256": "ad80c3943dd1edd4f60eabf01eded3fb4a4b02fdbb5fdd8d061ddd06238a5acd",
+      "lines": 162,
       "imports": [
         "./model",
         "./execution",
@@ -6795,8 +6797,8 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/model.ts",
-      "sha256": "c5cf26c9b1a899ae5ccd81cc0a2c94cf68f98a560da3d04f31181e3efe030abd",
-      "lines": 58,
+      "sha256": "096eb996b6ae3e3931cceeaeb6b22a425da74d9cdeaf71d85d5b9cc92ff770be",
+      "lines": 81,
       "imports": [
         "../cineva-inquiries/domain",
         "./execution",
@@ -6805,6 +6807,9 @@
         "./rating"
       ],
       "symbols": [
+        "assertJobRules",
+        "key",
+        "meetsAgeRule",
         "isHQOwner",
         "validDate",
         "date",
@@ -6962,8 +6967,8 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/stages.test.ts",
-      "sha256": "2d4345069013126e7da4408787cf8f5a681e0cf4774d37eb9c86aadf314b2f0b",
-      "lines": 88,
+      "sha256": "bcda814908dd217a21f21d92ab87ee8d932a2cb71e174b059c88cb98eac86e0c",
+      "lines": 98,
       "imports": [
         "node:test",
         "node:assert/strict",
@@ -6987,14 +6992,15 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/stages.ts",
-      "sha256": "32514e5f64421160c95957e117a0e1a188d6bf5daa0ff662c73fab10c234d758",
-      "lines": 129,
+      "sha256": "b5e15edd26781a2441ab7f2a1b1e69905dcbbbaecce0a8d2146ca64bda9f9292",
+      "lines": 134,
       "imports": [
         "@hots/scheduling-kit",
         "../cineva-services/rules.ts"
       ],
       "symbols": [
         "defaultExtensionRules",
+        "maxExtensionDaysPerRequest",
         "defaultStageTemplates",
         "isDate",
         "addDays",
@@ -15317,8 +15323,8 @@
     {
       "app": "cineva-backend",
       "path": "2.Backend/Integrated-API/app/modules/cineva-campaigns/config.mjs",
-      "sha256": "36cd05bb7d2af3e71da1aa7e5d324d78af50b1ce5caa966ed9117d2a63be111f",
-      "lines": 24,
+      "sha256": "441683056cf2dd7d96b87d695fd71c739811b3dcb4f2c7d5b0507ea65dc219ef",
+      "lines": 25,
       "imports": [],
       "symbols": [
         "crewReasons",
@@ -15579,8 +15585,8 @@
     {
       "app": "cineva-backend",
       "path": "2.Backend/Integrated-API/app/modules/cineva-campaigns/service.mjs",
-      "sha256": "a8d7c3e4a5457130b1c0f1860caad702c6aaa29b9f96f51e7ed5d6f4bc56f930",
-      "lines": 471,
+      "sha256": "92ed3709fd3695a261a11cb5a94463c782868d497757339c82f368b9c0d28260",
+      "lines": 473,
       "imports": [
         "node:crypto",
         "./repository.mjs",
@@ -15690,8 +15696,8 @@
     {
       "app": "cineva-backend",
       "path": "2.Backend/Integrated-API/app/modules/cineva-campaigns/test/service.test.mjs",
-      "sha256": "d7e094d786488817c3ee5be47efc24d2c18ff30a2b8ca1ff02bea566c75934ee",
-      "lines": 278,
+      "sha256": "1ff5c3ba52e64746476d47a668ea75203edc18ce75b9fb041eb52c8e1edb4375",
+      "lines": 279,
       "imports": [
         "node:test",
         "node:assert/strict",
@@ -15773,7 +15779,7 @@
         {
           "method": "USE",
           "path": "/api/cineva/v1",
-          "line": 199
+          "line": 200
         }
       ]
     },

@@ -1,18 +1,18 @@
 # cineva-backend source map
 
-Generated: 2026-11-02T13:12:06.408Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
+Generated: 2026-11-02T13:15:42.814Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
 
 | File | Lines | Imports | Route definitions |
 |---|---:|---:|---|
 | [app/createApp.js](app/createApp.js) | 124 | 11 | GET /api/health-check (L62); USE /api/rooms (L68); USE /api/bookings (L69); GET /auth/ping (L71) |
 | [app/modules/cineva-campaigns/bootstrap.js](app/modules/cineva-campaigns/bootstrap.js) | 23 | 3 |  |
-| [app/modules/cineva-campaigns/config.mjs](app/modules/cineva-campaigns/config.mjs) | 24 | 0 |  |
+| [app/modules/cineva-campaigns/config.mjs](app/modules/cineva-campaigns/config.mjs) | 25 | 0 |  |
 | [app/modules/cineva-campaigns/db.mjs](app/modules/cineva-campaigns/db.mjs) | 29 | 0 |  |
 | [app/modules/cineva-campaigns/policyPorts.mjs](app/modules/cineva-campaigns/policyPorts.mjs) | 6 | 2 |  |
 | [app/modules/cineva-campaigns/repository.mjs](app/modules/cineva-campaigns/repository.mjs) | 229 | 0 |  |
 | [app/modules/cineva-campaigns/routes.js](app/modules/cineva-campaigns/routes.js) | 48 | 0 | GET /campaigns (L19); POST /campaigns (L20); GET /campaigns/:id (L21); PUT /campaigns/:id/stage-plan (L22); POST /campaigns/:id/extensions (L23); POST /campaigns/:id/assignments (L24); POST /campaigns/:id/cancellations (L25); GET /campaigns/:id/assignments (L26); POST /campaigns/:id/batches (L27); POST /campaigns/:id/milestones (L28); POST /campaigns/:id/products (L29); POST /assignments/:id/deliverables (L30); PUT /assignments/:id/product (L31); POST /assignments/:id/fulfillment (L32); POST /campaigns/:id/rating-criteria (L33); POST /assignments/:id/ratings (L34); GET /assignments/:id (L35); PUT /assignments/:id/finance (L36); POST /assignments/:id/payout-requests (L37); POST /assignments/:id/payouts (L38); POST /deliverables/:id/drafts (L39); POST /deliverables/:id/reviews (L40); POST /deliverables/:id/posting (L41); POST /deliverables/:id/insights (L42); POST /deliverables/:id/late-requests (L43); POST /late-requests/:id/decision (L44) |
-| [app/modules/cineva-campaigns/service.mjs](app/modules/cineva-campaigns/service.mjs) | 471 | 5 |  |
-| [app/modules/cineva-campaigns/test/service.test.mjs](app/modules/cineva-campaigns/test/service.test.mjs) | 278 | 7 | USE /api/cineva/v1 (L199) |
+| [app/modules/cineva-campaigns/service.mjs](app/modules/cineva-campaigns/service.mjs) | 473 | 5 |  |
+| [app/modules/cineva-campaigns/test/service.test.mjs](app/modules/cineva-campaigns/test/service.test.mjs) | 279 | 7 | USE /api/cineva/v1 (L200) |
 | [app/modules/content-studio/bootstrap.js](app/modules/content-studio/bootstrap.js) | 19 | 3 |  |
 | [app/modules/content-studio/extractor.mjs](app/modules/content-studio/extractor.mjs) | 15 | 3 |  |
 | [app/modules/content-studio/integrations.mjs](app/modules/content-studio/integrations.mjs) | 39 | 3 |  |
