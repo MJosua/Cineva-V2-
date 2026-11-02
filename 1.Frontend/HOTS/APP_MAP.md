@@ -1,6 +1,6 @@
 # cineva-frontend source map
 
-Generated: 2026-11-02T14:33:51.930Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
+Generated: 2026-11-02T15:02:44.159Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
 
 | File | Lines | Imports | Route definitions |
 |---|---:|---:|---|
@@ -255,30 +255,35 @@ Generated: 2026-11-02T14:33:51.930Z. Regex-based inventory; imports/route string
 | [src/controllers/ticketController.js](src/controllers/ticketController.js) | 687 | 3 |  |
 | [src/data/inventoryMockData.ts](src/data/inventoryMockData.ts) | 85 | 0 |  |
 | [src/features/cineva-campaigns/AssignmentEditor.tsx](src/features/cineva-campaigns/AssignmentEditor.tsx) | 21 | 3 |  |
-| [src/features/cineva-campaigns/CampaignDesk.tsx](src/features/cineva-campaigns/CampaignDesk.tsx) | 63 | 12 |  |
+| [src/features/cineva-campaigns/CampaignDesk.tsx](src/features/cineva-campaigns/CampaignDesk.tsx) | 67 | 14 |  |
 | [src/features/cineva-campaigns/CampaignEditor.tsx](src/features/cineva-campaigns/CampaignEditor.tsx) | 23 | 3 |  |
 | [src/features/cineva-campaigns/CampaignSetup.tsx](src/features/cineva-campaigns/CampaignSetup.tsx) | 19 | 3 |  |
 | [src/features/cineva-campaigns/CampaignSourceDesk.tsx](src/features/cineva-campaigns/CampaignSourceDesk.tsx) | 34 | 7 |  |
+| [src/features/cineva-campaigns/CreatorWorkflowPanel.tsx](src/features/cineva-campaigns/CreatorWorkflowPanel.tsx) | 81 | 7 |  |
 | [src/features/cineva-campaigns/ExecutionPanel.tsx](src/features/cineva-campaigns/ExecutionPanel.tsx) | 85 | 8 |  |
 | [src/features/cineva-campaigns/FinancePanel.tsx](src/features/cineva-campaigns/FinancePanel.tsx) | 86 | 10 |  |
 | [src/features/cineva-campaigns/RatingPanel.tsx](src/features/cineva-campaigns/RatingPanel.tsx) | 59 | 7 |  |
+| [src/features/cineva-campaigns/RegistrationDesk.tsx](src/features/cineva-campaigns/RegistrationDesk.tsx) | 72 | 7 |  |
 | [src/features/cineva-campaigns/StageGantt.tsx](src/features/cineva-campaigns/StageGantt.tsx) | 42 | 1 |  |
 | [src/features/cineva-campaigns/StagePlanPanel.tsx](src/features/cineva-campaigns/StagePlanPanel.tsx) | 80 | 8 |  |
-| [src/features/cineva-campaigns/apiMapping.ts](src/features/cineva-campaigns/apiMapping.ts) | 162 | 3 |  |
+| [src/features/cineva-campaigns/apiMapping.ts](src/features/cineva-campaigns/apiMapping.ts) | 163 | 3 |  |
 | [src/features/cineva-campaigns/apiRepository.test.ts](src/features/cineva-campaigns/apiRepository.test.ts) | 114 | 8 |  |
 | [src/features/cineva-campaigns/apiRepository.ts](src/features/cineva-campaigns/apiRepository.ts) | 110 | 3 |  |
 | [src/features/cineva-campaigns/execution.test.ts](src/features/cineva-campaigns/execution.test.ts) | 34 | 4 |  |
 | [src/features/cineva-campaigns/execution.ts](src/features/cineva-campaigns/execution.ts) | 153 | 3 |  |
 | [src/features/cineva-campaigns/finance.ts](src/features/cineva-campaigns/finance.ts) | 126 | 4 |  |
-| [src/features/cineva-campaigns/model.ts](src/features/cineva-campaigns/model.ts) | 81 | 5 |  |
+| [src/features/cineva-campaigns/model.ts](src/features/cineva-campaigns/model.ts) | 84 | 6 |  |
 | [src/features/cineva-campaigns/paymentGate.test.ts](src/features/cineva-campaigns/paymentGate.test.ts) | 31 | 4 |  |
 | [src/features/cineva-campaigns/paymentGate.ts](src/features/cineva-campaigns/paymentGate.ts) | 26 | 2 |  |
 | [src/features/cineva-campaigns/rating.test.ts](src/features/cineva-campaigns/rating.test.ts) | 46 | 4 |  |
 | [src/features/cineva-campaigns/rating.ts](src/features/cineva-campaigns/rating.ts) | 57 | 2 |  |
-| [src/features/cineva-campaigns/repository.ts](src/features/cineva-campaigns/repository.ts) | 84 | 8 |  |
-| [src/features/cineva-campaigns/seed.ts](src/features/cineva-campaigns/seed.ts) | 49 | 1 |  |
+| [src/features/cineva-campaigns/registration.ts](src/features/cineva-campaigns/registration.ts) | 84 | 4 |  |
+| [src/features/cineva-campaigns/repository.ts](src/features/cineva-campaigns/repository.ts) | 87 | 9 |  |
+| [src/features/cineva-campaigns/seed.ts](src/features/cineva-campaigns/seed.ts) | 59 | 2 |  |
 | [src/features/cineva-campaigns/stages.test.ts](src/features/cineva-campaigns/stages.test.ts) | 111 | 4 |  |
 | [src/features/cineva-campaigns/stages.ts](src/features/cineva-campaigns/stages.ts) | 144 | 2 |  |
+| [src/features/cineva-campaigns/workflow.test.ts](src/features/cineva-campaigns/workflow.test.ts) | 63 | 5 |  |
+| [src/features/cineva-campaigns/workflow.ts](src/features/cineva-campaigns/workflow.ts) | 121 | 4 |  |
 | [src/features/cineva-hq/BookingConfirmation.tsx](src/features/cineva-hq/BookingConfirmation.tsx) | 24 | 3 |  |
 | [src/features/cineva-hq/ClientsView.tsx](src/features/cineva-hq/ClientsView.tsx) | 19 | 7 |  |
 | [src/features/cineva-hq/EstimatorView.tsx](src/features/cineva-hq/EstimatorView.tsx) | 20 | 7 |  |

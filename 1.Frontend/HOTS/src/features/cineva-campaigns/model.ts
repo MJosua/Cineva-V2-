@@ -1,3 +1,4 @@
+import type { CreatorWorkflow } from './workflow';
 import type { Actor } from '../cineva-inquiries/domain';
 import type { AssignmentExecution } from './execution';
 import type { AssignmentFinance } from './finance';
@@ -16,6 +17,8 @@ export interface TalentAssignment {
   execution?: AssignmentExecution; finance?: AssignmentFinance;
   /** Riwayat penilaian putaran demi putaran, hanya HQ; lihat rating.ts. */
   ratings?: AssignmentRating[];
+  /** Alur kerja per creator (alamat, terima produk, storyline); lihat workflow.ts. Opsional dan additive. */
+  workflow?: CreatorWorkflow;
 }
 export interface Campaign {
   revision?: number;

@@ -1,4 +1,5 @@
 import type { Campaign } from './model';
+import type { CreatorWorkflow, StorylineReview } from './workflow';
 
 /**
  * Campaign contoh dari data client (assessment + progress Vape Liquid IC 100, 2 Nov 2026). Data brand, produk, SOW, fee dan timeline asli;
@@ -11,6 +12,14 @@ const ic100Talent: Array<[string, number, string, string]> = [
   ['Kreator IC-05', 2631, 'Lifestyle, Reviewer, Art', 'Grape Burst'], ['Kreator IC-06', 1030, 'Lifestyle', 'Red Apple'],
   ['Kreator IC-07', 682, 'Lifestyle, Foodies', 'Mango'], ['Kreator IC-08', 2871, 'Lifestyle, Fashion', 'Fresh Lemon'],
 ];
+/** Contoh progres tiga creator pertama: alamat terisi, produk diterima, storyline ACC / revisi / menunggu (gaya feedback STL sheet agency). */
+function ic100Workflow(i: number): CreatorWorkflow {
+  const submissions = [{ version: 1, text: 'Scene 1: morning run di taman, VO energik. Scene 2: istirahat, keluarkan IC 100 Fresh Lemon. Teks: #ISEENOLIMIT. CTA: dapatkan di vapestore terdekat, MSRP Rp110.000.', submittedAt: '2026-10-10T08:00:00.000Z' }];
+  const reviews: StorylineReview[] = i === 0 ? [{ version: 1, decision: 'approved', note: 'Tambahkan "anti cepat gosong".', reviewer: 'kol_manager', reviewedAt: '2026-10-11T03:00:00.000Z', actor: 'hq-1' }]
+    : i === 1 ? [{ version: 1, decision: 'revision_requested', note: 'Sebutkan MSRP dan where to buy di akhir.', reviewer: 'client', reviewedAt: '2026-10-11T04:00:00.000Z', actor: 'hq-1' }] : [];
+  return { address: { recipient: `Kreator IC-0${i + 1}`, phone: '081200000000', full: 'Alamat disamarkan untuk demo', savedAt: '2026-10-09T05:00:00.000Z' },
+    receipt: { receivedAt: '2026-10-12T07:00:00.000Z' }, storyline: { submissions, reviews } };
+}
 function ic100Campaign(): Campaign {
   const products = ['Fresh Lemon', 'Strawberry (Smooth Berry)', 'Grape Burst', 'Red Apple', 'Mango']
     .map((name, i) => ({ id: `ic100-${i + 1}`, name, variant: 'Saltnic 30mg 30ml', referenceValue: 110_000 }));
@@ -28,6 +37,7 @@ function ic100Campaign(): Campaign {
       socialProfiles: [{ platform: 'Instagram', handle: `@kreator_ic_${String(i + 1).padStart(2, '0')}`, followers: null, capturedAt: '2026-10-29' }],
       deliverables: [{ id: 'reels', title: `1x Reels/TikTok owning · ${product} · niche ${niche} · ${views} views (insight)`, platform: 'Instagram', postingRequired: true, deadline: '2026-10-22' },
         { id: 'checkout', title: '1x checkout produk (dibayar brand)', platform: 'Brand asset', postingRequired: false, deadline: '2026-10-10' }],
+      ...(i < 3 ? { workflow: ic100Workflow(i) } : {}),
     })),
   };
 }

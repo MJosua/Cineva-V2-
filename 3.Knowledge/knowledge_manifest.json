@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-02T14:33:51.930Z",
+  "generatedAt": "2026-11-02T15:02:44.159Z",
   "documents": [
     {
       "path": "1.Frontend/HOTS/docs/CHANGELOG.md",
@@ -1239,7 +1239,7 @@
     },
     {
       "path": "3.Knowledge/architecture/cineva_batch_j_rules_2026_11_02.md",
-      "sha256": "286f31fc3fe95e3c21e4c800e72c534eab596637f0ed1f4ff72614b0bdb035b2",
+      "sha256": "8fd3a16ff76ef792a2d8829e962ea3379768422a8014e4f8e5f81c0d5d05e697",
       "title": "Aturan batch J: pembatalan, jendela tahap, pendaftar ganda (2 Nov 2026)",
       "headings": [
         {
@@ -1289,6 +1289,10 @@
         {
           "heading": "6. Data campaign nyata IC 100 dan Gantt tahap (2 Nov 2026, lanjutan)",
           "line": 101
+        },
+        {
+          "heading": "7. Alur kerja per creator dan layar pendaftaran (2 Nov 2026, lanjutan)",
+          "line": 110
         }
       ]
     },
@@ -4103,6 +4107,33 @@
         {
           "heading": "Kantor promotion verified 2026-10-29",
           "line": 36
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/reference/client_ic100/README.md",
+      "sha256": "9e839fb1dea8cfe508b54d8ba5b40f95e5a1da16c88931bb54d3ee4328d66d0e",
+      "title": "Referensi client: campaign Vape Liquid IC 100 (Okt–Nov 2026)",
+      "headings": [
+        {
+          "heading": "Referensi client: campaign Vape Liquid IC 100 (Okt–Nov 2026)",
+          "line": 1
+        },
+        {
+          "heading": "Brief",
+          "line": 5
+        },
+        {
+          "heading": "Mekanisme (aturan)",
+          "line": 15
+        },
+        {
+          "heading": "Timeline di brief vs assessment",
+          "line": 23
+        },
+        {
+          "heading": "Dipakai di kode",
+          "line": 38
         }
       ]
     },

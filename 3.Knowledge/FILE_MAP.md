@@ -1,13 +1,13 @@
 # Cineva file map
 
-Generated: 2026-11-02T14:33:51.930Z. Static extraction only; route paths can be relative to mount prefixes.
+Generated: 2026-11-02T15:02:44.159Z. Static extraction only; route paths can be relative to mount prefixes.
 
 | Area | Root | Source files | App map |
 |---|---|---:|---|
 | @hots/tenant-contracts | 1.Frontend/packages/tenant-contracts | 3 | [APP_MAP](../1.Frontend/packages/tenant-contracts/APP_MAP.md) |
 | @hots/tenant-client | 1.Frontend/packages/tenant-client | 3 | [APP_MAP](../1.Frontend/packages/tenant-client/APP_MAP.md) |
 | @hots/tenant-server | 2.Backend/packages/tenant-server | 11 | [APP_MAP](../2.Backend/packages/tenant-server/APP_MAP.md) |
-| cineva-frontend | 1.Frontend/HOTS | 584 | [APP_MAP](../1.Frontend/HOTS/APP_MAP.md) |
+| cineva-frontend | 1.Frontend/HOTS | 589 | [APP_MAP](../1.Frontend/HOTS/APP_MAP.md) |
 | cineva-backend | 2.Backend/Integrated-API | 239 | [APP_MAP](../2.Backend/Integrated-API/APP_MAP.md) |
 | @hots/dynamic-form | 1.Frontend/dynamic-form | 10 | [APP_MAP](../1.Frontend/dynamic-form/APP_MAP.md) |
 | @hots/service-form-runtime | 1.Frontend/service-form-runtime | 5 | [APP_MAP](../1.Frontend/service-form-runtime/APP_MAP.md) |
@@ -137,6 +137,7 @@ Generated: 2026-11-02T14:33:51.930Z. Static extraction only; route paths can be 
 - [Job Marketplace Schema Draft](jobmarketplace_schema.md)
 - [Cineva compatibility boundary](packages/COMPATIBILITY.md)
 - [Cineva shared package registry](packages/REGISTRY.md)
+- [Referensi client: campaign Vape Liquid IC 100 (Okt–Nov 2026)](reference/client_ic100/README.md)
 - [Audit HOTS Kantor → Cineva](reports/hots_cineva_2026_10_14/AUDIT_HOTS_CINEVA.md)
 - [Transkrip otomatis voice note Cineva](reports/voice_requirements_2026_10_18/TRANSCRIPT.md)
 - [Build demo Cineva satu file HTML](scripts/cineva_demo/README.md)

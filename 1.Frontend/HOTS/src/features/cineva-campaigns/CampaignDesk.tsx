@@ -10,6 +10,8 @@ import { AssignmentEditor } from './AssignmentEditor';
 import { CampaignSetup, DeliverableEditor } from './CampaignSetup';
 import { StagePlanPanel } from './StagePlanPanel';
 import { RatingCriteriaEditor, RatingPanel } from './RatingPanel';
+import { CreatorWorkflowPanel, WorkflowBoard } from './CreatorWorkflowPanel';
+import { RegistrationDesk } from './RegistrationDesk';
 
 export interface AssignmentPanelProps {
   assignment: TalentAssignment; products: Campaign['products']; actor: Actor;
@@ -44,6 +46,8 @@ export function CampaignDesk({ actor, onIdentityChange, repository = campaignRep
       <dl className="grid gap-3 text-sm sm:grid-cols-3"><div><dt className="font-semibold">Objective</dt><dd>{campaign.objective}</dd></div><div><dt className="font-semibold">Audience</dt><dd>{campaign.audience}</dd></div><div><dt className="font-semibold">Key messaging</dt><dd>{campaign.messaging}</dd></div></dl>
       <section><h3 className="font-semibold">Milestone campaign</h3><ul className="list-inside list-disc text-sm">{campaign.milestones.map(item => <li key={item.id}>{item.title} · {item.deadline}</li>)}</ul></section>
       <StagePlanPanel campaign={campaign} actor={actor} onChange={update => act(() => repository.mutate(actor, campaign.id, update, campaign.revision ?? 0))}/>
+      <RegistrationDesk campaign={campaign} actor={actor}/>
+      {actor.product === 'hq' && <WorkflowBoard campaign={campaign}/>}
       {actor.product === 'hq' && <RatingCriteriaEditor campaign={campaign} onChange={update => act(() => repository.mutate(actor, campaign.id, update, campaign.revision ?? 0))}/>}
       <p className="text-sm">Batch: {campaign.batches.map(batch => batch.name).join(', ')}</p>
       {actor.product === 'hq' && <CampaignSetup onChange={update => track(repository.mutate(actor, campaign.id, update, campaign.revision ?? 0))}/>}
@@ -54,7 +58,7 @@ export function CampaignDesk({ actor, onIdentityChange, repository = campaignRep
         return <section key={assignment.id} aria-label={`Assignment ${assignment.creatorName}`} className="space-y-4 rounded-md border border-border p-4"><h4 className="font-semibold">{assignment.creatorName} · {campaign.batches.find(batch => batch.id === assignment.batchId)?.name}</h4>
           {assignment.socialProfiles.map((profile, index) => <p key={index} className="text-sm">{profile.platform} · {profile.handle} · Followers {profile.followers === null ? 'Belum tersedia' : profile.followers.toLocaleString('id-ID')} · Snapshot {profile.capturedAt}</p>)}
           <ul className="list-inside list-disc text-sm">{assignment.deliverables.map(item => <li key={item.id}>{item.title} · {item.platform} · {item.postingRequired ? 'Posting Creator' : 'Asset brand'} · {item.deadline}</li>)}</ul>
-          {actor.product === 'hq' && <DeliverableEditor onChange={props.onChange}/>}{renderExecution?.(props)}{renderFinance?.(props)}<RatingPanel assignment={assignment} criteria={campaign.ratingCriteria ?? []} actor={actor} onChange={props.onChange}/>
+          {actor.product === 'hq' && <DeliverableEditor onChange={props.onChange}/>}<CreatorWorkflowPanel assignment={assignment} actor={actor} onChange={props.onChange} storylineRequired={campaign.jobRules?.storylineApprovalRequired}/>{renderExecution?.(props)}{renderFinance?.(props)}<RatingPanel assignment={assignment} criteria={campaign.ratingCriteria ?? []} actor={actor} onChange={props.onChange}/>
         </section>;
       })}
     </article>}

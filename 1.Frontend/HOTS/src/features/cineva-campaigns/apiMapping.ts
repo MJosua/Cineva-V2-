@@ -95,6 +95,7 @@ const deliverableBody = (d: CampaignDeliverable) => ({ title: d.title, platform:
 /** Panggilan API untuk perubahan satu assignment (tindakan Creator atau HQ). Urutan mengikuti ketergantungan: produk, output, draft/QC/posting, insight, keuangan. */
 export function planAssignmentCalls(previous: TalentAssignment, next: TalentAssignment): ApiCall[] {
   const calls: ApiCall[] = [], base = `/assignments/${previous.id}`;
+  if (JSON.stringify(previous.workflow ?? null) !== JSON.stringify(next.workflow ?? null)) throw new Error('Alur kerja creator (alamat, terima produk, storyline) belum didukung API percobaan.');
   const before = previous.execution, after = next.execution;
   if (after?.product.productId && after.product.productId !== before?.product.productId) calls.push({ method: 'PUT', path: `${base}/product`, body: { productId: after.product.productId } });
   if (after && after.product.fulfillment !== (before?.product.fulfillment ?? 'pending') && after.product.fulfillment !== 'pending') calls.push({ method: 'POST', path: `${base}/fulfillment`, body: { next: after.product.fulfillment } });

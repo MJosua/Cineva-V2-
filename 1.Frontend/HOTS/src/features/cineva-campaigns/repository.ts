@@ -6,6 +6,7 @@ import { campaignSeed } from './seed';
 import { assertExecutionMutation } from './execution';
 import { assertFinanceMutation } from './finance';
 import { assertRatingMutation } from './rating';
+import { assertStorylineGate, assertWorkflowMutation } from './workflow';
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 export function createCampaignRepository(storage: StoragePort) {
   const key = 'campaigns', listeners = new Set<() => void>();
@@ -23,7 +24,7 @@ export function createCampaignRepository(storage: StoragePort) {
   };
   const visible = (row: Campaign, actor: Actor) => isHQOwner(actor, row) || actor.product === 'creator' && row.assignments.some(item => item.creatorId === actor.id);
   const assertNewAssignments = (assignments: TalentAssignment[]) => {
-    if (assignments.some(item => item.execution !== undefined || item.finance !== undefined || item.ratings !== undefined))
+    if (assignments.some(item => item.execution !== undefined || item.finance !== undefined || item.ratings !== undefined || item.workflow !== undefined))
       throw new Error('Assignment baru harus tanpa progress atau ledger; gunakan tindakan operasional setelah dibuat.');
   };
   const project = (row: Campaign, actor: Actor) => {
@@ -69,15 +70,17 @@ export function createCampaignRepository(storage: StoragePort) {
           throw new Error('Output yang memiliki progress atau ledger harus dipertahankan; tambahkan output baru.');
       }
       if (actor.product === 'creator') {
-        const stable = (value: TalentAssignment) => { const copy = clone(value); delete copy.execution; delete copy.finance; return copy; };
+        const stable = (value: TalentAssignment) => { const copy = clone(value); delete copy.execution; delete copy.finance; delete copy.workflow; return copy; };
         if (JSON.stringify(stable(next)) !== JSON.stringify(stable(assignment))) throw new Error('Creator hanya dapat memperbarui pelaksanaan assignment sendiri.');
       }
       assertExecutionMutation(assignment, next, actor, campaign.products);
       assertFinanceMutation(assignment, next, actor);
+      assertWorkflowMutation(assignment, next, actor);
+      assertStorylineGate(assignment, next, campaign);
       assertRatingMutation(assignment, next, actor, campaign.ratingCriteria ?? []);
       write(rows.map(item => item.id === id ? { ...item, revision: (item.revision ?? 0) + 1, assignments: item.assignments.map(current => current.id === assignmentId ? clone(next) : current) } : item));
     },
   };
 }
-export const campaignRepository = createCampaignRepository(createAppStorage('cineva_campaigns_dummy_v1'));
+export const campaignRepository = createCampaignRepository(createAppStorage('cineva_campaigns_dummy_v2'));
 export type CampaignRepository = ReturnType<typeof createCampaignRepository>;

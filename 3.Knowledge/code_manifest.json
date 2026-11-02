@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-02T14:33:51.930Z",
+  "generatedAt": "2026-11-02T15:02:44.159Z",
   "files": [
     {
       "app": "@hots/tenant-contracts",
@@ -6326,8 +6326,8 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/CampaignDesk.tsx",
-      "sha256": "9074d390f0cf06619e17a8f1158c2a648ec5b6e5ead453c6d2160afb7233162c",
-      "lines": 63,
+      "sha256": "f080984fd0b73b7d216d9d2eb404d5962c8980d62d5e3ea96ffb5f6b49647430",
+      "lines": 67,
       "imports": [
         "react",
         "@/components/ui/button",
@@ -6340,7 +6340,9 @@
         "./AssignmentEditor",
         "./CampaignSetup",
         "./StagePlanPanel",
-        "./RatingPanel"
+        "./RatingPanel",
+        "./CreatorWorkflowPanel",
+        "./RegistrationDesk"
       ],
       "symbols": [
         "CampaignDesk",
@@ -6408,6 +6410,33 @@
         "CampaignSourceDesk",
         "api",
         "choose"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/CreatorWorkflowPanel.tsx",
+      "sha256": "6cd52f520c276d1cf375ae48592bc324667284967a0af4eb34054a4a49b5a75d",
+      "lines": 81,
+      "imports": [
+        "react",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/textarea",
+        "../cineva-inquiries/domain",
+        "./model",
+        "./workflow"
+      ],
+      "symbols": [
+        "tone",
+        "stateLabel",
+        "WorkflowBoard",
+        "rows",
+        "CreatorWorkflowPanel",
+        "flow",
+        "now",
+        "act",
+        "steps"
       ],
       "endpoints": []
     },
@@ -6504,6 +6533,37 @@
     },
     {
       "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/RegistrationDesk.tsx",
+      "sha256": "7bc3d014b6f925e6e7e859b09abf882eba09e7d1327bc1e57de417261e5cfb9b",
+      "lines": 72,
+      "imports": [
+        "react",
+        "@hots/app-core",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "../cineva-inquiries/domain",
+        "./model",
+        "./registration"
+      ],
+      "symbols": [
+        "registrationRepository",
+        "select",
+        "num",
+        "RegistrationDesk",
+        "rows",
+        "dupeOf",
+        "nameOf",
+        "set",
+        "act",
+        "counts",
+        "rules",
+        "result",
+        "ig"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/StageGantt.tsx",
       "sha256": "f17c1c044779aacd2c11ed65678b422040972969a7c5cd5c4bd0879dbdaee7aa",
       "lines": 42,
@@ -6564,8 +6624,8 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/apiMapping.ts",
-      "sha256": "ad80c3943dd1edd4f60eabf01eded3fb4a4b02fdbb5fdd8d061ddd06238a5acd",
-      "lines": 162,
+      "sha256": "0b5ecfc7a9c004c88583c6890c9bcfa6406d894f610eb66379528bf334a118e2",
+      "lines": 163,
       "imports": [
         "./model",
         "./execution",
@@ -6821,9 +6881,10 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/model.ts",
-      "sha256": "096eb996b6ae3e3931cceeaeb6b22a425da74d9cdeaf71d85d5b9cc92ff770be",
-      "lines": 81,
+      "sha256": "a38d5c35319c1f22c2750753c8eed583802d91a3fc158f62d9cd48c672d5c3c7",
+      "lines": 84,
       "imports": [
+        "./workflow",
         "../cineva-inquiries/domain",
         "./execution",
         "./finance",
@@ -6940,9 +7001,40 @@
     },
     {
       "app": "cineva-frontend",
-      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/repository.ts",
-      "sha256": "72a23eb3c523d0f16de12151bfb60f9e19998b7b16e9a69818706de635f7467e",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/registration.ts",
+      "sha256": "b2e9983bc3bbd8c681214f0d1d186ff6e8ff547beae5f8e141fc2f96aaaa5970",
       "lines": 84,
+      "imports": [
+        "../cineva-inquiries/domain",
+        "../cineva-inquiries/repository",
+        "../cineva-services/policies.ts",
+        "./model.ts"
+      ],
+      "symbols": [
+        "statusLabels",
+        "validateRegistration",
+        "name",
+        "accounts",
+        "duplicatesOf",
+        "registrationSeed",
+        "niches",
+        "rows",
+        "clone",
+        "createRegistrationRepository",
+        "key",
+        "read",
+        "saved",
+        "write",
+        "clean",
+        "row"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/repository.ts",
+      "sha256": "c46e229672418973ab6a0236bf49f6bb64989f76a3f787707d9371e891c5dad8",
+      "lines": 87,
       "imports": [
         "@hots/app-core",
         "../cineva-inquiries/domain",
@@ -6951,7 +7043,8 @@
         "./seed",
         "./execution",
         "./finance",
-        "./rating"
+        "./rating",
+        "./workflow"
       ],
       "symbols": [
         "clone",
@@ -6978,13 +7071,17 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/seed.ts",
-      "sha256": "2183686e1bd2ad38a0f8f454a2a9ffed834c7a1b238e1fbd37a71a32a8d6b919",
-      "lines": 49,
+      "sha256": "1c5c96addffcc42196435bdb0e5330be207629684b8ec8ce7473e62e2b5bca9a",
+      "lines": 59,
       "imports": [
-        "./model"
+        "./model",
+        "./workflow"
       ],
       "symbols": [
         "ic100Talent",
+        "ic100Workflow",
+        "submissions",
+        "reviews",
         "ic100Campaign",
         "products",
         "campaignSeed"
@@ -7054,6 +7151,83 @@
         "messages",
         "assertStageReopen",
         "stageWindowState"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/workflow.test.ts",
+      "sha256": "7c474a005b6e1fae997dff881cbe26eb82fa64cc057876442941e4439b4c074a",
+      "lines": 63,
+      "imports": [
+        "node:test",
+        "node:assert/strict",
+        "./seed.ts",
+        "./workflow.ts",
+        "./registration.ts"
+      ],
+      "symbols": [
+        "campaign",
+        "creator",
+        "withAddress",
+        "received",
+        "row",
+        "zoneOk",
+        "withDraft",
+        "seeded",
+        "base",
+        "store",
+        "seedRow",
+        "result"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/workflow.ts",
+      "sha256": "cc9005b6b7cef8857f031cca7900ff360c695e6708938fa85bb95312afabca38",
+      "lines": 121,
+      "imports": [
+        "../cineva-inquiries/domain",
+        "./model",
+        "./execution.ts",
+        "./finance.ts"
+      ],
+      "symbols": [
+        "reviewerLabels",
+        "productIssueWindowHours",
+        "readWorkflow",
+        "text",
+        "clean",
+        "iso",
+        "time",
+        "creatorOnly",
+        "withWorkflow",
+        "saveAddress",
+        "phone",
+        "confirmReceipt",
+        "flow",
+        "reportProductIssue",
+        "reportedAt",
+        "storylineStatus",
+        "story",
+        "reviews",
+        "submitStoryline",
+        "submission",
+        "reviewStoryline",
+        "assertWorkflowMutation",
+        "before",
+        "prefix",
+        "assertStorylineGate",
+        "drafts",
+        "workflowSteps",
+        "posted",
+        "deliveries",
+        "draftApproved",
+        "draftState",
+        "postedAll",
+        "insights",
+        "paid"
       ],
       "endpoints": []
     },

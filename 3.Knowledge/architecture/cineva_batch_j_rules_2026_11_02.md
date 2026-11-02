@@ -106,3 +106,31 @@ Sumber dari client (WhatsApp 2 Nov): sheet progress talent Liquid IC 100, sheet 
 - **Seed** `seed.ts`: campaign `campaign-ic100` (brand, produk 5 rasa @Rp110.000, SOW, fee Rp100.000 lewat `jobRules.sowFee`, ACC storyline wajib). Delapan talent **disamarkan** (`Kreator IC-01..08`, tanpa WA/alamat/akun asli) karena demo dibagikan; views dari dashboard engagement dicantumkan di judul deliverable. `creatorId` bergantian `creator-1`/`creator-2` karena validasi hanya mengenal dua akun demo.
 - **Gantt** `StageGantt.tsx`: meniru pola HOTS `components/assignment/TaskGantt.tsx` (batang per tahap dari tanggal mulai ke akhir, garis hari ini, warna status jendela). Ditampilkan di atas daftar tahap pada `StagePlanPanel`. TaskGantt HOTS tidak dipakai langsung karena terikat API assignment.
 - Belum: Gantt per creator (storyline/draft/post per talent seperti sheet agency), alur feedback storyline/caption dua tahap (client + zone), impor sheet otomatis. Data mentah sheet tidak disimpan di repo (berisi data pribadi).
+
+## 7. Alur kerja per creator dan layar pendaftaran (2 Nov 2026, lanjutan)
+
+Referensi: [brief IC 100](../reference/client_ic100/README.md).
+
+**Alur creator** (`cineva-campaigns/workflow.ts`, UI `CreatorWorkflowPanel.tsx`), field opsional `TalentAssignment.workflow`:
+1. Alamat: creator mengisi penerima, telepon, alamat lengkap (`saveAddress`).
+2. Terima produk: `confirmReceipt`; laporan cacat/salah kirim maks 1x24 jam dengan foto PNG/JPEG (`reportProductIssue`).
+3. Storyline: creator setor (`submitStoryline`); HQ mencatat feedback atas nama KOL Manager / Client / Zone (`reviewStoryline`). Status ACC hanya jika KOL Manager menyetujui versi terakhir. Revisi dari siapa pun mengembalikan ke creator.
+4–7. Draft, posting, insight H+7, payment: dibaca dari `execution.ts` / `finance.ts` (`workflowSteps` merangkum 7 langkah).
+- Gerbang: bila `jobRules.storylineApprovalRequired`, repository menolak draft baru sebelum storyline ACC (`assertStorylineGate`).
+- Guard `assertWorkflowMutation`: riwayat storyline/penerimaan append-only; HQ hanya menambah review; creator tidak bisa mereview.
+- HQ melihat **Progres per creator** (`WorkflowBoard`): baris creator, kolom langkah, warna status.
+
+**Pendaftaran** (`registration.ts`, UI `RegistrationDesk.tsx`, storage `cineva_registrations_dummy_v1`):
+- Kolom mengikuti sheet progress: nama, domisili, umur, gender, WA, pekerjaan, IG/TikTok (username, followers, niche), status Baru/ACC/Ditolak, PIC screening.
+- Validasi: usia sesuai `jobRules.minAge`, WA dinormalisasi, minimal satu akun. Creator hanya bisa daftar satu kali per campaign. Akun/followers bisa diperbarui (`updateAccounts`, belum ada UI).
+- HQ: filter status, tanda **Ganda** (username/WA) atau **Mirip** (nama), tombol ACC/Tolak (PIC wajib).
+- Seed: 13 pendaftar sintetis, termasuk satu daftar ulang.
+
+**Perubahan lain**
+- Storage campaign naik ke `cineva_campaigns_dummy_v2`, karena tombol "Reset dummy" hanya mereset data workspace, bukan campaign. Data lama v1 tidak dihapus.
+
+**Belum**
+- ACC pendaftar belum otomatis membuat assignment.
+- Belum ada lampiran legal/KTP pada form.
+- Mode API menolak perubahan `workflow` ("belum didukung API percobaan"), dan pendaftaran hanya mode dummy.
+- Perlu konfirmasi client: tanggal brief vs assessment berbeda, dan aturan hari kerja payment (lihat README referensi).
