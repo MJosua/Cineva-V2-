@@ -6,7 +6,14 @@ Status update 2026-10-18: local trigger/builder fixes verified; HQ/Creator Space
 
 ## Read first
 
+- [Usulan DDL Cineva, backend dan frontend tersambung (2-3 Nov 2026)](architecture/cineva_ddl_trial_2026_11_02.md): 17+ tabel `t_cineva_*` diuji di MySQL terpisah, modul backend `cineva-campaigns` (opt-in), adapter API frontend dengan dummy sebagai bawaan; belum diterapkan ke hots. Skrip di [scripts/cineva_db_trial_2026_11_02](scripts/cineva_db_trial_2026_11_02/).
+- [Penjelasan pertanyaan untuk client (2 Nov 2026)](handover/PENJELASAN_PERTANYAAN_CLIENT_2026_11_02.md): konteks dan opsi untuk K1, N6, N17, N18, L11, N38, N51/A2 dan N4; status batch jawaban 2 dan 3 Nov ada di [dokumen pertanyaan](handover/PERTANYAAN_UNTUK_CLIENT_2026_11_01.md) bagian H dan I.
 - [Promosi package ke Kantor 29 Oktober](architecture/package_promotion_2026_10_29.md): content-kit/tenant-client 0.1.0 dan engine-client 0.3.0; scheduling/domain sudah setara, preserve upstream dan pekerjaan page-engine, 67 tes terisolasi; tanpa aktivasi aplikasi/DB/provider.
+- [Requirement dari 2 voice note dan 1 video (1 Nov 2026)](architecture/voice_requirements_2_2026_11_01.md): hitungan crew per jam dan gatekeeper, timeline/kalender kerja, grade Premium/A/B/C, laman Brand berlangganan, produk KOL specialist dan RAB. Transkrip ASR di [reports](reports/voice_requirements_2026_11_01/); audio MP4 hanya lagu, isi video rekaman layar dashboard KOL. Analisis saja.
+
+- [Pertanyaan dan jawaban client (1 Nov 2026)](handover/PERTANYAAN_UNTUK_CLIENT_2026_11_01.md): jawaban A1-G6 dan 44 pertanyaan terbuka (P1 20, P2 22, P3 2). Excel pendamping: [jawaban dan aturan](handover/Jawaban_Client_Cineva_2026_11_01.xlsx) serta [sisa pertanyaan](handover/Sisa_Pertanyaan_Client_Cineva_2026_11_01.xlsx). Dokumen live Claude Docs memuat daftar yang sama. Tanpa data pribadi dari sheet KOL atau formulir pendaftar.
+- [Peta kode Cineva dan kesenjangan terhadap requirement (1 Nov 2026)](architecture/cineva_code_map_vs_requirements_2026_11_01.md): fitur yang sudah ada per folder, apa yang belum ada, dan cara menguji tanpa `node_modules` (`node --experimental-strip-types --test`). Pembacaan saja.
+- [Review pandangan client: assessment akun dan DP anti-cancel](architecture/client_assessment_dp_review_2026_11_01.md): perhitungan kualitas akun (ER, kewajaran angka, median) dan DP di awal versus implementasi dummy saat ini; yang belum ada dan 4 pertanyaan terbuka untuk client. Review saja, tanpa perubahan runtime.
 
 - [HTML demo Content Studio siap kirim](architecture/content_studio_portable_2026_10_22.md): satu HTML offline sekitar 1 MB + ZIP sekitar 258 KB, existing UI/theme, synthetic HQ/Creator, portable export terbaru dan 15 file-URL E2E. Tidak mengirim WhatsApp atau mengaktifkan provider.
 

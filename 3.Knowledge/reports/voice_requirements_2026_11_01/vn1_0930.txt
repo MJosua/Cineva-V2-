@@ -1,0 +1,52 @@
+[00:00-00:06] Hai, selamat pagi, selamat hari minggu, apakabar?
+[00:07-00:13] Dalamang nggak ketemu, tapi yaudahlah karena kamu sibuk, aku jinfevian aja ya,
+[00:13-00:16] karena aku juga, dalamang nggak nyapak kamu ya?
+[00:18-00:28] Oke ya, kalau misalkan di PH itu, ya yos ya, jadi permintaannya tuh pertama kayak jam
+[00:28-00:34] biasanya tim itu, crew-crew itu perhitungannya per hours,
+[00:34-00:41] kayak contoh per 4 hours, per 6 hours, per 8 hours gitu ya,
+[00:41-00:49] jadi tiap ratenya itu beda-beda, jadi misalnya nih kalau di aku itu ada 4 sampai 6
+[00:49-00:57] nah setelah itu kena charge, kena charge jam gitu,
+[00:57-01:05] misalkan di luar dari estimasi gitu, nah package-nya itu 4 sama 6 jam gitu, per 1 crew,
+[01:05-01:14] nah kadang kan kalau kita nggak tahu tuh totalnya berapa lah ya, gitu nah perhitungannya
+[01:14-01:22] biar enak, nah ada gatekeeper-nya, jadi misalnya kita masukin start jari jam berapa gitu,
+[01:22-01:28] nah itu mau break even point-nya berapa, karena kan ada call crew lah biasanya
+[01:28-01:35] kalau di production also ada call crew, nah call crew itu kita kasih jata 10 minit,
+[01:35-01:42] 10 menit, nah itu di luar dari jam ke sepakata bisanik kita kerjanya 6 jam,
+[01:42-01:48] gitu ada call crew sekitar 10 menit, nah kalau lebih dari 10 menit,
+[01:48-01:57] itu udah masuk ke, ini jam kerja, kayak gitu, nah kalau misalkan kelebihan waktu gitu,
+[01:57-02:03] nanti dia langsung otomatis gitu loh, misalnya kita masukin jam berapa sampai jam berapa,
+[02:03-02:11] nanti keluar lah, oh dia kelebihan waktu, oh dia kekurangan nih gitu, oh ini dia kelebihan jam,
+[02:11-02:19] nah biasanya nanti kalau aku kebijakannya, kalau misalkan kurang dari sejam,
+[02:19-02:26] gitu ya lebih setengah jam lah ya, gitu selesainnya kan kita harus kayak,
+[02:26-02:35] apa namanya tuh, prepare alat kan sama tutup alat gitu, itu juga nggak termasuk waktu
+[02:35-02:41] estimasi sih, itu setting up, kalau setting up itu biasanya 10 menit,
+[02:41-02:48] kalau misalkan setting up di atas 10 menit lebih lah hampir sejam, ya itu udah masuk jam kerja,
+[02:48-02:55] kayak gitu, nah kalau di creator sama di creator itu namanya time lines,
+[02:55-03:00] nah ya kurang lebih sama lah pengarjangan waktu ya, nah time lines ini biasanya
+[03:00-03:08] misalnya kalau ada produk gitu kirim produk, biasanya terproduk datang itu 3 sampai
+[03:08-03:16] seminggu gitu pengarjangan untuk kontennya, nah aku tuh pengennya ketika udah,
+[03:16-03:21] oh ini tuh optimasinya tuh adalah ketika udah di luar dari timeline gitu,
+[03:22-03:29] ya maka sih creator tidak bisa submit kayak gitu, nah aku nggak tau si Yoso itu
+[03:29-03:35] gimana untuk mekanismannya, nah kalau misalkan kata Yoso enaknya gimana,
+[03:35-03:40] terus kan kadang kalau editing nih, nah kalau balik lagi ke produk,
+[03:40-03:48] kalau editing biasanya kan waktu misalnya after kita shoot itu minimal 3 sampai
+[03:48-03:54] seminggu kalau yang standar gitu, tapi itu hari kerja, jadi hari jumat itu kita
+[03:54-03:59] termasuk libur gitu deh kita cuma setengah hari gitu sampai jam 11,
+[03:59-04:06] karena satu minggu kita libur gitu, nah minggu untuk editor ya,
+[04:06-04:13] untuk editor itu minggu itu diliburin kecuali yang emang oh kita ngambilnya
+[04:13-04:19] jadinya freelance gitu, miatnya seperti itu ya, cuman kalau misalkan satu minggu itu beda
+[04:19-04:25] red gitu, kalau misalkan emang kita ada job yang di satu minggu,
+[04:25-04:33] itu rednya berbeda gitu untuk editing ya editor, enak kan mau rasa waktu libur gitu,
+[04:33-04:40] tapi sih nggak tau sih enaknya gimana ya, gitu karena biar manisia biar aja gitu,
+[04:40-04:45] nah pokoknya intinya sih perhitungannya gitu ya, jadi kalau misalkan di production house itu dia
+[04:45-04:54] lebih ke estimasi waktu pengerjaan sama ini lebih aja, kayak misalnya biar production contoh ya,
+[04:54-05:01] kemarin ada yang ngajuin kayak ini namanya to credital,
+[05:01-05:09] nah credital itu dia estimation untuk production, misalnya ini kayak misalkan alatnya berapa,
+[05:09-05:18] semuanya berapa EAB lah ya, nah itu menurut josua meninggangsi total estimasi
+[05:18-05:27] itu integrasi dengan sheet atau bisa di, oh apa namanya bisa dimasukin angkanya di web gitu,
+[05:27-05:32] jadi ketawa nih, oh rednya kan adalah red misalkan videographer,
+[05:32-05:39] bapak kan udah tertera gitu, nanti ada profilnya dari tim gitu kan sama profilnya dari kreator,
+[05:39-05:46] kalau misalkan konten kreator ya gitu, performa nanti ada performa,
+[05:46-05:54] terus ada kualiti akun, kualiti apa namanya konten gitu, karena kan kalau PH kan konten ya,
+[05:54-06:01] udah videonya, kualiti kontennya gimana dia, oh dia full HD atau 4K atau apa gitu kan,
+[06:01-06:06] nah itu gimana nih menurut josua gitu.

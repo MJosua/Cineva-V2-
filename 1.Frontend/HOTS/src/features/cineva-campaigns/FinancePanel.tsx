@@ -5,6 +5,8 @@ import type { Actor } from '../cineva-inquiries/domain';
 import { money } from '../cineva-shared/model';
 import type { CampaignDeliverable, TalentAssignment } from './model';
 import { getDeliveryExecution } from './execution';
+import { assignmentPaymentGate, paymentGateLabels } from './paymentGate';
+import { normalizeMetric } from '../cineva-services/policies';
 import { configureFinance, engagementRate, insightReminder, metricNames, payoutStatus, processPayout,
   readFinance, recordInsight, recordPayout, requestPayout, totalPaid, type InsightMetrics } from './finance';
 
@@ -14,7 +16,7 @@ const statusLabels = { not_requested: 'Belum diajukan', requested: 'Diajukan —
 const metricLabels = { likes: 'Likes', comments: 'Comments', shares: 'Shares', saves: 'Saves', reposts: 'Reposts', views: 'Views' };
 
 export function FinancePanel({ assignment, actor, onChange }: { assignment: TalentAssignment; actor: Actor; onChange: Change }) {
-  const finance = readFinance(assignment), hq = actor.product === 'hq';
+  const finance = readFinance(assignment), hq = actor.product === 'hq', gate = assignmentPaymentGate(assignment);
   const [amounts, setAmounts] = useState(() => ({ feeAmount: finance.feeAmount, marketingAmount: finance.marketingAmount, productBenefitAmount: finance.productBenefitAmount }));
   const [payment, setPayment] = useState(() => ({ id: crypto.randomUUID(), amount: 0, paidAt: todayWIB(), evidence: '' }));
   return <section className="space-y-4 rounded-md border border-border bg-card p-4" data-testid="campaign-finance">
@@ -32,7 +34,11 @@ export function FinancePanel({ assignment, actor, onChange }: { assignment: Tale
       <div className="grid gap-3 sm:grid-cols-3">{(['feeAmount', 'marketingAmount', 'productBenefitAmount'] as const).map(key => <label key={key} className="space-y-1 text-sm">{key === 'feeAmount' ? 'Fee cash Creator (Rp)' : key === 'marketingAmount' ? 'Marketing (Rp)' : 'Benefit non-cash (Rp)'}<Input type="number" min="0" step="1" aria-label={key} value={amounts[key]} onChange={event => { const value = Number(event.target.value); setAmounts(current => ({ ...current, [key]: value })); }}/></label>)}</div>
       <Button variant="outline" onClick={() => onChange(latest => configureFinance(latest, actor, amounts))}>Simpan nominal talent</Button>
     </div>}
-    {actor.product === 'creator' && actor.id === assignment.creatorId && !finance.requested && finance.feeAmount > totalPaid(finance) && <Button onClick={() => onChange(latest => requestPayout(latest, actor, `request-${assignment.id}`))}>Ajukan payout</Button>}
+    {!finance.requested && <div className="space-y-1 rounded-md border border-border p-3 text-sm" data-testid="payment-gate">
+      <p className="font-medium">Syarat pengajuan payout</p>
+      {Object.keys(paymentGateLabels).map(key => <p key={key}>{gate.missing.includes(key) ? '○' : '✓'} {paymentGateLabels[key]}</p>)}
+    </div>}
+    {actor.product === 'creator' && actor.id === assignment.creatorId && !finance.requested && finance.feeAmount > totalPaid(finance) && <Button disabled={!gate.open} title={gate.open ? undefined : 'Lengkapi syarat pengajuan payout lebih dulu.'} onClick={() => onChange(latest => requestPayout(latest, actor, `request-${assignment.id}`))}>Ajukan payout</Button>}
     {hq && finance.requested && payoutStatus(finance) !== 'paid' && <div className="space-y-3 rounded-md border border-border p-3">
       <Button variant="outline" onClick={() => onChange(latest => processPayout(latest, actor))}>Tandai payout diproses</Button>
       <p className="text-sm text-muted-foreground">Diajukan/diproses tidak menambah cash dibayar. Catat nominal, tanggal dan referensi bukti secara eksplisit.</p>
@@ -57,16 +63,21 @@ function InsightEntry({ assignment, deliverable, actor, onChange }: { assignment
   const postedAt = getDeliveryExecution(assignment, deliverable.id).posting?.postedAt;
   const finance = readFinance(assignment), snapshots = finance.insights.filter(item => item.deliverableId === deliverable.id);
   const reminder = insightReminder(postedAt, todayWIB(), snapshots, deliverable.id);
-  const metrics = Object.fromEntries(metricNames.map(key => [key, values[key].trim() === '' ? null : Number(values[key])])) as InsightMetrics;
-  const er = engagementRate(metrics);
+  const normalized = Object.fromEntries(metricNames.map(key => [key, normalizeMetric(values[key], { kind: 'count' })])) as Record<typeof metricNames[number], ReturnType<typeof normalizeMetric>>;
+  const metrics = Object.fromEntries(metricNames.map(key => [key, normalized[key].value])) as InsightMetrics;
+  const unreadable = metricNames.filter(key => normalized[key].status === 'invalid' || normalized[key].status === 'out_of_range');
+  const rewritten = metricNames.filter(key => normalized[key].status === 'normalized');
+  const er = unreadable.length ? null : engagementRate(metrics);
   return <div className="space-y-3 rounded-md border border-border p-3" data-testid="campaign-insight">
     <p className="font-medium">{deliverable.title} · {deliverable.platform}</p>
     <p className="text-sm">{postedAt ? `Posting ${postedAt} · Insight H+7: ${reminder.dueAt}${reminder.due ? ' — perlu diambil' : ''}` : 'Belum diposting — insight belum dapat dicatat.'}</p>
     {postedAt && <>
       <label className="block text-sm">Tanggal pengambilan insight<Input aria-label={`Tanggal insight ${deliverable.title}`} type="date" value={capturedAt} onChange={event => setCapturedAt(event.target.value)}/></label>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{metricNames.map(key => <label key={key} className="text-sm">{metricLabels[key]}<Input aria-label={`${metricLabels[key]} ${deliverable.title}`} type="number" min="0" step="1" value={values[key]} onChange={event => setValues(current => ({ ...current, [key]: event.target.value }))} placeholder="Belum tersedia"/></label>)}</div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{metricNames.map(key => <label key={key} className="text-sm">{metricLabels[key]}<Input aria-label={`${metricLabels[key]} ${deliverable.title}`} type="text" inputMode="decimal" value={values[key]} onChange={event => setValues(current => ({ ...current, [key]: event.target.value }))} placeholder="Belum tersedia"/></label>)}</div>
+      {unreadable.length > 0 && <p role="alert" className="text-sm text-destructive" data-testid="insight-unreadable">Angka tidak terbaca: {unreadable.map(key => metricLabels[key]).join(', ')}. Isi bilangan bulat, boleh memakai pemisah ribuan atau K/M (mis. 1.200 atau 12K).</p>}
+      {rewritten.length > 0 && <p className="text-sm text-muted-foreground" data-testid="insight-normalized">Dinormalisasi otomatis: {rewritten.map(key => `${metricLabels[key]} ${values[key].trim()} → ${normalized[key].value!.toLocaleString('id-ID')}`).join('; ')}.</p>}
       <p className="text-sm">ER berdasarkan views: {er === null ? 'Belum tersedia' : `${er.toFixed(2)}%`}</p>
-      <div className="flex flex-wrap gap-2"><Button onClick={() => onChange(latest => recordInsight(latest, actor, { id: snapshotId, deliverableId: deliverable.id, capturedAt, metrics }))}>Simpan snapshot insight</Button><Button variant="outline" onClick={() => { setSnapshotId(crypto.randomUUID()); setCapturedAt(todayWIB()); }}>Snapshot baru</Button></div>
+      <div className="flex flex-wrap gap-2"><Button disabled={unreadable.length > 0} onClick={() => onChange(latest => recordInsight(latest, actor, { id: snapshotId, deliverableId: deliverable.id, capturedAt, metrics }))}>Simpan snapshot insight</Button><Button variant="outline" onClick={() => { setSnapshotId(crypto.randomUUID()); setCapturedAt(todayWIB()); }}>Snapshot baru</Button></div>
     </>}
     {snapshots.map(item => { const rate = engagementRate(item.metrics); return <div key={item.id} className="space-y-1 border-t border-border pt-2 text-sm"><p>{item.capturedAt} · ER views: {rate === null ? 'Belum tersedia' : `${rate.toFixed(2)}%`}</p><p>{metricNames.map(key => `${metricLabels[key]}: ${item.metrics[key] ?? 'Belum tersedia'}`).join(' · ')}</p></div>; })}
     <p className="text-xs text-muted-foreground">ER = (Likes + Comments + Shares + Saves + Reposts) / Views × 100. Snapshot historis tidak ditimpa; kategori performa belum ditentukan.</p>

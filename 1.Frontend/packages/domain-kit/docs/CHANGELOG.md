@@ -1,3 +1,7 @@
+# 0.2.0-cineva.1 — 2026-11-02
+
+- Synced from Kantor `@hots/domain-kit` 0.2.0: `./policies` (`evaluateGate`, `evaluateCancellation`). Source and tests copied unchanged; no Cineva-only code added. Re-synced 2026-11-02 for the optional cancellation `reason`/`refund` extension.
+
 # 0.1.0-cineva.2 — 2026-10-19
 
 - Promote the reusable package to HOTS frontend packages; retain Cineva workspace snapshot.

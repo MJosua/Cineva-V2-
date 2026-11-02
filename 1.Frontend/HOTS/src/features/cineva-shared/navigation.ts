@@ -6,3 +6,4 @@ export const productNavigation = {
 // Additive composition: shared content engine, vendor navigation remains here.
 productNavigation.hq.unshift({key:'studio',label:'Content Studio',icon:Layers});
 productNavigation.creator.unshift({key:'studio',label:'Content Studio',icon:Layers});
+productNavigation.hq.push({key:'plans',label:'Paket Basic & Pro (mock)',icon:Sparkles});

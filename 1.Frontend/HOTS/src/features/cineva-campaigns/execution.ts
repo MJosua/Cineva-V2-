@@ -1,9 +1,10 @@
 import type { Actor } from '../cineva-inquiries/domain';
+import { approvalLabels, contentApprovalGate, contentApprovalKeys } from '../cineva-services/policies.ts';
 import type { CampaignProduct, TalentAssignment } from './model';
 
 export type QualityStatus = 'not_submitted' | 'submitted' | 'revision_requested' | 'approved';
 export interface DraftSubmission { version: number; url: string; note: string; submittedAt: string }
-export interface QualityReview { draftVersion: number; decision: 'revision_requested' | 'approved'; note: string; reviewedAt: string; actor: string }
+export interface QualityReview { draftVersion: number; decision: 'revision_requested' | 'approved'; note: string; reviewedAt: string; actor: string; approvals?: string[] }
 export interface DeliveryExecution {
   status: QualityStatus; drafts: DraftSubmission[]; reviews: QualityReview[];
   posting?: { url: string; postedAt: string };
@@ -82,8 +83,9 @@ export function submitDraft(assignment: TalentAssignment, actor: Actor, delivera
   const draft = { version: (delivery.drafts.at(-1)?.version ?? 0) + 1, url: validHttpUrl(input.url), note: input.note.trim(), submittedAt: timestamp(at) };
   return saveDelivery(assignment, current, deliverableId, { ...delivery, status: 'submitted', drafts: [...delivery.drafts, draft] });
 }
+/** Persetujuan hasil kerja dua lapis (client N27): `approvals` harus memuat `client` (pemegang utama) dan `owner` (kesepakatan owner Cineva). HQ mencatat keduanya; aplikasi belum punya akun client. */
 export function reviewDraft(assignment: TalentAssignment, actor: Actor, deliverableId: string,
-  input: { decision: 'revision_requested' | 'approved'; note: string; draftVersion: number }, expectedRevision: number, at = new Date().toISOString()): TalentAssignment {
+  input: { decision: 'revision_requested' | 'approved'; note: string; draftVersion: number; approvals?: string[] }, expectedRevision: number, at = new Date().toISOString()): TalentAssignment {
   assertOwner(assignment, actor, 'hq');
   const current = currentExecution(assignment, expectedRevision), delivery = getDeliveryExecution(assignment, deliverableId), draft = delivery.drafts.at(-1);
   if (delivery.status !== 'submitted' || !draft || draft.version !== input.draftVersion) throw new Error('Draft QC berubah atau sudah diputuskan. Muat draft terbaru.');
@@ -91,8 +93,14 @@ export function reviewDraft(assignment: TalentAssignment, actor: Actor, delivera
     throw new Error('Keputusan QC valid dan alasan revisi wajib diisi (maksimal 2.000 karakter).');
   const reviewedAt = timestamp(at);
   if (Date.parse(reviewedAt) < Date.parse(draft.submittedAt)) throw new Error('Waktu QC tidak boleh mendahului pengiriman draft.');
+  let approvals: string[] | undefined;
+  if (input.decision === 'approved') {
+    const gate = contentApprovalGate(input.approvals ?? []);
+    if (!gate.open) throw new Error(`Persetujuan belum lengkap: ${gate.missing.map(key => approvalLabels[key] ?? key).join(' dan ')}.`);
+    approvals = [...contentApprovalKeys];
+  }
   return saveDelivery(assignment, current, deliverableId, { ...delivery, status: input.decision, reviews: [...delivery.reviews,
-    { draftVersion: draft.version, decision: input.decision, note: input.note.trim(), reviewedAt, actor: actor.id }] });
+    { draftVersion: draft.version, decision: input.decision, note: input.note.trim(), reviewedAt, actor: actor.id, ...(approvals ? { approvals } : {}) }] });
 }
 export function recordPosting(assignment: TalentAssignment, actor: Actor, deliverableId: string,
   input: { url: string; postedAt: string }, expectedRevision: number): TalentAssignment {
@@ -137,7 +145,7 @@ export function assertExecutionMutation(previous: TalentAssignment, next: Talent
       replay = submitDraft(previous, actor, id, { url: draft.url, note: draft.note }, before.revision, draft.submittedAt);
     } else if (delivery.reviews.length === old.reviews.length + 1) {
       const review = delivery.reviews.at(-1)!;
-      replay = reviewDraft(previous, actor, id, { decision: review.decision, note: review.note, draftVersion: review.draftVersion }, before.revision, review.reviewedAt);
+      replay = reviewDraft(previous, actor, id, { decision: review.decision, note: review.note, draftVersion: review.draftVersion, approvals: review.approvals }, before.revision, review.reviewedAt);
     } else if (!old.posting && delivery.posting) replay = recordPosting(previous, actor, id, delivery.posting, before.revision);
   }
   if (!replay || !same(replay.execution, after)) throw new Error('Perubahan execution melewati alur produk, draft, QC atau posting yang diizinkan.');

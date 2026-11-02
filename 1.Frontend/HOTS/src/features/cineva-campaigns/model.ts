@@ -1,6 +1,8 @@
 import type { Actor } from '../cineva-inquiries/domain';
 import type { AssignmentExecution } from './execution';
 import type { AssignmentFinance } from './finance';
+import { assertStagePlan, type StagePlan } from './stages';
+import type { AssignmentRating, RatingCriterion } from './rating';
 
 /** Synthetic operational view models, not physical tables or new ticket engines. */
 export interface CampaignMilestone { id: string; title: string; deadline: string }
@@ -12,6 +14,8 @@ export interface TalentAssignment {
   id: string; batchId: string; creatorId: string; creatorName: string;
   socialProfiles: SocialProfileSnapshot[]; deliverables: CampaignDeliverable[];
   execution?: AssignmentExecution; finance?: AssignmentFinance;
+  /** Riwayat penilaian putaran demi putaran, hanya HQ; lihat rating.ts. */
+  ratings?: AssignmentRating[];
 }
 export interface Campaign {
   revision?: number;
@@ -19,6 +23,10 @@ export interface Campaign {
   objective: string; audience: string; messaging: string;
   milestones: CampaignMilestone[]; batches: CampaignBatch[];
   assignments: TalentAssignment[]; products: CampaignProduct[];
+  /** Opsional dan additive: kalender tahap dari template client (B2). Campaign lama tanpa field ini tetap valid. */
+  stagePlan?: StagePlan;
+  /** Butir penilaian yang disusun HQ per campaign (jawaban N4). */
+  ratingCriteria?: RatingCriterion[];
 }
 export const isHQOwner = (actor: Actor, campaign: Campaign) => actor.product === 'hq' && actor.id === campaign.ownerId;
 export function validDate(value: string) {
@@ -43,4 +51,7 @@ export function validateCampaign(row: Campaign) {
   }
   if (!unique(row.products.map(item => item.id)) || row.products.some(item => !item.name.trim() || !Number.isSafeInteger(item.referenceValue) || item.referenceValue < 0))
     throw new Error('Produk campaign tidak valid.');
+  if (row.stagePlan) assertStagePlan(row.stagePlan);
+  if (row.ratingCriteria && (!unique(row.ratingCriteria.map(item => item.id)) || row.ratingCriteria.some(item => !item.label.trim())))
+    throw new Error('Butir penilaian tidak valid.');
 }

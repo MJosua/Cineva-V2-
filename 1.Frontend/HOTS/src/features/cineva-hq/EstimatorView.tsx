@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { HotsForm } from '../cineva-shared/HotsForm';
 import { JobEditor } from '../cineva-shared/JobEditor';
+import { CancellationSimulator, KolEstimateCard } from '../cineva-services/PolicySimulators';
 import { estimateBudget, money, type ProjectType } from '../cineva-shared/model';
 export function EstimatorView() {
     const [result, setResult] = useState<ReturnType<typeof estimateBudget> | null>(null), [type, setType] = useState<ProjectType>('Content Shoot'), [error, setError] = useState(''), [open, setOpen] = useState(false);
@@ -14,5 +15,5 @@ export function EstimatorView() {
     }
     catch (failure) {
         setError((failure as Error).message);
-    } }}/>{error && <p role="alert" className="text-destructive">{error}</p>}</CardContent></Card><Card><CardHeader><CardTitle>Rincian penawaran</CardTitle></CardHeader><CardContent>{result ? <div className="space-y-4" data-testid="estimate-result"><p>Base {money(result.base)}</p><p>Crew {money(result.crew)}</p><p>Gear {money(result.gear)}</p><p className="border-t border-border pt-4 text-2xl font-semibold">{money(result.total)}</p><Button onClick={() => setOpen(true)}>Gunakan untuk project</Button></div> : <p className="text-muted-foreground">Isi kebutuhan shoot untuk melihat rincian.</p>}</CardContent></Card>{open && result && <JobEditor open draft={{ type, fee: result.total }} onClose={() => setOpen(false)}/>}</div>;
+    } }}/>{error && <p role="alert" className="text-destructive">{error}</p>}</CardContent></Card><Card><CardHeader><CardTitle>Rincian penawaran</CardTitle></CardHeader><CardContent>{result ? <div className="space-y-4" data-testid="estimate-result"><p>Base {money(result.base)}</p><p>Crew {money(result.crew)}</p><p>Gear {money(result.gear)}</p><p className="border-t border-border pt-4 text-2xl font-semibold">{money(result.total)}</p><Button onClick={() => setOpen(true)}>Gunakan untuk project</Button></div> : <p className="text-muted-foreground">Isi kebutuhan shoot untuk melihat rincian.</p>}</CardContent></Card><div className="grid gap-5 lg:col-span-2 lg:grid-cols-2"><KolEstimateCard/><CancellationSimulator/></div>{open && result && <JobEditor open draft={{ type, fee: result.total }} onClose={() => setOpen(false)}/>}</div>;
 }

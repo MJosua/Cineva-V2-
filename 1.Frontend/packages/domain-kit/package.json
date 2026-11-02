@@ -1,6 +1,6 @@
 {
   "name": "@hots/domain-kit",
-  "version": "0.1.0-cineva.2",
+  "version": "0.2.0-cineva.1",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
@@ -13,9 +13,10 @@
     "./commands": "./src/commands.ts",
     "./events": "./src/events.ts",
     "./configuration": "./src/configuration.ts",
-    "./projections": "./src/projections.ts"
+    "./projections": "./src/projections.ts",
+    "./policies": "./src/policies.ts"
   },
   "scripts": {
-    "test": "node --test test/domain.test.ts test/runtime.test.ts"
+    "test": "node --test test/domain.test.ts test/runtime.test.ts test/policies.test.ts"
   }
 }

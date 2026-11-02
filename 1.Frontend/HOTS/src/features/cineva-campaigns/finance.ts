@@ -1,6 +1,7 @@
 import type { Actor } from '../cineva-inquiries/domain';
 import type { TalentAssignment } from './model';
-import { getDeliveryExecution } from './execution';
+import { getDeliveryExecution } from './execution.ts';
+import { assignmentPaymentGate, paymentGateLabels } from './paymentGate.ts';
 
 export interface CreatorPayment { id: string; amount: number; paidAt: string; evidence: string }
 export const metricNames = ['likes', 'comments', 'shares', 'saves', 'reposts', 'views'] as const;
@@ -41,6 +42,8 @@ export function requestPayout(assignment: TalentAssignment, actor: Actor, id: st
   const finance = readFinance(assignment);
   if (!id.trim() || finance.feeAmount <= totalPaid(finance)) throw new Error('Tidak ada sisa fee untuk diajukan.');
   if (finance.requested) return assignment;
+  const gate = assignmentPaymentGate(assignment);
+  if (!gate.open) throw new Error(`Syarat payout belum lengkap: ${gate.missing.map(key => paymentGateLabels[key] ?? key).join('; ')}.`);
   return update(assignment, { ...finance, requested: { id, requestedBy: actor.id } });
 }
 export function processPayout(assignment: TalentAssignment, actor: Actor) {

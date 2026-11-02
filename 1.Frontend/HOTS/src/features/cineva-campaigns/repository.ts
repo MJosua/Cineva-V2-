@@ -5,6 +5,7 @@ import { isHQOwner, validateCampaign, type Campaign, type TalentAssignment } fro
 import { campaignSeed } from './seed';
 import { assertExecutionMutation } from './execution';
 import { assertFinanceMutation } from './finance';
+import { assertRatingMutation } from './rating';
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 export function createCampaignRepository(storage: StoragePort) {
   const key = 'campaigns', listeners = new Set<() => void>();
@@ -22,7 +23,7 @@ export function createCampaignRepository(storage: StoragePort) {
   };
   const visible = (row: Campaign, actor: Actor) => isHQOwner(actor, row) || actor.product === 'creator' && row.assignments.some(item => item.creatorId === actor.id);
   const assertNewAssignments = (assignments: TalentAssignment[]) => {
-    if (assignments.some(item => item.execution !== undefined || item.finance !== undefined))
+    if (assignments.some(item => item.execution !== undefined || item.finance !== undefined || item.ratings !== undefined))
       throw new Error('Assignment baru harus tanpa progress atau ledger; gunakan tindakan operasional setelah dibuat.');
   };
   const project = (row: Campaign, actor: Actor) => {
@@ -30,6 +31,7 @@ export function createCampaignRepository(storage: StoragePort) {
     if (actor.product === 'creator') {
       copy.assignments = copy.assignments.filter(item => item.creatorId === actor.id).map(item => {
         if (item.finance) delete (item.finance as Partial<typeof item.finance>).marketingAmount;
+        delete item.ratings;
         return item;
       });
       const ownBatches = new Set(copy.assignments.map(item => item.batchId));
@@ -72,6 +74,7 @@ export function createCampaignRepository(storage: StoragePort) {
       }
       assertExecutionMutation(assignment, next, actor, campaign.products);
       assertFinanceMutation(assignment, next, actor);
+      assertRatingMutation(assignment, next, actor, campaign.ratingCriteria ?? []);
       write(rows.map(item => item.id === id ? { ...item, revision: (item.revision ?? 0) + 1, assignments: item.assignments.map(current => current.id === assignmentId ? clone(next) : current) } : item));
     },
   };

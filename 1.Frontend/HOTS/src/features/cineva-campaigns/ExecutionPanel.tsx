@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Actor } from '../cineva-inquiries/domain';
 import type { CampaignProduct, TalentAssignment } from './model';
+import { approvalLabels, contentApprovalGate, contentApprovalKeys } from '../cineva-services/policies';
 import { chooseProduct, getDeliveryExecution, progressFulfillment, readExecution, recordPosting, reviewDraft, submitDraft } from './execution';
 
 interface ExecutionProps {
@@ -33,7 +34,8 @@ function ProductProgress({ assignment, products, actor, onChange }: ExecutionPro
 
 function DeliverableProgress({ assignment, actor, onChange, deliverableId }: Omit<ExecutionProps, 'products'> & { deliverableId: string }) {
   const [draftUrl, setDraftUrl] = useState(''), [draftNote, setDraftNote] = useState(''), [reviewNote, setReviewNote] = useState('');
-  const [postUrl, setPostUrl] = useState(''), [postedAt, setPostedAt] = useState('');
+  const [postUrl, setPostUrl] = useState(''), [postedAt, setPostedAt] = useState(''), [approvals, setApprovals] = useState<string[]>([]);
+  const approvalGate = contentApprovalGate(approvals);
   const target = assignment.deliverables.find(item => item.id === deliverableId)!;
   const current = readExecution(assignment), delivery = getDeliveryExecution(assignment, deliverableId), draft = delivery.drafts.at(-1);
   const owner = target.outputOwner ?? (target.postingRequired ? 'creator' : 'brand');
@@ -51,10 +53,15 @@ function DeliverableProgress({ assignment, actor, onChange, deliverableId }: Omi
     </form>}
     {actor.product === 'hq' && delivery.status === 'submitted' && draft && <div className="space-y-2">
       <label className="block space-y-1 text-sm">Catatan QC<Textarea aria-label={`Catatan QC ${target.title}`} value={reviewNote} onChange={event => setReviewNote(event.target.value)} maxLength={2000}/></label>
+      <fieldset className="space-y-1 text-sm"><legend className="font-medium">Persetujuan hasil kerja (dua lapis)</legend>
+        {contentApprovalKeys.map(key => <label key={key} className="flex items-center gap-2"><input type="checkbox" aria-label={`${approvalLabels[key]} ${target.title}`} checked={approvals.includes(key)}
+          onChange={event => setApprovals(list => event.target.checked ? [...list, key] : list.filter(item => item !== key))}/>{approvalLabels[key]}{key === 'client' ? ' (pemegang utama)' : ''}</label>)}
+        {!approvalGate.open && <p className="text-xs text-muted-foreground">Setujui hanya setelah {approvalGate.missing.map(key => approvalLabels[key]).join(' dan ')} diterima. HQ mencatat keduanya.</p>}
+      </fieldset>
       <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => onChange(latest => reviewDraft(latest, actor, deliverableId,
         { decision: 'revision_requested', note: reviewNote, draftVersion: draft.version }, current.revision))}>Minta revisi {target.title}</Button>
-        <Button onClick={() => onChange(latest => reviewDraft(latest, actor, deliverableId,
-          { decision: 'approved', note: reviewNote, draftVersion: draft.version }, current.revision))}>Setujui QC {target.title}</Button></div>
+        <Button disabled={!approvalGate.open} onClick={() => onChange(latest => reviewDraft(latest, actor, deliverableId,
+          { decision: 'approved', note: reviewNote, draftVersion: draft.version, approvals }, current.revision))}>Setujui QC {target.title}</Button></div>
     </div>}
     {actor.product === 'creator' && target.postingRequired && owner === 'creator' && delivery.status === 'approved' && !delivery.posting && <form className="space-y-2" onSubmit={event => {
       event.preventDefault(); onChange(latest => recordPosting(latest, actor, deliverableId, { url: postUrl, postedAt }, current.revision));

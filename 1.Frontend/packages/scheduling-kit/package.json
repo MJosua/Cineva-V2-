@@ -1,6 +1,6 @@
 {
   "name": "@hots/scheduling-kit",
-  "version": "0.1.0-cineva.2",
+  "version": "0.3.0-cineva.1",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
@@ -10,6 +10,6 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "node --test test/scheduling.test.ts"
+    "test": "node --test test/scheduling.test.ts test/dates.test.ts test/workdays.test.ts"
   }
 }

@@ -5,3 +5,4 @@ export * from './commands.ts';
 export * from './events.ts';
 export * from './configuration.ts';
 export * from './projections.ts';
+export * from './policies.ts';

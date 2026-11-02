@@ -44,6 +44,7 @@
     "server": "node index.js",
     "nodemon": "nodemon --exec \"node --max-old-space-size=6144\" index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "test:cineva": "node --test app/modules/cineva-campaigns/test/service.test.mjs",
     "build": "node build.js"
   },
   "author": "",

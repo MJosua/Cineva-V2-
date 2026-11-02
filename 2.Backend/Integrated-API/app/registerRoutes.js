@@ -5,6 +5,7 @@ const engineAuth = require('../middleware/engineAuth');
 const { createRateLimiter } = require('../middleware/rateLimit');
 const { createTenantRouter } = require('./modules/tenant-platform/routes');
 const { createContentRouter } = require('./modules/content-studio/routes');
+const { createCampaignRouter } = require('./modules/cineva-campaigns/routes');
 
 const {
   authRouter,
@@ -64,8 +65,9 @@ const {
   hotsContent
 } = require('../routers');
 
-function registerRoutes(App, { tenantRuntime = null, tenantLogger, contentRuntime = null, contentLogger = tenantLogger } = {}) {
+function registerRoutes(App, { tenantRuntime = null, tenantLogger, contentRuntime = null, contentLogger = tenantLogger, campaignRuntime = null, campaignLogger = tenantLogger } = {}) {
   const minimalRoutesMode = process.env.LOCAL_MINIMAL_ROUTES === '1';
+  App.use('/api/cineva/v1', createCampaignRouter({Router: express.Router, runtime: campaignRuntime, logger: campaignLogger}));
   App.use('/api/tenant/v1', createTenantRouter({Router: express.Router, runtime: tenantRuntime, logger: tenantLogger}));
   App.use('/api/content/v1', createContentRouter({Router: express.Router, runtime: contentRuntime, logger: contentLogger}));
   const useIfRouter = (basePath, router) => {

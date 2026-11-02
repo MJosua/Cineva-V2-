@@ -26,6 +26,7 @@ const { createServer, isHttpsServerEnabled } = require('./bootstrap/ssl');
 const { createApp } = require('./app/createApp');
 const { registerRoutes } = require('./app/registerRoutes');
 const { loadContentRuntime } = require('./app/modules/content-studio/bootstrap');
+const { loadCampaignRuntime } = require('./app/modules/cineva-campaigns/bootstrap');
 const { runDatabaseConnectivityChecks, startEngine, startAutomations } = require('./jobs/startup');
 const { startServer } = require('./server/listen');
 
@@ -36,7 +37,9 @@ async function main() {
 
   const contentLogger = global.log.create('content');
   const contentRuntime = await loadContentRuntime({pool: dbHots, logger: contentLogger});
-  registerRoutes(App, { tenantLogger: global.log.create('tenant'), contentRuntime, contentLogger });
+  const campaignLogger = global.log.create('cineva');
+  const campaignRuntime = await loadCampaignRuntime({pool: dbHots, logger: campaignLogger});
+  registerRoutes(App, { tenantLogger: global.log.create('tenant'), contentRuntime, contentLogger, campaignRuntime, campaignLogger });
 
   const server = createServer(App, production, __dirname);
   console.log('Server status is Production?', production);

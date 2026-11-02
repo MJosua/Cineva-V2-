@@ -2,7 +2,8 @@ import { ReferenceAccounts } from '../cineva-reference/ReferenceAccounts';
 import { StudioPreview } from '../content-studio/Studio';
 import { useMemo, useState } from 'react';
 import { ServiceDesk } from '../cineva-inquiries/ServiceDesk';
-import { CampaignDesk } from '../cineva-campaigns/CampaignDesk';
+import { CampaignSourceDesk } from '../cineva-campaigns/CampaignSourceDesk';
+import { PlansMock } from '../cineva-hq/PlansMock';
 import { ExecutionPanel } from '../cineva-campaigns/ExecutionPanel';
 import { FinancePanel } from '../cineva-campaigns/FinancePanel';
 import type { Actor } from '../cineva-inquiries/domain';
@@ -72,7 +73,8 @@ function WorkspaceScreen({ product, screen, basePath, actor, onIdentityChange }:
  {['projects', 'jobs', 'archive'].includes(screen) && <JobCards archived={screen === 'archive'} onSelect={job => setSelected(job.id)}/>}
  {screen === 'clients' && product === 'hq' && <ClientsView />}{screen === 'estimator' && product === 'hq' && <EstimatorView />}
  {['services', 'support'].includes(screen) && <ServiceDesk actor={actor} onIdentityChange={onIdentityChange} supportOnly={screen === 'support'}/>}
- {screen === 'campaigns' && <CampaignDesk actor={actor} onIdentityChange={onIdentityChange} renderExecution={props => <ExecutionPanel {...props}/>} renderFinance={props => <FinancePanel {...props}/>}/>}
+ {screen === 'plans' && product === 'hq' && <PlansMock/>}
+ {screen === 'campaigns' && <CampaignSourceDesk actor={actor} onIdentityChange={onIdentityChange} renderExecution={props => <ExecutionPanel {...props}/>} renderFinance={props => <FinancePanel {...props}/>}/>}
  {screen === 'calendar' && <CalendarView actorId={actor.id} onSelect={job => setSelected(job.id)}/>}{screen === 'payments' && <PaymentsView onSelect={job => setSelected(job.id)}/>}
  {screen === 'reminders' && product === 'creator' && <RemindersView onSelect={job => setSelected(job.id)}/>}{screen === 'assistant' && product === 'creator' && <AssistantView />}{screen === 'subscription' && product === 'creator' && <SubscriptionView />}
  {!title && <Link className="text-primary underline" to={`${basePath}/${product}/dashboard`}>Kembali ke dashboard</Link>}
