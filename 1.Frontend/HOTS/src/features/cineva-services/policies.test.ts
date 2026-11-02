@@ -53,3 +53,20 @@ test('Metric normalization handles comma decimals, percent signs and K/M, and fl
   assert.equal(normalizeMetric('5K', percent).status, 'invalid');
   assert.equal(normalizeMetric('150%', { kind: 'percent', bounds: { min: 0, max: 200 } }).status, 'normalized');
 });
+
+test('Batch J: brand gets both options, proof is mandatory, settlement within 7 days, duplicates by username/WhatsApp', async () => {
+  const { brandCancellationOptions, assertCancellationProof, cancellationSettlementDue, findDuplicateRegistrations } = await import('./policies.ts');
+  const options = brandCancellationOptions({ deposit: 3_000_000, totalDeal: 10_000_000 });
+  assert.deepEqual([options.forfeitDeposit.total, options.penalty15.total, options.penalty15.depositForfeited], [3_000_000, 1_500_000, 0]);
+  assert.throws(() => assertCancellationProof('Sakit', undefined), /Lampiran/);
+  assert.throws(() => assertCancellationProof(' ', { kind: 'text', text: 'x' }), /Alasan/);
+  assert.equal(assertCancellationProof(' Sakit ', { kind: 'jpeg', fileName: 'surat.jpg', sizeBytes: 10 }).reason, 'Sakit');
+  assert.equal(cancellationSettlementDue('2026-11-28'), '2026-12-05');
+  const dup = findDuplicateRegistrations([
+    { id: 'a', name: 'Rina', whatsapp: '0812-3456-7890', accounts: [{ platform: 'IG', username: '@Rina.x' }] },
+    { id: 'b', name: 'Rina S', whatsapp: '+62 812 3456 7890' },
+    { id: 'c', name: 'Budi', accounts: [{ platform: 'ig', username: 'rina.x' }] },
+    { id: 'd', name: 'rina' },
+  ]);
+  assert.deepEqual(dup.map(m => [m.ids.join(''), m.by.join(','), m.confirmed]), [['ab', 'whatsapp', true], ['ac', 'username', true], ['ad', 'name', false]]);
+});

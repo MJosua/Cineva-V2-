@@ -1,6 +1,6 @@
 # cineva-frontend source map
 
-Generated: 2026-10-29T01:28:11.450Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
+Generated: 2026-11-02T13:09:46.388Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
 
 | File | Lines | Imports | Route definitions |
 |---|---:|---:|---|
@@ -255,21 +255,37 @@ Generated: 2026-10-29T01:28:11.450Z. Regex-based inventory; imports/route string
 | [src/controllers/ticketController.js](src/controllers/ticketController.js) | 687 | 3 |  |
 | [src/data/inventoryMockData.ts](src/data/inventoryMockData.ts) | 85 | 0 |  |
 | [src/features/cineva-campaigns/AssignmentEditor.tsx](src/features/cineva-campaigns/AssignmentEditor.tsx) | 21 | 3 |  |
-| [src/features/cineva-campaigns/CampaignDesk.tsx](src/features/cineva-campaigns/CampaignDesk.tsx) | 53 | 10 |  |
+| [src/features/cineva-campaigns/CampaignDesk.tsx](src/features/cineva-campaigns/CampaignDesk.tsx) | 63 | 12 |  |
 | [src/features/cineva-campaigns/CampaignEditor.tsx](src/features/cineva-campaigns/CampaignEditor.tsx) | 18 | 3 |  |
 | [src/features/cineva-campaigns/CampaignSetup.tsx](src/features/cineva-campaigns/CampaignSetup.tsx) | 19 | 3 |  |
-| [src/features/cineva-campaigns/ExecutionPanel.tsx](src/features/cineva-campaigns/ExecutionPanel.tsx) | 78 | 7 |  |
-| [src/features/cineva-campaigns/FinancePanel.tsx](src/features/cineva-campaigns/FinancePanel.tsx) | 75 | 8 |  |
-| [src/features/cineva-campaigns/execution.ts](src/features/cineva-campaigns/execution.ts) | 145 | 2 |  |
-| [src/features/cineva-campaigns/finance.ts](src/features/cineva-campaigns/finance.ts) | 123 | 3 |  |
-| [src/features/cineva-campaigns/model.ts](src/features/cineva-campaigns/model.ts) | 47 | 3 |  |
-| [src/features/cineva-campaigns/repository.ts](src/features/cineva-campaigns/repository.ts) | 81 | 7 |  |
+| [src/features/cineva-campaigns/CampaignSourceDesk.tsx](src/features/cineva-campaigns/CampaignSourceDesk.tsx) | 34 | 7 |  |
+| [src/features/cineva-campaigns/ExecutionPanel.tsx](src/features/cineva-campaigns/ExecutionPanel.tsx) | 85 | 8 |  |
+| [src/features/cineva-campaigns/FinancePanel.tsx](src/features/cineva-campaigns/FinancePanel.tsx) | 86 | 10 |  |
+| [src/features/cineva-campaigns/RatingPanel.tsx](src/features/cineva-campaigns/RatingPanel.tsx) | 59 | 7 |  |
+| [src/features/cineva-campaigns/StagePlanPanel.tsx](src/features/cineva-campaigns/StagePlanPanel.tsx) | 78 | 7 |  |
+| [src/features/cineva-campaigns/apiMapping.ts](src/features/cineva-campaigns/apiMapping.ts) | 160 | 3 |  |
+| [src/features/cineva-campaigns/apiRepository.test.ts](src/features/cineva-campaigns/apiRepository.test.ts) | 114 | 8 |  |
+| [src/features/cineva-campaigns/apiRepository.ts](src/features/cineva-campaigns/apiRepository.ts) | 110 | 3 |  |
+| [src/features/cineva-campaigns/execution.test.ts](src/features/cineva-campaigns/execution.test.ts) | 34 | 4 |  |
+| [src/features/cineva-campaigns/execution.ts](src/features/cineva-campaigns/execution.ts) | 153 | 3 |  |
+| [src/features/cineva-campaigns/finance.ts](src/features/cineva-campaigns/finance.ts) | 126 | 4 |  |
+| [src/features/cineva-campaigns/model.ts](src/features/cineva-campaigns/model.ts) | 58 | 5 |  |
+| [src/features/cineva-campaigns/paymentGate.test.ts](src/features/cineva-campaigns/paymentGate.test.ts) | 31 | 4 |  |
+| [src/features/cineva-campaigns/paymentGate.ts](src/features/cineva-campaigns/paymentGate.ts) | 26 | 2 |  |
+| [src/features/cineva-campaigns/rating.test.ts](src/features/cineva-campaigns/rating.test.ts) | 46 | 4 |  |
+| [src/features/cineva-campaigns/rating.ts](src/features/cineva-campaigns/rating.ts) | 57 | 2 |  |
+| [src/features/cineva-campaigns/repository.ts](src/features/cineva-campaigns/repository.ts) | 84 | 8 |  |
 | [src/features/cineva-campaigns/seed.ts](src/features/cineva-campaigns/seed.ts) | 16 | 1 |  |
+| [src/features/cineva-campaigns/stages.test.ts](src/features/cineva-campaigns/stages.test.ts) | 88 | 4 |  |
+| [src/features/cineva-campaigns/stages.ts](src/features/cineva-campaigns/stages.ts) | 129 | 2 |  |
 | [src/features/cineva-hq/BookingConfirmation.tsx](src/features/cineva-hq/BookingConfirmation.tsx) | 24 | 3 |  |
 | [src/features/cineva-hq/ClientsView.tsx](src/features/cineva-hq/ClientsView.tsx) | 19 | 7 |  |
-| [src/features/cineva-hq/EstimatorView.tsx](src/features/cineva-hq/EstimatorView.tsx) | 19 | 6 |  |
+| [src/features/cineva-hq/EstimatorView.tsx](src/features/cineva-hq/EstimatorView.tsx) | 20 | 7 |  |
+| [src/features/cineva-hq/PlansMock.tsx](src/features/cineva-hq/PlansMock.tsx) | 49 | 3 |  |
 | [src/features/cineva-hq/ResourceScheduler.tsx](src/features/cineva-hq/ResourceScheduler.tsx) | 51 | 9 |  |
 | [src/features/cineva-hq/booking.ts](src/features/cineva-hq/booking.ts) | 43 | 1 |  |
+| [src/features/cineva-hq/crewEstimator.test.ts](src/features/cineva-hq/crewEstimator.test.ts) | 44 | 4 |  |
+| [src/features/cineva-hq/crewEstimator.ts](src/features/cineva-hq/crewEstimator.ts) | 53 | 1 |  |
 | [src/features/cineva-inquiries/InquiryDetail.tsx](src/features/cineva-inquiries/InquiryDetail.tsx) | 26 | 7 |  |
 | [src/features/cineva-inquiries/QuoteNegotiation.tsx](src/features/cineva-inquiries/QuoteNegotiation.tsx) | 41 | 8 |  |
 | [src/features/cineva-inquiries/ServiceDesk.tsx](src/features/cineva-inquiries/ServiceDesk.tsx) | 39 | 9 |  |
@@ -291,15 +307,20 @@ Generated: 2026-10-29T01:28:11.450Z. Regex-based inventory; imports/route string
 | [src/features/cineva-reference/ReferenceSummary.tsx](src/features/cineva-reference/ReferenceSummary.tsx) | 13 | 4 |  |
 | [src/features/cineva-reference/liveSource.ts](src/features/cineva-reference/liveSource.ts) | 11 | 0 |  |
 | [src/features/cineva-reference/profileMapping.ts](src/features/cineva-reference/profileMapping.ts) | 24 | 1 |  |
+| [src/features/cineva-services/PolicySimulators.tsx](src/features/cineva-services/PolicySimulators.tsx) | 80 | 5 |  |
 | [src/features/cineva-services/QuoteBreakdown.tsx](src/features/cineva-services/QuoteBreakdown.tsx) | 10 | 2 |  |
 | [src/features/cineva-services/RateCardEditor.tsx](src/features/cineva-services/RateCardEditor.tsx) | 11 | 2 |  |
 | [src/features/cineva-services/ServiceBriefForm.tsx](src/features/cineva-services/ServiceBriefForm.tsx) | 28 | 9 |  |
 | [src/features/cineva-services/ServiceWorkflow.tsx](src/features/cineva-services/ServiceWorkflow.tsx) | 40 | 4 |  |
 | [src/features/cineva-services/catalog.ts](src/features/cineva-services/catalog.ts) | 44 | 2 |  |
+| [src/features/cineva-services/policies.test.ts](src/features/cineva-services/policies.test.ts) | 73 | 3 |  |
+| [src/features/cineva-services/policies.ts](src/features/cineva-services/policies.ts) | 165 | 1 |  |
 | [src/features/cineva-services/pricing.ts](src/features/cineva-services/pricing.ts) | 19 | 2 |  |
+| [src/features/cineva-services/rules.test.ts](src/features/cineva-services/rules.test.ts) | 74 | 3 |  |
+| [src/features/cineva-services/rules.ts](src/features/cineva-services/rules.ts) | 134 | 1 |  |
 | [src/features/cineva-services/workflow.ts](src/features/cineva-services/workflow.ts) | 72 | 2 |  |
 | [src/features/cineva-shared/CalendarView.tsx](src/features/cineva-shared/CalendarView.tsx) | 20 | 8 |  |
-| [src/features/cineva-shared/CinevaProgram.tsx](src/features/cineva-shared/CinevaProgram.tsx) | 83 | 27 |  |
+| [src/features/cineva-shared/CinevaProgram.tsx](src/features/cineva-shared/CinevaProgram.tsx) | 85 | 28 |  |
 | [src/features/cineva-shared/CinevaVendorTheme.tsx](src/features/cineva-shared/CinevaVendorTheme.tsx) | 18 | 1 |  |
 | [src/features/cineva-shared/HotsForm.tsx](src/features/cineva-shared/HotsForm.tsx) | 28 | 4 |  |
 | [src/features/cineva-shared/JobCards.tsx](src/features/cineva-shared/JobCards.tsx) | 30 | 10 |  |
@@ -311,7 +332,7 @@ Generated: 2026-10-29T01:28:11.450Z. Regex-based inventory; imports/route string
 | [src/features/cineva-shared/assistant.ts](src/features/cineva-shared/assistant.ts) | 25 | 1 |  |
 | [src/features/cineva-shared/dummyRepository.ts](src/features/cineva-shared/dummyRepository.ts) | 35 | 2 |  |
 | [src/features/cineva-shared/model.ts](src/features/cineva-shared/model.ts) | 106 | 1 |  |
-| [src/features/cineva-shared/navigation.ts](src/features/cineva-shared/navigation.ts) | 9 | 1 |  |
+| [src/features/cineva-shared/navigation.ts](src/features/cineva-shared/navigation.ts) | 10 | 1 |  |
 | [src/features/cineva-shared/scheduling.ts](src/features/cineva-shared/scheduling.ts) | 31 | 2 |  |
 | [src/features/cineva-support/ConversationPanel.tsx](src/features/cineva-support/ConversationPanel.tsx) | 31 | 7 |  |
 | [src/features/cineva-support/SupportQueue.tsx](src/features/cineva-support/SupportQueue.tsx) | 26 | 5 |  |

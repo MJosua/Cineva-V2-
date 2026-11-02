@@ -73,3 +73,15 @@ test('Templates are validated and dates are checked', () => {
   assert.throws(() => addDays('2026-02-30', 1), /valid/);
   assert.throws(() => buildStageCalendar(reguler, '2026-13-01', rules), /tidak valid/);
 });
+
+test('Batch J: stage actions close after their window; only PIC with client approval reopens', async () => {
+  const { stageWindowState } = await import('./stages.ts');
+  const calendar = [{ key: 'draft', label: 'Storyline + draft', start: '2026-11-01', end: '2026-11-09' }];
+  assert.deepEqual(stageWindowState(calendar, 'draft', '2026-11-09'), { open: true, via: 'timeline' });
+  assert.deepEqual(stageWindowState(calendar, 'draft', '2026-10-31'), { open: false, why: 'not_started' });
+  assert.deepEqual(stageWindowState(calendar, 'draft', '2026-11-10'), { open: false, why: 'closed' });
+  const reopen = { stageKey: 'draft', until: '2026-11-11', openedBy: 'pic_campaign' as const, clientApproved: true as const, reason: 'Klien setuju' };
+  assert.deepEqual(stageWindowState(calendar, 'draft', '2026-11-11', [reopen]), { open: true, via: 'reopen' });
+  assert.deepEqual(stageWindowState(calendar, 'draft', '2026-11-12', [reopen]), { open: false, why: 'closed' });
+  assert.throws(() => stageWindowState(calendar, 'draft', '2026-11-10', [{ ...reopen, clientApproved: false as unknown as true }]), /disetujui klien/);
+});

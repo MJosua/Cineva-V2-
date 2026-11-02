@@ -1,6 +1,6 @@
 # @hots/domain-kit source map
 
-Generated: 2026-10-29T01:28:11.450Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
+Generated: 2026-11-02T13:09:46.388Z. Regex-based inventory; imports/route strings are source observations, not runtime validation.
 
 | File | Lines | Imports | Route definitions |
 |---|---:|---:|---|
@@ -8,7 +8,8 @@ Generated: 2026-10-29T01:28:11.450Z. Regex-based inventory; imports/route string
 | [src/commands.ts](src/commands.ts) | 86 | 1 |  |
 | [src/configuration.ts](src/configuration.ts) | 52 | 1 |  |
 | [src/events.ts](src/events.ts) | 57 | 1 |  |
-| [src/index.ts](src/index.ts) | 8 | 7 |  |
+| [src/index.ts](src/index.ts) | 9 | 8 |  |
+| [src/policies.ts](src/policies.ts) | 95 | 0 |  |
 | [src/projections.ts](src/projections.ts) | 28 | 1 |  |
 | [src/relations.ts](src/relations.ts) | 63 | 1 |  |
 | [src/validation.ts](src/validation.ts) | 61 | 0 |  |

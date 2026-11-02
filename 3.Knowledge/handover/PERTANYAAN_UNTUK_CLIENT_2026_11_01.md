@@ -149,6 +149,29 @@ Tes: scheduling-kit 27 (Kantor dan Cineva), domain-kit 21 (Kantor dan Cineva), f
 | N51 | "Sudah dijawab kemarin" (G2). | Dianggap selesai | Rentang per kelas dan "mulai Rp300 rb" tetap sebagai konfigurasi; per orang atau per tim, batas atas sedang, dan tabel pita (N53) tidak dijawab dan tidak ditanya lagi. |
 | N4 | Butir penilaian tergantung penanggung jawab project atau program. | Tuntas (konfigurasi) | Form penilaian crew harus dapat dikonfigurasi per project/program oleh PIC; pemetaan nilai ke grade belum ada. |
 
+## J. Batch jawaban kuesioner (setelah batch I)
+
+**Diterapkan (logika vendor saja, tanpa ubah package, belum dipasang di UI):**
+- `cineva-services/policies.ts`: `brandCancellationOptions` menghitung DP hangus dan 15% dari `totalDeal` berdampingan, keputusan tetap di PIC/owner; `assertCancellationProof` (alasan + lampiran PNG/JPEG/teks wajib); `cancellationSettlementDue` (+7 hari kalender, tafsiran); `findDuplicateRegistrations` (username per platform atau WhatsApp = pasti; nama saja = kandidat).
+- `cineva-campaigns/stages.ts`: `stageWindowState` + `assertStageReopen` (jendela tahap; buka ulang hanya `pic_campaign` dengan `clientApproved`).
+- UI: `CancellationSimulator` (estimator HQ) menampilkan opsi A/B Brand, isian alasan + lampiran wajib, dan tenggat 7 hari. `StagePlanPanel` menampilkan status jendela per tahap dan form buka ulang HQ (diperlakukan sebagai PIC campaign) dengan centang persetujuan klien; `StagePlan.reopens` opsional. API percobaan menolak perubahan `reopens` (pesan "belum didukung") karena backend/DB belum punya tempatnya. Deteksi pendaftar ganda belum punya layar (belum ada UI pendaftaran).
+- K6 (`maxRequests`), L21 fee kru sakit, N18 urutan, N42 usia/KTP, N45 retensi: tidak diubah. Tes: policies + stages 17 lulus.
+
+| ID | Jawaban client (parafrase) | Status | Catatan |
+|---|---|---|---|
+| N6 | Client batal dengan alasan tidak masuk akal: denda 15% **atau** DP hangus. Tim batal: tim membayar 15% dari total pembayaran. KOL batal: KOL membayar 15% dari total pembayaran fee. Alasan batal wajib dilampirkan. | Sebagian | Brand kini juga kena 15% (sebelumnya hanya DP hangus). Belum: kapan 15% dan kapan DP hangus (yang lebih besar?), 15% dari total nilai deal Brand, dan denda dibayar ke siapa. "Total pembayaran" untuk tim sejalan dengan "total fee yang diterima" (batch H). Bukti lampiran wajib untuk semua pihak. |
+| N6 ("maks 7 hari") | Maksimal 7 hari setelah project, kewajiban diselesaikan. | Tuntas (tafsiran) | Tafsiran: kewajiban (pelunasan/denda) diselesaikan paling lambat 7 hari setelah project selesai. Sejalan dengan pelunasan H+3 sampai 7 (D3). |
+| L21 | Kru sakit: ada tim backup; owner Cineva mencari pengganti selama kru sakit libur. | Sebagian | Pengganti dicari owner, bukan kru. Nasib fee kru sakit (proporsional?) belum dijawab. |
+| N17, B1 | Aksi dikunci bila di luar timeline; hanya PIC campaign yang bisa mengubah. Tombol terbuka sesuai timeline (contoh: storyline + draft 1-9 Nov, lewat 9 Nov otomatis tertutup). Buka-tutup ditentukan PIC campaign dengan persetujuan klien. | Tuntas | Semua aksi berjendela. Jalur buka ulang: PIC + persetujuan klien. Ini melengkapi syarat agar kunci di UI bisa dipasang (batch I menundanya). |
+| N18 | Storyline dan draft berbagi satu jendela (1-9 Nov). | Sebagian | Satu jendela bersama; apakah storyline harus ACC sebelum draft tetap belum dijawab. |
+| L11 / N28 | Izin tambahan karena sakit atau bencana alam maksimal 2 kali. | **Konflik** | K6: N28 menyebut perpanjangan 1 kali (total 2 hari). Perlu dipastikan: "2x" = dua pengajuan, atau sama dengan "2 hari"? Lama tiap izin? Alasan terbatas sakit/bencana. |
+| N10 / N38 | Biaya per SOW, atau per satu kali suruhan pengerjaan. | Sebagian | Tafsiran: change fee / biaya dihitung per SOW (satu kali perintah kerja). Besaran belum ada. |
+| N42 | Brand yang mensyaratkan usia di atas 17 tahun: lampiran legal dan KTP (jika diperlukan). | Sebagian | Syarat usia per campaign + unggah KTP opsional. Catatan tim: batas usia produk tertentu (mis. rokok/vape) diatur regulasi dan bisa lebih tinggi dari 17; pastikan brand/legal. KTP adalah data sensitif: akses terbatas, tanpa unduh. |
+| N44 | Pendaftaran ganda dicek dari username sosial media, WhatsApp, dan nama. | Tuntas | Kunci: cocok salah satu username atau WhatsApp; nama sebagai pendukung (nama saja rawan salah cocok, tafsiran tim). |
+| N45 | Database semua creator disimpan selamanya. | Sebagian | Masa simpan tanpa batas. Catatan tim: UU PDP mensyaratkan dasar pemrosesan dan hak hapus; tetap perlu persetujuan eksplisit saat daftar dan jalur penghapusan atas permintaan. |
+
+**K6 Izin/perpanjangan.** "Max 2x" (batch J) vs "1 kali, tambahan 2 hari" (N28, sudah di `defaultExtensionRules`). Jangan ubah `maxRequests` sebelum client menegaskan.
+
 # Bagian 2. Pertanyaan yang masih terbuka (daftar sebelum batch 2 Nov)
 
 Total 44 pertanyaan terbuka: P1 20, P2 22, P3 2. Dari total 79 (L1-L27, N1-N52), 35 sudah tuntas. Daftar ini sama dengan dokumen kuesioner live dan file Excel sisa pertanyaan.

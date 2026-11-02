@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-29T01:28:11.450Z",
+  "generatedAt": "2026-11-02T13:09:46.388Z",
   "documents": [
     {
       "path": "1.Frontend/HOTS/docs/CHANGELOG.md",
@@ -316,20 +316,24 @@
     },
     {
       "path": "1.Frontend/packages/domain-kit/docs/CHANGELOG.md",
-      "sha256": "220b4d9968ef2ec17635d2972e6ceba267a2490eb4cb0feb87ee4dfb51f8fb9e",
-      "title": "0.1.0-cineva.2 — 2026-10-19",
+      "sha256": "ca5df19b5f3973c21d6ff5cbd701e06fcdb08565357544d58b9282efc8cbcfc9",
+      "title": "0.2.0-cineva.1 — 2026-11-02",
       "headings": [
         {
-          "heading": "0.1.0-cineva.2 — 2026-10-19",
+          "heading": "0.2.0-cineva.1 — 2026-11-02",
           "line": 1
         },
         {
+          "heading": "0.1.0-cineva.2 — 2026-10-19",
+          "line": 5
+        },
+        {
           "heading": "Changelog",
-          "line": 7
+          "line": 11
         },
         {
           "heading": "0.1.0-cineva.1 — 2026-10-19",
-          "line": 9
+          "line": 13
         }
       ]
     },
@@ -1197,7 +1201,7 @@
     },
     {
       "path": "3.Knowledge/KNOWLEDGE_INDEX.md",
-      "sha256": "580743c6673c6b44023a07a4b08f665b15e7a15ab446a298aaeada7b8b8aa661",
+      "sha256": "e1973ffd9dd64f13d1621e83168fe2c5b8fa2183f42908b07ce7f2d74294db16",
       "title": "Cineva knowledge entry point",
       "headings": [
         {
@@ -1210,15 +1214,15 @@
         },
         {
           "heading": "Upgrade decisions to preserve",
-          "line": 91
+          "line": 98
         },
         {
           "heading": "Verification boundaries",
-          "line": 102
+          "line": 109
         },
         {
           "heading": "Reproduce audit",
-          "line": 106
+          "line": 113
         }
       ]
     },
@@ -1261,6 +1265,80 @@
         {
           "heading": "Cara verifikasi",
           "line": 33
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/cineva_code_map_vs_requirements_2026_11_01.md",
+      "sha256": "8f39ba21c6d4d11001ca6e29e6f6245897bd5a57ade0062b2bcef8d4c1b46f0c",
+      "title": "Peta kode Cineva dan kesenjangan terhadap requirement client (1 Nov 2026)",
+      "headings": [
+        {
+          "heading": "Peta kode Cineva dan kesenjangan terhadap requirement client (1 Nov 2026)",
+          "line": 1
+        },
+        {
+          "heading": "Kondisi lingkungan",
+          "line": 5
+        },
+        {
+          "heading": "Fitur Cineva di `1.Frontend/HOTS/src/features`",
+          "line": 11
+        },
+        {
+          "heading": "Kesenjangan terhadap requirement",
+          "line": 22
+        },
+        {
+          "heading": "Cara verifikasi yang tersedia sekarang",
+          "line": 35
+        },
+        {
+          "heading": "Tahap 1 (fondasi aturan) — dikerjakan 1 Nov 2026",
+          "line": 39
+        },
+        {
+          "heading": "Tahap 3a (kalender tahap campaign) — dikerjakan 1 Nov 2026",
+          "line": 49
+        },
+        {
+          "heading": "Tahap 2 (estimator kru berbasis budget) — dikerjakan 1 Nov 2026",
+          "line": 61
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/cineva_ddl_trial_2026_11_02.md",
+      "sha256": "5dadc767b1cb1c5ffc9bdb17ea45db7b39b9eb43b6557634a6d9e646c0161bbf",
+      "title": "Usulan DDL Cineva dan uji coba di database terpisah (2 Nov 2026)",
+      "headings": [
+        {
+          "heading": "Usulan DDL Cineva dan uji coba di database terpisah (2 Nov 2026)",
+          "line": 1
+        },
+        {
+          "heading": "Isi",
+          "line": 5
+        },
+        {
+          "heading": "Hasil uji",
+          "line": 20
+        },
+        {
+          "heading": "Backend (3 Nov 2026, trial)",
+          "line": 28
+        },
+        {
+          "heading": "Frontend tersambung ke API percobaan (3 Nov 2026)",
+          "line": 34
+        },
+        {
+          "heading": "Lanjutan 3 Nov 2026: penilaian crew, profil sosial, mock paket",
+          "line": 42
+        },
+        {
+          "heading": "Batas verifikasi",
+          "line": 50
         }
       ]
     },
@@ -1397,6 +1475,37 @@
         {
           "heading": "Validasi",
           "line": 26
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/architecture/client_assessment_dp_review_2026_11_01.md",
+      "sha256": "5c48f4ed080d9a892aff59bd16cdcac308f11c5e1afdc1a319da37d0090788a7",
+      "title": "Review pandangan client: assessment kualitas akun dan DP anti-cancel",
+      "headings": [
+        {
+          "heading": "Review pandangan client: assessment kualitas akun dan DP anti-cancel",
+          "line": 1
+        },
+        {
+          "heading": "Pandangan client",
+          "line": 5
+        },
+        {
+          "heading": "Posisi implementasi Cineva (frontend dummy)",
+          "line": 10
+        },
+        {
+          "heading": "Situs referensi",
+          "line": 24
+        },
+        {
+          "heading": "Pertanyaan terbuka untuk client",
+          "line": 30
+        },
+        {
+          "heading": "Usulan urutan jika disetujui",
+          "line": 37
         }
       ]
     },
@@ -2402,6 +2511,45 @@
       ]
     },
     {
+      "path": "3.Knowledge/architecture/voice_requirements_2_2026_11_01.md",
+      "sha256": "63be075b73de8aaa4f550e6c07416c7326d90d9f660c802c7b41f18454d63362",
+      "title": "Requirement Cineva dari dua voice note dan satu video (1 November 2026)",
+      "headings": [
+        {
+          "heading": "Requirement Cineva dari dua voice note dan satu video (1 November 2026)",
+          "line": 1
+        },
+        {
+          "heading": "Provenance dan batas bukti",
+          "line": 5
+        },
+        {
+          "heading": "VN1 (9.30, 6:08): cara hitung production house dan timeline",
+          "line": 11
+        },
+        {
+          "heading": "VN2 (9.42, 6:15): model bisnis dan kualitas akun",
+          "line": 23
+        },
+        {
+          "heading": "Perbandingan dengan Cineva sekarang",
+          "line": 35
+        },
+        {
+          "heading": "Yang masih ambigu (tanyakan sebelum membangun)",
+          "line": 51
+        },
+        {
+          "heading": "Hubungan dengan catatan sebelumnya",
+          "line": 60
+        },
+        {
+          "heading": "Urutan usulan jika diminta implementasi",
+          "line": 64
+        }
+      ]
+    },
+    {
       "path": "3.Knowledge/architecture/workbook_reference_2026_10_18.md",
       "sha256": "49a6e71a38740025b56e2d926f378d079c541d7dd0d339098ab41f79e7374f29",
       "title": "Workbook operasional asli sebagai referensi Cineva",
@@ -2547,6 +2695,160 @@
         {
           "heading": "Pending and boundaries",
           "line": 71
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/handover/PENJELASAN_PERTANYAAN_CLIENT_2026_11_02.md",
+      "sha256": "650f642a73b6a3660b51570a262bd1d465ae881bf8d9d4637ae3ae5978250184",
+      "title": "Penjelasan pertanyaan untuk client Cineva",
+      "headings": [
+        {
+          "heading": "Penjelasan pertanyaan untuk client Cineva",
+          "line": 1
+        },
+        {
+          "heading": "1. Tabel grade Creator (K1)",
+          "line": 9
+        },
+        {
+          "heading": "2. Pembatalan: denda 15% dan DP (N6)",
+          "line": 41
+        },
+        {
+          "heading": "3. Tahap yang dikunci tanggal (N17)",
+          "line": 60
+        },
+        {
+          "heading": "4. Urutan tahap (N18)",
+          "line": 78
+        },
+        {
+          "heading": "5. Submit terlambat (L11)",
+          "line": 90
+        },
+        {
+          "heading": "6. Jenis pekerjaan baku (N38)",
+          "line": 104
+        },
+        {
+          "heading": "7. Biaya tambahan dan lembur (N51, A2, tabel pita budget)",
+          "line": 115
+        },
+        {
+          "heading": "8. Penilaian kru (N4)",
+          "line": 151
+        },
+        {
+          "heading": "Catatan tambahan",
+          "line": 172
+        }
+      ]
+    },
+    {
+      "path": "3.Knowledge/handover/PERTANYAAN_UNTUK_CLIENT_2026_11_01.md",
+      "sha256": "f609e7ee0d93eb2fc1db4151561cd2ce549e2924f1fcff6e4a82dc2eadf7e006",
+      "title": "Pertanyaan dan jawaban client Cineva",
+      "headings": [
+        {
+          "heading": "Pertanyaan dan jawaban client Cineva",
+          "line": 1
+        },
+        {
+          "heading": "Bagian 1. Jawaban yang sudah masuk",
+          "line": 5
+        },
+        {
+          "heading": "A. Estimasi biaya produksi",
+          "line": 7
+        },
+        {
+          "heading": "B. Timeline Creator",
+          "line": 17
+        },
+        {
+          "heading": "C. Kualitas akun dan grade",
+          "line": 25
+        },
+        {
+          "heading": "D. DP, pembatalan, pembayaran",
+          "line": 36
+        },
+        {
+          "heading": "E. Langganan dan produk",
+          "line": 47
+        },
+        {
+          "heading": "F. RAB",
+          "line": 57
+        },
+        {
+          "heading": "G. Jam layanan, biaya tambahan, dan posisi aplikasi (batch terbaru)",
+          "line": 64
+        },
+        {
+          "heading": "H. Batch jawaban 2 November 2026 (rate card, timeline, grade, pembayaran, produk)",
+          "line": 76
+        },
+        {
+          "heading": "Konflik dan temuan yang perlu dikonfirmasi",
+          "line": 113
+        },
+        {
+          "heading": "Implementasi bagian non-konflik (2 Nov 2026)",
+          "line": 121
+        },
+        {
+          "heading": "I. Batch jawaban 3 November 2026",
+          "line": 140
+        },
+        {
+          "heading": "J. Batch jawaban kuesioner (setelah batch I)",
+          "line": 152
+        },
+        {
+          "heading": "Bagian 2. Pertanyaan yang masih terbuka (daftar sebelum batch 2 Nov)",
+          "line": 175
+        },
+        {
+          "heading": "Estimasi dan rate (8)",
+          "line": 179
+        },
+        {
+          "heading": "Timeline dan approval (7)",
+          "line": 192
+        },
+        {
+          "heading": "Seleksi talent dan syarat brand (4)",
+          "line": 204
+        },
+        {
+          "heading": "Grade dan ER (6)",
+          "line": 213
+        },
+        {
+          "heading": "Sinkronisasi akun dan data (5)",
+          "line": 224
+        },
+        {
+          "heading": "DP dan pembatalan (2)",
+          "line": 234
+        },
+        {
+          "heading": "Produk dan langganan (7)",
+          "line": 241
+        },
+        {
+          "heading": "Pembayaran (5)",
+          "line": 253
+        },
+        {
+          "heading": "Bagian 3. Usulan pembagian Basic dan Pro (untuk N12)",
+          "line": 263
+        },
+        {
+          "heading": "Yang perlu dibawa client",
+          "line": 272
         }
       ]
     },
@@ -3732,7 +4034,7 @@
     },
     {
       "path": "3.Knowledge/packages/REGISTRY.md",
-      "sha256": "628840bea799eb82e311ed85fa8dfff144b05c3c4210cf6c28c27d7d29d98102",
+      "sha256": "de8a81cdd78324fbb587e590a212e331f02118b6f90c6e82e13e5cbe102da813",
       "title": "Cineva shared package registry",
       "headings": [
         {

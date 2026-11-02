@@ -133,6 +133,7 @@ export function planCampaignCalls(previous: Campaign, next: Campaign, identities
   for (const p of next.products) if (!previous.products.some(item => item.id === p.id)) calls.push({ method: 'POST', path: `${base}/products`, body: { name: p.name, variant: p.variant, referenceValue: p.referenceValue } });
   const oldPlan = previous.stagePlan, plan = next.stagePlan;
   if (!plan && oldPlan) throw new Error('Menghapus kalender tahap belum didukung API percobaan.');
+  if (!same(oldPlan?.reopens ?? [], plan?.reopens ?? [])) throw new Error('Membuka ulang tahap belum didukung API percobaan.');
   if (plan) {
     if (!oldPlan || oldPlan.templateId !== plan.templateId || oldPlan.startDate !== plan.startDate || !same(oldPlan.holidays, plan.holidays))
       calls.push({ method: 'PUT', path: `${base}/stage-plan`, body: { templateId: plan.templateId, startDate: plan.startDate, holidays: plan.holidays, expectedRevision: previous.revision ?? 0 } });

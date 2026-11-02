@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { money } from '../cineva-shared/model';
-import { cancellationDeciders, cancellationReasonLabels, defaultCancellationPolicy, defaultKolRateCard, estimateKolBudget, evaluateProjectCancellation } from './policies';
+import { assertCancellationProof, brandCancellationOptions, cancellationDeciders, cancellationSettlementDays, cancellationReasonLabels, defaultCancellationPolicy, defaultKolRateCard, estimateKolBudget, evaluateProjectCancellation } from './policies';
 
 const tierLabels: Record<string, string> = { nano: 'Nano (1–9,9K)', mikro: 'Mikro (10K–99,9K)', makro: 'Makro (100K ke atas)' };
 const parties: Record<string, string> = { brand: 'Brand / client', crew: 'Kru', creator: 'Creator' };
@@ -29,12 +29,17 @@ export function KolEstimateCard() {
  */
 export function CancellationSimulator() {
   const [party, setParty] = useState('brand'), [kind, setKind] = useState<'campaign' | 'production'>('campaign'), [reason, setReason] = useState('');
+  const [totalDeal, setTotalDeal] = useState('0'), [note, setNote] = useState(''), [proofText, setProofText] = useState('');
   const [deposit, setDeposit] = useState('0'), [fee, setFee] = useState('0'), [product, setProduct] = useState('0'), [paid, setPaid] = useState('0');
   const rule = defaultCancellationPolicy.parties[party], reasons = Object.keys(rule.reasons ?? {});
   const activeReason = reason && reasons.includes(reason) ? reason : '';
   let result: ReturnType<typeof evaluateProjectCancellation> | null = null, error = '';
   try { result = evaluateProjectCancellation({ party, deposit: toInt(deposit), amounts: { totalFee: toInt(fee), amountPaid: toInt(paid) }, extraCharges: { productReplacement: toInt(product) }, ...(activeReason ? { reason: activeReason } : {}) }); } catch (failure) { error = (failure as Error).message; }
   const decider = cancellationDeciders[kind];
+  let brandPenalty: number | null = null;
+  if (party === 'brand' && !activeReason) try { brandPenalty = brandCancellationOptions({ deposit: toInt(deposit), totalDeal: toInt(totalDeal) }).penalty15.total; } catch (failure) { error ||= (failure as Error).message; }
+  let proofIssue = '';
+  try { assertCancellationProof(note, proofText.trim() ? { kind: 'text', text: proofText } : undefined); } catch (failure) { proofIssue = (failure as Error).message; }
   return <Card data-testid="cancellation-simulator"><CardHeader><CardTitle>Simulasi pembatalan</CardTitle></CardHeader><CardContent className="space-y-3">
     <div className="grid gap-3 sm:grid-cols-2">
       <label className="block text-sm">Pihak yang membatalkan
@@ -50,8 +55,12 @@ export function CancellationSimulator() {
       <label className="text-sm">DP diterima (Rp)<Input aria-label="DP diterima" type="number" min="0" step="1" value={deposit} onChange={event => setDeposit(event.target.value)}/></label>
       {rule.penaltyPercent !== undefined && <label className="text-sm">Total fee yang diterima (Rp)<Input aria-label="Total fee" type="number" min="0" step="1" value={fee} onChange={event => setFee(event.target.value)}/></label>}
       {rule.extraChargeKeys?.length ? <label className="text-sm">Biaya pergantian produk (Rp)<Input aria-label="Biaya pergantian produk" type="number" min="0" step="1" value={product} onChange={event => setProduct(event.target.value)}/></label> : null}
+      {party === 'brand' && !activeReason && <label className="text-sm">Total nilai deal (Rp)<Input aria-label="Total nilai deal" type="number" min="0" step="1" value={totalDeal} onChange={event => setTotalDeal(event.target.value)}/></label>}
       {activeReason === 'force_majeure' && party === 'brand' && <label className="text-sm">Total yang sudah dibayarkan (Rp)<Input aria-label="Total dibayarkan" type="number" min="0" step="1" value={paid} onChange={event => setPaid(event.target.value)}/></label>}
     </div>
+    <label className="block text-sm">Alasan batal (wajib)<Input aria-label="Alasan batal" value={note} maxLength={2000} onChange={event => setNote(event.target.value)}/></label>
+    <label className="block text-sm">Lampiran alasan (wajib; teks atau keterangan berkas PNG/JPEG)<Input aria-label="Lampiran alasan" value={proofText} maxLength={2000} onChange={event => setProofText(event.target.value)}/></label>
+    {proofIssue && <p data-testid="cancellation-proof-issue" className="text-sm text-destructive">{proofIssue}</p>}
     {error && <p role="alert" className="text-destructive">{error}</p>}
     {result && <div data-testid="cancellation-result" className="space-y-1 text-sm">
       {result.depositForfeited > 0 && <p>DP hangus: {money(result.depositForfeited)}</p>}
@@ -59,7 +68,10 @@ export function CancellationSimulator() {
       {result.extraCharges.productReplacement > 0 && <p>Biaya pergantian produk: {money(result.extraCharges.productReplacement)}</p>}
       {result.refund && <p>Perkiraan pengembalian dana ({result.refund.percent}% dari total dibayarkan): {money(result.refund.amount)}</p>}
       {result.requiresReplacement && <p>Wajib mencarikan pengganti.</p>}
-      <p className="font-semibold">Total konsekuensi: {money(result.total)}</p>
+      {brandPenalty !== null ? <div data-testid="brand-options"><p className="font-semibold">Opsi A, DP hangus: {money(result.total)}</p><p className="font-semibold">Opsi B, denda 15% dari total deal: {money(brandPenalty)}</p>
+        <p className="text-xs text-muted-foreground">Alasan tidak masuk akal: denda 15% atau DP hangus. Client belum menetapkan kapan yang mana; PIC/owner memilih.</p></div>
+        : <p className="font-semibold">Total konsekuensi: {money(result.total)}</p>}
+      <p className="text-xs text-muted-foreground">Kewajiban diselesaikan paling lambat {cancellationSettlementDays} hari setelah project selesai.</p>
       {activeReason === 'force_majeure' && <p className="text-xs text-muted-foreground">Keadaan di luar kendali manusia didiskusikan: biasanya jadwal mundur atau pengembalian setengah dari total yang dibayarkan.</p>}
       <p className="text-xs text-muted-foreground">Pihak yang bersalah diputuskan {decider.decider}; persetujuan akhir {decider.final}. Penerima denda belum diputuskan client.</p>
     </div>}

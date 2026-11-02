@@ -100,3 +100,65 @@ export function normalizeMetric(raw: unknown, rule: MetricRule): { value: number
   if (value < bounds.min || value > bounds.max) return { value, status: 'out_of_range' };
   return { value, status: changed ? 'normalized' : 'ok' };
 }
+
+/**
+ * Batch J (jawaban kuesioner): client batal dengan alasan tidak masuk akal dikenai denda 15% **atau** DP hangus. Client belum menyebut kapan
+ * yang mana, jadi sistem tidak memilih: kedua opsi dihitung dan PIC/owner memutuskan. Basis 15% (`totalDeal`, total nilai deal Brand) adalah tafsiran tim.
+ */
+export const brandPenaltyPolicy: CancellationPolicy = {
+  version: 'CLIENT-BATCH-J-brand-15',
+  parties: { brand: { penaltyPercent: 15, penaltyBasis: 'totalDeal' } },
+};
+export function brandCancellationOptions(input: { deposit: number; totalDeal: number }) {
+  return {
+    forfeitDeposit: evaluateProjectCancellation({ party: 'brand', deposit: input.deposit }),
+    penalty15: evaluateCancellation(brandPenaltyPolicy, { party: 'brand', amounts: { totalDeal: input.totalDeal } }),
+  };
+}
+/** Batch J: alasan batal wajib dilampirkan (semua pihak). Bentuk bukti sama dengan bukti perpanjangan: PNG, JPEG, atau teks. */
+export type CancellationProof = { kind: 'png' | 'jpeg'; fileName: string; sizeBytes: number } | { kind: 'text'; text: string };
+export function assertCancellationProof(reason: string, proof: CancellationProof | undefined): { reason: string; proof: CancellationProof } {
+  const text = reason?.trim() ?? '';
+  if (!text || text.length > 2000) throw new Error('Alasan pembatalan wajib diisi (maksimal 2.000 karakter).');
+  if (!proof) throw new Error('Lampiran alasan pembatalan wajib diisi.');
+  if (proof.kind === 'text' ? !proof.text?.trim() || proof.text.length > 2000
+    : !['png', 'jpeg'].includes(proof.kind) || !proof.fileName?.trim() || !Number.isSafeInteger(proof.sizeBytes) || proof.sizeBytes <= 0)
+    throw new Error('Lampiran harus berkas PNG/JPEG yang tidak kosong atau teks (maksimal 2.000 karakter).');
+  return { reason: text, proof };
+}
+/** Batch J ("maks 7 hari"): kewajiban pembatalan diselesaikan paling lambat 7 hari kalender setelah project selesai (tafsiran tim: hari kalender). */
+export const cancellationSettlementDays = 7;
+export function cancellationSettlementDue(projectEnd: string, days = cancellationSettlementDays): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(projectEnd) || Number.isNaN(Date.parse(projectEnd + 'T00:00:00Z'))) throw new Error('Tanggal selesai project tidak valid.');
+  const due = new Date(projectEnd + 'T00:00:00Z');
+  due.setUTCDate(due.getUTCDate() + days);
+  return due.toISOString().slice(0, 10);
+}
+
+/**
+ * Batch J (N44): pendaftar ganda dicocokkan dari username sosial media dan WhatsApp; nama hanya pendukung karena nama sama belum tentu orang sama (tafsiran tim).
+ * Username dibandingkan per platform tanpa '@' dan huruf besar; WhatsApp dinormalisasi ke 62xxxxxxxx.
+ */
+export interface Registration { id: string; name: string; whatsapp?: string; accounts?: { platform: string; username: string }[] }
+export interface DuplicateMatch { ids: [string, string]; by: ('username' | 'whatsapp' | 'name')[]; confirmed: boolean }
+export const normalizeWhatsapp = (raw: string | undefined) => {
+  const digits = (raw ?? '').replace(/\D/g, '');
+  const local = digits.startsWith('62') ? digits.slice(2) : digits.startsWith('0') ? digits.slice(1) : digits;
+  return local.length >= 8 ? '62' + local : '';
+};
+const normalizeName = (name: string) => name.trim().toLowerCase().replace(/\s+/g, ' ');
+export function findDuplicateRegistrations(rows: Registration[]): DuplicateMatch[] {
+  const keyed = rows.map(row => ({
+    id: row.id, name: normalizeName(row.name ?? ''), wa: normalizeWhatsapp(row.whatsapp),
+    handles: new Set((row.accounts ?? []).map(a => `${a.platform.trim().toLowerCase()}:${a.username.trim().replace(/^@/, '').toLowerCase()}`).filter(h => !h.endsWith(':'))),
+  }));
+  const matches: DuplicateMatch[] = [];
+  for (let i = 0; i < keyed.length; i++) for (let j = i + 1; j < keyed.length; j++) {
+    const a = keyed[i], b = keyed[j], by: DuplicateMatch['by'] = [];
+    if ([...a.handles].some(h => b.handles.has(h))) by.push('username');
+    if (a.wa && a.wa === b.wa) by.push('whatsapp');
+    if (a.name && a.name === b.name) by.push('name');
+    if (by.length) matches.push({ ids: [a.id, b.id], by, confirmed: by.includes('username') || by.includes('whatsapp') });
+  }
+  return matches;
+}

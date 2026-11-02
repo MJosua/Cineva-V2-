@@ -1,14 +1,14 @@
 # Cineva file map
 
-Generated: 2026-10-29T01:28:11.450Z. Static extraction only; route paths can be relative to mount prefixes.
+Generated: 2026-11-02T13:09:46.388Z. Static extraction only; route paths can be relative to mount prefixes.
 
 | Area | Root | Source files | App map |
 |---|---|---:|---|
 | @hots/tenant-contracts | 1.Frontend/packages/tenant-contracts | 3 | [APP_MAP](../1.Frontend/packages/tenant-contracts/APP_MAP.md) |
 | @hots/tenant-client | 1.Frontend/packages/tenant-client | 3 | [APP_MAP](../1.Frontend/packages/tenant-client/APP_MAP.md) |
 | @hots/tenant-server | 2.Backend/packages/tenant-server | 11 | [APP_MAP](../2.Backend/packages/tenant-server/APP_MAP.md) |
-| cineva-frontend | 1.Frontend/HOTS | 562 | [APP_MAP](../1.Frontend/HOTS/APP_MAP.md) |
-| cineva-backend | 2.Backend/Integrated-API | 231 | [APP_MAP](../2.Backend/Integrated-API/APP_MAP.md) |
+| cineva-frontend | 1.Frontend/HOTS | 583 | [APP_MAP](../1.Frontend/HOTS/APP_MAP.md) |
+| cineva-backend | 2.Backend/Integrated-API | 239 | [APP_MAP](../2.Backend/Integrated-API/APP_MAP.md) |
 | @hots/dynamic-form | 1.Frontend/dynamic-form | 10 | [APP_MAP](../1.Frontend/dynamic-form/APP_MAP.md) |
 | @hots/service-form-runtime | 1.Frontend/service-form-runtime | 5 | [APP_MAP](../1.Frontend/service-form-runtime/APP_MAP.md) |
 | @hots/app-core | 1.Frontend/packages/app-core | 11 | [APP_MAP](../1.Frontend/packages/app-core/APP_MAP.md) |
@@ -23,8 +23,8 @@ Generated: 2026-10-29T01:28:11.450Z. Static extraction only; route paths can be 
 | @hots/ui-kit | 1.Frontend/packages/ui-kit | 63 | [APP_MAP](../1.Frontend/packages/ui-kit/APP_MAP.md) |
 | @hots/workflow-policy-kit | 1.Frontend/packages/workflow-policy-kit | 4 | [APP_MAP](../1.Frontend/packages/workflow-policy-kit/APP_MAP.md) |
 | @hots/transaction-kit | 2.Backend/packages/transaction-kit | 17 | [APP_MAP](../2.Backend/packages/transaction-kit/APP_MAP.md) |
-| @hots/domain-kit | 1.Frontend/packages/domain-kit | 8 | [APP_MAP](../1.Frontend/packages/domain-kit/APP_MAP.md) |
-| @hots/scheduling-kit | 1.Frontend/packages/scheduling-kit | 4 | [APP_MAP](../1.Frontend/packages/scheduling-kit/APP_MAP.md) |
+| @hots/domain-kit | 1.Frontend/packages/domain-kit | 9 | [APP_MAP](../1.Frontend/packages/domain-kit/APP_MAP.md) |
+| @hots/scheduling-kit | 1.Frontend/packages/scheduling-kit | 6 | [APP_MAP](../1.Frontend/packages/scheduling-kit/APP_MAP.md) |
 | @hots/notification-kit | 2.Backend/packages/notification-kit | 4 | [APP_MAP](../2.Backend/packages/notification-kit/APP_MAP.md) |
 
 ## Knowledge and app/package docs
@@ -41,7 +41,7 @@ Generated: 2026-10-29T01:28:11.450Z. Static extraction only; route paths can be 
 - [@hots/app-core](../1.Frontend/packages/app-core/docs/README.md)
 - [Changelog — @hots/calc-kit](../1.Frontend/packages/calc-kit/docs/CHANGELOG.md)
 - [@hots/calc-kit](../1.Frontend/packages/calc-kit/docs/README.md)
-- [0.1.0-cineva.2 — 2026-10-19](../1.Frontend/packages/domain-kit/docs/CHANGELOG.md)
+- [0.2.0-cineva.1 — 2026-11-02](../1.Frontend/packages/domain-kit/docs/CHANGELOG.md)
 - [@hots/domain-kit](../1.Frontend/packages/domain-kit/docs/README.md)
 - [Policy-driven runtime contracts](../1.Frontend/packages/domain-kit/docs/runtime.md)
 - [Generic document validation](../1.Frontend/packages/domain-kit/docs/validation.md)
@@ -83,10 +83,13 @@ Generated: 2026-10-29T01:28:11.450Z. Static extraction only; route paths can be 
 - [Cineva knowledge entry point](KNOWLEDGE_INDEX.md)
 - [Preview tiga akun referensi Excel](architecture/account_reference_2026_10_18.md)
 - [Cineva Campaign Operations](architecture/cineva_campaign_operations_2026_10_18.md)
+- [Peta kode Cineva dan kesenjangan terhadap requirement client (1 Nov 2026)](architecture/cineva_code_map_vs_requirements_2026_11_01.md)
+- [Usulan DDL Cineva dan uji coba di database terpisah (2 Nov 2026)](architecture/cineva_ddl_trial_2026_11_02.md)
 - [Arah produk Cineva HQ dan Creator Space](architecture/cineva_dual_product_direction_2026_10_18.md)
 - [Pemantapan Cineva: workflow, penawaran, CS dan booking](architecture/cineva_maturity_2026_10_18.md)
 - [Cineva layanan, inquiry dan CS — implementasi frontend dummy](architecture/cineva_service_flow_2026_10_18.md)
 - [Theme vendor Cineva — coklat, emas dan putih](architecture/cineva_vendor_theme_2026_10_18.md)
+- [Review pandangan client: assessment kualitas akun dan DP anti-cancel](architecture/client_assessment_dp_review_2026_11_01.md)
 - [Paket demo client: dokumen Melin dan HTML mandiri](architecture/client_demo_melin_2026_10_18.md)
 - [Audit referensi client InstaDeck — 22 Oktober 2026](architecture/client_reference_instadeck_2026_10_22.md)
 - [Kompatibilitas komponen Cineva — 18 Oktober 2026](architecture/component_compatibility_2026_10_18.md)
@@ -118,9 +121,12 @@ Generated: 2026-10-29T01:28:11.450Z. Static extraction only; route paths can be 
 - [Pemeriksaan audio video dan sumber requirement A/B](architecture/video_audio_requirements_2026_10_18.md)
 - [Referensi visual Creator Space — 18 Oktober 2026](architecture/visual_reference_creator_space_2026_10_18.md)
 - [Requirement Cineva dari voice note pengguna](architecture/voice_requirements_2026_10_18.md)
+- [Requirement Cineva dari dua voice note dan satu video (1 November 2026)](architecture/voice_requirements_2_2026_11_01.md)
 - [Workbook operasional asli sebagai referensi Cineva](architecture/workbook_reference_2026_10_18.md)
 - [Handover HOTS original — reusable platform](handover/HOTS_ORIGINAL_HANDOVER_2026_10_14.md)
 - [Handover to Kantor: PAR title and Claude/Codex Kanban trial](handover/KANTOR_PAR_ORCHESTRATOR_TEST_2026_10_19.md)
+- [Penjelasan pertanyaan untuk client Cineva](handover/PENJELASAN_PERTANYAAN_CLIENT_2026_11_02.md)
+- [Pertanyaan dan jawaban client Cineva](handover/PERTANYAAN_UNTUK_CLIENT_2026_11_01.md)
 - [Prompt untuk chat AI project Kantor](handover/PROMPT_AI_KANTOR.md)
 - [Status dan prompt perbaikan Cineva](handover/PROMPT_PERBAIKAN_CINEVA.md)
 - [Knowledge Base - Job Marketplace Kanban & Timeline Integration](job_marketplace_kanban_logic.md)

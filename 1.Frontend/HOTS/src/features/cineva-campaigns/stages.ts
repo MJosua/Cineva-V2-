@@ -62,7 +62,7 @@ export function buildStageCalendar(template: StageTemplate, startDate: string, r
 }
 
 /** Rencana tahap yang disimpan pada campaign. `holidays` diisi HQ (client belum memberi daftar resmi); daftar kosong berarti sengaja tanpa libur. */
-export interface StagePlan { templateId: string; startDate: string; holidays: string[]; extensions: ExtensionRecord[] }
+export interface StagePlan { templateId: string; startDate: string; holidays: string[]; extensions: ExtensionRecord[]; reopens?: StageReopen[] }
 export const findStageTemplate = (id: string) => defaultStageTemplates.find(template => template.id === id);
 export function assertStagePlan(plan: StagePlan): StagePlan {
   const template = findStageTemplate(plan.templateId);
@@ -71,6 +71,11 @@ export function assertStagePlan(plan: StagePlan): StagePlan {
   if (!Array.isArray(plan.holidays) || !plan.holidays.every(day => typeof day === 'string' && isDate(day))) throw new Error('Daftar libur harus berformat YYYY-MM-DD yang valid.');
   if (!Array.isArray(plan.extensions)) throw new Error('Riwayat perpanjangan tidak valid.');
   plan.extensions.forEach((item, index) => validateExtension(item, plan.extensions.slice(0, index), template));
+  if (plan.reopens !== undefined) {
+    if (!Array.isArray(plan.reopens)) throw new Error('Riwayat pembukaan ulang tidak valid.');
+    const calendar = buildStageCalendar(template, plan.startDate, { ...defaultServiceRules, holidays: plan.holidays }, plan.extensions);
+    plan.reopens.forEach(item => assertStageReopen(item, calendar));
+  }
   return plan;
 }
 export function stagePlanCalendar(plan: StagePlan): StageDate[] {
@@ -96,4 +101,28 @@ export function validateExtension(request: ExtensionRecord, used: ExtensionRecor
     throw new Error(messages[issue.code] ?? 'Pengajuan perpanjangan tidak valid.');
   }
   return { ...request, reason: request.reason.trim() };
+}
+
+/**
+ * Batch J (N17, B1): tombol aksi tahap hanya terbuka di dalam jendela tanggal tahapnya dan otomatis tertutup setelah lewat
+ * (contoh client: storyline + draft 1-9 Nov tertutup setelah 9 Nov). Hanya PIC campaign yang bisa membuka ulang, dengan persetujuan klien.
+ * Urutan wajib antar tahap (N18) belum dijawab, jadi tidak diperiksa di sini.
+ */
+export interface StageReopen { stageKey: string; until: string; openedBy: 'pic_campaign'; clientApproved: true; reason: string }
+export type StageWindowState = { open: true; via: 'timeline' | 'reopen' } | { open: false; why: 'not_started' | 'closed' };
+export function assertStageReopen(reopen: StageReopen, calendar: StageDate[]): StageReopen {
+  if (!calendar.some(stage => stage.key === reopen.stageKey)) throw new Error('Pembukaan ulang mengacu ke tahap yang tidak ada.');
+  if (reopen.openedBy !== 'pic_campaign') throw new Error('Hanya PIC campaign yang boleh membuka ulang tahap.');
+  if (reopen.clientApproved !== true) throw new Error('Pembukaan ulang tahap wajib disetujui klien.');
+  if (!isDate(reopen.until)) throw new Error('Batas pembukaan ulang tidak valid.');
+  if (!reopen.reason?.trim()) throw new Error('Alasan pembukaan ulang wajib diisi.');
+  return reopen;
+}
+export function stageWindowState(calendar: StageDate[], stageKey: string, today: string, reopens: StageReopen[] = []): StageWindowState {
+  const stage = calendar.find(item => item.key === stageKey);
+  if (!stage) throw new Error('Tahap tidak ada pada kalender campaign.');
+  if (!isDate(today)) throw new Error('Tanggal hari ini tidak valid.');
+  if (today >= stage.start && today <= stage.end) return { open: true, via: 'timeline' };
+  if (reopens.some(item => assertStageReopen(item, calendar).stageKey === stageKey && today >= stage.start && today <= item.until)) return { open: true, via: 'reopen' };
+  return { open: false, why: today < stage.start ? 'not_started' : 'closed' };
 }

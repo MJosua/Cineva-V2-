@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-29T01:28:11.450Z",
+  "generatedAt": "2026-11-02T13:09:46.388Z",
   "files": [
     {
       "app": "@hots/tenant-contracts",
@@ -6326,8 +6326,8 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/CampaignDesk.tsx",
-      "sha256": "c41d737fd55865a03ca94332d0e13b43fe9e19ddf51980fc616e09f613bf9f18",
-      "lines": 53,
+      "sha256": "9074d390f0cf06619e17a8f1158c2a648ec5b6e5ead453c6d2160afb7233162c",
+      "lines": 63,
       "imports": [
         "react",
         "@/components/ui/button",
@@ -6338,13 +6338,18 @@
         "./repository",
         "./CampaignEditor",
         "./AssignmentEditor",
-        "./CampaignSetup"
+        "./CampaignSetup",
+        "./StagePlanPanel",
+        "./RatingPanel"
       ],
       "symbols": [
         "CampaignDesk",
         "rows",
         "campaign",
+        "settle",
         "act",
+        "track",
+        "result",
         "props"
       ],
       "endpoints": []
@@ -6382,9 +6387,33 @@
     },
     {
       "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/CampaignSourceDesk.tsx",
+      "sha256": "df807f8e1e06202e5fb5c1e44479b7f54e4ce5842d3991ec471d90c71ef3235e",
+      "lines": 34,
+      "imports": [
+        "react",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "../cineva-inquiries/domain",
+        "./CampaignDesk",
+        "./apiRepository",
+        "./repository"
+      ],
+      "symbols": [
+        "defaultUrl",
+        "read",
+        "write",
+        "CampaignSourceDesk",
+        "api",
+        "choose"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/ExecutionPanel.tsx",
-      "sha256": "7dc53e030949352b4ece0c7fca2cae0921ebc79820ea02dce1cf06e4f3b00cf9",
-      "lines": 78,
+      "sha256": "4db5579fd4ae236359fe81fcd5937bb11af5af37be959a68f18c171b8d4405de",
+      "lines": 85,
       "imports": [
         "react",
         "@/components/ui/button",
@@ -6392,6 +6421,7 @@
         "@/components/ui/textarea",
         "../cineva-inquiries/domain",
         "./model",
+        "../cineva-services/policies",
         "./execution"
       ],
       "symbols": [
@@ -6401,6 +6431,7 @@
         "current",
         "id",
         "DeliverableProgress",
+        "approvalGate",
         "target",
         "owner",
         "ExecutionPanel"
@@ -6410,8 +6441,8 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/FinancePanel.tsx",
-      "sha256": "a92fce2538bbeff5a382069fdce61a2fff021c79449ebddf837855d757b1b5e6",
-      "lines": 75,
+      "sha256": "d22c84489ff017ad52e589a1506ecfa02ab8802aadf5ff0e87a66ff090349854",
+      "lines": 86,
       "imports": [
         "react",
         "@/components/ui/button",
@@ -6420,6 +6451,8 @@
         "../cineva-shared/model",
         "./model",
         "./execution",
+        "./paymentGate",
+        "../cineva-services/policies",
         "./finance"
       ],
       "symbols": [
@@ -6432,7 +6465,10 @@
         "InsightEntry",
         "postedAt",
         "reminder",
+        "normalized",
         "metrics",
+        "unreadable",
+        "rewritten",
         "er",
         "rate"
       ],
@@ -6440,11 +6476,237 @@
     },
     {
       "app": "cineva-frontend",
-      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/execution.ts",
-      "sha256": "f5af64d5eb12120b008e09f079908a2fe735731ee19a043e7d77f130d7c5c049",
-      "lines": 145,
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/RatingPanel.tsx",
+      "sha256": "575a87613af092bb02fab20ba86041337a0ccb85897c059217099694afb67b51",
+      "lines": 59,
+      "imports": [
+        "react",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/textarea",
+        "../cineva-inquiries/domain",
+        "./model",
+        "./rating"
+      ],
+      "symbols": [
+        "selectClass",
+        "RatingCriteriaEditor",
+        "criteria",
+        "id",
+        "RatingPanel",
+        "ratings",
+        "submit",
+        "numeric"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/StagePlanPanel.tsx",
+      "sha256": "ab2ddf9986abbeeba06abcc41d84250b8c6653ad1fd648a9167b947c83c7e44f",
+      "lines": 78,
+      "imports": [
+        "react",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/textarea",
+        "../cineva-inquiries/domain",
+        "./model",
+        "./stages"
+      ],
+      "symbols": [
+        "dateList",
+        "localToday",
+        "now",
+        "windowLabel",
+        "StagePlanPanel",
+        "hq",
+        "today",
+        "act",
+        "calendar",
+        "template",
+        "usedDays",
+        "extensionLeft",
+        "proof",
+        "next",
+        "state",
+        "record",
+        "picked"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/apiMapping.ts",
+      "sha256": "4e520b80a464b6c8518fd94402f62e788d67221d2467cbdb7c1d9d9a03da08c5",
+      "lines": 160,
+      "imports": [
+        "./model",
+        "./execution",
+        "./stages"
+      ],
+      "symbols": [
+        "isoMillis",
+        "clean",
+        "same",
+        "trialIdentities",
+        "users",
+        "reverse",
+        "toStagePlan",
+        "plan",
+        "toAssignment",
+        "deliveries",
+        "events",
+        "deliverables",
+        "product",
+        "fulfilled",
+        "toCampaign",
+        "products",
+        "stagePlan",
+        "proofBody",
+        "deliverableBody",
+        "planAssignmentCalls",
+        "calls",
+        "before",
+        "d",
+        "old",
+        "draft",
+        "review",
+        "oldFinance",
+        "snapshot",
+        "payment",
+        "rating",
+        "planCampaignCalls",
+        "fixed",
+        "oldCriteria",
+        "criterion",
+        "batch",
+        "m",
+        "p",
+        "oldPlan",
+        "item",
+        "a",
+        "planCreateBody"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/apiRepository.test.ts",
+      "sha256": "5162f86a4b4edf16ea849b9ab97251a4323ae90ffaefee93070bc08cbf605e8c",
+      "lines": 114,
+      "imports": [
+        "node:test",
+        "node:assert/strict",
+        "./apiRepository.ts",
+        "./apiMapping.ts",
+        "./execution.ts",
+        "./finance.ts",
+        "./rating.ts",
+        "./model"
+      ],
+      "symbols": [
+        "baseUrl",
+        "hq",
+        "wib",
+        "row",
+        "a",
+        "probe",
+        "hqRepo",
+        "title",
+        "find",
+        "ready",
+        "campaign",
+        "extension",
+        "batch",
+        "assignment",
+        "deliverableId",
+        "revision",
+        "act",
+        "current",
+        "mine"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/apiRepository.ts",
+      "sha256": "686f062111fe82577fe1b14fb551f876359588a9d60c16487537d715b50c9d86",
+      "lines": 110,
       "imports": [
         "../cineva-inquiries/domain",
+        "./model",
+        "./apiMapping.ts"
+      ],
+      "symbols": [
+        "principals",
+        "trialHeaders",
+        "clone",
+        "key",
+        "createApiCampaignRepository",
+        "listeners",
+        "cache",
+        "root",
+        "notify",
+        "request",
+        "run",
+        "response",
+        "json",
+        "error",
+        "extra",
+        "fetchAll",
+        "list",
+        "rows",
+        "item",
+        "load",
+        "id",
+        "pending",
+        "project",
+        "copy",
+        "own",
+        "cached",
+        "failure",
+        "reloadAfter",
+        "call",
+        "reload",
+        "row",
+        "create",
+        "next",
+        "campaign"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/execution.test.ts",
+      "sha256": "1042ba8ff48cf63532be7d82408d18a5d4b986bbc0a477626ed85c0d29d33c63",
+      "lines": 34,
+      "imports": [
+        "node:test",
+        "node:assert/strict",
+        "./execution.ts",
+        "./model"
+      ],
+      "symbols": [
+        "hq",
+        "base",
+        "submitted",
+        "review",
+        "approved",
+        "revised",
+        "previous",
+        "forged"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/execution.ts",
+      "sha256": "9f5a66269671caac61f404bd825de5da2a21bfbab5aa6888f3fc6b2c6a2ca43c",
+      "lines": 153,
+      "imports": [
+        "../cineva-inquiries/domain",
+        "../cineva-services/policies.ts",
         "./model"
       ],
       "symbols": [
@@ -6465,6 +6727,8 @@
         "draft",
         "reviewDraft",
         "reviewedAt",
+        "approvals",
+        "gate",
         "recordPosting",
         "target",
         "postedAt",
@@ -6483,12 +6747,13 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/finance.ts",
-      "sha256": "2b875791460acd3400ca3b086f113996e3ab936709893c166d4dea82c9d1c20a",
-      "lines": 123,
+      "sha256": "54c1cab8669e61ab7e6b13fc225a5bc991ca9ec52b567b684908c6fcadaade33",
+      "lines": 126,
       "imports": [
         "../cineva-inquiries/domain",
         "./model",
-        "./execution"
+        "./execution.ts",
+        "./paymentGate.ts"
       ],
       "symbols": [
         "metricNames",
@@ -6504,6 +6769,7 @@
         "configureFinance",
         "finance",
         "requestPayout",
+        "gate",
         "processPayout",
         "recordPayout",
         "nextPayment",
@@ -6529,12 +6795,14 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/model.ts",
-      "sha256": "cebc8acdc1b2c31b6446d50b4ab8ee73f08f50236bce6f18d658a0013a42ae5b",
-      "lines": 47,
+      "sha256": "c5cf26c9b1a899ae5ccd81cc0a2c94cf68f98a560da3d04f31181e3efe030abd",
+      "lines": 58,
       "imports": [
         "../cineva-inquiries/domain",
         "./execution",
-        "./finance"
+        "./finance",
+        "./stages",
+        "./rating"
       ],
       "symbols": [
         "isHQOwner",
@@ -6548,9 +6816,104 @@
     },
     {
       "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/paymentGate.test.ts",
+      "sha256": "3127dcc04c0335f0a1757f54fcd37f1eba5036834e87b1d80e4b5e47e5c8230c",
+      "lines": 31,
+      "imports": [
+        "node:test",
+        "node:assert/strict",
+        "./paymentGate.ts",
+        "./model"
+      ],
+      "symbols": [
+        "base",
+        "done",
+        "noInsight",
+        "draft",
+        "brandOnly"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/paymentGate.ts",
+      "sha256": "5ab92c64ee475d65bbb65fabf4e85dfd44581ec559791effc65f64837f4debb8",
+      "lines": 26,
+      "imports": [
+        "../cineva-services/policies.ts",
+        "./model"
+      ],
+      "symbols": [
+        "paymentGateLabels",
+        "assignmentPaymentGate",
+        "posting",
+        "own",
+        "run",
+        "insights"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/rating.test.ts",
+      "sha256": "ccc8c45b516946ffe20c3044dffcfa2af022b6a277ea7d1b28bbe8939bed935f",
+      "lines": 46,
+      "imports": [
+        "node:test",
+        "node:assert/strict",
+        "./rating.ts",
+        "./model"
+      ],
+      "symbols": [
+        "hq",
+        "campaign",
+        "assignment",
+        "row",
+        "full",
+        "i",
+        "criteria",
+        "input",
+        "rated",
+        "base",
+        "edited",
+        "forged"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/rating.ts",
+      "sha256": "f067e03973c56d972a04ea8181c562dd75d0260204773d08c7f20b88700da1c1",
+      "lines": 57,
+      "imports": [
+        "../cineva-inquiries/domain",
+        "./model"
+      ],
+      "symbols": [
+        "maxCriteria",
+        "same",
+        "assertHQ",
+        "ratingAverage",
+        "values",
+        "addRatingCriterion",
+        "text",
+        "recordRating",
+        "comment",
+        "criterion",
+        "value",
+        "rating",
+        "assertRatingMutation",
+        "before",
+        "added",
+        "replay"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-campaigns/repository.ts",
-      "sha256": "696220615cec2baee20b7a8d07db9b1c8c46fcdbb35b263e92dea19ab46f71d4",
-      "lines": 81,
+      "sha256": "72a23eb3c523d0f16de12151bfb60f9e19998b7b16e9a69818706de635f7467e",
+      "lines": 84,
       "imports": [
         "@hots/app-core",
         "../cineva-inquiries/domain",
@@ -6558,7 +6921,8 @@
         "./model",
         "./seed",
         "./execution",
-        "./finance"
+        "./finance",
+        "./rating"
       ],
       "symbols": [
         "clone",
@@ -6592,6 +6956,69 @@
       ],
       "symbols": [
         "campaignSeed"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/stages.test.ts",
+      "sha256": "2d4345069013126e7da4408787cf8f5a681e0cf4774d37eb9c86aadf314b2f0b",
+      "lines": 88,
+      "imports": [
+        "node:test",
+        "node:assert/strict",
+        "../cineva-services/rules.ts",
+        "./stages.ts"
+      ],
+      "symbols": [
+        "rules",
+        "ext",
+        "calendar",
+        "held",
+        "base",
+        "plan",
+        "extended",
+        "png",
+        "bad",
+        "reopen"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-campaigns/stages.ts",
+      "sha256": "32514e5f64421160c95957e117a0e1a188d6bf5daa0ff662c73fab10c234d758",
+      "lines": 129,
+      "imports": [
+        "@hots/scheduling-kit",
+        "../cineva-services/rules.ts"
+      ],
+      "symbols": [
+        "defaultExtensionRules",
+        "defaultStageTemplates",
+        "isDate",
+        "addDays",
+        "next",
+        "assertStageTemplate",
+        "keys",
+        "buildStageCalendar",
+        "item",
+        "result",
+        "cursor",
+        "stage",
+        "planned",
+        "extra",
+        "end",
+        "findStageTemplate",
+        "assertStagePlan",
+        "template",
+        "calendar",
+        "stagePlanCalendar",
+        "validateExtension",
+        "issue",
+        "messages",
+        "assertStageReopen",
+        "stageWindowState"
       ],
       "endpoints": []
     },
@@ -6636,19 +7063,38 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-hq/EstimatorView.tsx",
-      "sha256": "4cacc1c53dfa4d41ae2f36a673405c76692e35c229e2cca5abd55ba20a2421a2",
-      "lines": 19,
+      "sha256": "7dcf00affa584b40edf58baa8d2e86c62f75f7e68449424759d1a91bdaece63f",
+      "lines": 20,
       "imports": [
         "react",
         "@/components/ui/card",
         "@/components/ui/button",
         "../cineva-shared/HotsForm",
         "../cineva-shared/JobEditor",
+        "../cineva-services/PolicySimulators",
         "../cineva-shared/model"
       ],
       "symbols": [
         "EstimatorView",
         "nextType"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-hq/PlansMock.tsx",
+      "sha256": "ad66f9d81236a9707d88b79845947f0dc73a920991665c043904a92c33854ba8",
+      "lines": 49,
+      "imports": [
+        "react",
+        "@/components/ui/card",
+        "@/components/ui/button"
+      ],
+      "symbols": [
+        "plans",
+        "rupiah",
+        "PlansMock",
+        "locked"
       ],
       "endpoints": []
     },
@@ -6697,6 +7143,48 @@
         "role",
         "confirmBooking",
         "confirmed"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-hq/crewEstimator.test.ts",
+      "sha256": "0ed05b37a8882ed78272bdd6e35f5a0297e4fc5674d7d7ef7259e484a846a26e",
+      "lines": 44,
+      "imports": [
+        "node:test",
+        "node:assert/strict",
+        "../cineva-services/rules.ts",
+        "./crewEstimator.ts"
+      ],
+      "symbols": [
+        "bands",
+        "and",
+        "small"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-hq/crewEstimator.ts",
+      "sha256": "679081cc56dd78aac10a08d71586241637f28798f1861b591d355b497c3a3044",
+      "lines": 53,
+      "imports": [
+        "../cineva-services/rules.ts"
+      ],
+      "symbols": [
+        "defaultCrewBands",
+        "assertComposition",
+        "roles",
+        "minimumCrewCost",
+        "total",
+        "crewBudgetCoverage",
+        "minimumCost",
+        "assertCrewBands",
+        "recommendCrew",
+        "kind",
+        "table",
+        "band"
       ],
       "endpoints": []
     },
@@ -7198,6 +7686,34 @@
     },
     {
       "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-services/PolicySimulators.tsx",
+      "sha256": "d996bf10af802071828aaffa04d2936f2b74521298bea468953307e28f656375",
+      "lines": 80,
+      "imports": [
+        "react",
+        "@/components/ui/card",
+        "@/components/ui/input",
+        "../cineva-shared/model",
+        "./policies"
+      ],
+      "symbols": [
+        "tierLabels",
+        "parties",
+        "toInt",
+        "selectClass",
+        "KolEstimateCard",
+        "result",
+        "CancellationSimulator",
+        "rule",
+        "activeReason",
+        "decider",
+        "brandPenalty",
+        "proofIssue"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-services/QuoteBreakdown.tsx",
       "sha256": "b2ecdebf99db3762bba515e259814b2c208c0c00b5bb50f391582b2d4923f7c8",
       "lines": 10,
@@ -7286,6 +7802,82 @@
     },
     {
       "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-services/policies.test.ts",
+      "sha256": "616d7b2c7007db84cfb346d581412dd023c05d593357c75a33be3327225ec26b",
+      "lines": 73,
+      "imports": [
+        "node:test",
+        "node:assert/strict",
+        "./policies.ts"
+      ],
+      "symbols": [
+        "brand",
+        "crew",
+        "reason",
+        "storm",
+        "policy",
+        "closed",
+        "percent",
+        "bad",
+        "options",
+        "dup"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-services/policies.ts",
+      "sha256": "0446b3e2a44364bac02b973a667243ae78bf71c6aa0d31d811711818bb6f619d",
+      "lines": 165,
+      "imports": [
+        "@hots/domain-kit"
+      ],
+      "symbols": [
+        "crewReasons",
+        "defaultCancellationPolicy",
+        "cancellationReasonLabels",
+        "cancellationDeciders",
+        "evaluateProjectCancellation",
+        "contentApprovalKeys",
+        "approvalLabels",
+        "creatorPaymentKeys",
+        "contentApprovalGate",
+        "creatorPaymentGate",
+        "defaultKolRateCard",
+        "isRupiah",
+        "resolveKolTier",
+        "key",
+        "tier",
+        "estimateKolBudget",
+        "min",
+        "item",
+        "rate",
+        "normalizeMetric",
+        "bounds",
+        "value",
+        "match",
+        "digits",
+        "brandPenaltyPolicy",
+        "brandCancellationOptions",
+        "assertCancellationProof",
+        "text",
+        "cancellationSettlementDays",
+        "cancellationSettlementDue",
+        "due",
+        "normalizeWhatsapp",
+        "local",
+        "normalizeName",
+        "findDuplicateRegistrations",
+        "keyed",
+        "matches",
+        "i",
+        "j",
+        "a"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-services/pricing.ts",
       "sha256": "ad76503a6910851e26e5ac709c94c01ef8679ebcc237c6ffe518759bcb7293e4",
       "lines": 19,
@@ -7298,6 +7890,56 @@
         "estimate",
         "items",
         "total"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-services/rules.test.ts",
+      "sha256": "93ad6c37703125eb439af4865b5bb18bf961ca42ae31f75dad73a1b65860d3ad",
+      "lines": 74,
+      "imports": [
+        "node:test",
+        "node:assert/strict",
+        "./rules.ts"
+      ],
+      "symbols": [
+        "rules",
+        "follows",
+        "banded",
+        "hours"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-frontend",
+      "path": "1.Frontend/HOTS/src/features/cineva-services/rules.ts",
+      "sha256": "463fe2c0122ccc42cf5a3a7e084fe9d715d5c31a7d37b2d76b4636413864bb06",
+      "lines": 134,
+      "imports": [
+        "@hots/scheduling-kit"
+      ],
+      "symbols": [
+        "defaultServiceRules",
+        "isRupiah",
+        "isDate",
+        "assertServiceRules",
+        "projectClass",
+        "overtimeRange",
+        "kind",
+        "overtimeRate",
+        "bands",
+        "band",
+        "overtimeBillableHours",
+        "minutes",
+        "overtimeCost",
+        "cost",
+        "isWithinServiceHours",
+        "match",
+        "workingDayHolidays",
+        "isWorkingDay",
+        "addWorkingDays",
+        "paymentDueDate"
       ],
       "endpoints": []
     },
@@ -7348,14 +7990,15 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-shared/CinevaProgram.tsx",
-      "sha256": "9cd2d500d6b024dc63b1f161901a835bc6c26f322934be6ac717f043383cd93e",
-      "lines": 83,
+      "sha256": "a0d06cc4dc70911c1a87ea18b5313896e470dcbffc3b677b7fe6754d4ff61d80",
+      "lines": 85,
       "imports": [
         "../cineva-reference/ReferenceAccounts",
         "../content-studio/Studio",
         "react",
         "../cineva-inquiries/ServiceDesk",
-        "../cineva-campaigns/CampaignDesk",
+        "../cineva-campaigns/CampaignSourceDesk",
+        "../cineva-hq/PlansMock",
         "../cineva-campaigns/ExecutionPanel",
         "../cineva-campaigns/FinancePanel",
         "../cineva-inquiries/domain",
@@ -7642,8 +8285,8 @@
     {
       "app": "cineva-frontend",
       "path": "1.Frontend/HOTS/src/features/cineva-shared/navigation.ts",
-      "sha256": "7a9c11823b8e34d1fcc4d97250a5828ddc9e784fad17b2e3faa0ce7bc4e82029",
-      "lines": 9,
+      "sha256": "6e7d29b26dd392f3214c2ccc428916455e965ccd3a33fb1ce05a8452b62e00e3",
+      "lines": 10,
       "imports": [
         "lucide-react"
       ],
@@ -14651,6 +15294,491 @@
     },
     {
       "app": "cineva-backend",
+      "path": "2.Backend/Integrated-API/app/modules/cineva-campaigns/bootstrap.js",
+      "sha256": "e86027820f4b13020c873cd2abb3f062d930af623b21f52b1e06f96309ab6bbd",
+      "lines": 23,
+      "imports": [
+        "node:path",
+        "node:fs/promises",
+        "node:url"
+      ],
+      "symbols": [
+        "path",
+        "fs",
+        "loadCampaignRuntime",
+        "directory",
+        "file",
+        "module",
+        "promisePool",
+        "authorize"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-backend",
+      "path": "2.Backend/Integrated-API/app/modules/cineva-campaigns/config.mjs",
+      "sha256": "36cd05bb7d2af3e71da1aa7e5d324d78af50b1ce5caa966ed9117d2a63be111f",
+      "lines": 24,
+      "imports": [],
+      "symbols": [
+        "crewReasons",
+        "defaultConfig"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-backend",
+      "path": "2.Backend/Integrated-API/app/modules/cineva-campaigns/db.mjs",
+      "sha256": "56b9902219c4d92c1d8449d1d22ad82fe4c29e0c7067c32ae3e9bb9c955d9cd8",
+      "lines": 29,
+      "imports": [],
+      "symbols": [
+        "acquire",
+        "conn",
+        "withConnection",
+        "withTransaction",
+        "result"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-backend",
+      "path": "2.Backend/Integrated-API/app/modules/cineva-campaigns/policyPorts.mjs",
+      "sha256": "e67428757d44cdc1c8d1201de2867a01c79b7b52369e1103cccf4ea907734a8d",
+      "lines": 6,
+      "imports": [
+        "../../../../../1.Frontend/packages/domain-kit/src/policies.ts",
+        "../../../../../1.Frontend/packages/scheduling-kit/src/workdays.ts"
+      ],
+      "symbols": [],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-backend",
+      "path": "2.Backend/Integrated-API/app/modules/cineva-campaigns/repository.mjs",
+      "sha256": "c27268654b99688cf68edd39c5f7bc827f6600c38cd855e59bce66fd65bfd38f",
+      "lines": 229,
+      "imports": [],
+      "symbols": [
+        "D",
+        "TS",
+        "lock",
+        "insertCampaign",
+        "insertBatch",
+        "insertMilestone",
+        "insertProduct",
+        "findCampaign",
+        "campaignChildren",
+        "extensions",
+        "listCampaigns",
+        "join",
+        "binds",
+        "where",
+        "updateStagePlan",
+        "replaceHolidays",
+        "day",
+        "listExtensions",
+        "insertExtension",
+        "proof",
+        "insertAssignment",
+        "profile",
+        "d",
+        "ASSIGNMENT_COLUMNS",
+        "findAssignment",
+        "normaliseAssignment",
+        "assignmentDeliverables",
+        "findDeliverable",
+        "lockDeliverable",
+        "deliveryState",
+        "lastDraft",
+        "status",
+        "insertDraft",
+        "insertReview",
+        "key",
+        "insertPosting",
+        "approvalDate",
+        "METRICS",
+        "findInsight",
+        "insertInsight",
+        "insightCounts",
+        "updateFinanceAmounts",
+        "markPayoutRequested",
+        "setPayoutProcessing",
+        "listPayouts",
+        "insertPayout",
+        "insertCancellation",
+        "insertLateRequest",
+        "findLateRequest",
+        "decideLateRequest",
+        "approvedLateRequest",
+        "creatorHasAssignment",
+        "insertDeliverable",
+        "setAssignmentProduct",
+        "setFulfillment",
+        "listAssignmentIds",
+        "creator",
+        "assignmentInsights",
+        "assignmentProfiles",
+        "listCriteria",
+        "insertCriterion",
+        "insertRating",
+        "listRatings",
+        "out",
+        "rating"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-backend",
+      "path": "2.Backend/Integrated-API/app/modules/cineva-campaigns/routes.js",
+      "sha256": "7102b9bce9b58f2ba7f99889938c19871c75fd1d38a14c134f012ab7cc160cd1",
+      "lines": 48,
+      "imports": [],
+      "symbols": [
+        "createCampaignRouter",
+        "router",
+        "int",
+        "handle",
+        "principal",
+        "data",
+        "status"
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/campaigns",
+          "line": 19
+        },
+        {
+          "method": "POST",
+          "path": "/campaigns",
+          "line": 20
+        },
+        {
+          "method": "GET",
+          "path": "/campaigns/:id",
+          "line": 21
+        },
+        {
+          "method": "PUT",
+          "path": "/campaigns/:id/stage-plan",
+          "line": 22
+        },
+        {
+          "method": "POST",
+          "path": "/campaigns/:id/extensions",
+          "line": 23
+        },
+        {
+          "method": "POST",
+          "path": "/campaigns/:id/assignments",
+          "line": 24
+        },
+        {
+          "method": "POST",
+          "path": "/campaigns/:id/cancellations",
+          "line": 25
+        },
+        {
+          "method": "GET",
+          "path": "/campaigns/:id/assignments",
+          "line": 26
+        },
+        {
+          "method": "POST",
+          "path": "/campaigns/:id/batches",
+          "line": 27
+        },
+        {
+          "method": "POST",
+          "path": "/campaigns/:id/milestones",
+          "line": 28
+        },
+        {
+          "method": "POST",
+          "path": "/campaigns/:id/products",
+          "line": 29
+        },
+        {
+          "method": "POST",
+          "path": "/assignments/:id/deliverables",
+          "line": 30
+        },
+        {
+          "method": "PUT",
+          "path": "/assignments/:id/product",
+          "line": 31
+        },
+        {
+          "method": "POST",
+          "path": "/assignments/:id/fulfillment",
+          "line": 32
+        },
+        {
+          "method": "POST",
+          "path": "/campaigns/:id/rating-criteria",
+          "line": 33
+        },
+        {
+          "method": "POST",
+          "path": "/assignments/:id/ratings",
+          "line": 34
+        },
+        {
+          "method": "GET",
+          "path": "/assignments/:id",
+          "line": 35
+        },
+        {
+          "method": "PUT",
+          "path": "/assignments/:id/finance",
+          "line": 36
+        },
+        {
+          "method": "POST",
+          "path": "/assignments/:id/payout-requests",
+          "line": 37
+        },
+        {
+          "method": "POST",
+          "path": "/assignments/:id/payouts",
+          "line": 38
+        },
+        {
+          "method": "POST",
+          "path": "/deliverables/:id/drafts",
+          "line": 39
+        },
+        {
+          "method": "POST",
+          "path": "/deliverables/:id/reviews",
+          "line": 40
+        },
+        {
+          "method": "POST",
+          "path": "/deliverables/:id/posting",
+          "line": 41
+        },
+        {
+          "method": "POST",
+          "path": "/deliverables/:id/insights",
+          "line": 42
+        },
+        {
+          "method": "POST",
+          "path": "/deliverables/:id/late-requests",
+          "line": 43
+        },
+        {
+          "method": "POST",
+          "path": "/late-requests/:id/decision",
+          "line": 44
+        }
+      ]
+    },
+    {
+      "app": "cineva-backend",
+      "path": "2.Backend/Integrated-API/app/modules/cineva-campaigns/service.mjs",
+      "sha256": "a8d7c3e4a5457130b1c0f1860caad702c6aaa29b9f96f51e7ed5d6f4bc56f930",
+      "lines": 471,
+      "imports": [
+        "node:crypto",
+        "./repository.mjs",
+        "./db.mjs",
+        "./config.mjs",
+        "./policyPorts.mjs"
+      ],
+      "symbols": [
+        "CampaignError",
+        "fail",
+        "isDate",
+        "isMoney",
+        "text",
+        "optionalText",
+        "httpUrl",
+        "url",
+        "sqlTime",
+        "wibDate",
+        "createService",
+        "scopeOf",
+        "today",
+        "hq",
+        "emit",
+        "pageOf",
+        "size",
+        "requireCampaign",
+        "row",
+        "requireOwnerHQ",
+        "requireAssignment",
+        "requireDeliverable",
+        "ownerCreator",
+        "paymentGate",
+        "deliverables",
+        "states",
+        "item",
+        "posting",
+        "service",
+        "createCampaign",
+        "campaign",
+        "batches",
+        "milestones",
+        "products",
+        "setStagePlan",
+        "templateId",
+        "holidays",
+        "addExtension",
+        "request",
+        "used",
+        "addAssignment",
+        "assignment",
+        "owner",
+        "children",
+        "detailed",
+        "state",
+        "payouts",
+        "insights",
+        "ratings",
+        "listAssignments",
+        "ids",
+        "items",
+        "id",
+        "addBatch",
+        "batch",
+        "addMilestone",
+        "milestone",
+        "addProduct",
+        "product",
+        "addDeliverable",
+        "campaignId",
+        "chooseProduct",
+        "productId",
+        "progressFulfillment",
+        "submitDraft",
+        "result",
+        "deliverable",
+        "reviewDraft",
+        "note",
+        "approvals",
+        "gate",
+        "recordPosting",
+        "recordInsight",
+        "metrics",
+        "key",
+        "value",
+        "existing",
+        "same",
+        "configureFinance",
+        "amounts",
+        "paid",
+        "requestPayout",
+        "recordPayout",
+        "payment",
+        "addRatingCriterion",
+        "criterion",
+        "recordRating",
+        "comment",
+        "criteria",
+        "scores",
+        "recordCancellation",
+        "outcome",
+        "requestLateSubmission",
+        "reason",
+        "decideLateSubmission"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "cineva-backend",
+      "path": "2.Backend/Integrated-API/app/modules/cineva-campaigns/test/service.test.mjs",
+      "sha256": "d7e094d786488817c3ee5be47efc24d2c18ff30a2b8ca1ff02bea566c75934ee",
+      "lines": 278,
+      "imports": [
+        "node:test",
+        "node:assert/strict",
+        "node:fs",
+        "node:path",
+        "node:url",
+        "mysql2/promise",
+        "../service.mjs"
+      ],
+      "symbols": [
+        "here",
+        "sqlDir",
+        "DB",
+        "base",
+        "pool",
+        "hq",
+        "creator",
+        "otherCreator",
+        "foreignHq",
+        "now",
+        "code",
+        "rows",
+        "admin",
+        "guarded",
+        "sampleCampaign",
+        "seedAssignment",
+        "campaign",
+        "assignment",
+        "approved",
+        "first",
+        "mine",
+        "flaky",
+        "conn",
+        "query",
+        "before",
+        "plan",
+        "planned",
+        "proof",
+        "extended",
+        "id",
+        "reviewed",
+        "metrics",
+        "requested",
+        "paid",
+        "original",
+        "request",
+        "decided",
+        "crew",
+        "sick",
+        "storm",
+        "stored",
+        "express",
+        "listen",
+        "server",
+        "closed",
+        "closedServer",
+        "res",
+        "principals",
+        "runtime",
+        "p",
+        "app",
+        "call",
+        "created",
+        "invalid",
+        "listed",
+        "conflict",
+        "cancelled",
+        "batch",
+        "product",
+        "detail",
+        "item",
+        "timeliness",
+        "quality",
+        "rated",
+        "other",
+        "foreign"
+      ],
+      "endpoints": [
+        {
+          "method": "USE",
+          "path": "/api/cineva/v1",
+          "line": 199
+        }
+      ]
+    },
+    {
+      "app": "cineva-backend",
       "path": "2.Backend/Integrated-API/app/modules/content-studio/bootstrap.js",
       "sha256": "0c162ad3f53ffe1ff44cd2d784ce5f3daa2da8b2c8032b6d0aa2819b91b427ac",
       "lines": 19,
@@ -15266,8 +16394,8 @@
     {
       "app": "cineva-backend",
       "path": "2.Backend/Integrated-API/app/registerRoutes.js",
-      "sha256": "304dd1f7657224756757aab404dbc34eb0b5d763d7513559b830cb91d03af9a4",
-      "lines": 193,
+      "sha256": "e59b30a38dddcf4f53785885bed970c93e69a50974d9bab208ea6145fca4aa09",
+      "lines": 195,
       "imports": [
         "express",
         "path",
@@ -15275,6 +16403,7 @@
         "../middleware/rateLimit",
         "./modules/tenant-platform/routes",
         "./modules/content-studio/routes",
+        "./modules/cineva-campaigns/routes",
         "../routers"
       ],
       "symbols": [
@@ -15289,83 +16418,88 @@
       "endpoints": [
         {
           "method": "USE",
+          "path": "/api/cineva/v1",
+          "line": 70
+        },
+        {
+          "method": "USE",
           "path": "/api/tenant/v1",
-          "line": 69
+          "line": 71
         },
         {
           "method": "USE",
           "path": "/api/content/v1",
-          "line": 70
+          "line": 72
         },
         {
           "method": "GET",
           "path": "/",
-          "line": 79
+          "line": 81
         },
         {
           "method": "USE",
           "path": "/public",
-          "line": 89
+          "line": 91
         },
         {
           "method": "USE",
           "path": "*",
-          "line": 90
+          "line": 92
         },
         {
           "method": "USE",
           "path": "/api/event-engine/public",
-          "line": 165
+          "line": 167
         },
         {
           "method": "USE",
           "path": "/api/event-engine/admin",
-          "line": 171
+          "line": 173
         },
         {
           "method": "USE",
           "path": "/public",
-          "line": 176
-        },
-        {
-          "method": "USE",
-          "path": "/image",
-          "line": 177
-        },
-        {
-          "method": "USE",
-          "path": "/files",
           "line": 178
         },
         {
           "method": "USE",
-          "path": "/aset",
+          "path": "/image",
           "line": 179
         },
         {
           "method": "USE",
-          "path": "/ttd",
+          "path": "/files",
           "line": 180
         },
         {
           "method": "USE",
-          "path": "/hots/profile",
+          "path": "/aset",
           "line": 181
         },
         {
           "method": "USE",
-          "path": "/public/files/hots/it_support",
+          "path": "/ttd",
           "line": 182
         },
         {
           "method": "USE",
-          "path": "/public/hots/generateddocuments",
+          "path": "/hots/profile",
           "line": 183
         },
         {
           "method": "USE",
-          "path": "*",
+          "path": "/public/files/hots/it_support",
+          "line": 184
+        },
+        {
+          "method": "USE",
+          "path": "/public/hots/generateddocuments",
           "line": 185
+        },
+        {
+          "method": "USE",
+          "path": "*",
+          "line": 187
         }
       ]
     },
@@ -19786,8 +20920,8 @@
     {
       "app": "cineva-backend",
       "path": "2.Backend/Integrated-API/index.js",
-      "sha256": "8bd0b6659fc681da2bca76c8204b36b5802e162735675cbb9c1ad9b7bb1f72a1",
-      "lines": 56,
+      "sha256": "27b4787b6d3f2b115e1041265cc3c6137e4964a136678236246bdb1fe0691d66",
+      "lines": 59,
       "imports": [
         "dotenv",
         "fs",
@@ -19800,6 +20934,7 @@
         "./app/createApp",
         "./app/registerRoutes",
         "./app/modules/content-studio/bootstrap",
+        "./app/modules/cineva-campaigns/bootstrap",
         "./jobs/startup",
         "./server/listen"
       ],
@@ -19814,6 +20949,8 @@
         "App",
         "contentLogger",
         "contentRuntime",
+        "campaignLogger",
+        "campaignRuntime",
         "server"
       ],
       "endpoints": []
@@ -30715,8 +31852,8 @@
     {
       "app": "@hots/domain-kit",
       "path": "1.Frontend/packages/domain-kit/src/index.ts",
-      "sha256": "dba82e9e6b3d436de4e8675e16ac3ceeadaa97d6ebc557ae828add798cc6442b",
-      "lines": 8,
+      "sha256": "e88b7300c7506c65efbecab3107f5a809896bb8d6df0ba01b806c380028b032a",
+      "lines": 9,
       "imports": [
         "./validation.ts",
         "./relations.ts",
@@ -30724,9 +31861,39 @@
         "./commands.ts",
         "./events.ts",
         "./configuration.ts",
-        "./projections.ts"
+        "./projections.ts",
+        "./policies.ts"
       ],
       "symbols": [],
+      "endpoints": []
+    },
+    {
+      "app": "@hots/domain-kit",
+      "path": "1.Frontend/packages/domain-kit/src/policies.ts",
+      "sha256": "e13ed4578992ede77a5fbced2920e42cbc1f55a9b905511ed743947aa4b3115e",
+      "lines": 95,
+      "imports": [],
+      "symbols": [
+        "evaluateGate",
+        "have",
+        "ok",
+        "missing",
+        "money",
+        "evaluateCancellation",
+        "rule",
+        "deposit",
+        "effect",
+        "penalty",
+        "percent",
+        "base",
+        "amount",
+        "extraCharges",
+        "key",
+        "value",
+        "depositForfeited",
+        "refund",
+        "total"
+      ],
       "endpoints": []
     },
     {
@@ -30840,13 +32007,56 @@
     },
     {
       "app": "@hots/scheduling-kit",
+      "path": "1.Frontend/packages/scheduling-kit/src/dates.ts",
+      "sha256": "86ef1fda77b909f5a9fc755d215ca0a5bbd2eb8400e2168f9d31d6f01b9f8118",
+      "lines": 85,
+      "imports": [],
+      "symbols": [
+        "DAY",
+        "dateOrdinal",
+        "epoch",
+        "dateFromOrdinal",
+        "date",
+        "key",
+        "addDays",
+        "weekday",
+        "weekDates",
+        "first",
+        "monthDates",
+        "start",
+        "shiftMonth",
+        "target",
+        "end",
+        "dateKeyAt",
+        "parts",
+        "get",
+        "clockSlots",
+        "minutes",
+        "a",
+        "n",
+        "expandDateRecurrence",
+        "interval",
+        "days",
+        "excluded",
+        "until",
+        "weekAnchor",
+        "output",
+        "matches",
+        "applies"
+      ],
+      "endpoints": []
+    },
+    {
+      "app": "@hots/scheduling-kit",
       "path": "1.Frontend/packages/scheduling-kit/src/index.ts",
-      "sha256": "c11c46b2562bcdace858923852f0bcdb6ceae6fdd6f98037279e11fa44c27a7d",
-      "lines": 4,
+      "sha256": "8bd8882271bed96457b51dfe3864d2fb949ebbd041e014f056ab7a4158f9e6d8",
+      "lines": 7,
       "imports": [
         "./types.ts",
         "./availability.ts",
-        "./stay.ts"
+        "./stay.ts",
+        "./dates.ts",
+        "./workdays.ts"
       ],
       "symbols": [],
       "endpoints": []
@@ -30873,6 +32083,33 @@
       "lines": 16,
       "imports": [],
       "symbols": [],
+      "endpoints": []
+    },
+    {
+      "app": "@hots/scheduling-kit",
+      "path": "1.Frontend/packages/scheduling-kit/src/workdays.ts",
+      "sha256": "b51603b12cce33d81cff49d92dc430fd500e018ccce10cc747fc6438fcee694e",
+      "lines": 75,
+      "imports": [
+        "./dates.ts"
+      ],
+      "symbols": [
+        "MAX_WORKING_DAYS",
+        "DEFAULT_WORK_WEEK",
+        "resolve",
+        "week",
+        "isWorkingDay",
+        "addWorkingDays",
+        "cursor",
+        "left",
+        "evaluateExtension",
+        "issues",
+        "maxReason",
+        "reason",
+        "already",
+        "proof",
+        "pattern"
+      ],
       "endpoints": []
     },
     {
